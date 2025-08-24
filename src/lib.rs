@@ -143,6 +143,51 @@ mod dblinter {
         
         Some(all_success)
     }
+
+    // Rule management functions
+    #[pg_extern]
+    fn enable_rule(rule_code: &str) -> Option<bool> {
+        match crate::rules_engine::enable_rule(rule_code) {
+            Ok(success) => Some(success),
+            Err(e) => {
+                pgrx::warning!("Failed to enable rule {}: {}", rule_code, e);
+                Some(false)
+            }
+        }
+    }
+
+    #[pg_extern]
+    fn disable_rule(rule_code: &str) -> Option<bool> {
+        match crate::rules_engine::disable_rule(rule_code) {
+            Ok(success) => Some(success),
+            Err(e) => {
+                pgrx::warning!("Failed to disable rule {}: {}", rule_code, e);
+                Some(false)
+            }
+        }
+    }
+
+    #[pg_extern]
+    fn show_rules() -> Option<bool> {
+        match crate::rules_engine::show_rule_status() {
+            Ok(success) => Some(success),
+            Err(e) => {
+                pgrx::warning!("Failed to show rule status: {}", e);
+                Some(false)
+            }
+        }
+    }
+
+    #[pg_extern]
+    fn is_rule_enabled(rule_code: &str) -> Option<bool> {
+        match crate::rules_engine::is_rule_enabled(rule_code) {
+            Ok(enabled) => Some(enabled),
+            Err(e) => {
+                pgrx::warning!("Failed to check rule status for {}: {}", rule_code, e);
+                None
+            }
+        }
+    }
 }
 
 //----------------------------------------------------------------------------
