@@ -1399,3 +1399,55 @@ pub fn show_rule_status() -> Result<bool, String> {
         }
     }
 }
+
+pub fn explain_rule(rule_code: &str) -> Result<String, String> {
+    let explain_query = "
+        SELECT code, name, description, scope, message, fixes 
+        FROM dblinter.rules 
+        WHERE code = $1";
+
+    let result: Result<Option<(String, String, String, String, String, Vec<Option<String>>)>, spi::SpiError> = Spi::connect(|client| {
+        for row in client.select(explain_query, None, &[rule_code.into()])? {
+            let code: String = row.get(1)?.unwrap_or_default();
+            let name: String = row.get(2)?.unwrap_or_default();
+            let description: String = row.get(3)?.unwrap_or_default();
+            let scope: String = row.get(4)?.unwrap_or_default();
+            let message: String = row.get(5)?.unwrap_or_default();
+            let fixes: Vec<Option<String>> = row.get(6)?.unwrap_or_default();
+            return Ok(Some((code, name, description, scope, message, fixes)));
+        }
+        Ok(None)
+    });
+
+    match result {
+        Ok(Some((code, name, description, scope, message, fixes))) => {
+            // Format the fixes section
+            let fixes_section = if fixes.is_empty() {
+                "No specific fixes available.".to_string()
+            } else {
+                let mut fix_list = String::new();
+                for (i, fix) in fixes.iter().enumerate() {
+                    if let Some(fix_text) = fix {
+                        fix_list.push_str(&format!("   {}. {}\n", i + 1, fix_text));
+                    }
+                }
+                fix_list.trim_end().to_string()
+            };
+
+            let explanation = format!(
+                "📖 Rule Explanation for {}\n{}\n\n🎯 Rule Name: {}\n📋 Scope: {}\n\n📝 Description:\n{}\n\n⚠️  Message Template:\n{}\n\n🔧 How to Fix:\n{}\n{}",
+                code,
+                "=".repeat(60),
+                name,
+                scope,
+                description,
+                message,
+                fixes_section,
+                "=".repeat(60)
+            );
+            Ok(explanation)
+        },
+        Ok(None) => Err(format!("Rule '{}' not found", rule_code)),
+        Err(e) => Err(format!("Database error: {}", e))
+    }
+}

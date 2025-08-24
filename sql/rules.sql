@@ -72,7 +72,7 @@ INSERT INTO dblinter.rules (id,name,code,query,warning_level,error_level,scope,d
 (22, 'TableWithRedundantIndex', 'T003', '', 10, 20, 'TABLE',
     'table without duplicated index.',
     '{0} redundant(s) index found on {1}.{2} idx {3} column {4}.',
-    ARRAY['remove duplicated index']),
+    ARRAY['remove duplicated index','check for constraints that create indexes.']),
     
 (23, 'TableWithFkNotIndexed', 'T004', '', 1, 1, 'TABLE',
     'table without index on fk.',

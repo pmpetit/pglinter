@@ -188,6 +188,20 @@ mod dblinter {
             }
         }
     }
+
+    #[pg_extern]
+    fn explain_rule(rule_code: &str) -> Option<bool> {
+        match crate::rules_engine::explain_rule(rule_code) {
+            Ok(explanation) => {
+                pgrx::notice!("{}", explanation);
+                Some(true)
+            }
+            Err(e) => {
+                pgrx::warning!("Failed to explain rule {}: {}", rule_code, e);
+                Some(false)
+            }
+        }
+    }
 }
 
 //----------------------------------------------------------------------------
