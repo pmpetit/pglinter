@@ -30,45 +30,57 @@ pub fn execute_base_rules() -> Result<Vec<RuleResult>, String> {
     let mut results = Vec::new();
     
     // B001: Tables without primary key
-    match execute_b001_rule() {
-        Ok(Some(result)) => results.push(result),
-        Ok(None) => {},
-        Err(e) => return Err(format!("B001 failed: {}", e))
+    if is_rule_enabled("B001").unwrap_or(true) {
+        match execute_b001_rule() {
+            Ok(Some(result)) => results.push(result),
+            Ok(None) => {},
+            Err(e) => return Err(format!("B001 failed: {}", e))
+        }
     }
     
     // B002: Redundant indexes  
-    match execute_b002_rule() {
-        Ok(Some(result)) => results.push(result),
-        Ok(None) => {},
-        Err(e) => return Err(format!("B002 failed: {}", e))
+    if is_rule_enabled("B002").unwrap_or(true) {
+        match execute_b002_rule() {
+            Ok(Some(result)) => results.push(result),
+            Ok(None) => {},
+            Err(e) => return Err(format!("B002 failed: {}", e))
+        }
     }
 
     // B003: Tables without indexes on foreign keys
-    match execute_b003_rule() {
-        Ok(Some(result)) => results.push(result),
-        Ok(None) => {},
-        Err(e) => return Err(format!("B003 failed: {}", e))
+    if is_rule_enabled("B003").unwrap_or(true) {
+        match execute_b003_rule() {
+            Ok(Some(result)) => results.push(result),
+            Ok(None) => {},
+            Err(e) => return Err(format!("B003 failed: {}", e))
+        }
     }
 
     // B004: Unused indexes
-    match execute_b004_rule() {
-        Ok(Some(result)) => results.push(result),
-        Ok(None) => {},
-        Err(e) => return Err(format!("B004 failed: {}", e))
+    if is_rule_enabled("B004").unwrap_or(true) {
+        match execute_b004_rule() {
+            Ok(Some(result)) => results.push(result),
+            Ok(None) => {},
+            Err(e) => return Err(format!("B004 failed: {}", e))
+        }
     }
 
     // B005: Unsecured public schema
-    match execute_b005_rule() {
-        Ok(Some(result)) => results.push(result),
-        Ok(None) => {},
-        Err(e) => return Err(format!("B005 failed: {}", e))
+    if is_rule_enabled("B005").unwrap_or(true) {
+        match execute_b005_rule() {
+            Ok(Some(result)) => results.push(result),
+            Ok(None) => {},
+            Err(e) => return Err(format!("B005 failed: {}", e))
+        }
     }
 
     // B006: Tables with uppercase names/columns
-    match execute_b006_rule() {
-        Ok(Some(result)) => results.push(result),
-        Ok(None) => {},
-        Err(e) => return Err(format!("B006 failed: {}", e))
+    if is_rule_enabled("B006").unwrap_or(true) {
+        match execute_b006_rule() {
+            Ok(Some(result)) => results.push(result),
+            Ok(None) => {},
+            Err(e) => return Err(format!("B006 failed: {}", e))
+        }
     }
     
     Ok(results)
@@ -78,17 +90,21 @@ pub fn execute_cluster_rules() -> Result<Vec<RuleResult>, String> {
     let mut results = Vec::new();
     
     // C001: Memory configuration check
-    match execute_c001_rule() {
-        Ok(Some(result)) => results.push(result),
-        Ok(None) => {},
-        Err(e) => return Err(format!("C001 failed: {}", e))
+    if is_rule_enabled("C001").unwrap_or(true) {
+        match execute_c001_rule() {
+            Ok(Some(result)) => results.push(result),
+            Ok(None) => {},
+            Err(e) => return Err(format!("C001 failed: {}", e))
+        }
     }
 
     // C002: Insecure pg_hba.conf entries
-    match execute_c002_rule() {
-        Ok(Some(result)) => results.push(result),
-        Ok(None) => {},
-        Err(e) => return Err(format!("C002 failed: {}", e))
+    if is_rule_enabled("C002").unwrap_or(true) {
+        match execute_c002_rule() {
+            Ok(Some(result)) => results.push(result),
+            Ok(None) => {},
+            Err(e) => return Err(format!("C002 failed: {}", e))
+        }
     }
     
     Ok(results)
@@ -100,87 +116,111 @@ pub fn execute_table_rules() -> Result<Vec<RuleResult>, String> {
     let mut results = Vec::new();
     
     // T001: Tables without primary key (already implemented)
-    match execute_t001_rule() {
-        Ok(Some(result)) => results.push(result),
-        Ok(None) => {},
-        Err(e) => return Err(format!("T001 failed: {}", e))
+    if is_rule_enabled("T001").unwrap_or(true) {
+        match execute_t001_rule() {
+            Ok(Some(result)) => results.push(result),
+            Ok(None) => {},
+            Err(e) => return Err(format!("T001 failed: {}", e))
+        }
     }
     
     // T002: Tables without any index
-    match execute_t002_rule() {
-        Ok(Some(result)) => results.push(result),
-        Ok(None) => {},
-        Err(e) => return Err(format!("T002 failed: {}", e))
+    if is_rule_enabled("T002").unwrap_or(true) {
+        match execute_t002_rule() {
+            Ok(Some(result)) => results.push(result),
+            Ok(None) => {},
+            Err(e) => return Err(format!("T002 failed: {}", e))
+        }
     }
     
     // T003: Tables with redundant indexes
-    match execute_t003_rule() {
-        Ok(Some(result)) => results.push(result),
-        Ok(None) => {},
-        Err(e) => return Err(format!("T003 failed: {}", e))
+    if is_rule_enabled("T003").unwrap_or(true) {
+        match execute_t003_rule() {
+            Ok(Some(result)) => results.push(result),
+            Ok(None) => {},
+            Err(e) => return Err(format!("T003 failed: {}", e))
+        }
     }
     
     // T004: Tables with foreign keys not indexed
-    match execute_t004_rule() {
-        Ok(Some(result)) => results.push(result),
-        Ok(None) => {},
-        Err(e) => return Err(format!("T004 failed: {}", e))
+    if is_rule_enabled("T004").unwrap_or(true) {
+        match execute_t004_rule() {
+            Ok(Some(result)) => results.push(result),
+            Ok(None) => {},
+            Err(e) => return Err(format!("T004 failed: {}", e))
+        }
     }
     
     // T005: Tables with potential missing indexes (high seq scan)
-    match execute_t005_rule() {
-        Ok(Some(result)) => results.push(result),
-        Ok(None) => {},
-        Err(e) => return Err(format!("T005 failed: {}", e))
+    if is_rule_enabled("T005").unwrap_or(true) {
+        match execute_t005_rule() {
+            Ok(Some(result)) => results.push(result),
+            Ok(None) => {},
+            Err(e) => return Err(format!("T005 failed: {}", e))
+        }
     }
     
     // T006: Tables with foreign keys outside schema
-    match execute_t006_rule() {
-        Ok(Some(result)) => results.push(result),
-        Ok(None) => {},
-        Err(e) => return Err(format!("T006 failed: {}", e))
+    if is_rule_enabled("T006").unwrap_or(true) {
+        match execute_t006_rule() {
+            Ok(Some(result)) => results.push(result),
+            Ok(None) => {},
+            Err(e) => return Err(format!("T006 failed: {}", e))
+        }
     }
     
     // T007: Tables with unused indexes
-    match execute_t007_rule() {
-        Ok(Some(result)) => results.push(result),
-        Ok(None) => {},
-        Err(e) => return Err(format!("T007 failed: {}", e))
+    if is_rule_enabled("T007").unwrap_or(true) {
+        match execute_t007_rule() {
+            Ok(Some(result)) => results.push(result),
+            Ok(None) => {},
+            Err(e) => return Err(format!("T007 failed: {}", e))
+        }
     }
     
     // T008: Tables with foreign key type mismatch
-    match execute_t008_rule() {
-        Ok(Some(result)) => results.push(result),
-        Ok(None) => {},
-        Err(e) => return Err(format!("T008 failed: {}", e))
+    if is_rule_enabled("T008").unwrap_or(true) {
+        match execute_t008_rule() {
+            Ok(Some(result)) => results.push(result),
+            Ok(None) => {},
+            Err(e) => return Err(format!("T008 failed: {}", e))
+        }
     }
     
     // T009: Tables with no roles granted
-    match execute_t009_rule() {
-        Ok(Some(result)) => results.push(result),
-        Ok(None) => {},
-        Err(e) => return Err(format!("T009 failed: {}", e))
+    if is_rule_enabled("T009").unwrap_or(true) {
+        match execute_t009_rule() {
+            Ok(Some(result)) => results.push(result),
+            Ok(None) => {},
+            Err(e) => return Err(format!("T009 failed: {}", e))
+        }
     }
     
     // T010: Tables using reserved keywords
-    match execute_t010_rule() {
-        Ok(Some(result)) => results.push(result),
-        Ok(None) => {},
-        Err(e) => return Err(format!("T010 failed: {}", e))
+    if is_rule_enabled("T010").unwrap_or(true) {
+        match execute_t010_rule() {
+            Ok(Some(result)) => results.push(result),
+            Ok(None) => {},
+            Err(e) => return Err(format!("T010 failed: {}", e))
+        }
     }
     
     // T011: Tables with uppercase names/columns
-    match execute_t011_rule() {
-        Ok(Some(result)) => results.push(result),
-        Ok(None) => {},
-        Err(e) => return Err(format!("T011 failed: {}", e))
+    if is_rule_enabled("T011").unwrap_or(true) {
+        match execute_t011_rule() {
+            Ok(Some(result)) => results.push(result),
+            Ok(None) => {},
+            Err(e) => return Err(format!("T011 failed: {}", e))
+        }
     }
     
     // T012: Tables with sensitive columns (requires anon extension)
-    match execute_t012_rule() {
-        Ok(Some(result)) => results.push(result),
-        Ok(None) => {},
-        Err(e) => return Err(format!("T012 failed: {}", e))
+    if is_rule_enabled("T012").unwrap_or(true) {
+        match execute_t012_rule() {
+            Ok(Some(result)) => results.push(result),
+            Ok(None) => {},
+            Err(e) => return Err(format!("T012 failed: {}", e))
+        }
     }
     
     Ok(results)
@@ -1209,5 +1249,205 @@ pub fn generate_sarif_output(results: Vec<RuleResult>, output_file: &str) -> Res
             }
         }
         Err(e) => Err(format!("Failed to create file: {}", e))
+    }
+}
+
+// Rule management functions
+pub fn enable_rule(rule_code: &str) -> Result<bool, String> {
+    // First check if rule exists and get current status
+    let check_query = "
+        SELECT code, enable 
+        FROM dblinter.rules 
+        WHERE code = $1";
+
+    let result: Result<bool, spi::SpiError> = Spi::connect_mut(|client| {
+        // Check if rule exists
+        let check_result = client.select(check_query, None, &[rule_code.into()])?;
+        if check_result.is_empty() {
+            return Ok(false); // Rule not found
+        }
+        
+        // Update the rule
+        let enable_query = "
+            UPDATE dblinter.rules 
+            SET enable = true 
+            WHERE code = $1";
+        
+        client.update(enable_query, None, &[rule_code.into()])?;
+        Ok(true)
+    });
+
+    match result {
+        Ok(success) => {
+            if success {
+                pgrx::notice!("✅ Rule {} has been enabled", rule_code);
+                Ok(true)
+            } else {
+                pgrx::warning!("⚠️  Rule {} not found", rule_code);
+                Ok(false)
+            }
+        },
+        Err(e) => Err(format!("Database error: {}", e))
+    }
+}
+
+pub fn disable_rule(rule_code: &str) -> Result<bool, String> {
+    // First check if rule exists and get current status
+    let check_query = "
+        SELECT code, enable 
+        FROM dblinter.rules 
+        WHERE code = $1";
+
+    let result: Result<bool, spi::SpiError> = Spi::connect_mut(|client| {
+        // Check if rule exists
+        let check_result = client.select(check_query, None, &[rule_code.into()])?;
+        if check_result.is_empty() {
+            return Ok(false); // Rule not found
+        }
+        
+        // Update the rule
+        let disable_query = "
+            UPDATE dblinter.rules 
+            SET enable = false 
+            WHERE code = $1";
+        
+        client.update(disable_query, None, &[rule_code.into()])?;
+        Ok(true)
+    });
+
+    match result {
+        Ok(success) => {
+            if success {
+                pgrx::notice!("🔴 Rule {} has been disabled", rule_code);
+                Ok(true)
+            } else {
+                pgrx::warning!("⚠️  Rule {} not found", rule_code);
+                Ok(false)
+            }
+        },
+        Err(e) => Err(format!("Database error: {}", e))
+    }
+}
+
+pub fn is_rule_enabled(rule_code: &str) -> Result<bool, String> {
+    let check_query = "
+        SELECT enable 
+        FROM dblinter.rules 
+        WHERE code = $1";
+
+    let result: Result<bool, spi::SpiError> = Spi::connect(|client| {
+        for row in client.select(check_query, None, &[rule_code.into()])? {
+            return Ok(row.get::<bool>(1)?.unwrap_or(false));
+        }
+        // Rule not found, assume disabled
+        Ok(false)
+    });
+
+    match result {
+        Ok(enabled) => Ok(enabled),
+        Err(e) => Err(format!("Database error: {}", e))
+    }
+}
+
+pub fn list_rules() -> Result<Vec<(String, String, bool)>, String> {
+    let list_query = "
+        SELECT code, name, enable 
+        FROM dblinter.rules 
+        ORDER BY code";
+
+    let result: Result<Vec<(String, String, bool)>, spi::SpiError> = Spi::connect(|client| {
+        let mut rules = Vec::new();
+        for row in client.select(list_query, None, &[])? {
+            let code: String = row.get(1)?.unwrap_or_default();
+            let name: String = row.get(2)?.unwrap_or_default();
+            let enabled: bool = row.get(3)?.unwrap_or(false);
+            rules.push((code, name, enabled));
+        }
+        Ok(rules)
+    });
+
+    match result {
+        Ok(rules) => Ok(rules),
+        Err(e) => Err(format!("Database error: {}", e))
+    }
+}
+
+pub fn show_rule_status() -> Result<bool, String> {
+    match list_rules() {
+        Ok(rules) => {
+            pgrx::notice!("📋 dblinter Rule Status:");
+            pgrx::notice!("{}", "=".repeat(60));
+            pgrx::notice!("{:<6} {:<8} {:<40}", "Code", "Status", "Name");
+            pgrx::notice!("{}", "-".repeat(60));
+            
+            let mut enabled_count = 0;
+            let mut disabled_count = 0;
+            
+            for (code, name, enabled) in rules {
+                let status = if enabled { "✅ ON" } else { "🔴 OFF" };
+                if enabled { enabled_count += 1; } else { disabled_count += 1; }
+                pgrx::notice!("{:<6} {:<8} {:<40}", code, status, name);
+            }
+            
+            pgrx::notice!("{}", "=".repeat(60));
+            pgrx::notice!("📊 Summary: {} enabled, {} disabled", enabled_count, disabled_count);
+            Ok(true)
+        },
+        Err(e) => {
+            pgrx::warning!("Failed to retrieve rule status: {}", e);
+            Ok(false)
+        }
+    }
+}
+
+pub fn explain_rule(rule_code: &str) -> Result<String, String> {
+    let explain_query = "
+        SELECT code, name, description, scope, message, fixes 
+        FROM dblinter.rules 
+        WHERE code = $1";
+
+    let result: Result<Option<(String, String, String, String, String, Vec<Option<String>>)>, spi::SpiError> = Spi::connect(|client| {
+        for row in client.select(explain_query, None, &[rule_code.into()])? {
+            let code: String = row.get(1)?.unwrap_or_default();
+            let name: String = row.get(2)?.unwrap_or_default();
+            let description: String = row.get(3)?.unwrap_or_default();
+            let scope: String = row.get(4)?.unwrap_or_default();
+            let message: String = row.get(5)?.unwrap_or_default();
+            let fixes: Vec<Option<String>> = row.get(6)?.unwrap_or_default();
+            return Ok(Some((code, name, description, scope, message, fixes)));
+        }
+        Ok(None)
+    });
+
+    match result {
+        Ok(Some((code, name, description, scope, message, fixes))) => {
+            // Format the fixes section
+            let fixes_section = if fixes.is_empty() {
+                "No specific fixes available.".to_string()
+            } else {
+                let mut fix_list = String::new();
+                for (i, fix) in fixes.iter().enumerate() {
+                    if let Some(fix_text) = fix {
+                        fix_list.push_str(&format!("   {}. {}\n", i + 1, fix_text));
+                    }
+                }
+                fix_list.trim_end().to_string()
+            };
+
+            let explanation = format!(
+                "📖 Rule Explanation for {}\n{}\n\n🎯 Rule Name: {}\n📋 Scope: {}\n\n📝 Description:\n{}\n\n⚠️  Message Template:\n{}\n\n🔧 How to Fix:\n{}\n{}",
+                code,
+                "=".repeat(60),
+                name,
+                scope,
+                description,
+                message,
+                fixes_section,
+                "=".repeat(60)
+            );
+            Ok(explanation)
+        },
+        Ok(None) => Err(format!("Rule '{}' not found", rule_code)),
+        Err(e) => Err(format!("Database error: {}", e))
     }
 }

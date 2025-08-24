@@ -45,6 +45,8 @@ PGDATABASE?=dblinter_test
 
 # List of test files (without .sql extension)
 REGRESS_TESTS = b001
+REGRESS_TESTS+= b001_prompt
+REGRESS_TESTS+= rule_management
 
 # Use this var to add more tests
 #PG_TEST_EXTRA ?= ""

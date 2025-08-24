@@ -2,7 +2,9 @@
 
 This is a conversion of the original Python [dblinter](https://github.com/decathlon/dblinter) to a PostgreSQL extension written in Rust using pgrx.
 
-## Overview
+## Overview  
+In the past few years, where DBA were working a little bit more on the db enine itsel, (by creating instances, configuring backups, monitoring), he keeps an eye on what developers do. Now in DBRE world, where db is cloud managed, developers and ops are now driving without any dba on their side.
+So databases objects lives their own life, created by persons that do their best. It can be usefull to be able to detect some wonrg desing creation (for example foreign keys created accross differents schemas...). That's what dblinter was created for.
 
 dblinter is a PostgreSQL database linter that analyzes your database for potential issues, performance problems, and best practice violations. This Rust implementation provides:
 
