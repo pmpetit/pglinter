@@ -194,3 +194,11 @@ help:
 	@echo "  help             - Show this help message"
 
 .PHONY: all extension install test-all installcheck start stop run psql clean help test-% test-prompt-% test-convenience
+
+
+##
+## L I N T
+##
+
+lint:
+	cargo clippy --release
