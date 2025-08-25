@@ -2,8 +2,8 @@
 
 This is a conversion of the original Python [dblinter](https://github.com/decathlon/dblinter) to a PostgreSQL extension written in Rust using pgrx.
 
-## Overview  
-In the past few years, where DBA were working a little bit more on the db enine itsel, (by creating instances, configuring backups, monitoring), he keeps an eye on what developers do. Now in DBRE world, where db is cloud managed, developers and ops are now driving without any dba on their side.
+## Overview
+In recent years, DBAs were more involved with the database engine itself—creating instances, configuring backups, and monitoring systems—while also overseeing developers' activities. Today, in the DBRE world where databases are cloud-managed, developers and operations teams often work independently, without a dedicated DBA.
 So databases objects lives their own life, created by persons that do their best. It can be usefull to be able to detect some wonrg desing creation (for example foreign keys created accross differents schemas...). That's what dblinter was created for.
 
 dblinter is a PostgreSQL database linter that analyzes your database for potential issues, performance problems, and best practice violations. This Rust implementation provides:
@@ -18,7 +18,7 @@ dblinter is a PostgreSQL database linter that analyzes your database for potenti
 ### Rule Categories
 
 - **B (Base/Database)**: Database-wide checks
-- **C (Cluster)**: PostgreSQL cluster configuration checks  
+- **C (Cluster)**: PostgreSQL cluster configuration checks
 - **T (Table)**: Individual table checks
 - **S (Schema)**: Schema-level checks
 
@@ -70,7 +70,7 @@ SELECT dblinter.perform_schema_check('/path/to/schema_results.sarif');
 - **B005**: Unsecured public schema
 - **B006**: Tables with uppercase names/columns
 
-### Cluster Rules (C-series)  
+### Cluster Rules (C-series)
 - **C001**: max_connections * work_mem > available RAM
 - **C002**: Insecure pg_hba.conf entries
 
@@ -94,12 +94,12 @@ impl DatabaseRule for B007Rule {
     fn execute(&self, params: &[RuleParam]) -> spi::Result<Option<RuleResult>> {
         // Your rule logic here
         let query = "SELECT count(*) FROM problematic_tables";
-        
+
         let result = Spi::connect(|client| {
             // Execute query and analyze results
             // Return RuleResult if issues found
         })?;
-        
+
         Ok(result)
     }
 
@@ -128,7 +128,7 @@ Results are generated in SARIF 2.1.0 format:
     },
     "results": [{
       "ruleId": "B001",
-      "level": "warning", 
+      "level": "warning",
       "message": {
         "text": "5 tables without primary key exceed threshold: 10%"
       },
