@@ -13,14 +13,14 @@ CREATE TABLE IF NOT EXISTS my_table_without_pk (
 CREATE EXTENSION IF NOT EXISTS pglinter;
 -- Test with file output
 SELECT pglinter.perform_base_check('/tmp/pglinter_base_results.sarif');
- perform_base_check
+ perform_base_check 
 --------------------
  t
 (1 row)
 
 -- Test if file exists
 \! md5sum /tmp/pglinter_base_results.sarif
-32e67d2ad135d8f404c1a9d30cfa00b7  /tmp/pglinter_base_results.sarif
+2dbe61e5ecfb64c3fba230d29027b206  /tmp/pglinter_base_results.sarif
 -- Test with no output file (should output to prompt)
 SELECT pglinter.perform_base_check();
 NOTICE:  🔍 pglinter found 3 issue(s):
@@ -31,7 +31,7 @@ NOTICE:  ❌ [B005] ERROR: Public schema allows CREATE privilege for all users -
 NOTICE:  ==================================================
 NOTICE:  📊 Summary: 1 error(s), 2 warning(s), 0 info
 NOTICE:  🔴 Critical issues found - please review and fix errors
- perform_base_check
+ perform_base_check 
 --------------------
  t
 (1 row)
