@@ -1,6 +1,6 @@
-# DBLinter Examples
+# pg_linter Examples
 
-Practical examples of using DBLinter in real-world scenarios.
+Practical examples of using pg_linter in real-world scenarios.
 
 ## Basic Usage Examples
 
@@ -39,7 +39,7 @@ SELECT pg_linter.is_rule_enabled('B002');
 
 ```sql
 -- config/development.sql
-\echo 'Configuring DBLinter for development environment...'
+\echo 'Configuring pg_linter for development environment...'
 
 -- Disable strict rules for development
 SELECT pg_linter.disable_rule('B005'); -- Public schema
@@ -60,7 +60,7 @@ SELECT pg_linter.enable_rule('T008');  -- FK type mismatches
 
 ```sql
 -- config/production.sql
-\echo 'Configuring DBLinter for production environment...'
+\echo 'Configuring pg_linter for production environment...'
 
 -- Enable all security and performance rules
 SELECT pg_linter.enable_rule(rule_code)
@@ -73,7 +73,7 @@ FROM pg_linter.show_rules();
 
 ```sql
 -- config/performance.sql
-\echo 'Configuring DBLinter for performance analysis...'
+\echo 'Configuring pg_linter for performance analysis...'
 
 -- Disable non-performance rules
 SELECT pg_linter.disable_rule(rule_code)
@@ -129,7 +129,7 @@ jobs:
       run: |
         PGPASSWORD=postgres psql -h localhost -U postgres -d testdb -f schema.sql
 
-    - name: Install DBLinter
+    - name: Install pg_linter
       run: |
         # Add your installation steps here
         PGPASSWORD=postgres psql -h localhost -U postgres -d testdb -c "CREATE EXTENSION pg_linter;"
@@ -223,7 +223,7 @@ pipeline {
             }
         }
 
-        stage('DBLinter Analysis') {
+        stage('pg_linter Analysis') {
             steps {
                 sh '''
                     export PGPASSWORD=$DB_PASS
@@ -271,14 +271,14 @@ set -e
 
 # Configuration
 DB_NAME="${DB_NAME:-production_db}"
-LOG_DIR="${LOG_DIR:-/var/log/dblinter}"
+LOG_DIR="${LOG_DIR:-/var/log/pg_linter}"
 DATE=$(date +%Y-%m-%d)
 EMAIL_ALERT="${EMAIL_ALERT:-admin@company.com}"
 
 # Create log directory
 mkdir -p "$LOG_DIR"
 
-echo "Starting daily DBLinter analysis for $DB_NAME..."
+echo "Starting daily pg_linter analysis for $DB_NAME..."
 
 # Run comprehensive analysis
 psql -d "$DB_NAME" -c "
@@ -329,12 +329,12 @@ echo "✅ Daily check completed successfully"
 
 ```bash
 #!/bin/bash
-# dblinter_exporter.sh - Export metrics for Prometheus
+# pg_linter_exporter.sh - Export metrics for Prometheus
 
 DB_NAME="${1:-production_db}"
 METRICS_FILE="/var/lib/prometheus/node-exporter/pg_linter.prom"
 
-echo "Exporting DBLinter metrics for $DB_NAME..."
+echo "Exporting pg_linter metrics for $DB_NAME..."
 
 # Run analysis and capture results
 ANALYSIS_RESULTS=$(mktemp)
@@ -342,11 +342,11 @@ psql -t -d "$DB_NAME" -c "SELECT * FROM pg_linter.perform_base_check();" > "$ANA
 
 # Initialize metrics file
 cat > "$METRICS_FILE" << EOF
-# HELP dblinter_issues_total Number of database issues by rule and severity
-# TYPE dblinter_issues_total gauge
+# HELP pg_linter_issues_total Number of database issues by rule and severity
+# TYPE pg_linter_issues_total gauge
 
-# HELP dblinter_last_analysis_timestamp Timestamp of last analysis
-# TYPE dblinter_last_analysis_timestamp gauge
+# HELP pg_linter_last_analysis_timestamp Timestamp of last analysis
+# TYPE pg_linter_last_analysis_timestamp gauge
 
 EOF
 
@@ -359,12 +359,12 @@ while IFS='|' read -r rule level message count; do
 
     # Skip empty lines
     if [[ -n "$rule" && -n "$level" && -n "$count" ]]; then
-        echo "dblinter_issues_total{rule=\"$rule\",level=\"$level\",database=\"$DB_NAME\"} $count" >> "$METRICS_FILE"
+        echo "pg_linter_issues_total{rule=\"$rule\",level=\"$level\",database=\"$DB_NAME\"} $count" >> "$METRICS_FILE"
     fi
 done < "$ANALYSIS_RESULTS"
 
 # Add timestamp
-echo "dblinter_last_analysis_timestamp{database=\"$DB_NAME\"} $(date +%s)" >> "$METRICS_FILE"
+echo "pg_linter_last_analysis_timestamp{database=\"$DB_NAME\"} $(date +%s)" >> "$METRICS_FILE"
 
 # Cleanup
 rm -f "$ANALYSIS_RESULTS"
@@ -377,14 +377,14 @@ echo "Metrics exported to $METRICS_FILE"
 ```json
 {
   "dashboard": {
-    "title": "DBLinter Database Health",
+    "title": "pg_linter Database Health",
     "panels": [
       {
         "title": "Issues by Severity",
         "type": "stat",
         "targets": [
           {
-            "expr": "sum by (level) (dblinter_issues_total)",
+            "expr": "sum by (level) (pg_linter_issues_total)",
             "legendFormat": "{{level}}"
           }
         ]
@@ -394,7 +394,7 @@ echo "Metrics exported to $METRICS_FILE"
         "type": "table",
         "targets": [
           {
-            "expr": "dblinter_issues_total > 0",
+            "expr": "pg_linter_issues_total > 0",
             "format": "table"
           }
         ]
@@ -404,7 +404,7 @@ echo "Metrics exported to $METRICS_FILE"
         "type": "stat",
         "targets": [
           {
-            "expr": "(time() - dblinter_last_analysis_timestamp) / 3600",
+            "expr": "(time() - pg_linter_last_analysis_timestamp) / 3600",
             "legendFormat": "Hours"
           }
         ]
@@ -424,7 +424,7 @@ echo "Metrics exported to $METRICS_FILE"
 
 DATABASES=("app_prod" "app_staging" "analytics" "reporting")
 ANALYSIS_DATE=$(date +%Y-%m-%d_%H-%M)
-REPORT_DIR="/var/log/dblinter/multi-db-$ANALYSIS_DATE"
+REPORT_DIR="/var/log/pg_linter/multi-db-$ANALYSIS_DATE"
 
 mkdir -p "$REPORT_DIR"
 
@@ -561,7 +561,7 @@ def generate_html_report(sarif_files, output_file):
     <!DOCTYPE html>
     <html>
     <head>
-        <title>DBLinter Analysis Report</title>
+        <title>pg_linter Analysis Report</title>
         <style>
             body {{ font-family: Arial, sans-serif; margin: 40px; }}
             .summary {{ background: #f5f5f5; padding: 20px; margin-bottom: 30px; border-radius: 5px; }}
@@ -577,7 +577,7 @@ def generate_html_report(sarif_files, output_file):
         </style>
     </head>
     <body>
-        <h1>DBLinter Analysis Report</h1>
+        <h1>pg_linter Analysis Report</h1>
         <p><strong>Generated:</strong> {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}</p>
 
         <div class="summary">
@@ -669,6 +669,4 @@ rm -rf "$TEMP_DIR"
 echo "Weekly digest sent successfully"
 ```
 
-These examples provide practical patterns for integrating DBLinter into various workflows and environments. Adapt them to your specific needs and infrastructure.
-
-For more examples and use cases, see the [How-To Guides](../how-to/README.md) and [Tutorials](../tutorials/README.md).
+These examples provide practical patterns for integrating pg_linter into various workflows and environments. Adapt them to your specific needs and infrastructure.

@@ -104,18 +104,18 @@ GRANT SELECT, INSERT, UPDATE ON TABLE user_table TO app_write;
 1. **Least Privilege Principle**
    ```sql
    -- Create dedicated user for pg_linter
-   CREATE USER dblinter_scanner WITH PASSWORD 'secure_password';
+   CREATE USER pg_linter_scanner WITH PASSWORD 'secure_password';
 
    -- Grant minimal required permissions
-   GRANT CONNECT ON DATABASE mydb TO dblinter_scanner;
-   GRANT USAGE ON SCHEMA information_schema TO dblinter_scanner;
-   GRANT SELECT ON ALL TABLES IN SCHEMA information_schema TO dblinter_scanner;
+   GRANT CONNECT ON DATABASE mydb TO pg_linter_scanner;
+   GRANT USAGE ON SCHEMA information_schema TO pg_linter_scanner;
+   GRANT SELECT ON ALL TABLES IN SCHEMA information_schema TO pg_linter_scanner;
    ```
 
 2. **Restricted File Access**
    ```sql
    -- Only write to designated log directory
-   SELECT pg_linter.perform_base_check('/var/log/dblinter/scan_results.sarif');
+   SELECT pg_linter.perform_base_check('/var/log/pg_linter/scan_results.sarif');
    ```
 
 3. **Network Security**
@@ -136,7 +136,7 @@ GRANT SELECT, INSERT, UPDATE ON TABLE user_table TO app_write;
 2. **Limited Scope**
    ```sql
    -- Use read-only user for CI analysis
-   CREATE USER ci_dblinter WITH PASSWORD '${CI_PASSWORD}';
+   CREATE USER ci_pg_linter WITH PASSWORD '${CI_PASSWORD}';
    GRANT CONNECT ON DATABASE mydb TO ci_pg_linter;
    GRANT USAGE ON SCHEMA public TO ci_pg_linter;
    -- Grant only SELECT on metadata tables
@@ -258,11 +258,11 @@ WHERE rule_code NOT LIKE 'B005'
   AND rule_code NOT LIKE 'C002'
   AND rule_code NOT LIKE 'T009';
 
-SELECT pg_linter.perform_base_check('/var/log/dblinter/security_scan.sarif');
+SELECT pg_linter.perform_base_check('/var/log/pg_linter/security_scan.sarif');
 "
 
 # Check for critical issues
-if grep -q '"level": "error"' /var/log/dblinter/security_scan.sarif; then
+if grep -q '"level": "error"' /var/log/pg_linter/security_scan.sarif; then
     echo "CRITICAL: Security issues found!"
     # Send alert
 fi

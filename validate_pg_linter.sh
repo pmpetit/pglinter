@@ -8,7 +8,7 @@ echo "============================="
 
 # Check if extension compiles
 echo "📦 Testing compilation..."
-cd /home/pmp/github/dblinter
+cd /home/pmp/github/pg_linter
 cargo check
 if [ $? -eq 0 ]; then
     echo "✅ Compilation successful"

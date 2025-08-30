@@ -336,7 +336,7 @@ When an output file is specified, results are saved in SARIF (Static Analysis Re
     {
       "tool": {
         "driver": {
-          "name": "dblinter",
+          "name": "pg_linter",
           "version": "1.0.0"
         }
       },
@@ -413,7 +413,7 @@ SELECT pg_linter.perform_table_check(); -- Only table rules
 2. **Scheduled Analysis**
 ```sql
 -- Run during low-usage periods
-SELECT cron.schedule('dblinter-weekly', '0 2 * * 0',
+SELECT cron.schedule('pg_linter-weekly', '0 2 * * 0',
     'SELECT pg_linter.perform_base_check(''/logs/weekly.sarif'');');
 ```
 
@@ -446,7 +446,7 @@ SELECT pg_linter.disable_rule('T005'); -- High seq scan analysis
 # daily_db_check.sh
 
 DB_NAME="production_db"
-OUTPUT_DIR="/var/log/dblinter"
+OUTPUT_DIR="/var/log/pg_linter"
 DATE=$(date +%Y-%m-%d)
 
 # Run comprehensive analysis

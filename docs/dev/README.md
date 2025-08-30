@@ -1,6 +1,6 @@
 # Development Guide
 
-Guide for contributing to DBLinter development.
+Guide for contributing to pg_linter development.
 
 ## Development Environment Setup
 
@@ -26,7 +26,7 @@ cargo pgrx init
 
 # Clone the repository
 git clone https://github.com/yourorg/pg_linter.git
-cd dblinter
+cd pg_linter
 
 # Build the extension
 cargo pgrx package
@@ -54,7 +54,7 @@ cargo test test_b001_rule
 ## Project Structure
 
 ```
-dblinter/
+pg_linter/
 ├── Cargo.toml              # Rust package configuration
 ├── pg_linter.control        # PostgreSQL extension control file
 ├── src/
@@ -536,5 +536,5 @@ Useful plugins:
 
 - **Discord**: Join the pgrx Discord server
 - **GitHub Discussions**: Ask questions in project discussions
-- **Stack Overflow**: Tag questions with `dblinter` and `postgresql`
+- **Stack Overflow**: Tag questions with `pg_linter` and `postgresql`
 - **PostgreSQL Slack**: #extensions channel

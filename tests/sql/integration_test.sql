@@ -75,7 +75,7 @@ CREATE TABLE dev_reports.summaries (
 CREATE EXTENSION IF NOT EXISTS pg_linter;
 
 -- Run comprehensive analysis
-SELECT '=== COMPREHENSIVE DBLINTER ANALYSIS ===' as info;
+SELECT '=== COMPREHENSIVE pg_linter ANALYSIS ===' as info;
 
 -- Test all rule categories
 SELECT 'BASE RULES:' as category;

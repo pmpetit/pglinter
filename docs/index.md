@@ -90,12 +90,10 @@ Schema-level checks:
 
 ## Documentation Structure
 
-- **[Installation Guide](INSTALL.md)**: Step-by-step installation instructions
 - **[Configuration](configure.md)**: How to configure rules and thresholds
 - **[Functions Reference](functions/)**: Complete function reference
 - **[Rule Reference](rules/)**: Detailed description of all rules
 - **[How-To Guides](how-to/)**: Practical guides for common scenarios
-- **[Tutorials](tutorials/)**: Step-by-step learning materials
 - **[Development](dev/)**: Contributing and development guides
 
 ## Integration
@@ -109,8 +107,8 @@ pg_linter is designed to integrate seamlessly into your development workflow:
 
 ## Support
 
-- **Issues**: [GitHub Issues](https://github.com/yourorg/dblinter/issues)
-- **Discussions**: [GitHub Discussions](https://github.com/yourorg/dblinter/discussions)
+- **Issues**: [GitHub Issues](https://github.com/yourorg/pg_linter/issues)
+- **Discussions**: [GitHub Discussions](https://github.com/yourorg/pg_linter/discussions)
 - **Documentation**: This documentation site
 
 ## License

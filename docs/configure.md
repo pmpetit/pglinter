@@ -92,11 +92,11 @@ Default threshold: 1MB minimum size to consider an index "unused"
 
 ```sql
 -- Save results to a specific file
-SELECT pg_linter.perform_base_check('/var/log/dblinter/results.sarif');
+SELECT pg_linter.perform_base_check('/var/log/pg_linter/results.sarif');
 
 -- Use timestamp in filename
 SELECT pg_linter.perform_base_check(
-    '/var/log/dblinter/results_' || to_char(now(), 'YYYY-MM-DD_HH24-MI-SS') || '.sarif'
+    '/var/log/pg_linter/results_' || to_char(now(), 'YYYY-MM-DD_HH24-MI-SS') || '.sarif'
 );
 ```
 
@@ -241,31 +241,6 @@ jobs:
         sarif_file: /tmp/results.sarif
 ```
 
-### GitLab CI
-
-```yaml
-# .gitlab-ci.yml
-stages:
-  - lint
-
-db-lint:
-  stage: lint
-  image: postgres:14
-  services:
-    - postgres:14
-  variables:
-    POSTGRES_DB: testdb
-    POSTGRES_USER: postgres
-    POSTGRES_PASSWORD: postgres
-  script:
-    - psql -c "CREATE EXTENSION pg_linter;"
-    - psql -f config/ci.sql
-    - psql -c "SELECT pg_linter.perform_base_check('/tmp/results.sarif');"
-  artifacts:
-    reports:
-      sast: /tmp/results.sarif
-```
-
 ## Advanced Configuration
 
 ### Custom Rule Implementations
@@ -295,10 +270,10 @@ pg_linter stores configuration in PostgreSQL tables:
 \d pg_linter.rules
 
 -- Backup configuration
-pg_dump -t pg_linter.rules mydb > dblinter_config_backup.sql
+pg_dump -t pg_linter.rules mydb > pg_linter_config_backup.sql
 
 -- Restore configuration
-psql -d mydb -f dblinter_config_backup.sql
+psql -d mydb -f pg_linter_config_backup.sql
 ```
 
 ## Best Practices
@@ -339,5 +314,3 @@ If you encounter issues:
 2. Verify extension is properly installed
 3. Ensure database user has necessary permissions
 4. Test with minimal configuration first
-
-For additional help, see the [Troubleshooting Guide](troubleshooting.md).

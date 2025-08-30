@@ -1,5 +1,5 @@
 ##
-## dblinter Makefile
+## pg_linter Makefile
 ##
 ## This Makefile is based on the PGXS Makefile pattern
 ##
@@ -7,11 +7,11 @@
 PGRX?=cargo pgrx
 PGVER?=$(shell grep 'default = \[".*\"]' Cargo.toml | sed -e 's/.*\["//' | sed -e 's/"].*//')
 PG_MAJOR_VERSION=$(PGVER:pg%=%)
-DBLINTER_VERSION?=$(shell grep '^version *= *' Cargo.toml | sed 's/^version *= *//' | tr -d '\"' | tr -d ' ' )
+pg_linter_VERSION?=$(shell grep '^version *= *' Cargo.toml | sed 's/^version *= *//' | tr -d '\"' | tr -d ' ' )
 
 # use `TARGET=debug make run` for more detailed errors
 TARGET?=release
-TARGET_DIR?=target/$(TARGET)/dblinter-$(PGVER)/
+TARGET_DIR?=target/$(TARGET)/pg_linter-$(PGVER)/
 PG_CONFIG?=`$(PGRX) info pg-config $(PGVER) 2> /dev/null || echo pg_config`
 PG_SHAREDIR?=$(shell $(PG_CONFIG) --sharedir)
 PG_LIBDIR?=$(shell $(PG_CONFIG) --libdir)
@@ -37,7 +37,7 @@ PG_SOCKET_DIR?=/var/lib/postgresql/.pgrx/
 PGHOST?=localhost
 PGPORT?=288$(subst pg,,$(PGVER))
 PSQL_OPT?=--host $(PGHOST) --port $(PGPORT)
-PGDATABASE?=dblinter_test
+PGDATABASE?=pg_linter_test
 
 ##
 ## Test configuration
@@ -87,7 +87,7 @@ test-%: stop start
 
 # Run all tests
 test-all: stop start
-	@echo "Running all dblinter tests..."
+	@echo "Running all pg_linter tests..."
 	dropdb $(PSQL_OPT) --if-exists $(PGDATABASE) || echo 'Database did not exist'
 	createdb $(PSQL_OPT) $(PGDATABASE)
 	@for test in $(REGRESS_TESTS); do \
@@ -103,7 +103,7 @@ test-prompt-%: stop start
 	createdb $(PSQL_OPT) $(PGDATABASE)
 	@echo "BEGIN;" > /tmp/test_$*.sql
 	@echo "CREATE TABLE IF NOT EXISTS my_table_without_pk (id INT, name TEXT, code TEXT, enable BOOL DEFAULT TRUE, query TEXT, warning_level INT, error_level INT, scope TEXT);" >> /tmp/test_$*.sql
-	@echo "CREATE EXTENSION IF NOT EXISTS dblinter;" >> /tmp/test_$*.sql
+	@echo "CREATE EXTENSION IF NOT EXISTS pg_linter;" >> /tmp/test_$*.sql
 	@echo "SELECT pg_linter.perform_base_check();" >> /tmp/test_$*.sql
 	@echo "ROLLBACK;" >> /tmp/test_$*.sql
 	psql $(PSQL_OPT) $(PGDATABASE) -f /tmp/test_$*.sql
@@ -116,7 +116,7 @@ test-convenience: stop start
 	createdb $(PSQL_OPT) $(PGDATABASE)
 	@echo "BEGIN;" > /tmp/test_convenience.sql
 	@echo "CREATE TABLE IF NOT EXISTS my_table_without_pk (id INT, name TEXT);" >> /tmp/test_convenience.sql
-	@echo "CREATE EXTENSION IF NOT EXISTS dblinter;" >> /tmp/test_convenience.sql
+	@echo "CREATE EXTENSION IF NOT EXISTS pg_linter;" >> /tmp/test_convenience.sql
 	@echo "SELECT pg_linter.check_base();" >> /tmp/test_convenience.sql
 	@echo "SELECT pg_linter.check_cluster();" >> /tmp/test_convenience.sql
 	@echo "SELECT pg_linter.check_table();" >> /tmp/test_convenience.sql
