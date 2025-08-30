@@ -32,14 +32,14 @@ CREATE INDEX idx_customer_date_2 ON orders_table (customer_id, order_date);
 CREATE EXTENSION IF NOT EXISTS pglinter;
 -- Test with file output
 SELECT pglinter.perform_base_check('/tmp/pglinter_b002_results.sarif');
- perform_base_check
+ perform_base_check 
 --------------------
  t
 (1 row)
 
 -- Test if file exists and show checksum
 \! md5sum /tmp/pglinter_b002_results.sarif
-1f490c6cc56a91f032fee9da0c0a627a  /tmp/pglinter_b002_results.sarif
+5017b553f4610ddf11c626dd86b40c9f  /tmp/pglinter_b002_results.sarif
 -- Test with no output file (should output to prompt)
 SELECT pglinter.perform_base_check();
 NOTICE:  🔍 pglinter found 3 issue(s):
@@ -50,7 +50,7 @@ NOTICE:  ❌ [B005] ERROR: Public schema allows CREATE privilege for all users -
 NOTICE:  ==================================================
 NOTICE:  📊 Summary: 1 error(s), 2 warning(s), 0 info
 NOTICE:  🔴 Critical issues found - please review and fix errors
- perform_base_check
+ perform_base_check 
 --------------------
  t
 (1 row)
@@ -72,14 +72,14 @@ Count number of redundant index vs nb index.
 🔧 How to Fix:
    1. remove duplicated index or change warning/error threshold
 ============================================================
- explain_rule
+ explain_rule 
 --------------
  t
 (1 row)
 
 -- Show that B002 is enabled
 SELECT pglinter.is_rule_enabled('B002') AS b002_enabled;
- b002_enabled
+ b002_enabled 
 --------------
  t
 (1 row)
@@ -87,7 +87,7 @@ SELECT pglinter.is_rule_enabled('B002') AS b002_enabled;
 -- Disable B002 temporarily and test
 SELECT pglinter.disable_rule('B002') AS b002_disabled;
 NOTICE:  🔴 Rule B002 has been disabled
- b002_disabled
+ b002_disabled 
 ---------------
  t
 (1 row)
@@ -100,7 +100,7 @@ NOTICE:  ❌ [B005] ERROR: Public schema allows CREATE privilege for all users -
 NOTICE:  ==================================================
 NOTICE:  📊 Summary: 1 error(s), 1 warning(s), 0 info
 NOTICE:  🔴 Critical issues found - please review and fix errors
- perform_base_check
+ perform_base_check 
 --------------------
  t
 (1 row)
@@ -108,7 +108,7 @@ NOTICE:  🔴 Critical issues found - please review and fix errors
 -- Re-enable B002
 SELECT pglinter.enable_rule('B002') AS b002_re_enabled;
 NOTICE:  ✅ Rule B002 has been enabled
- b002_re_enabled
+ b002_re_enabled 
 -----------------
  t
 (1 row)

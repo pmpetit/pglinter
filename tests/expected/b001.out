@@ -20,8 +20,8 @@ SELECT pglinter.perform_base_check('/tmp/pglinter_base_results.sarif');
 
 -- Test if file exists
 \! md5sum /tmp/pglinter_base_results.sarif
-32e67d2ad135d8f404c1a9d30cfa00b7  /tmp/pglinter_base_results.sarif
--- Test with no output file (should output to prompt)  
+2dbe61e5ecfb64c3fba230d29027b206  /tmp/pglinter_base_results.sarif
+-- Test with no output file (should output to prompt)
 SELECT pglinter.perform_base_check();
 NOTICE:  🔍 pglinter found 3 issue(s):
 NOTICE:  ==================================================
