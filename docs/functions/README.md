@@ -180,6 +180,7 @@ SELECT * FROM pglinter.show_rules();
 ```
 
 ## Returns
+
 Table with columns:
 - `rule_code`: Rule identifier (e.g., 'B001')
 - `description`: Brief rule description

@@ -233,7 +233,7 @@ fmt-check:
 lint-docs:
 	@if command -v rumdl > /dev/null; then \
 		echo "Linting markdown files..."; \
-		rumdl check docs/**/*.md *.md || true; \
+		rumdl check --config .rumdl.toml docs/**/*.md *.md || true; \
 		echo ""; \
 		echo "💡 Tip: Run 'make lint-docs-fix' to automatically fix many issues"; \
 	else \
@@ -244,7 +244,7 @@ lint-docs:
 lint-docs-fix:
 	@if command -v rumdl > /dev/null; then \
 		echo "Linting and fixing markdown files..."; \
-		rumdl check --fix docs/**/*.md *.md; \
+		rumdl check --config .rumdl.toml --fix docs/**/*.md *.md; \
 		echo "✅ Auto-fixable markdown issues have been resolved!"; \
 	else \
 		echo "rumdl not found, skipping markdown lint and fix"; \

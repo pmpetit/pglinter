@@ -297,13 +297,13 @@ fn execute_b001_rule() -> Result<Option<RuleResult>, String> {
     let total_tables_query = "
         SELECT count(*)
         FROM pg_catalog.pg_tables pt
-        WHERE schemaname NOT IN ('pg_toast', 'pg_catalog', 'information_schema')";
+        WHERE schemaname NOT IN ('pg_toast', 'pg_catalog', 'information_schema', 'pglinter')";
 
     let tables_with_pk_query = "
         SELECT count(distinct(pg_class.relname))
         FROM pg_index, pg_class, pg_attribute, pg_namespace
         WHERE indrelid = pg_class.oid AND
-        nspname NOT IN ('pg_toast', 'pg_catalog', 'information_schema') AND
+        nspname NOT IN ('pg_toast', 'pg_catalog', 'information_schema', 'pglinter') AND
         pg_class.relnamespace = pg_namespace.oid AND
         pg_attribute.attrelid = pg_class.oid AND
         pg_attribute.attnum = any(pg_index.indkey)
@@ -395,7 +395,7 @@ fn execute_b003_rule() -> Result<Option<RuleResult>, String> {
             JOIN information_schema.constraint_column_usage ccu
                 ON tc.constraint_name = ccu.constraint_name
             WHERE tc.constraint_type = 'FOREIGN KEY'
-            AND tc.table_schema NOT IN ('pg_toast', 'pg_catalog', 'information_schema')
+            AND tc.table_schema NOT IN ('pg_toast', 'pg_catalog', 'information_schema', 'pglinter')
             AND NOT EXISTS (
                 SELECT 1 FROM pg_indexes pi
                 WHERE pi.schemaname = tc.table_schema
@@ -434,7 +434,7 @@ fn execute_b004_rule() -> Result<Option<RuleResult>, String> {
         SELECT COUNT(*) as unused_indexes
         FROM pg_stat_user_indexes
         WHERE idx_scan = 0
-        AND schemaname NOT IN ('pg_toast', 'pg_catalog', 'information_schema')";
+        AND schemaname NOT IN ('pg_toast', 'pg_catalog', 'information_schema', 'pglinter')";
 
     let result: Result<Option<RuleResult>, spi::SpiError> = Spi::connect(|client| {
         let count: i64 = client
@@ -499,12 +499,12 @@ fn execute_b006_rule() -> Result<Option<RuleResult>, String> {
         FROM (
             SELECT table_name
             FROM information_schema.tables
-            WHERE table_schema NOT IN ('pg_toast', 'pg_catalog', 'information_schema')
+            WHERE table_schema NOT IN ('pg_toast', 'pg_catalog', 'information_schema', 'pglinter')
             AND table_name != lower(table_name)
             UNION
             SELECT column_name
             FROM information_schema.columns
-            WHERE table_schema NOT IN ('pg_toast', 'pg_catalog', 'information_schema')
+            WHERE table_schema NOT IN ('pg_toast', 'pg_catalog', 'information_schema', 'pglinter')
             AND column_name != lower(column_name)
         ) uppercase_objects";
 
@@ -600,7 +600,7 @@ fn execute_t001_rule() -> Result<Option<RuleResult>, String> {
     let tables_without_pk_query = "
         SELECT COUNT(*)
         FROM pg_tables pt
-        WHERE schemaname NOT IN ('pg_toast', 'pg_catalog', 'information_schema')
+        WHERE schemaname NOT IN ('pg_toast', 'pg_catalog', 'information_schema', 'pglinter')
         AND NOT EXISTS (
             SELECT 1
             FROM pg_constraint pc
@@ -638,7 +638,7 @@ fn execute_t002_rule() -> Result<Option<RuleResult>, String> {
     let tables_without_index_query = "
         SELECT t.schemaname::text, t.tablename::text
         FROM pg_tables t
-        WHERE t.schemaname NOT IN ('pg_toast', 'pg_catalog', 'information_schema')
+        WHERE t.schemaname NOT IN ('pg_toast', 'pg_catalog', 'information_schema', 'pglinter')
         AND NOT EXISTS (
             SELECT 1
             FROM pg_indexes i
@@ -689,7 +689,7 @@ fn execute_t003_rule() -> Result<Option<RuleResult>, String> {
             JOIN pg_indexes i2 ON i1.schemaname = i2.schemaname
                 AND i1.tablename = i2.tablename
                 AND i1.indexname != i2.indexname
-            WHERE i1.schemaname NOT IN ('pg_toast', 'pg_catalog', 'information_schema')
+            WHERE i1.schemaname NOT IN ('pg_toast', 'pg_catalog', 'information_schema', 'pglinter')
             AND EXISTS (
                 SELECT 1 FROM pg_index idx1, pg_index idx2, pg_class c1, pg_class c2
                 WHERE c1.relname = i1.indexname AND c2.relname = i2.indexname
@@ -743,7 +743,7 @@ fn execute_t004_rule() -> Result<Option<RuleResult>, String> {
             ON tc.constraint_name = kcu.constraint_name
             AND tc.table_schema = kcu.table_schema
         WHERE tc.constraint_type = 'FOREIGN KEY'
-        AND tc.table_schema NOT IN ('pg_toast', 'pg_catalog', 'information_schema')
+        AND tc.table_schema NOT IN ('pg_toast', 'pg_catalog', 'information_schema', 'pglinter')
         AND NOT EXISTS (
             SELECT 1 FROM pg_indexes pi
             WHERE pi.schemaname = tc.table_schema
@@ -894,7 +894,7 @@ fn execute_t006_rule() -> Result<Option<RuleResult>, String> {
             ON tc.constraint_name = ccu.constraint_name
         WHERE tc.constraint_type = 'FOREIGN KEY'
         AND tc.table_schema != ccu.table_schema
-        AND tc.table_schema NOT IN ('pg_toast', 'pg_catalog', 'information_schema')";
+        AND tc.table_schema NOT IN ('pg_toast', 'pg_catalog', 'information_schema', 'pglinter')";
 
     let result: Result<Option<RuleResult>, spi::SpiError> = Spi::connect(|client| {
         let mut count = 0i64;
@@ -945,7 +945,7 @@ fn execute_t007_rule() -> Result<Option<RuleResult>, String> {
             AND psi.schemaname = pi.schemaname
         WHERE psi.idx_scan = 0
         AND pi.indexdef !~* 'unique'
-        AND pi.schemaname NOT IN ('pg_toast', 'pg_catalog', 'information_schema')
+        AND pi.schemaname NOT IN ('pg_toast', 'pg_catalog', 'information_schema', 'pglinter')
         AND pg_relation_size(indexrelid) > $1";
 
     let result: Result<Option<RuleResult>, spi::SpiError> = Spi::connect(|client| {
@@ -1006,7 +1006,7 @@ fn execute_t008_rule() -> Result<Option<RuleResult>, String> {
             AND ccu.table_name = col2.table_name
             AND ccu.column_name = col2.column_name
         WHERE tc.constraint_type = 'FOREIGN KEY'
-        AND tc.table_schema NOT IN ('pg_toast', 'pg_catalog', 'information_schema')
+        AND tc.table_schema NOT IN ('pg_toast', 'pg_catalog', 'information_schema', 'pglinter')
         AND col1.data_type != col2.data_type";
 
     let result: Result<Option<RuleResult>, spi::SpiError> = Spi::connect(|client| {
@@ -1211,12 +1211,12 @@ fn execute_t010_rule() -> Result<Option<RuleResult>, String> {
         "
         SELECT table_schema::text, table_name::text, 'table' as object_type
         FROM information_schema.tables
-        WHERE table_schema NOT IN ('pg_toast', 'pg_catalog', 'information_schema')
+        WHERE table_schema NOT IN ('pg_toast', 'pg_catalog', 'information_schema', 'pglinter')
         AND ({})
         UNION
         SELECT table_schema, table_name, 'column:' || column_name as object_type
         FROM information_schema.columns
-        WHERE table_schema NOT IN ('pg_toast', 'pg_catalog', 'information_schema')
+        WHERE table_schema NOT IN ('pg_toast', 'pg_catalog', 'information_schema', 'pglinter')
         AND ({})",
         keyword_clause,
         reserved_keywords
@@ -1264,12 +1264,12 @@ fn execute_t011_rule() -> Result<Option<RuleResult>, String> {
     let uppercase_objects_query = "
         SELECT table_schema::text, table_name::text, 'table'::text as object_type
         FROM information_schema.tables
-        WHERE table_schema NOT IN ('pg_toast', 'pg_catalog', 'information_schema')
+        WHERE table_schema NOT IN ('pg_toast', 'pg_catalog', 'information_schema', 'pglinter')
         AND table_name != lower(table_name)
         UNION
         SELECT table_schema::text, table_name::text, 'column:' || column_name::text as object_type
         FROM information_schema.columns
-        WHERE table_schema NOT IN ('pg_toast', 'pg_catalog', 'information_schema')
+        WHERE table_schema NOT IN ('pg_toast', 'pg_catalog', 'information_schema', 'pglinter')
         AND column_name != lower(column_name)";
 
     let result: Result<Option<RuleResult>, spi::SpiError> = Spi::connect(|client| {
@@ -1336,11 +1336,11 @@ fn execute_t012_rule() -> Result<Option<RuleResult>, String> {
             FROM (
                 SELECT table_schema, table_name, column_name, identifiers_category
                 FROM anon.detect('en_US')
-                WHERE table_schema NOT IN ('pg_toast', 'pg_catalog', 'information_schema')
+                WHERE table_schema NOT IN ('pg_toast', 'pg_catalog', 'information_schema', 'pglinter')
                 UNION
                 SELECT table_schema, table_name, column_name, identifiers_category
                 FROM anon.detect('fr_FR')
-                WHERE table_schema NOT IN ('pg_toast', 'pg_catalog', 'information_schema')
+                WHERE table_schema NOT IN ('pg_toast', 'pg_catalog', 'information_schema', 'pglinter')
             ) detected
             GROUP BY table_schema, table_name, column_name, identifiers_category";
 

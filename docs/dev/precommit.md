@@ -113,11 +113,22 @@ make test
 make test-b001
 ```
 
+### Markdown Linting Issues
+
+```bash
+# Auto-fix many markdown formatting issues
+make lint-docs-fix
+
+# Check what issues remain
+make lint-docs
+```
+
 ## Configuration
 
 ### Markdown Linting
-- Configured via `.mdstyle.rb`
-- Excludes certain rules for flexibility
+- Configured via `.rumdl.toml`
+- Excludes MD024 (duplicate headings) rule
+- Allows longer lines in code blocks and tables
 
 ### Rust Linting
 - Uses standard `cargo clippy` configuration

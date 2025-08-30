@@ -1,0 +1,23 @@
+# rumdl configuration file
+# This file configures the Rust MarkDown Linter (rumdl) for the pglinter project
+
+[global]
+# Disable MD024 (duplicate headings) - common in documentation with repeated section structures
+disable = ["MD024"]
+
+# Keep line length at 80 characters (matching our coding standards)
+line_length = 80
+
+[MD013]
+# Line length configuration
+line-length = 120
+# Allow longer lines in code blocks and tables
+code-blocks = true
+tables = true
+# Allow longer headings
+headings = true
+
+[MD024]
+# This rule is disabled globally, but keeping config for reference
+# allow-different-nesting would allow duplicate headings at different nesting levels
+allow-different-nesting = true

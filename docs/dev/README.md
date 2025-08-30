@@ -419,6 +419,7 @@ make precommit-fast
 - Unit tests (in full `precommit` target)
 
 ## Manual Git Hook Example
+
 If you prefer a custom git hook, you can create `.git/hooks/pre-commit`:
 
 ```bash

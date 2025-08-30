@@ -294,6 +294,7 @@ TARGET=debug make run
 ```
 
 This provides access to:
+
 - Extension debug logs from `pgrx::debug1!` and `pgrx::debug3!` macros
 - Additional debugging information during rule execution
 
@@ -315,7 +316,8 @@ make precommit
 make precommit-fast
 ```
 
-## What the pre-commit checks include
+What the pre-commit checks include
+----------------------------------
 
 - ✅ Rust code formatting (`cargo fmt --check`)
 - ✅ Rust code linting (`cargo clippy`)
@@ -349,6 +351,7 @@ make test
 ### Rust Code Style
 
 We follow standard Rust conventions:
+
 - Use `cargo fmt` for formatting
 - Address all `cargo clippy` warnings
 - Write descriptive variable and function names

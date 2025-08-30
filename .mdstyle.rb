@@ -13,4 +13,4 @@ exclude_rule 'MD041'
 #rule 'MD046', :style => :consistent
 exclude_rule 'MD046'
 exclude_rule 'MD031'
-
+exclude_rule 'MD031'
