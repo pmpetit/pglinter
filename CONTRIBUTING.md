@@ -78,6 +78,7 @@ To set up your development environment, follow the [PGRX install instructions]!
 
 1. **Rust toolchain**: Install via [rustup](https://rustup.rs/)
 2. **PostgreSQL development headers**:
+
    ```bash
    # Ubuntu/Debian
    sudo apt install postgresql-server-dev-all
@@ -85,7 +86,9 @@ To set up your development environment, follow the [PGRX install instructions]!
    # RHEL/CentOS/Fedora
    sudo yum install postgresql-devel
    ```
+
 3. **PGRX**: Install the PGRX CLI tool
+
    ```bash
    cargo install --locked cargo-pgrx
    cargo pgrx init
@@ -195,6 +198,7 @@ make installcheck REGRESS=b001
 Here's how to create a test named `new_test`:
 
 1. **Write your test** in `tests/sql/new_test.sql`:
+
    ```sql
    -- Test description
    BEGIN;
@@ -212,6 +216,7 @@ Here's how to create a test named `new_test`:
    ```
 
 2. **Run the test** to generate output:
+
    ```bash
    make installcheck REGRESS=new_test
    ```
@@ -219,6 +224,7 @@ Here's how to create a test named `new_test`:
 3. **Check the output** in `results/new_test.out`
 
 4. **If the output is correct**, copy it to expected results:
+
    ```bash
    cp results/new_test.out tests/expected/
    ```
@@ -226,6 +232,7 @@ Here's how to create a test named `new_test`:
 5. **Add the test** to the `REGRESS_TESTS` variable in `Makefile`
 
 6. **Run all tests** to ensure everything passes:
+
    ```bash
    make installcheck
    ```
@@ -238,11 +245,13 @@ Testing different output modes
 pglinter supports two output modes:
 
 ### File Output (SARIF format)
+
 ```sql
 SELECT pglinter.perform_base_check('/tmp/results.sarif');
 ```
 
 ### Prompt Output (formatted notices)
+
 ```sql
 -- Using NULL or no parameter
 SELECT pglinter.perform_base_check();
@@ -285,26 +294,68 @@ TARGET=debug make run
 ```
 
 This provides access to:
+
 - Extension debug logs from `pgrx::debug1!` and `pgrx::debug3!` macros
 - Additional debugging information during rule execution
 
 Code Style and Linting
 --------------------------------------------------------------------------------
 
-### Rust Code
+### Pre-commit System
 
-We follow standard Rust conventions:
+We provide a comprehensive pre-commit system to ensure code quality:
+
+```bash
+# Install the git pre-commit hook (recommended)
+make install-precommit-hook
+
+# Run all pre-commit checks manually (includes tests)
+make precommit
+
+# Run fast pre-commit checks (skips tests, good for rapid development)
+make precommit-fast
+```
+
+What the pre-commit checks include
+----------------------------------
+
+- ✅ Rust code formatting (`cargo fmt --check`)
+- ✅ Rust code linting (`cargo clippy`)
+- ✅ Markdown documentation linting
+- ✅ Unit tests (in full `precommit` target)
+
+### Manual Quality Checks
+
+You can also run individual components:
 
 ```bash
 # Format code
-cargo fmt
+make fmt
+
+# Check formatting without changing files
+make fmt-check
 
 # Run clippy for linting
-cargo clippy
+make lint
+
+# Lint documentation
+make lint-docs
+
+# Run security audit
+make audit
 
 # Run tests
-cargo test
+make test
 ```
+
+### Rust Code Style
+
+We follow standard Rust conventions:
+
+- Use `cargo fmt` for formatting
+- Address all `cargo clippy` warnings
+- Write descriptive variable and function names
+- Add comments for complex logic
 
 ### SQL Code
 
@@ -326,6 +377,7 @@ When adding new rules, be careful about SQL injection risks:
 - Validate input parameters
 
 Example of safe parameter usage:
+
 ```rust
 let query = "SELECT count(*) FROM pg_tables WHERE schemaname = $1";
 for row in client.select(query, None, &[schema_name.into()])? {
@@ -346,7 +398,7 @@ When implementing new rules:
 2. **Use appropriate indexes** in your rule queries
 3. **Consider query timeouts** for long-running checks
 4. **Test with realistic data volumes**
-5. **Use `EXPLAIN ANALYZE`** to verify query performance
+5. **Use** to verify query performance
 
 Publishing a new Release
 --------------------------------------------------------------------------------

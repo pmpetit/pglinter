@@ -4,6 +4,48 @@ use serde_json::json;
 use std::fs::File;
 use std::io::Write;
 
+// Import the rule management functions
+use crate::manage_rules::is_rule_enabled;
+
+// Helper function to get rule configuration from the rules table
+fn get_rule_config(rule_code: &str) -> Result<(i64, i64, String), String> {
+    let config_query = "
+        SELECT warning_level, error_level, message
+        FROM pglinter.rules
+        WHERE code = $1";
+
+    let result: Result<(i64, i64, String), spi::SpiError> = Spi::connect(|client| {
+        let mut rows = client.select(config_query, None, &[rule_code.into()])?;
+        if let Some(row) = rows.next() {
+            let warning_level: i32 = row.get(1)?.unwrap_or(1);
+            let error_level: i32 = row.get(2)?.unwrap_or(1);
+            let message: String = row.get(3)?.unwrap_or_default();
+            Ok((warning_level as i64, error_level as i64, message))
+        } else {
+            // Rule not found - this will be handled in the match below
+            Ok((0i64, 0i64, String::new())) // Placeholder values
+        }
+    });
+
+    match result {
+        Ok((warning_level, error_level, message)) => {
+            if warning_level == 0 && error_level == 0 && message.is_empty() {
+                // This indicates rule not found
+                Err(format!(
+                    "Rule '{}' not found in pglinter.rules table",
+                    rule_code
+                ))
+            } else {
+                Ok((warning_level, error_level, message))
+            }
+        }
+        Err(e) => Err(format!(
+            "Database error while fetching rule '{}': {}",
+            rule_code, e
+        )),
+    }
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum RuleScope {
     Base,
@@ -33,8 +75,8 @@ pub fn execute_base_rules() -> Result<Vec<RuleResult>, String> {
     if is_rule_enabled("B001").unwrap_or(true) {
         match execute_b001_rule() {
             Ok(Some(result)) => results.push(result),
-            Ok(None) => {},
-            Err(e) => return Err(format!("B001 failed: {e}"))
+            Ok(None) => {}
+            Err(e) => return Err(format!("B001 failed: {e}")),
         }
     }
 
@@ -42,8 +84,8 @@ pub fn execute_base_rules() -> Result<Vec<RuleResult>, String> {
     if is_rule_enabled("B002").unwrap_or(true) {
         match execute_b002_rule() {
             Ok(Some(result)) => results.push(result),
-            Ok(None) => {},
-            Err(e) => return Err(format!("B002 failed: {e}"))
+            Ok(None) => {}
+            Err(e) => return Err(format!("B002 failed: {e}")),
         }
     }
 
@@ -51,8 +93,8 @@ pub fn execute_base_rules() -> Result<Vec<RuleResult>, String> {
     if is_rule_enabled("B003").unwrap_or(true) {
         match execute_b003_rule() {
             Ok(Some(result)) => results.push(result),
-            Ok(None) => {},
-            Err(e) => return Err(format!("B003 failed: {e}"))
+            Ok(None) => {}
+            Err(e) => return Err(format!("B003 failed: {e}")),
         }
     }
 
@@ -60,8 +102,8 @@ pub fn execute_base_rules() -> Result<Vec<RuleResult>, String> {
     if is_rule_enabled("B004").unwrap_or(true) {
         match execute_b004_rule() {
             Ok(Some(result)) => results.push(result),
-            Ok(None) => {},
-            Err(e) => return Err(format!("B004 failed: {e}"))
+            Ok(None) => {}
+            Err(e) => return Err(format!("B004 failed: {e}")),
         }
     }
 
@@ -69,8 +111,8 @@ pub fn execute_base_rules() -> Result<Vec<RuleResult>, String> {
     if is_rule_enabled("B005").unwrap_or(true) {
         match execute_b005_rule() {
             Ok(Some(result)) => results.push(result),
-            Ok(None) => {},
-            Err(e) => return Err(format!("B005 failed: {e}"))
+            Ok(None) => {}
+            Err(e) => return Err(format!("B005 failed: {e}")),
         }
     }
 
@@ -78,8 +120,8 @@ pub fn execute_base_rules() -> Result<Vec<RuleResult>, String> {
     if is_rule_enabled("B006").unwrap_or(true) {
         match execute_b006_rule() {
             Ok(Some(result)) => results.push(result),
-            Ok(None) => {},
-            Err(e) => return Err(format!("B006 failed: {e}"))
+            Ok(None) => {}
+            Err(e) => return Err(format!("B006 failed: {e}")),
         }
     }
 
@@ -93,8 +135,8 @@ pub fn execute_cluster_rules() -> Result<Vec<RuleResult>, String> {
     if is_rule_enabled("C001").unwrap_or(true) {
         match execute_c001_rule() {
             Ok(Some(result)) => results.push(result),
-            Ok(None) => {},
-            Err(e) => return Err(format!("C001 failed: {e}"))
+            Ok(None) => {}
+            Err(e) => return Err(format!("C001 failed: {e}")),
         }
     }
 
@@ -102,25 +144,23 @@ pub fn execute_cluster_rules() -> Result<Vec<RuleResult>, String> {
     if is_rule_enabled("C002").unwrap_or(true) {
         match execute_c002_rule() {
             Ok(Some(result)) => results.push(result),
-            Ok(None) => {},
-            Err(e) => return Err(format!("C002 failed: {e}"))
+            Ok(None) => {}
+            Err(e) => return Err(format!("C002 failed: {e}")),
         }
     }
 
     Ok(results)
 }
 
-// Table rule implementations for T002-T012
-
 pub fn execute_table_rules() -> Result<Vec<RuleResult>, String> {
     let mut results = Vec::new();
 
-    // T001: Tables without primary key (already implemented)
+    // T001: Tables without primary key
     if is_rule_enabled("T001").unwrap_or(true) {
         match execute_t001_rule() {
             Ok(Some(result)) => results.push(result),
-            Ok(None) => {},
-            Err(e) => return Err(format!("T001 failed: {e}"))
+            Ok(None) => {}
+            Err(e) => return Err(format!("T001 failed: {e}")),
         }
     }
 
@@ -128,8 +168,8 @@ pub fn execute_table_rules() -> Result<Vec<RuleResult>, String> {
     if is_rule_enabled("T002").unwrap_or(true) {
         match execute_t002_rule() {
             Ok(Some(result)) => results.push(result),
-            Ok(None) => {},
-            Err(e) => return Err(format!("T002 failed: {e}"))
+            Ok(None) => {}
+            Err(e) => return Err(format!("T002 failed: {e}")),
         }
     }
 
@@ -137,8 +177,8 @@ pub fn execute_table_rules() -> Result<Vec<RuleResult>, String> {
     if is_rule_enabled("T003").unwrap_or(true) {
         match execute_t003_rule() {
             Ok(Some(result)) => results.push(result),
-            Ok(None) => {},
-            Err(e) => return Err(format!("T003 failed: {e}"))
+            Ok(None) => {}
+            Err(e) => return Err(format!("T003 failed: {e}")),
         }
     }
 
@@ -146,8 +186,8 @@ pub fn execute_table_rules() -> Result<Vec<RuleResult>, String> {
     if is_rule_enabled("T004").unwrap_or(true) {
         match execute_t004_rule() {
             Ok(Some(result)) => results.push(result),
-            Ok(None) => {},
-            Err(e) => return Err(format!("T004 failed: {e}"))
+            Ok(None) => {}
+            Err(e) => return Err(format!("T004 failed: {e}")),
         }
     }
 
@@ -155,8 +195,8 @@ pub fn execute_table_rules() -> Result<Vec<RuleResult>, String> {
     if is_rule_enabled("T005").unwrap_or(true) {
         match execute_t005_rule() {
             Ok(Some(result)) => results.push(result),
-            Ok(None) => {},
-            Err(e) => return Err(format!("T005 failed: {e}"))
+            Ok(None) => {}
+            Err(e) => return Err(format!("T005 failed: {e}")),
         }
     }
 
@@ -164,8 +204,8 @@ pub fn execute_table_rules() -> Result<Vec<RuleResult>, String> {
     if is_rule_enabled("T006").unwrap_or(true) {
         match execute_t006_rule() {
             Ok(Some(result)) => results.push(result),
-            Ok(None) => {},
-            Err(e) => return Err(format!("T006 failed: {e}"))
+            Ok(None) => {}
+            Err(e) => return Err(format!("T006 failed: {e}")),
         }
     }
 
@@ -173,8 +213,8 @@ pub fn execute_table_rules() -> Result<Vec<RuleResult>, String> {
     if is_rule_enabled("T007").unwrap_or(true) {
         match execute_t007_rule() {
             Ok(Some(result)) => results.push(result),
-            Ok(None) => {},
-            Err(e) => return Err(format!("T007 failed: {e}"))
+            Ok(None) => {}
+            Err(e) => return Err(format!("T007 failed: {e}")),
         }
     }
 
@@ -182,8 +222,8 @@ pub fn execute_table_rules() -> Result<Vec<RuleResult>, String> {
     if is_rule_enabled("T008").unwrap_or(true) {
         match execute_t008_rule() {
             Ok(Some(result)) => results.push(result),
-            Ok(None) => {},
-            Err(e) => return Err(format!("T008 failed: {e}"))
+            Ok(None) => {}
+            Err(e) => return Err(format!("T008 failed: {e}")),
         }
     }
 
@@ -191,8 +231,8 @@ pub fn execute_table_rules() -> Result<Vec<RuleResult>, String> {
     if is_rule_enabled("T009").unwrap_or(true) {
         match execute_t009_rule() {
             Ok(Some(result)) => results.push(result),
-            Ok(None) => {},
-            Err(e) => return Err(format!("T009 failed: {e}"))
+            Ok(None) => {}
+            Err(e) => return Err(format!("T009 failed: {e}")),
         }
     }
 
@@ -200,8 +240,8 @@ pub fn execute_table_rules() -> Result<Vec<RuleResult>, String> {
     if is_rule_enabled("T010").unwrap_or(true) {
         match execute_t010_rule() {
             Ok(Some(result)) => results.push(result),
-            Ok(None) => {},
-            Err(e) => return Err(format!("T010 failed: {e}"))
+            Ok(None) => {}
+            Err(e) => return Err(format!("T010 failed: {e}")),
         }
     }
 
@@ -209,8 +249,8 @@ pub fn execute_table_rules() -> Result<Vec<RuleResult>, String> {
     if is_rule_enabled("T011").unwrap_or(true) {
         match execute_t011_rule() {
             Ok(Some(result)) => results.push(result),
-            Ok(None) => {},
-            Err(e) => return Err(format!("T011 failed: {e}"))
+            Ok(None) => {}
+            Err(e) => return Err(format!("T011 failed: {e}")),
         }
     }
 
@@ -218,15 +258,13 @@ pub fn execute_table_rules() -> Result<Vec<RuleResult>, String> {
     if is_rule_enabled("T012").unwrap_or(true) {
         match execute_t012_rule() {
             Ok(Some(result)) => results.push(result),
-            Ok(None) => {},
-            Err(e) => return Err(format!("T012 failed: {e}"))
+            Ok(None) => {}
+            Err(e) => return Err(format!("T012 failed: {e}")),
         }
     }
 
     Ok(results)
 }
-
-// Schema rules implementation for S001-S002
 
 pub fn execute_schema_rules() -> Result<Vec<RuleResult>, String> {
     let mut results = Vec::new();
@@ -235,8 +273,8 @@ pub fn execute_schema_rules() -> Result<Vec<RuleResult>, String> {
     if is_rule_enabled("S001").unwrap_or(true) {
         match execute_s001_rule() {
             Ok(Some(result)) => results.push(result),
-            Ok(None) => {},
-            Err(e) => return Err(format!("S001 failed: {e}"))
+            Ok(None) => {}
+            Err(e) => return Err(format!("S001 failed: {e}")),
         }
     }
 
@@ -244,27 +282,28 @@ pub fn execute_schema_rules() -> Result<Vec<RuleResult>, String> {
     if is_rule_enabled("S002").unwrap_or(true) {
         match execute_s002_rule() {
             Ok(Some(result)) => results.push(result),
-            Ok(None) => {},
-            Err(e) => return Err(format!("S002 failed: {e}"))
+            Ok(None) => {}
+            Err(e) => return Err(format!("S002 failed: {e}")),
         }
     }
 
     Ok(results)
 }
 
+// Individual rule implementations
 fn execute_b001_rule() -> Result<Option<RuleResult>, String> {
     let warning_threshold = 10i64; // 10%
 
     let total_tables_query = "
         SELECT count(*)
         FROM pg_catalog.pg_tables pt
-        WHERE schemaname NOT IN ('pg_toast', 'pg_catalog', 'information_schema')";
+        WHERE schemaname NOT IN ('pg_toast', 'pg_catalog', 'information_schema', 'pglinter')";
 
     let tables_with_pk_query = "
         SELECT count(distinct(pg_class.relname))
         FROM pg_index, pg_class, pg_attribute, pg_namespace
         WHERE indrelid = pg_class.oid AND
-        nspname NOT IN ('pg_toast', 'pg_catalog', 'information_schema') AND
+        nspname NOT IN ('pg_toast', 'pg_catalog', 'information_schema', 'pglinter') AND
         pg_class.relnamespace = pg_namespace.oid AND
         pg_attribute.attrelid = pg_class.oid AND
         pg_attribute.attnum = any(pg_index.indkey)
@@ -305,7 +344,7 @@ fn execute_b001_rule() -> Result<Option<RuleResult>, String> {
 
     match result {
         Ok(res) => Ok(res),
-        Err(e) => Err(format!("Database error: {e}"))
+        Err(e) => Err(format!("Database error: {e}")),
     }
 }
 
@@ -331,7 +370,7 @@ fn execute_b002_rule() -> Result<Option<RuleResult>, String> {
             return Ok(Some(RuleResult {
                 ruleid: "B002".to_string(),
                 level: "warning".to_string(),
-                message: format!("Found {redundant_count} potentially redundant indexes" ),
+                message: format!("Found {redundant_count} potentially redundant indexes"),
                 count: Some(redundant_count),
             }));
         }
@@ -341,7 +380,7 @@ fn execute_b002_rule() -> Result<Option<RuleResult>, String> {
 
     match result {
         Ok(res) => Ok(res),
-        Err(e) => Err(format!("Database error: {e}"))
+        Err(e) => Err(format!("Database error: {e}")),
     }
 }
 
@@ -351,20 +390,16 @@ fn execute_b003_rule() -> Result<Option<RuleResult>, String> {
         SELECT COUNT(*) as tables_without_fk_index
         FROM (
             SELECT DISTINCT
-                tc.table_name,
-                tc.table_schema,
                 ccu.column_name
             FROM information_schema.table_constraints tc
             JOIN information_schema.constraint_column_usage ccu
                 ON tc.constraint_name = ccu.constraint_name
             WHERE tc.constraint_type = 'FOREIGN KEY'
-            AND tc.table_schema NOT IN ('pg_toast', 'pg_catalog', 'information_schema')
+            AND tc.table_schema NOT IN ('pg_toast', 'pg_catalog', 'information_schema', 'pglinter')
             AND NOT EXISTS (
-                SELECT 1
-                FROM pg_indexes pi
-                WHERE pi.tablename = tc.table_name
-                AND pi.schemaname = tc.table_schema
-                AND pi.indexdef LIKE '%' || ccu.column_name || '%'
+                SELECT 1 FROM pg_indexes pi
+                WHERE pi.schemaname = tc.table_schema
+                AND pi.tablename = tc.table_name
             )
         ) fk_tables";
 
@@ -389,7 +424,7 @@ fn execute_b003_rule() -> Result<Option<RuleResult>, String> {
 
     match result {
         Ok(res) => Ok(res),
-        Err(e) => Err(format!("Database error: {e}"))
+        Err(e) => Err(format!("Database error: {e}")),
     }
 }
 
@@ -399,7 +434,7 @@ fn execute_b004_rule() -> Result<Option<RuleResult>, String> {
         SELECT COUNT(*) as unused_indexes
         FROM pg_stat_user_indexes
         WHERE idx_scan = 0
-        AND schemaname NOT IN ('pg_toast', 'pg_catalog', 'information_schema')";
+        AND schemaname NOT IN ('pg_toast', 'pg_catalog', 'information_schema', 'pglinter')";
 
     let result: Result<Option<RuleResult>, spi::SpiError> = Spi::connect(|client| {
         let count: i64 = client
@@ -422,7 +457,7 @@ fn execute_b004_rule() -> Result<Option<RuleResult>, String> {
 
     match result {
         Ok(res) => Ok(res),
-        Err(e) => Err(format!("Database error: {e}"))
+        Err(e) => Err(format!("Database error: {e}")),
     }
 }
 
@@ -442,7 +477,8 @@ fn execute_b005_rule() -> Result<Option<RuleResult>, String> {
             return Ok(Some(RuleResult {
                 ruleid: "B005".to_string(),
                 level: "error".to_string(),
-                message: "Public schema allows CREATE privilege for all users - security risk".to_string(),
+                message: "Public schema allows CREATE privilege for all users - security risk"
+                    .to_string(),
                 count: Some(1),
             }));
         }
@@ -452,7 +488,7 @@ fn execute_b005_rule() -> Result<Option<RuleResult>, String> {
 
     match result {
         Ok(res) => Ok(res),
-        Err(e) => Err(format!("Database error: {e}"))
+        Err(e) => Err(format!("Database error: {e}")),
     }
 }
 
@@ -463,12 +499,12 @@ fn execute_b006_rule() -> Result<Option<RuleResult>, String> {
         FROM (
             SELECT table_name
             FROM information_schema.tables
-            WHERE table_schema NOT IN ('pg_toast', 'pg_catalog', 'information_schema')
+            WHERE table_schema NOT IN ('pg_toast', 'pg_catalog', 'information_schema', 'pglinter')
             AND table_name != lower(table_name)
             UNION
             SELECT column_name
             FROM information_schema.columns
-            WHERE table_schema NOT IN ('pg_toast', 'pg_catalog', 'information_schema')
+            WHERE table_schema NOT IN ('pg_toast', 'pg_catalog', 'information_schema', 'pglinter')
             AND column_name != lower(column_name)
         ) uppercase_objects";
 
@@ -493,7 +529,7 @@ fn execute_b006_rule() -> Result<Option<RuleResult>, String> {
 
     match result {
         Ok(res) => Ok(res),
-        Err(e) => Err(format!("Database error: {e}"))
+        Err(e) => Err(format!("Database error: {e}")),
     }
 }
 
@@ -524,7 +560,7 @@ fn execute_c001_rule() -> Result<Option<RuleResult>, String> {
 
     match result {
         Ok(res) => Ok(res),
-        Err(e) => Err(format!("Database error: {e}"))
+        Err(e) => Err(format!("Database error: {e}")),
     }
 }
 
@@ -548,14 +584,15 @@ fn execute_c002_rule() -> Result<Option<RuleResult>, String> {
         Ok(Some(RuleResult {
             ruleid: "C002".to_string(),
             level: "info".to_string(),
-            message: "Please manually check pg_hba.conf for insecure trust/password methods".to_string(),
+            message: "Please manually check pg_hba.conf for insecure trust/password methods"
+                .to_string(),
             count: Some(1),
         }))
     });
 
     match result {
         Ok(res) => Ok(res),
-        Err(e) => Err(format!("Database error: {e}"))
+        Err(e) => Err(format!("Database error: {e}")),
     }
 }
 
@@ -563,7 +600,7 @@ fn execute_t001_rule() -> Result<Option<RuleResult>, String> {
     let tables_without_pk_query = "
         SELECT COUNT(*)
         FROM pg_tables pt
-        WHERE schemaname NOT IN ('pg_toast', 'pg_catalog', 'information_schema')
+        WHERE schemaname NOT IN ('pg_toast', 'pg_catalog', 'information_schema', 'pglinter')
         AND NOT EXISTS (
             SELECT 1
             FROM pg_constraint pc
@@ -582,7 +619,7 @@ fn execute_t001_rule() -> Result<Option<RuleResult>, String> {
             return Ok(Some(RuleResult {
                 ruleid: "T001".to_string(),
                 level: "warning".to_string(),
-                message: format!("Found {count} tables without primary key" ),
+                message: format!("Found {count} tables without primary key"),
                 count: Some(count),
             }));
         }
@@ -592,7 +629,7 @@ fn execute_t001_rule() -> Result<Option<RuleResult>, String> {
 
     match result {
         Ok(res) => Ok(res),
-        Err(e) => Err(format!("Database error: {e}"))
+        Err(e) => Err(format!("Database error: {e}")),
     }
 }
 
@@ -601,7 +638,7 @@ fn execute_t002_rule() -> Result<Option<RuleResult>, String> {
     let tables_without_index_query = "
         SELECT t.schemaname::text, t.tablename::text
         FROM pg_tables t
-        WHERE t.schemaname NOT IN ('pg_toast', 'pg_catalog', 'information_schema')
+        WHERE t.schemaname NOT IN ('pg_toast', 'pg_catalog', 'information_schema', 'pglinter')
         AND NOT EXISTS (
             SELECT 1
             FROM pg_indexes i
@@ -624,7 +661,10 @@ fn execute_t002_rule() -> Result<Option<RuleResult>, String> {
             return Ok(Some(RuleResult {
                 ruleid: "T002".to_string(),
                 level: "warning".to_string(),
-                message: format!("Found {count} tables without any index: {}", tables.join(", ")),
+                message: format!(
+                    "Found {count} tables without any index: {}",
+                    tables.join(", ")
+                ),
                 count: Some(count),
             }));
         }
@@ -634,7 +674,7 @@ fn execute_t002_rule() -> Result<Option<RuleResult>, String> {
 
     match result {
         Ok(res) => Ok(res),
-        Err(e) => Err(format!("Database error: {e}"))
+        Err(e) => Err(format!("Database error: {e}")),
     }
 }
 
@@ -649,7 +689,7 @@ fn execute_t003_rule() -> Result<Option<RuleResult>, String> {
             JOIN pg_indexes i2 ON i1.schemaname = i2.schemaname
                 AND i1.tablename = i2.tablename
                 AND i1.indexname != i2.indexname
-            WHERE i1.schemaname NOT IN ('pg_toast', 'pg_catalog', 'information_schema')
+            WHERE i1.schemaname NOT IN ('pg_toast', 'pg_catalog', 'information_schema', 'pglinter')
             AND EXISTS (
                 SELECT 1 FROM pg_index idx1, pg_index idx2, pg_class c1, pg_class c2
                 WHERE c1.relname = i1.indexname AND c2.relname = i2.indexname
@@ -676,7 +716,11 @@ fn execute_t003_rule() -> Result<Option<RuleResult>, String> {
             return Ok(Some(RuleResult {
                 ruleid: "T003".to_string(),
                 level: "warning".to_string(),
-                message: format!("Found {} tables with redundant indexes: {}", count, details.join(", ")),
+                message: format!(
+                    "Found {} tables with redundant indexes: {}",
+                    count,
+                    details.join(", ")
+                ),
                 count: Some(count),
             }));
         }
@@ -686,7 +730,7 @@ fn execute_t003_rule() -> Result<Option<RuleResult>, String> {
 
     match result {
         Ok(res) => Ok(res),
-        Err(e) => Err(format!("Database error: {e}"))
+        Err(e) => Err(format!("Database error: {e}")),
     }
 }
 
@@ -699,7 +743,7 @@ fn execute_t004_rule() -> Result<Option<RuleResult>, String> {
             ON tc.constraint_name = kcu.constraint_name
             AND tc.table_schema = kcu.table_schema
         WHERE tc.constraint_type = 'FOREIGN KEY'
-        AND tc.table_schema NOT IN ('pg_toast', 'pg_catalog', 'information_schema')
+        AND tc.table_schema NOT IN ('pg_toast', 'pg_catalog', 'information_schema', 'pglinter')
         AND NOT EXISTS (
             SELECT 1 FROM pg_indexes pi
             WHERE pi.schemaname = tc.table_schema
@@ -723,7 +767,11 @@ fn execute_t004_rule() -> Result<Option<RuleResult>, String> {
             return Ok(Some(RuleResult {
                 ruleid: "T004".to_string(),
                 level: "warning".to_string(),
-                message: format!("Found {} foreign keys without indexes: {}", count, tables.join(", ")),
+                message: format!(
+                    "Found {} foreign keys without indexes: {}",
+                    count,
+                    tables.join(", ")
+                ),
                 count: Some(count),
             }));
         }
@@ -733,40 +781,97 @@ fn execute_t004_rule() -> Result<Option<RuleResult>, String> {
 
     match result {
         Ok(res) => Ok(res),
-        Err(e) => Err(format!("Database error: {e}"))
+        Err(e) => Err(format!("Database error: {e}")),
     }
 }
 
 fn execute_t005_rule() -> Result<Option<RuleResult>, String> {
     // T005: Tables with potential missing indexes (high sequential scan usage)
-    let threshold = 10000i64; // Default threshold for sequential scans
+
+    // Get thresholds from rules table
+    let (warning_threshold, error_threshold, _rule_message) = match get_rule_config("T005") {
+        Ok(config) => config,
+        Err(e) => {
+            return Err(format!("Failed to get T005 configuration: {e}"));
+        }
+    };
 
     let high_seq_scan_query = "
-        SELECT schemaname::text, relname::text, seq_scan, seq_tup_read,
-            CASE WHEN seq_scan > 0 THEN seq_tup_read / seq_scan ELSE 0 END as avg_seq_tup_read
+        SELECT
+            schemaname::text,
+            relname::text, seq_scan, seq_tup_read,
+            CASE
+                WHEN (seq_tup_read + idx_tup_fetch) > 0 THEN
+                    ROUND((seq_tup_read::numeric / (seq_tup_read + idx_tup_fetch)::numeric) * 100,0)::float8
+                ELSE 0.0::float8
+            END as seq_scan_percentage
         FROM pg_stat_user_tables
-        WHERE seq_scan > 0
-        AND schemaname NOT IN ('pg_toast', 'pg_catalog', 'information_schema')
-        AND (CASE WHEN seq_scan > 0 THEN seq_tup_read / seq_scan ELSE 0 END) > $1";
-
+        WHERE schemaname NOT IN ('pg_toast', 'pg_catalog', 'information_schema', 'pglinter')
+        AND (CASE
+                WHEN (seq_tup_read + idx_tup_fetch) > 0 THEN
+                    (seq_tup_read::numeric / (seq_tup_read + idx_tup_fetch)::numeric) * 100
+                ELSE 0
+            END) > $1";
     let result: Result<Option<RuleResult>, spi::SpiError> = Spi::connect(|client| {
         let mut count = 0i64;
         let mut tables = Vec::new();
 
-        for row in client.select(high_seq_scan_query, None, &[threshold.into()])? {
+        // First check with warning threshold
+        for row in client.select(high_seq_scan_query, None, &[warning_threshold.into()])? {
             let schema: String = row.get(1)?.unwrap_or_default();
             let table: String = row.get(2)?.unwrap_or_default();
-            let avg_seq: i64 = row.get(5)?.unwrap_or(0);
-            tables.push(format!("{schema}.{table} (avg seq scan: {avg_seq})"));
+            let seq_percentage: f64 = row.get(5)?.unwrap_or(0.0);
+            tables.push(format!(
+                "{schema}.{table} (seq scan %: {:.1})",
+                seq_percentage
+            ));
             count += 1;
         }
 
         if count > 0 {
+            // Determine level based on thresholds
+            let mut error_count = 0i64;
+            let mut error_tables = Vec::new();
+
+            // Check if any tables exceed error threshold
+            for row in client.select(high_seq_scan_query, None, &[error_threshold.into()])? {
+                let schema: String = row.get(1)?.unwrap_or_default();
+                let table: String = row.get(2)?.unwrap_or_default();
+                let seq_percentage: f64 = row.get(5)?.unwrap_or(0.0);
+                error_tables.push(format!(
+                    "{schema}.{table} (seq scan %: {:.1})",
+                    seq_percentage
+                ));
+                error_count += 1;
+            }
+
+            let (level, message) = if error_count > 0 {
+                (
+                    "error",
+                    format!(
+                        "Found {} tables with seq scan percentage > {}%: {}",
+                        error_count,
+                        error_threshold,
+                        error_tables.join(", ")
+                    ),
+                )
+            } else {
+                (
+                    "warning",
+                    format!(
+                        "Found {} tables with seq scan percentage > {}%: {}",
+                        count,
+                        warning_threshold,
+                        tables.join(", ")
+                    ),
+                )
+            };
+
             return Ok(Some(RuleResult {
                 ruleid: "T005".to_string(),
-                level: "warning".to_string(),
-                message: format!("Found {} tables with high sequential scan ratio exceeding threshold {}: {}", count, threshold, tables.join(", ")),
-                count: Some(count),
+                level: level.to_string(),
+                message,
+                count: Some(if error_count > 0 { error_count } else { count }),
             }));
         }
 
@@ -775,7 +880,7 @@ fn execute_t005_rule() -> Result<Option<RuleResult>, String> {
 
     match result {
         Ok(res) => Ok(res),
-        Err(e) => Err(format!("Database error: {e}"))
+        Err(e) => Err(format!("Database error: {e}")),
     }
 }
 
@@ -789,7 +894,7 @@ fn execute_t006_rule() -> Result<Option<RuleResult>, String> {
             ON tc.constraint_name = ccu.constraint_name
         WHERE tc.constraint_type = 'FOREIGN KEY'
         AND tc.table_schema != ccu.table_schema
-        AND tc.table_schema NOT IN ('pg_toast', 'pg_catalog', 'information_schema')";
+        AND tc.table_schema NOT IN ('pg_toast', 'pg_catalog', 'information_schema', 'pglinter')";
 
     let result: Result<Option<RuleResult>, spi::SpiError> = Spi::connect(|client| {
         let mut count = 0i64;
@@ -800,7 +905,9 @@ fn execute_t006_rule() -> Result<Option<RuleResult>, String> {
             let table: String = row.get(2)?.unwrap_or_default();
             let constraint: String = row.get(3)?.unwrap_or_default();
             let ref_schema: String = row.get(4)?.unwrap_or_default();
-            violations.push(format!("{schema}.{table} -> {ref_schema} (FK: {constraint})"));
+            violations.push(format!(
+                "{schema}.{table} -> {ref_schema} (FK: {constraint})"
+            ));
             count += 1;
         }
 
@@ -808,7 +915,10 @@ fn execute_t006_rule() -> Result<Option<RuleResult>, String> {
             return Ok(Some(RuleResult {
                 ruleid: "T006".to_string(),
                 level: "warning".to_string(),
-                message: format!("Found {count} foreign keys referencing other schemas: {}", violations.join(", ")),
+                message: format!(
+                    "Found {count} foreign keys referencing other schemas: {}",
+                    violations.join(", ")
+                ),
                 count: Some(count),
             }));
         }
@@ -818,7 +928,7 @@ fn execute_t006_rule() -> Result<Option<RuleResult>, String> {
 
     match result {
         Ok(res) => Ok(res),
-        Err(e) => Err(format!("Database error: {e}"))
+        Err(e) => Err(format!("Database error: {e}")),
     }
 }
 
@@ -835,7 +945,7 @@ fn execute_t007_rule() -> Result<Option<RuleResult>, String> {
             AND psi.schemaname = pi.schemaname
         WHERE psi.idx_scan = 0
         AND pi.indexdef !~* 'unique'
-        AND pi.schemaname NOT IN ('pg_toast', 'pg_catalog', 'information_schema')
+        AND pi.schemaname NOT IN ('pg_toast', 'pg_catalog', 'information_schema', 'pglinter')
         AND pg_relation_size(indexrelid) > $1";
 
     let result: Result<Option<RuleResult>, spi::SpiError> = Spi::connect(|client| {
@@ -856,7 +966,10 @@ fn execute_t007_rule() -> Result<Option<RuleResult>, String> {
             return Ok(Some(RuleResult {
                 ruleid: "T007".to_string(),
                 level: "warning".to_string(),
-                message: format!("Found {count} unused indexes larger than {size_threshold_mb}MB: {}", unused_indexes.join(", ")),
+                message: format!(
+                    "Found {count} unused indexes larger than {size_threshold_mb}MB: {}",
+                    unused_indexes.join(", ")
+                ),
                 count: Some(count),
             }));
         }
@@ -866,7 +979,7 @@ fn execute_t007_rule() -> Result<Option<RuleResult>, String> {
 
     match result {
         Ok(res) => Ok(res),
-        Err(e) => Err(format!("Database error: {e}"))
+        Err(e) => Err(format!("Database error: {e}")),
     }
 }
 
@@ -893,7 +1006,7 @@ fn execute_t008_rule() -> Result<Option<RuleResult>, String> {
             AND ccu.table_name = col2.table_name
             AND ccu.column_name = col2.column_name
         WHERE tc.constraint_type = 'FOREIGN KEY'
-        AND tc.table_schema NOT IN ('pg_toast', 'pg_catalog', 'information_schema')
+        AND tc.table_schema NOT IN ('pg_toast', 'pg_catalog', 'information_schema', 'pglinter')
         AND col1.data_type != col2.data_type";
 
     let result: Result<Option<RuleResult>, spi::SpiError> = Spi::connect(|client| {
@@ -918,7 +1031,10 @@ fn execute_t008_rule() -> Result<Option<RuleResult>, String> {
             return Ok(Some(RuleResult {
                 ruleid: "T008".to_string(),
                 level: "error".to_string(),
-                message: format!("Found {count} foreign key type mismatches: {}", mismatches.join(", ")),
+                message: format!(
+                    "Found {count} foreign key type mismatches: {}",
+                    mismatches.join(", ")
+                ),
                 count: Some(count),
             }));
         }
@@ -928,7 +1044,7 @@ fn execute_t008_rule() -> Result<Option<RuleResult>, String> {
 
     match result {
         Ok(res) => Ok(res),
-        Err(e) => Err(format!("Database error: {e}"))
+        Err(e) => Err(format!("Database error: {e}")),
     }
 }
 
@@ -962,7 +1078,10 @@ fn execute_t009_rule() -> Result<Option<RuleResult>, String> {
             return Ok(Some(RuleResult {
                 ruleid: "T009".to_string(),
                 level: "warning".to_string(),
-                message: format!("Found {count} tables without role grants: {tables}", count = count, tables = tables.join(", ")),
+                message: format!(
+                    "Found {count} tables without role grants: {}",
+                    tables.join(", ")
+                ),
                 count: Some(count),
             }));
         }
@@ -972,46 +1091,136 @@ fn execute_t009_rule() -> Result<Option<RuleResult>, String> {
 
     match result {
         Ok(res) => Ok(res),
-        Err(e) => Err(format!("Database error: {e}"))
+        Err(e) => Err(format!("Database error: {e}")),
     }
 }
 
 fn execute_t010_rule() -> Result<Option<RuleResult>, String> {
     // T010: Tables using reserved keywords
     let reserved_keywords = vec![
-        "ALL", "ANALYSE", "ANALYZE", "AND", "ANY", "ARRAY", "AS", "ASC", "ASYMMETRIC",
-        "AUTHORIZATION", "BINARY", "BOTH", "CASE", "CAST", "CHECK", "COLLATE", "COLLATION",
-        "COLUMN", "CONCURRENTLY", "CONSTRAINT", "CREATE", "CROSS", "CURRENT_CATALOG",
-        "CURRENT_DATE", "CURRENT_ROLE", "CURRENT_SCHEMA", "CURRENT_TIME", "CURRENT_TIMESTAMP",
-        "CURRENT_USER", "DEFAULT", "DEFERRABLE", "DESC", "DISTINCT", "DO", "ELSE", "END",
-        "EXCEPT", "FALSE", "FETCH", "FOR", "FOREIGN", "FREEZE", "FROM", "FULL", "GRANT",
-        "GROUP", "HAVING", "ILIKE", "IN", "INITIALLY", "INNER", "INTERSECT", "INTO", "IS",
-        "ISNULL", "JOIN", "LATERAL", "LEADING", "LEFT", "LIKE", "LIMIT", "LOCALTIME",
-        "LOCALTIMESTAMP", "NATURAL", "NOT", "NOTNULL", "NULL", "OFFSET", "ON", "ONLY",
-        "OR", "ORDER", "OUTER", "OVERLAPS", "PLACING", "PRIMARY", "REFERENCES", "RETURNING",
-        "RIGHT", "SELECT", "SESSION_USER", "SIMILAR", "SOME", "SYMMETRIC", "TABLE",
-        "TABLESAMPLE", "THEN", "TO", "TRAILING", "TRUE", "UNION", "UNIQUE", "USER", "USING",
-        "VARIADIC", "VERBOSE", "WHEN", "WHERE", "WINDOW", "WITH"
+        "ALL",
+        "ANALYSE",
+        "ANALYZE",
+        "AND",
+        "ANY",
+        "ARRAY",
+        "AS",
+        "ASC",
+        "ASYMMETRIC",
+        "AUTHORIZATION",
+        "BINARY",
+        "BOTH",
+        "CASE",
+        "CAST",
+        "CHECK",
+        "COLLATE",
+        "COLLATION",
+        "COLUMN",
+        "CONCURRENTLY",
+        "CONSTRAINT",
+        "CREATE",
+        "CROSS",
+        "CURRENT_CATALOG",
+        "CURRENT_DATE",
+        "CURRENT_ROLE",
+        "CURRENT_SCHEMA",
+        "CURRENT_TIME",
+        "CURRENT_TIMESTAMP",
+        "CURRENT_USER",
+        "DEFAULT",
+        "DEFERRABLE",
+        "DESC",
+        "DISTINCT",
+        "DO",
+        "ELSE",
+        "END",
+        "EXCEPT",
+        "FALSE",
+        "FETCH",
+        "FOR",
+        "FOREIGN",
+        "FREEZE",
+        "FROM",
+        "FULL",
+        "GRANT",
+        "GROUP",
+        "HAVING",
+        "ILIKE",
+        "IN",
+        "INITIALLY",
+        "INNER",
+        "INTERSECT",
+        "INTO",
+        "IS",
+        "ISNULL",
+        "JOIN",
+        "LATERAL",
+        "LEADING",
+        "LEFT",
+        "LIKE",
+        "LIMIT",
+        "LOCALTIME",
+        "LOCALTIMESTAMP",
+        "NATURAL",
+        "NOT",
+        "NOTNULL",
+        "NULL",
+        "OFFSET",
+        "ON",
+        "ONLY",
+        "OR",
+        "ORDER",
+        "OUTER",
+        "OVERLAPS",
+        "PLACING",
+        "PRIMARY",
+        "REFERENCES",
+        "RETURNING",
+        "RIGHT",
+        "SELECT",
+        "SESSION_USER",
+        "SIMILAR",
+        "SOME",
+        "SYMMETRIC",
+        "TABLE",
+        "TABLESAMPLE",
+        "THEN",
+        "TO",
+        "TRAILING",
+        "TRUE",
+        "UNION",
+        "UNIQUE",
+        "USER",
+        "USING",
+        "VARIADIC",
+        "VERBOSE",
+        "WHEN",
+        "WHERE",
+        "WINDOW",
+        "WITH",
     ];
 
     // Create keyword check conditions
-    let keyword_conditions: Vec<String> = reserved_keywords.iter()
+    let keyword_conditions: Vec<String> = reserved_keywords
+        .iter()
         .map(|kw| format!("UPPER(table_name) = '{kw}'"))
         .collect();
     let keyword_clause = keyword_conditions.join(" OR ");
 
-    let reserved_keyword_query = format!("
+    let reserved_keyword_query = format!(
+        "
         SELECT table_schema::text, table_name::text, 'table' as object_type
         FROM information_schema.tables
-        WHERE table_schema NOT IN ('pg_toast', 'pg_catalog', 'information_schema')
+        WHERE table_schema NOT IN ('pg_toast', 'pg_catalog', 'information_schema', 'pglinter')
         AND ({})
         UNION
         SELECT table_schema, table_name, 'column:' || column_name as object_type
         FROM information_schema.columns
-        WHERE table_schema NOT IN ('pg_toast', 'pg_catalog', 'information_schema')
+        WHERE table_schema NOT IN ('pg_toast', 'pg_catalog', 'information_schema', 'pglinter')
         AND ({})",
         keyword_clause,
-        reserved_keywords.iter()
+        reserved_keywords
+            .iter()
             .map(|kw| format!("UPPER(column_name) = '{kw}'"))
             .collect::<Vec<_>>()
             .join(" OR ")
@@ -1033,7 +1242,10 @@ fn execute_t010_rule() -> Result<Option<RuleResult>, String> {
             return Ok(Some(RuleResult {
                 ruleid: "T010".to_string(),
                 level: "error".to_string(),
-                message: format!("Found {count} database objects using reserved keywords: {violations}", count = count, violations = violations.join(", ")),
+                message: format!(
+                    "Found {count} database objects using reserved keywords: {}",
+                    violations.join(", ")
+                ),
                 count: Some(count),
             }));
         }
@@ -1043,7 +1255,7 @@ fn execute_t010_rule() -> Result<Option<RuleResult>, String> {
 
     match result {
         Ok(res) => Ok(res),
-        Err(e) => Err(format!("Database error: {e}"))
+        Err(e) => Err(format!("Database error: {e}")),
     }
 }
 
@@ -1052,12 +1264,12 @@ fn execute_t011_rule() -> Result<Option<RuleResult>, String> {
     let uppercase_objects_query = "
         SELECT table_schema::text, table_name::text, 'table'::text as object_type
         FROM information_schema.tables
-        WHERE table_schema NOT IN ('pg_toast', 'pg_catalog', 'information_schema')
+        WHERE table_schema NOT IN ('pg_toast', 'pg_catalog', 'information_schema', 'pglinter')
         AND table_name != lower(table_name)
         UNION
         SELECT table_schema::text, table_name::text, 'column:' || column_name::text as object_type
         FROM information_schema.columns
-        WHERE table_schema NOT IN ('pg_toast', 'pg_catalog', 'information_schema')
+        WHERE table_schema NOT IN ('pg_toast', 'pg_catalog', 'information_schema', 'pglinter')
         AND column_name != lower(column_name)";
 
     let result: Result<Option<RuleResult>, spi::SpiError> = Spi::connect(|client| {
@@ -1076,7 +1288,10 @@ fn execute_t011_rule() -> Result<Option<RuleResult>, String> {
             return Ok(Some(RuleResult {
                 ruleid: "T011".to_string(),
                 level: "warning".to_string(),
-                message: format!("Found {count} database objects with uppercase letters: {objects}", count = count, objects = objects.join(", ")),
+                message: format!(
+                    "Found {count} database objects with uppercase letters: {}",
+                    objects.join(", ")
+                ),
                 count: Some(count),
             }));
         }
@@ -1086,7 +1301,7 @@ fn execute_t011_rule() -> Result<Option<RuleResult>, String> {
 
     match result {
         Ok(res) => Ok(res),
-        Err(e) => Err(format!("Database error: {e}"))
+        Err(e) => Err(format!("Database error: {e}")),
     }
 }
 
@@ -1121,11 +1336,11 @@ fn execute_t012_rule() -> Result<Option<RuleResult>, String> {
             FROM (
                 SELECT table_schema, table_name, column_name, identifiers_category
                 FROM anon.detect('en_US')
-                WHERE table_schema NOT IN ('pg_toast', 'pg_catalog', 'information_schema')
+                WHERE table_schema NOT IN ('pg_toast', 'pg_catalog', 'information_schema', 'pglinter')
                 UNION
                 SELECT table_schema, table_name, column_name, identifiers_category
                 FROM anon.detect('fr_FR')
-                WHERE table_schema NOT IN ('pg_toast', 'pg_catalog', 'information_schema')
+                WHERE table_schema NOT IN ('pg_toast', 'pg_catalog', 'information_schema', 'pglinter')
             ) detected
             GROUP BY table_schema, table_name, column_name, identifiers_category";
 
@@ -1145,7 +1360,10 @@ fn execute_t012_rule() -> Result<Option<RuleResult>, String> {
             return Ok(Some(RuleResult {
                 ruleid: "T012".to_string(),
                 level: "warning".to_string(),
-                message: format!("Found {count} potentially sensitive columns: {sensitive_data}", count = count, sensitive_data = sensitive_data.join(", ")),
+                message: format!(
+                    "Found {count} potentially sensitive columns: {}",
+                    sensitive_data.join(", ")
+                ),
                 count: Some(count),
             }));
         }
@@ -1196,7 +1414,10 @@ fn execute_s001_rule() -> Result<Option<RuleResult>, String> {
             return Ok(Some(RuleResult {
                 ruleid: "S001".to_string(),
                 level: "warning".to_string(),
-                message: format!("Found {count} schemas without default role grants: {}", schemas.join(", ")),
+                message: format!(
+                    "Found {count} schemas without default role grants: {}",
+                    schemas.join(", ")
+                ),
                 count: Some(count),
             }));
         }
@@ -1206,34 +1427,50 @@ fn execute_s001_rule() -> Result<Option<RuleResult>, String> {
 
     match result {
         Ok(res) => Ok(res),
-        Err(e) => Err(format!("Database error: {e}"))
+        Err(e) => Err(format!("Database error: {e}")),
     }
 }
 
 fn execute_s002_rule() -> Result<Option<RuleResult>, String> {
     // S002: Schemas prefixed/suffixed with environment names
     let environment_keywords = vec![
-        "staging", "stg", "preprod", "prod", "production", "dev", "development",
-        "test", "testing", "sandbox", "sbox", "demo", "uat", "qa"
+        "staging",
+        "stg",
+        "preprod",
+        "prod",
+        "production",
+        "dev",
+        "development",
+        "test",
+        "testing",
+        "sandbox",
+        "sbox",
+        "demo",
+        "uat",
+        "qa",
     ];
 
     // Build the query conditions for environment patterns
-    let prefix_conditions: Vec<String> = environment_keywords.iter()
+    let prefix_conditions: Vec<String> = environment_keywords
+        .iter()
         .map(|env| format!("nspname ILIKE '{env}_%'"))
         .collect();
-    let suffix_conditions: Vec<String> = environment_keywords.iter()
+    let suffix_conditions: Vec<String> = environment_keywords
+        .iter()
         .map(|env| format!("nspname ILIKE '%_{env}'"))
         .collect();
 
     let all_conditions = [prefix_conditions, suffix_conditions].concat();
     let condition_clause = all_conditions.join(" OR ");
 
-    let environment_schema_query = format!("
+    let environment_schema_query = format!(
+        "
         SELECT nspname::text as schema_name
         FROM pg_namespace
         WHERE nspname NOT IN ('public', 'pg_toast', 'pg_catalog', 'information_schema')
         AND nspname NOT LIKE 'pg_%'
-        AND ({condition_clause})");
+        AND ({condition_clause})"
+    );
 
     let result: Result<Option<RuleResult>, spi::SpiError> = Spi::connect(|client| {
         let mut count = 0i64;
@@ -1249,7 +1486,10 @@ fn execute_s002_rule() -> Result<Option<RuleResult>, String> {
             return Ok(Some(RuleResult {
                 ruleid: "S002".to_string(),
                 level: "warning".to_string(),
-                message: format!("Found {count} schemas with environment prefixes/suffixes: {}", schemas.join(", ")),
+                message: format!(
+                    "Found {count} schemas with environment prefixes/suffixes: {}",
+                    schemas.join(", ")
+                ),
                 count: Some(count),
             }));
         }
@@ -1259,11 +1499,11 @@ fn execute_s002_rule() -> Result<Option<RuleResult>, String> {
 
     match result {
         Ok(res) => Ok(res),
-        Err(e) => Err(format!("Database error: {e}"))
+        Err(e) => Err(format!("Database error: {e}")),
     }
 }
 
-// Add function to output results to PostgreSQL logs/notices
+// Output and SARIF functions
 pub fn output_results_to_prompt(results: Vec<RuleResult>) -> Result<bool, String> {
     if results.is_empty() {
         pgrx::notice!("✅ No issues found - database schema looks good!");
@@ -1281,7 +1521,8 @@ pub fn output_results_to_prompt(results: Vec<RuleResult>) -> Result<bool, String
             _ => "📝",
         };
 
-        pgrx::notice!("{} [{}] {}: {}",
+        pgrx::notice!(
+            "{} [{}] {}: {}",
             level_icon,
             result.ruleid,
             result.level.to_uppercase(),
@@ -1305,8 +1546,12 @@ pub fn output_results_to_prompt(results: Vec<RuleResult>) -> Result<bool, String
         }
     }
 
-    pgrx::notice!("📊 Summary: {} error(s), {} warning(s), {} info",
-        error_count, warning_count, info_count);
+    pgrx::notice!(
+        "📊 Summary: {} error(s), {} warning(s), {} info",
+        error_count,
+        warning_count,
+        info_count
+    );
 
     if error_count > 0 {
         pgrx::notice!("🔴 Critical issues found - please review and fix errors");
@@ -1320,7 +1565,10 @@ pub fn output_results_to_prompt(results: Vec<RuleResult>) -> Result<bool, String
 }
 
 // Enhanced generate_sarif_output that handles optional file output
-pub fn generate_sarif_output_optional(results: Vec<RuleResult>, output_file: Option<&str>) -> Result<bool, String> {
+pub fn generate_sarif_output_optional(
+    results: Vec<RuleResult>,
+    output_file: Option<&str>,
+) -> Result<bool, String> {
     match output_file {
         Some(file_path) => generate_sarif_output(results, file_path),
         None => output_results_to_prompt(results),
@@ -1328,22 +1576,25 @@ pub fn generate_sarif_output_optional(results: Vec<RuleResult>, output_file: Opt
 }
 
 pub fn generate_sarif_output(results: Vec<RuleResult>, output_file: &str) -> Result<bool, String> {
-    let sarif_results: Vec<serde_json::Value> = results.into_iter().map(|result| {
-        json!({
-            "ruleId": result.ruleid,
-            "level": result.level,
-            "message": {
-                "text": result.message
-            },
-            "locations": [{
-                "physicalLocation": {
-                    "artifactLocation": {
-                        "uri": "database"
+    let sarif_results: Vec<serde_json::Value> = results
+        .into_iter()
+        .map(|result| {
+            json!({
+                "ruleId": result.ruleid,
+                "level": result.level,
+                "message": {
+                    "text": result.message
+                },
+                "locations": [{
+                    "physicalLocation": {
+                        "artifactLocation": {
+                            "uri": "database"
+                        }
                     }
-                }
-            }]
+                }]
+            })
         })
-    }).collect();
+        .collect();
 
     let sarif_doc = json!({
         "version": "2.1.0",
@@ -1360,216 +1611,10 @@ pub fn generate_sarif_output(results: Vec<RuleResult>, output_file: &str) -> Res
     });
 
     match File::create(output_file) {
-        Ok(mut file) => {
-            match file.write_all(sarif_doc.to_string().as_bytes()) {
-                Ok(_) => Ok(true),
-                Err(e) => Err(format!("Failed to write file: {e}"))
-            }
-        }
-        Err(e) => Err(format!("Failed to create file: {e}"))
-    }
-}
-
-// Rule management functions
-pub fn enable_rule(rule_code: &str) -> Result<bool, String> {
-    // First check if rule exists and get current status
-    let check_query = "
-        SELECT code, enable
-        FROM pglinter.rules
-        WHERE code = $1";
-
-    let result: Result<bool, spi::SpiError> = Spi::connect_mut(|client| {
-        // Check if rule exists
-        let check_result = client.select(check_query, None, &[rule_code.into()])?;
-        if check_result.is_empty() {
-            return Ok(false); // Rule not found
-        }
-
-        // Update the rule
-        let enable_query = "
-            UPDATE pglinter.rules
-            SET enable = true
-            WHERE code = $1";
-
-        client.update(enable_query, None, &[rule_code.into()])?;
-        Ok(true)
-    });
-
-    match result {
-        Ok(success) => {
-            if success {
-                pgrx::notice!("✅ Rule {} has been enabled", rule_code);
-                Ok(true)
-            } else {
-                pgrx::warning!("⚠️  Rule {} not found", rule_code);
-                Ok(false)
-            }
+        Ok(mut file) => match file.write_all(sarif_doc.to_string().as_bytes()) {
+            Ok(_) => Ok(true),
+            Err(e) => Err(format!("Failed to write file: {e}")),
         },
-        Err(e) => Err(format!("Database error: {e}"))
-    }
-}
-
-pub fn disable_rule(rule_code: &str) -> Result<bool, String> {
-    // First check if rule exists and get current status
-    let check_query = "
-        SELECT code, enable
-        FROM pglinter.rules
-        WHERE code = $1";
-
-    let result: Result<bool, spi::SpiError> = Spi::connect_mut(|client| {
-        // Check if rule exists
-        let check_result = client.select(check_query, None, &[rule_code.into()])?;
-        if check_result.is_empty() {
-            return Ok(false); // Rule not found
-        }
-
-        // Update the rule
-        let disable_query = "
-            UPDATE pglinter.rules
-            SET enable = false
-            WHERE code = $1";
-
-        client.update(disable_query, None, &[rule_code.into()])?;
-        Ok(true)
-    });
-
-    match result {
-        Ok(success) => {
-            if success {
-                pgrx::notice!("🔴 Rule {} has been disabled", rule_code);
-                Ok(true)
-            } else {
-                pgrx::warning!("⚠️  Rule {} not found", rule_code);
-                Ok(false)
-            }
-        },
-        Err(e) => Err(format!("Database error: {e}"))
-    }
-}
-
-pub fn is_rule_enabled(rule_code: &str) -> Result<bool, String> {
-    let check_query = "
-        SELECT enable
-        FROM pglinter.rules
-        WHERE code = $1";
-
-    let result: Result<bool, spi::SpiError> = Spi::connect(|client| {
-        let mut rows = client.select(check_query, None, &[rule_code.into()])?;
-        if let Some(row) = rows.next() {
-            Ok(row.get::<bool>(1)?.unwrap_or(false))
-        } else {
-            // Rule not found, assume disabled
-            Ok(false)
-        }
-    });
-
-    match result {
-        Ok(enabled) => Ok(enabled),
-        Err(e) => Err(format!("Database error: {e}"))
-    }
-}
-
-pub fn list_rules() -> Result<Vec<(String, String, bool)>, String> {
-    let list_query = "
-        SELECT code, name, enable
-        FROM pglinter.rules
-        ORDER BY code";
-
-    let result: Result<Vec<(String, String, bool)>, spi::SpiError> = Spi::connect(|client| {
-        let mut rules = Vec::new();
-        for row in client.select(list_query, None, &[])? {
-            let code: String = row.get(1)?.unwrap_or_default();
-            let name: String = row.get(2)?.unwrap_or_default();
-            let enabled: bool = row.get(3)?.unwrap_or(false);
-            rules.push((code, name, enabled));
-        }
-        Ok(rules)
-    });
-
-    match result {
-        Ok(rules) => Ok(rules),
-        Err(e) => Err(format!("Database error: {e}"))
-    }
-}
-
-pub fn show_rule_status() -> Result<bool, String> {
-    match list_rules() {
-        Ok(rules) => {
-            pgrx::notice!("📋 pglinter Rule Status:");
-            pgrx::notice!("{}", "=".repeat(60));
-            pgrx::notice!("{:<6} {:<8} {:<40}", "Code", "Status", "Name");
-            pgrx::notice!("{}", "-".repeat(60));
-
-            let mut enabled_count = 0;
-            let mut disabled_count = 0;
-
-            for (code, name, enabled) in rules {
-                let status = if enabled { "✅ ON" } else { "🔴 OFF" };
-                if enabled { enabled_count += 1; } else { disabled_count += 1; }
-                pgrx::notice!("{:<6} {:<8} {:<40}", code, status, name);
-            }
-
-            pgrx::notice!("{}", "=".repeat(60));
-            pgrx::notice!("📊 Summary: {} enabled, {} disabled", enabled_count, disabled_count);
-            Ok(true)
-        },
-        Err(e) => {
-            pgrx::warning!("Failed to retrieve rule status: {}", e);
-            Ok(false)
-        }
-    }
-}
-
-pub fn explain_rule(rule_code: &str) -> Result<String, String> {
-    let explain_query = "
-        SELECT code, name, description, scope, message, fixes
-        FROM pglinter.rules
-        WHERE code = $1";
-    type RuleExplainRow = (String, String, String, String, String, Vec<Option<String>>);
-    let result: Result<Option<RuleExplainRow>, spi::SpiError> = Spi::connect(|client| {
-        let mut rows = client.select(explain_query, None, &[rule_code.into()])?;
-        if let Some(row) = rows.next() {
-            let code: String = row.get(1)?.unwrap_or_default();
-            let name: String = row.get(2)?.unwrap_or_default();
-            let description: String = row.get(3)?.unwrap_or_default();
-            let scope: String = row.get(4)?.unwrap_or_default();
-            let message: String = row.get(5)?.unwrap_or_default();
-            let fixes: Vec<Option<String>> = row.get(6)?.unwrap_or_default();
-            Ok(Some((code, name, description, scope, message, fixes)))
-        } else {
-            Ok(None)
-        }
-    });
-
-    match result {
-        Ok(Some((code, name, description, scope, message, fixes))) => {
-            // Format the fixes section
-            let fixes_section = if fixes.is_empty() {
-                "No specific fixes available.".to_string()
-            } else {
-                let mut fix_list = String::new();
-                for (i, fix) in fixes.iter().enumerate() {
-                    if let Some(fix_text) = fix {
-                        fix_list.push_str(&format!("   {}. {}\n", i + 1, fix_text));
-                    }
-                }
-                fix_list.trim_end().to_string()
-            };
-
-            let explanation = format!(
-                "📖 Rule Explanation for {}\n{}\n\n🎯 Rule Name: {}\n📋 Scope: {}\n\n📝 Description:\n{}\n\n⚠️  Message Template:\n{}\n\n🔧 How to Fix:\n{}\n{}",
-                code,
-                "=".repeat(60),
-                name,
-                scope,
-                description,
-                message,
-                fixes_section,
-                "=".repeat(60)
-            );
-            Ok(explanation)
-        },
-        Ok(None) => Err(format!("Rule '{rule_code}' not found")),
-        Err(e) => Err(format!("Database error: {e}"))
+        Err(e) => Err(format!("Failed to create file: {e}")),
     }
 }

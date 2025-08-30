@@ -205,6 +205,7 @@ pipeline {
 Create configuration files for each environment:
 
 **`.pglinter/development.sql`**:
+
 ```sql
 -- Development environment - More permissive
 \echo 'Configuring pglinter for development...'
@@ -223,6 +224,7 @@ SELECT pglinter.enable_rule('T004');  -- FK indexing
 ```
 
 **`.pglinter/staging.sql`**:
+
 ```sql
 -- Staging environment - Production-like but flexible
 \echo 'Configuring pglinter for staging...'
@@ -236,6 +238,7 @@ WHERE rule_code NOT IN ('T010', 'C002'); -- Reserved keywords, pg_hba
 ```
 
 **`.pglinter/production.sql`**:
+
 ```sql
 -- Production environment - Strict rules
 \echo 'Configuring pglinter for production...'
@@ -600,14 +603,16 @@ rm -f "$SARIF_FILE" "$HTML_FILE"
 
 ### Issue: Permission Denied
 
-**Symptoms:**
-```
+## Symptoms
+
+```text
 ERROR: permission denied for function perform_base_check
 ```
 
-**Solutions:**
+## Solutions
 
 1. **Grant execution permissions:**
+
 ```sql
 -- As superuser
 GRANT EXECUTE ON FUNCTION pglinter.perform_base_check(text) TO username;
@@ -615,12 +620,14 @@ GRANT EXECUTE ON ALL FUNCTIONS IN SCHEMA pglinter TO username;
 ```
 
 2. **Use a privileged user:**
+
 ```bash
 # Run as postgres user
 sudo -u postgres psql -d mydb -c "SELECT pglinter.perform_base_check();"
 ```
 
 3. **Check extension installation:**
+
 ```sql
 -- Verify extension is installed
 SELECT * FROM pg_extension WHERE extname = 'pglinter';
@@ -632,14 +639,16 @@ CREATE EXTENSION pglinter;
 
 ### Issue: File Access Errors
 
-**Symptoms:**
-```
+## Symptoms
+
+```text
 ERROR: could not open file "/path/to/results.sarif" for writing: Permission denied
 ```
 
-**Solutions:**
+## Solutions
 
 1. **Check directory permissions:**
+
 ```bash
 # Ensure PostgreSQL can write to directory
 sudo chown postgres:postgres /var/log/pglinter/
@@ -647,13 +656,15 @@ sudo chmod 755 /var/log/pglinter/
 ```
 
 2. **Use PostgreSQL data directory:**
+
 ```sql
 -- Write to PostgreSQL-accessible location
 SELECT pglinter.perform_base_check(current_setting('data_directory') || '/pglinter_results.sarif');
 ```
 
 3. **Check postgresql.conf settings:**
-```
+
+```text
 # Add to postgresql.conf if needed
 log_directory = '/var/log/postgresql'
 log_filename = 'postgresql-%Y-%m-%d_%H%M%S.log'
@@ -661,18 +672,21 @@ log_filename = 'postgresql-%Y-%m-%d_%H%M%S.log'
 
 ### Issue: No Results Returned
 
-**Symptoms:**
+## Symptoms
+
 - Function runs without error but returns no results
 - SARIF file is empty or contains no issues
 
-**Solutions:**
+## Solutions
 
 1. **Check if rules are enabled:**
+
 ```sql
 SELECT * FROM pglinter.show_rules() WHERE enabled = true;
 ```
 
 2. **Verify database has analyzable objects:**
+
 ```sql
 -- Check for tables in non-system schemas
 SELECT schemaname, tablename
@@ -681,6 +695,7 @@ WHERE schemaname NOT IN ('information_schema', 'pg_catalog', 'pg_toast');
 ```
 
 3. **Test with a known issue:**
+
 ```sql
 -- Create a table without primary key to trigger B001
 CREATE TABLE test_no_pk (id int, name text);
@@ -694,13 +709,15 @@ DROP TABLE test_no_pk;
 
 ### Issue: Slow Performance
 
-**Symptoms:**
+## Symptoms
+
 - Analysis takes very long to complete
 - High CPU usage during analysis
 
-**Solutions:**
+## Solutions
 
 1. **Analyze specific rule categories:**
+
 ```sql
 -- Run only base rules (usually faster)
 SELECT pglinter.perform_base_check();
@@ -712,12 +729,14 @@ WHERE rule_code LIKE 'T%';
 ```
 
 2. **Update database statistics:**
+
 ```sql
 -- Ensure statistics are current
 ANALYZE;
 ```
 
 3. **Run during low-usage periods:**
+
 ```bash
 # Schedule for off-hours
 echo "0 2 * * * psql -d mydb -c \"SELECT pglinter.perform_base_check('/var/log/pglinter/nightly.sarif');\"" | crontab -
@@ -725,13 +744,15 @@ echo "0 2 * * * psql -d mydb -c \"SELECT pglinter.perform_base_check('/var/log/p
 
 ### Issue: Memory Usage
 
-**Symptoms:**
+## Symptoms
+
 - Out of memory errors during analysis
 - PostgreSQL process killed by OOM killer
 
-**Solutions:**
+## Solutions
 
 1. **Increase work_mem temporarily:**
+
 ```sql
 -- Increase memory for analysis session
 SET work_mem = '256MB';
@@ -740,6 +761,7 @@ RESET work_mem;
 ```
 
 2. **Analyze in smaller chunks:**
+
 ```sql
 -- Disable resource-intensive rules
 SELECT pglinter.disable_rule('T005'); -- Sequential scan analysis
@@ -747,6 +769,7 @@ SELECT pglinter.disable_rule('T007'); -- Unused index analysis
 ```
 
 3. **Check system resources:**
+
 ```bash
 # Monitor memory during analysis
 htop

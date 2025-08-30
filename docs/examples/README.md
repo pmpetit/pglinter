@@ -89,6 +89,21 @@ WHERE rule_code NOT IN (
 \echo 'Performance configuration complete.'
 ```
 
+### Rule Level Configuration
+
+For advanced rule customization, see the [Rule Level Management Examples](rule_level_management.md) which covers:
+
+- **Configurable Thresholds**: Adjust warning/error levels for rules like T005
+- **Environment-Specific Settings**: Different thresholds for dev/staging/production
+- **Bulk Rule Management**: Enable/disable all rules at once
+- **Monitoring Integration**: Track configuration changes and effectiveness
+
+```sql
+-- Quick example: Adjust T005 sequential scan thresholds
+SELECT pglinter.update_rule_levels('T005', 30.0, 70.0);  -- More sensitive
+SELECT pglinter.enable_all_rules();                      -- Enable everything
+```
+
 ## CI/CD Integration Examples
 
 ### GitHub Actions Workflow
