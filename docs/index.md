@@ -3,12 +3,12 @@
 In recent years, DBAs were more involved with the database engine itself—creating instances, configuring backups, and monitoring systems and also, overseeing developers' activities.
 Today, in the DBRE world where databases are cloud-managed, developers and operations teams often work independently, without a dedicated DBA.
 
-So databases objects lives their own life, created by persons that do their best. It can be usefull to be able to detect some wrong desing creation (for example foreign keys created accross differents schemas...). That's what pg_linter was created for.
+So databases objects lives their own life, created by persons that do their best. It can be usefull to be able to detect some wrong desing creation (for example foreign keys created accross differents schemas...). That's what pglinter was created for.
 
 Database linting and analysis for PostgreSQL
 ===============================================================================
 
-`pg_linter` is a PostgreSQL extension that analyzes your database for potential issues, performance problems, and best practice violations. Written in Rust using pgrx, it provides deep integration with PostgreSQL for efficient database analysis.
+`pglinter` is a PostgreSQL extension that analyzes your database for potential issues, performance problems, and best practice violations. Written in Rust using pgrx, it provides deep integration with PostgreSQL for efficient database analysis.
 
 The project has a **rule-based approach** to database analysis. This means you can enable or disable specific rules and configure thresholds to match your organization's standards and requirements.
 
@@ -64,28 +64,28 @@ Schema-level checks:
 
 1. **Installation**
    ```sql
-   CREATE EXTENSION pg_linter;
+   CREATE EXTENSION pglinter;
    ```
 
 2. **Run Analysis**
    ```sql
    -- Analyze entire database
-   SELECT pg_linter.perform_base_check();
+   SELECT pglinter.perform_base_check();
 
    -- Save results to file
-   SELECT pg_linter.perform_base_check('/path/to/results.sarif');
+   SELECT pglinter.perform_base_check('/path/to/results.sarif');
    ```
 
 3. **Manage Rules**
    ```sql
    -- Show all rules
-   SELECT pg_linter.show_rules();
+   SELECT pglinter.show_rules();
 
    -- Disable a specific rule
-   SELECT pg_linter.disable_rule('B001');
+   SELECT pglinter.disable_rule('B001');
 
    -- Get rule explanation
-   SELECT pg_linter.explain_rule('B002');
+   SELECT pglinter.explain_rule('B002');
    ```
 
 ## Documentation Structure
@@ -98,7 +98,7 @@ Schema-level checks:
 
 ## Integration
 
-pg_linter is designed to integrate seamlessly into your development workflow:
+pglinter is designed to integrate seamlessly into your development workflow:
 
 - **CI/CD Pipelines**: Use SARIF output with GitHub Actions, GitLab CI, or other tools
 - **Database Migrations**: Run checks after schema changes
@@ -107,10 +107,10 @@ pg_linter is designed to integrate seamlessly into your development workflow:
 
 ## Support
 
-- **Issues**: [GitHub Issues](https://github.com/yourorg/pg_linter/issues)
-- **Discussions**: [GitHub Discussions](https://github.com/yourorg/pg_linter/discussions)
+- **Issues**: [GitHub Issues](https://github.com/yourorg/pglinter/issues)
+- **Discussions**: [GitHub Discussions](https://github.com/yourorg/pglinter/discussions)
 - **Documentation**: This documentation site
 
 ## License
 
-pg_linter is released under the [LICENSE](../LICENSE) license.
+pglinter is released under the [LICENSE](../LICENSE) license.

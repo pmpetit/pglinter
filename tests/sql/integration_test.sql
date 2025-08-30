@@ -1,8 +1,8 @@
--- Comprehensive integration test for pg_linter
+-- Comprehensive integration test for pglinter
 -- Tests multiple rules across all categories (B, C, T, S series)
 BEGIN;
 
-DROP EXTENSION IF EXISTS pg_linter CASCADE;
+DROP EXTENSION IF EXISTS pglinter CASCADE;
 
 -- Create various test scenarios to trigger multiple rules
 
@@ -72,62 +72,62 @@ CREATE TABLE dev_reports.summaries (
 );
 
 -- Create extension
-CREATE EXTENSION IF NOT EXISTS pg_linter;
+CREATE EXTENSION IF NOT EXISTS pglinter;
 
 -- Run comprehensive analysis
-SELECT '=== COMPREHENSIVE pg_linter ANALYSIS ===' as info;
+SELECT '=== COMPREHENSIVE pglinter ANALYSIS ===' as info;
 
 -- Test all rule categories
 SELECT 'BASE RULES:' as category;
-SELECT pg_linter.perform_base_check();
+SELECT pglinter.perform_base_check();
 
 SELECT 'TABLE RULES:' as category;
-SELECT pg_linter.perform_table_check();
+SELECT pglinter.perform_table_check();
 
 SELECT 'SCHEMA RULES:' as category;
-SELECT pg_linter.perform_schema_check();
+SELECT pglinter.perform_schema_check();
 
 SELECT 'CLUSTER RULES:' as category;
-SELECT pg_linter.perform_cluster_check();
+SELECT pglinter.perform_cluster_check();
 
 -- Test comprehensive check
 SELECT 'COMPREHENSIVE CHECK:' as category;
-SELECT pg_linter.check_all();
+SELECT pglinter.check_all();
 
 -- Test rule management features
 SELECT '=== RULE MANAGEMENT ===' as info;
 
 -- Show all rules
-SELECT pg_linter.show_rules();
+SELECT pglinter.show_rules();
 
 -- Test some explanations
-SELECT pg_linter.explain_rule('B001');
-SELECT pg_linter.explain_rule('T003');
-SELECT pg_linter.explain_rule('S002');
+SELECT pglinter.explain_rule('B001');
+SELECT pglinter.explain_rule('T003');
+SELECT pglinter.explain_rule('S002');
 
 -- Test output to file functionality
 SELECT '=== OUTPUT TO FILE TEST ===' as info;
-SELECT pg_linter.perform_base_check('/tmp/integration_base.sarif');
-SELECT pg_linter.perform_table_check('/tmp/integration_table.sarif');
-SELECT pg_linter.perform_schema_check('/tmp/integration_schema.sarif');
+SELECT pglinter.perform_base_check('/tmp/integration_base.sarif');
+SELECT pglinter.perform_table_check('/tmp/integration_table.sarif');
+SELECT pglinter.perform_schema_check('/tmp/integration_schema.sarif');
 
 -- Test rule disable/enable functionality
 SELECT '=== RULE TOGGLE TEST ===' as info;
 
 -- Disable some rules
-SELECT pg_linter.disable_rule('B001');
-SELECT pg_linter.disable_rule('T003');
+SELECT pglinter.disable_rule('B001');
+SELECT pglinter.disable_rule('T003');
 
 -- Run checks (should skip disabled rules)
-SELECT pg_linter.perform_base_check();
-SELECT pg_linter.perform_table_check();
+SELECT pglinter.perform_base_check();
+SELECT pglinter.perform_table_check();
 
 -- Re-enable rules
-SELECT pg_linter.enable_rule('B001');
-SELECT pg_linter.enable_rule('T003');
+SELECT pglinter.enable_rule('B001');
+SELECT pglinter.enable_rule('T003');
 
 -- Final comprehensive check
-SELECT pg_linter.check_all();
+SELECT pglinter.check_all();
 
 -- Clean up
 DROP SCHEMA prod_analytics CASCADE;

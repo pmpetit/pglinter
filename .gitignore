@@ -14,3 +14,6 @@ regression.out
 *.diffs
 _blackbox_*
 contrib_regression_test_restore.pgsql
+results/*
+tests/results/*
+tests/tmp/*

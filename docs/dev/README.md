@@ -1,6 +1,6 @@
 # Development Guide
 
-Guide for contributing to pg_linter development.
+Guide for contributing to pglinter development.
 
 ## Development Environment Setup
 
@@ -25,8 +25,8 @@ cargo install cargo-pgrx
 cargo pgrx init
 
 # Clone the repository
-git clone https://github.com/yourorg/pg_linter.git
-cd pg_linter
+git clone https://github.com/yourorg/pglinter.git
+cd pglinter
 
 # Build the extension
 cargo pgrx package
@@ -54,9 +54,9 @@ cargo test test_b001_rule
 ## Project Structure
 
 ```
-pg_linter/
+pglinter/
 ├── Cargo.toml              # Rust package configuration
-├── pg_linter.control        # PostgreSQL extension control file
+├── pglinter.control        # PostgreSQL extension control file
 ├── src/
 │   ├── lib.rs              # Main library entry point
 │   ├── rules_engine.rs     # Core rule engine implementation
@@ -156,7 +156,7 @@ pub fn execute_base_rules() -> Result<Vec<RuleResult>, String> {
 Add rule information to `sql/rules.sql`:
 
 ```sql
-INSERT INTO pg_linter.rules (rule_code, description, enabled, fixes) VALUES
+INSERT INTO pglinter.rules (rule_code, description, enabled, fixes) VALUES
 ('B007', 'Your rule description', TRUE, ARRAY[
     'Fix suggestion 1',
     'Fix suggestion 2',
@@ -175,14 +175,14 @@ BEGIN;
 -- Create test data that should trigger the rule
 CREATE TABLE test_table (...);
 
-CREATE EXTENSION IF NOT EXISTS pg_linter;
+CREATE EXTENSION IF NOT EXISTS pglinter;
 
 -- Test the rule
-SELECT pg_linter.perform_base_check();
+SELECT pglinter.perform_base_check();
 
 -- Test rule management
-SELECT pg_linter.explain_rule('B007');
-SELECT pg_linter.is_rule_enabled('B007');
+SELECT pglinter.explain_rule('B007');
+SELECT pglinter.is_rule_enabled('B007');
 
 -- Clean up
 DROP TABLE test_table;
@@ -245,10 +245,10 @@ BEGIN;
 CREATE TABLE test_table (id INT);
 
 -- Create extension
-CREATE EXTENSION IF NOT EXISTS pg_linter;
+CREATE EXTENSION IF NOT EXISTS pglinter;
 
 -- Test functionality
-SELECT pg_linter.perform_base_check();
+SELECT pglinter.perform_base_check();
 
 -- Verify results
 -- Add specific assertions
@@ -374,7 +374,7 @@ SET log_statement = 'all';
 SET log_duration = on;
 
 -- Run your analysis
-SELECT pg_linter.perform_base_check();
+SELECT pglinter.perform_base_check();
 ```
 
 ### Rust Debugging
@@ -445,7 +445,7 @@ jobs:
 ### Version Management
 
 1. Update version in `Cargo.toml`
-2. Update version in `pg_linter.control`
+2. Update version in `pglinter.control`
 3. Update CHANGELOG.md
 4. Tag the release
 
@@ -536,5 +536,5 @@ Useful plugins:
 
 - **Discord**: Join the pgrx Discord server
 - **GitHub Discussions**: Ask questions in project discussions
-- **Stack Overflow**: Tag questions with `pg_linter` and `postgresql`
+- **Stack Overflow**: Tag questions with `pglinter` and `postgresql`
 - **PostgreSQL Slack**: #extensions channel

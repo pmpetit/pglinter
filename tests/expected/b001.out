@@ -1,4 +1,4 @@
--- Test for pg_linter B001 rule with file output
+-- Test for pglinter B001 rule with file output
 BEGIN;
 CREATE TABLE IF NOT EXISTS my_table_without_pk (
     id INT,
@@ -10,20 +10,20 @@ CREATE TABLE IF NOT EXISTS my_table_without_pk (
     error_level INT,
     scope TEXT
 );
-CREATE EXTENSION IF NOT EXISTS pg_linter;
+CREATE EXTENSION IF NOT EXISTS pglinter;
 -- Test with file output
-SELECT pg_linter.perform_base_check('/tmp/pg_linter_base_results.sarif');
+SELECT pglinter.perform_base_check('/tmp/pglinter_base_results.sarif');
  perform_base_check 
 --------------------
  t
 (1 row)
 
 -- Test if file exists
-\! md5sum /tmp/pg_linter_base_results.sarif
-32e67d2ad135d8f404c1a9d30cfa00b7  /tmp/pg_linter_base_results.sarif
--- Test with no output file (should output to prompt)  
-SELECT pg_linter.perform_base_check();
-NOTICE:  🔍 pg_linter found 3 issue(s):
+\! md5sum /tmp/pglinter_base_results.sarif
+2dbe61e5ecfb64c3fba230d29027b206  /tmp/pglinter_base_results.sarif
+-- Test with no output file (should output to prompt)
+SELECT pglinter.perform_base_check();
+NOTICE:  🔍 pglinter found 3 issue(s):
 NOTICE:  ==================================================
 NOTICE:  ⚠️  [B001] WARNING: 1 tables without primary key exceed the warning threshold: 10%
 NOTICE:  ⚠️  [B004] WARNING: Found 1 potentially unused indexes

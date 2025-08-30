@@ -1,7 +1,7 @@
 -- Test for S001 and S002 schema rules
 BEGIN;
 
-DROP EXTENSION IF EXISTS pg_linter CASCADE;
+DROP EXTENSION IF EXISTS pglinter CASCADE;
 
 -- Create test schemas that should trigger S002 (environment prefixes/suffixes)
 CREATE SCHEMA prod_sales;
@@ -29,32 +29,32 @@ CREATE TABLE business_logic.rules (
     rule_name TEXT NOT NULL
 );
 
-CREATE EXTENSION IF NOT EXISTS pg_linter;
+CREATE EXTENSION IF NOT EXISTS pglinter;
 
 -- Test the schema rules
 SELECT 'Testing schema rules S001 and S002...' as test_info;
 
 -- Run schema check to detect environment-named schemas and default privilege issues
-SELECT pg_linter.perform_schema_check();
+SELECT pglinter.perform_schema_check();
 
 -- Test individual schema rules
-SELECT pg_linter.explain_rule('S001');
-SELECT pg_linter.explain_rule('S002');
+SELECT pglinter.explain_rule('S001');
+SELECT pglinter.explain_rule('S002');
 
 -- Test rule management for schema rules
-SELECT pg_linter.is_rule_enabled('S001') AS s001_enabled;
-SELECT pg_linter.is_rule_enabled('S002') AS s002_enabled;
+SELECT pglinter.is_rule_enabled('S001') AS s001_enabled;
+SELECT pglinter.is_rule_enabled('S002') AS s002_enabled;
 
 -- Test disabling S002 (environment prefixes)
-SELECT pg_linter.disable_rule('S002') AS s002_disabled;
-SELECT pg_linter.perform_schema_check(); -- Should skip S002
+SELECT pglinter.disable_rule('S002') AS s002_disabled;
+SELECT pglinter.perform_schema_check(); -- Should skip S002
 
 -- Re-enable S002
-SELECT pg_linter.enable_rule('S002') AS s002_reenabled;
-SELECT pg_linter.perform_schema_check(); -- Should include S002 again
+SELECT pglinter.enable_rule('S002') AS s002_reenabled;
+SELECT pglinter.perform_schema_check(); -- Should include S002 again
 
 -- Test the comprehensive check including schemas
-SELECT pg_linter.check_all();
+SELECT pglinter.check_all();
 
 -- Clean up schemas
 DROP SCHEMA prod_sales CASCADE;

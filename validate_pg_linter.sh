@@ -8,7 +8,7 @@ echo "============================="
 
 # Check if extension compiles
 echo "📦 Testing compilation..."
-cd /home/pmp/github/pg_linter
+cd /home/pmp/github/pglinter
 cargo check
 if [ $? -eq 0 ]; then
     echo "✅ Compilation successful"
@@ -98,11 +98,11 @@ echo ""
 echo "📖 Next steps:"
 echo "   1. Run tests: cargo pgrx test"
 echo "   2. Install extension: cargo pgrx install"
-echo "   3. Create extension in database: CREATE EXTENSION pg_linter;"
-echo "   4. Run analysis: SELECT pg_linter.check_all();"
+echo "   3. Create extension in database: CREATE EXTENSION pglinter;"
+echo "   4. Run analysis: SELECT pglinter.check_all();"
 echo ""
 echo "📋 Quick start commands:"
-echo "   SELECT pg_linter.show_rules();                    -- Show all rules"
-echo "   SELECT pg_linter.check_all();                     -- Comprehensive check"
-echo "   SELECT pg_linter.explain_rule('B001');            -- Rule explanation"
-echo "   SELECT pg_linter.perform_base_check('/tmp/report.sarif'); -- File output"
+echo "   SELECT pglinter.show_rules();                    -- Show all rules"
+echo "   SELECT pglinter.check_all();                     -- Comprehensive check"
+echo "   SELECT pglinter.explain_rule('B001');            -- Rule explanation"
+echo "   SELECT pglinter.perform_base_check('/tmp/report.sarif'); -- File output"

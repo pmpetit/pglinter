@@ -1,4 +1,4 @@
--- Test for pg_linter B002 rule: Redundant indexes
+-- Test for pglinter B002 rule: Redundant indexes
 BEGIN;
 
 -- Create test tables with redundant indexes
@@ -36,29 +36,29 @@ CREATE INDEX idx_customer_2 ON orders_table (customer_id);
 CREATE INDEX idx_customer_date_1 ON orders_table (customer_id, order_date);
 CREATE INDEX idx_customer_date_2 ON orders_table (customer_id, order_date);
 
-CREATE EXTENSION IF NOT EXISTS pg_linter;
+CREATE EXTENSION IF NOT EXISTS pglinter;
 
 -- Test with file output
-SELECT pg_linter.perform_base_check('/tmp/pg_linter_b002_results.sarif');
+SELECT pglinter.perform_base_check('/tmp/pglinter_b002_results.sarif');
 
 -- Test if file exists and show checksum
-\! md5sum /tmp/pg_linter_b002_results.sarif
+\! md5sum /tmp/pglinter_b002_results.sarif
 
 -- Test with no output file (should output to prompt)
-SELECT pg_linter.perform_base_check();
+SELECT pglinter.perform_base_check();
 
 -- Test rule management for B002
-SELECT pg_linter.explain_rule('B002');
+SELECT pglinter.explain_rule('B002');
 
 -- Show that B002 is enabled
-SELECT pg_linter.is_rule_enabled('B002') AS b002_enabled;
+SELECT pglinter.is_rule_enabled('B002') AS b002_enabled;
 
 -- Disable B002 temporarily and test
-SELECT pg_linter.disable_rule('B002') AS b002_disabled;
-SELECT pg_linter.perform_base_check();
+SELECT pglinter.disable_rule('B002') AS b002_disabled;
+SELECT pglinter.perform_base_check();
 
 -- Re-enable B002
-SELECT pg_linter.enable_rule('B002') AS b002_re_enabled;
+SELECT pglinter.enable_rule('B002') AS b002_re_enabled;
 
 -- Clean up test tables
 DROP TABLE IF EXISTS test_table_with_redundant_indexes CASCADE;

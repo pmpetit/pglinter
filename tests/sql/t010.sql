@@ -1,7 +1,7 @@
 -- Test for T010 rule - Tables using reserved keywords
 BEGIN;
 
-DROP EXTENSION IF EXISTS pg_linter CASCADE;
+DROP EXTENSION IF EXISTS pglinter CASCADE;
 
 -- Create tables and columns using reserved keywords (should trigger T010)
 CREATE TABLE "SELECT" (
@@ -36,28 +36,28 @@ INSERT INTO users ("FROM", "WHERE", username) VALUES ('location1', 'condition1',
 INSERT INTO products ("ORDER", price) VALUES ('desc', 99.99);
 INSERT INTO clean_table (description, category_name, status_flag) VALUES ('Clean test', 'Category A', true);
 
-CREATE EXTENSION IF NOT EXISTS pg_linter;
+CREATE EXTENSION IF NOT EXISTS pglinter;
 
 -- Test the T010 rule
 SELECT 'Testing T010 rule - Reserved keywords...' as test_info;
 
 -- Run table check to detect reserved keyword usage
-SELECT pg_linter.perform_table_check();
+SELECT pglinter.perform_table_check();
 
 -- Test rule management
-SELECT pg_linter.explain_rule('T010');
-SELECT pg_linter.is_rule_enabled('T010') AS t010_enabled;
+SELECT pglinter.explain_rule('T010');
+SELECT pglinter.is_rule_enabled('T010') AS t010_enabled;
 
 -- Test disabling T010
-SELECT pg_linter.disable_rule('T010') AS t010_disabled;
-SELECT pg_linter.perform_table_check(); -- Should skip T010
+SELECT pglinter.disable_rule('T010') AS t010_disabled;
+SELECT pglinter.perform_table_check(); -- Should skip T010
 
 -- Re-enable T010
-SELECT pg_linter.enable_rule('T010') AS t010_reenabled;
-SELECT pg_linter.perform_table_check(); -- Should include T010 again
+SELECT pglinter.enable_rule('T010') AS t010_reenabled;
+SELECT pglinter.perform_table_check(); -- Should include T010 again
 
 -- Show all rules status
-SELECT pg_linter.show_rules();
+SELECT pglinter.show_rules();
 
 -- Clean up
 DROP TABLE clean_table CASCADE;

@@ -10,7 +10,7 @@ Executes all enabled base rules (B-series) and returns or saves results.
 
 **Syntax:**
 ```sql
-SELECT pg_linter.perform_base_check([output_file text]);
+SELECT pglinter.perform_base_check([output_file text]);
 ```
 
 **Parameters:**
@@ -23,13 +23,13 @@ SELECT pg_linter.perform_base_check([output_file text]);
 **Examples:**
 ```sql
 -- Output to console
-SELECT * FROM pg_linter.perform_base_check();
+SELECT * FROM pglinter.perform_base_check();
 
 -- Save to file
-SELECT pg_linter.perform_base_check('/tmp/base_results.sarif');
+SELECT pglinter.perform_base_check('/tmp/base_results.sarif');
 
 -- Dynamic filename
-SELECT pg_linter.perform_base_check(
+SELECT pglinter.perform_base_check(
     '/logs/base_' || to_char(now(), 'YYYY-MM-DD') || '.sarif'
 );
 ```
@@ -50,7 +50,7 @@ Executes all enabled cluster rules (C-series) for PostgreSQL configuration analy
 
 **Syntax:**
 ```sql
-SELECT pg_linter.perform_cluster_check([output_file text]);
+SELECT pglinter.perform_cluster_check([output_file text]);
 ```
 
 **Parameters:**
@@ -63,10 +63,10 @@ SELECT pg_linter.perform_cluster_check([output_file text]);
 **Examples:**
 ```sql
 -- Check cluster configuration
-SELECT * FROM pg_linter.perform_cluster_check();
+SELECT * FROM pglinter.perform_cluster_check();
 
 -- Save cluster analysis
-SELECT pg_linter.perform_cluster_check('/tmp/cluster_analysis.sarif');
+SELECT pglinter.perform_cluster_check('/tmp/cluster_analysis.sarif');
 ```
 
 **Rule Coverage:**
@@ -81,7 +81,7 @@ Executes all enabled table rules (T-series) for individual table analysis.
 
 **Syntax:**
 ```sql
-SELECT pg_linter.perform_table_check([output_file text]);
+SELECT pglinter.perform_table_check([output_file text]);
 ```
 
 **Parameters:**
@@ -94,10 +94,10 @@ SELECT pg_linter.perform_table_check([output_file text]);
 **Examples:**
 ```sql
 -- Analyze all tables
-SELECT * FROM pg_linter.perform_table_check();
+SELECT * FROM pglinter.perform_table_check();
 
 -- Save table analysis
-SELECT pg_linter.perform_table_check('/tmp/table_analysis.sarif');
+SELECT pglinter.perform_table_check('/tmp/table_analysis.sarif');
 ```
 
 **Rule Coverage:**
@@ -122,7 +122,7 @@ Executes all enabled schema rules (S-series) for schema-level analysis.
 
 **Syntax:**
 ```sql
-SELECT pg_linter.perform_schema_check([output_file text]);
+SELECT pglinter.perform_schema_check([output_file text]);
 ```
 
 **Parameters:**
@@ -135,10 +135,10 @@ SELECT pg_linter.perform_schema_check([output_file text]);
 **Examples:**
 ```sql
 -- Analyze schemas
-SELECT * FROM pg_linter.perform_schema_check();
+SELECT * FROM pglinter.perform_schema_check();
 
 -- Save schema analysis
-SELECT pg_linter.perform_schema_check('/tmp/schema_analysis.sarif');
+SELECT pglinter.perform_schema_check('/tmp/schema_analysis.sarif');
 ```
 
 **Rule Coverage:**
@@ -155,7 +155,7 @@ Displays all available rules with their current status.
 
 **Syntax:**
 ```sql
-SELECT * FROM pg_linter.show_rules();
+SELECT * FROM pglinter.show_rules();
 ```
 
 **Returns:**
@@ -168,13 +168,13 @@ Table with columns:
 **Example:**
 ```sql
 -- Show all rules
-SELECT * FROM pg_linter.show_rules();
+SELECT * FROM pglinter.show_rules();
 
 -- Show only enabled rules
-SELECT * FROM pg_linter.show_rules() WHERE enabled = true;
+SELECT * FROM pglinter.show_rules() WHERE enabled = true;
 
 -- Show rules by category
-SELECT * FROM pg_linter.show_rules() WHERE rule_code LIKE 'B%';
+SELECT * FROM pglinter.show_rules() WHERE rule_code LIKE 'B%';
 ```
 
 ---
@@ -185,7 +185,7 @@ Checks if a specific rule is currently enabled.
 
 **Syntax:**
 ```sql
-SELECT pg_linter.is_rule_enabled(rule_code text);
+SELECT pglinter.is_rule_enabled(rule_code text);
 ```
 
 **Parameters:**
@@ -197,10 +197,10 @@ SELECT pg_linter.is_rule_enabled(rule_code text);
 **Examples:**
 ```sql
 -- Check if B001 is enabled
-SELECT pg_linter.is_rule_enabled('B001');
+SELECT pglinter.is_rule_enabled('B001');
 
 -- Check multiple rules
-SELECT rule_code, pg_linter.is_rule_enabled(rule_code) as enabled
+SELECT rule_code, pglinter.is_rule_enabled(rule_code) as enabled
 FROM (VALUES ('B001'), ('B002'), ('T001')) AS rules(rule_code);
 ```
 
@@ -212,7 +212,7 @@ Enables a specific rule for future analysis.
 
 **Syntax:**
 ```sql
-SELECT pg_linter.enable_rule(rule_code text);
+SELECT pglinter.enable_rule(rule_code text);
 ```
 
 **Parameters:**
@@ -224,16 +224,16 @@ SELECT pg_linter.enable_rule(rule_code text);
 **Examples:**
 ```sql
 -- Enable a specific rule
-SELECT pg_linter.enable_rule('B001');
+SELECT pglinter.enable_rule('B001');
 
 -- Enable multiple rules
-SELECT pg_linter.enable_rule('B001'),
-       pg_linter.enable_rule('B002'),
-       pg_linter.enable_rule('T001');
+SELECT pglinter.enable_rule('B001'),
+       pglinter.enable_rule('B002'),
+       pglinter.enable_rule('T001');
 
 -- Enable all base rules
-SELECT pg_linter.enable_rule(rule_code)
-FROM pg_linter.show_rules()
+SELECT pglinter.enable_rule(rule_code)
+FROM pglinter.show_rules()
 WHERE rule_code LIKE 'B%';
 ```
 
@@ -245,7 +245,7 @@ Disables a specific rule from future analysis.
 
 **Syntax:**
 ```sql
-SELECT pg_linter.disable_rule(rule_code text);
+SELECT pglinter.disable_rule(rule_code text);
 ```
 
 **Parameters:**
@@ -257,12 +257,12 @@ SELECT pg_linter.disable_rule(rule_code text);
 **Examples:**
 ```sql
 -- Disable a specific rule
-SELECT pg_linter.disable_rule('B004');
+SELECT pglinter.disable_rule('B004');
 
 -- Disable performance-related rules
-SELECT pg_linter.disable_rule('B004'), -- Unused indexes
-       pg_linter.disable_rule('T007'), -- Table unused indexes
-       pg_linter.disable_rule('T005'); -- High seq scans
+SELECT pglinter.disable_rule('B004'), -- Unused indexes
+       pglinter.disable_rule('T007'), -- Table unused indexes
+       pglinter.disable_rule('T005'); -- High seq scans
 ```
 
 ---
@@ -273,7 +273,7 @@ Provides detailed information about a specific rule including description and fi
 
 **Syntax:**
 ```sql
-SELECT pg_linter.explain_rule(rule_code text);
+SELECT pglinter.explain_rule(rule_code text);
 ```
 
 **Parameters:**
@@ -285,11 +285,11 @@ SELECT pg_linter.explain_rule(rule_code text);
 **Examples:**
 ```sql
 -- Get explanation for B002
-SELECT pg_linter.explain_rule('B002');
+SELECT pglinter.explain_rule('B002');
 
 -- Get explanations for all rules
-SELECT rule_code, pg_linter.explain_rule(rule_code) as explanation
-FROM pg_linter.show_rules()
+SELECT rule_code, pglinter.explain_rule(rule_code) as explanation
+FROM pglinter.show_rules()
 ORDER BY rule_code;
 ```
 
@@ -336,7 +336,7 @@ When an output file is specified, results are saved in SARIF (Static Analysis Re
     {
       "tool": {
         "driver": {
-          "name": "pg_linter",
+          "name": "pglinter",
           "version": "1.0.0"
         }
       },
@@ -385,11 +385,11 @@ Functions return descriptive error messages:
 
 ```sql
 -- Invalid rule code
-SELECT pg_linter.enable_rule('INVALID');
+SELECT pglinter.enable_rule('INVALID');
 -- Returns: "Rule 'INVALID' not found"
 
 -- File permission error
-SELECT pg_linter.perform_base_check('/root/protected.sarif');
+SELECT pglinter.perform_base_check('/root/protected.sarif');
 -- Returns: "Error: could not write to file '/root/protected.sarif'"
 ```
 
@@ -407,20 +407,20 @@ SELECT pg_linter.perform_base_check('/root/protected.sarif');
 1. **Selective Analysis**
 ```sql
 -- Run only specific rule categories
-SELECT pg_linter.perform_table_check(); -- Only table rules
+SELECT pglinter.perform_table_check(); -- Only table rules
 ```
 
 2. **Scheduled Analysis**
 ```sql
 -- Run during low-usage periods
-SELECT cron.schedule('pg_linter-weekly', '0 2 * * 0',
-    'SELECT pg_linter.perform_base_check(''/logs/weekly.sarif'');');
+SELECT cron.schedule('pglinter-weekly', '0 2 * * 0',
+    'SELECT pglinter.perform_base_check(''/logs/weekly.sarif'');');
 ```
 
 3. **Rule Management**
 ```sql
 -- Disable expensive rules in development
-SELECT pg_linter.disable_rule('T005'); -- High seq scan analysis
+SELECT pglinter.disable_rule('T005'); -- High seq scan analysis
 ```
 
 ## Integration Examples
@@ -431,7 +431,7 @@ SELECT pg_linter.disable_rule('T005'); -- High seq scan analysis
 # GitHub Actions example
 - name: Database Analysis
   run: |
-    psql -c "SELECT pg_linter.perform_base_check('/tmp/results.sarif');"
+    psql -c "SELECT pglinter.perform_base_check('/tmp/results.sarif');"
 
 - name: Upload Results
   uses: github/codeql-action/upload-sarif@v2
@@ -446,14 +446,14 @@ SELECT pg_linter.disable_rule('T005'); -- High seq scan analysis
 # daily_db_check.sh
 
 DB_NAME="production_db"
-OUTPUT_DIR="/var/log/pg_linter"
+OUTPUT_DIR="/var/log/pglinter"
 DATE=$(date +%Y-%m-%d)
 
 # Run comprehensive analysis
 psql -d $DB_NAME -c "
-SELECT pg_linter.perform_base_check('$OUTPUT_DIR/base_$DATE.sarif');
-SELECT pg_linter.perform_table_check('$OUTPUT_DIR/table_$DATE.sarif');
-SELECT pg_linter.perform_cluster_check('$OUTPUT_DIR/cluster_$DATE.sarif');
+SELECT pglinter.perform_base_check('$OUTPUT_DIR/base_$DATE.sarif');
+SELECT pglinter.perform_table_check('$OUTPUT_DIR/table_$DATE.sarif');
+SELECT pglinter.perform_cluster_check('$OUTPUT_DIR/cluster_$DATE.sarif');
 "
 
 # Check for critical issues

@@ -1,4 +1,4 @@
--- Test for pg_linter B001 rule with file output
+-- Test for pglinter B001 rule with file output
 BEGIN;
 
 CREATE TABLE IF NOT EXISTS my_table_without_pk (
@@ -12,15 +12,15 @@ CREATE TABLE IF NOT EXISTS my_table_without_pk (
     scope TEXT
 );
 
-CREATE EXTENSION IF NOT EXISTS pg_linter;
+CREATE EXTENSION IF NOT EXISTS pglinter;
 
 -- Test with file output
-SELECT pg_linter.perform_base_check('/tmp/pg_linter_base_results.sarif');
+SELECT pglinter.perform_base_check('/tmp/pglinter_base_results.sarif');
 
 -- Test if file exists
-\! md5sum /tmp/pg_linter_base_results.sarif
+\! md5sum /tmp/pglinter_base_results.sarif
 
 -- Test with no output file (should output to prompt)
-SELECT pg_linter.perform_base_check();
+SELECT pglinter.perform_base_check();
 
 ROLLBACK;

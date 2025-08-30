@@ -1,7 +1,7 @@
 -- Test for T008 rule - Tables with foreign key type mismatches
 BEGIN;
 
-DROP EXTENSION IF EXISTS pg_linter CASCADE;
+DROP EXTENSION IF EXISTS pglinter CASCADE;
 
 -- Create parent tables with different types
 CREATE TABLE users (
@@ -54,25 +54,25 @@ INSERT INTO categories (id, name) VALUES (1, 'Electronics'), (2, 'Books');
 INSERT INTO orders (user_id, category_id, total) VALUES (1, 1, 99.99);
 INSERT INTO reviews (user_id, category_id, rating) VALUES (1, 1, 5);
 
-CREATE EXTENSION IF NOT EXISTS pg_linter;
+CREATE EXTENSION IF NOT EXISTS pglinter;
 
 -- Test the T008 rule
 SELECT 'Testing T008 rule - Foreign key type mismatches...' as test_info;
 
 -- Run table check to detect type mismatches
-SELECT pg_linter.perform_table_check();
+SELECT pglinter.perform_table_check();
 
 -- Test rule management
-SELECT pg_linter.explain_rule('T008');
-SELECT pg_linter.is_rule_enabled('T008') AS t008_enabled;
+SELECT pglinter.explain_rule('T008');
+SELECT pglinter.is_rule_enabled('T008') AS t008_enabled;
 
 -- Test disabling T008
-SELECT pg_linter.disable_rule('T008') AS t008_disabled;
-SELECT pg_linter.perform_table_check(); -- Should skip T008
+SELECT pglinter.disable_rule('T008') AS t008_disabled;
+SELECT pglinter.perform_table_check(); -- Should skip T008
 
 -- Re-enable T008
-SELECT pg_linter.enable_rule('T008') AS t008_reenabled;
-SELECT pg_linter.perform_table_check(); -- Should include T008 again
+SELECT pglinter.enable_rule('T008') AS t008_reenabled;
+SELECT pglinter.perform_table_check(); -- Should include T008 again
 
 -- Clean up
 DROP TABLE reviews CASCADE;

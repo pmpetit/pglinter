@@ -1,12 +1,12 @@
 # Security Considerations
 
-pg_linter analyzes your database structure and configuration, which requires understanding potential security implications and best practices.
+pglinter analyzes your database structure and configuration, which requires understanding potential security implications and best practices.
 
 ## Security Model
 
 ### Extension Privileges
 
-pg_linter operates with the privileges of the user who calls its functions:
+pglinter operates with the privileges of the user who calls its functions:
 
 - **Superuser**: Full access to all analysis features
 - **Database Owner**: Access to owned databases
@@ -14,9 +14,9 @@ pg_linter operates with the privileges of the user who calls its functions:
 
 ### Data Access
 
-pg_linter analyzes database metadata and structure, NOT actual data:
+pglinter analyzes database metadata and structure, NOT actual data:
 
-✅ **What pg_linter accesses:**
+✅ **What pglinter accesses:**
 - Table and column names
 - Index definitions
 - Constraint information
@@ -24,7 +24,7 @@ pg_linter analyzes database metadata and structure, NOT actual data:
 - PostgreSQL configuration (when accessible)
 - Database statistics (pg_stat_*)
 
-❌ **What pg_linter does NOT access:**
+❌ **What pglinter does NOT access:**
 - Actual row data
 - User passwords
 - Sensitive application data
@@ -32,7 +32,7 @@ pg_linter analyzes database metadata and structure, NOT actual data:
 
 ### File System Access
 
-pg_linter can write SARIF output files when specified:
+pglinter can write SARIF output files when specified:
 
 - Uses PostgreSQL's file writing permissions
 - Respects PostgreSQL's `log_directory` and similar settings
@@ -40,7 +40,7 @@ pg_linter can write SARIF output files when specified:
 
 ## Security Rules
 
-pg_linter includes several security-focused rules:
+pglinter includes several security-focused rules:
 
 ### B005: Unsecured Public Schema
 
@@ -48,7 +48,7 @@ Detects when the public schema allows CREATE privileges for all users:
 
 ```sql
 -- Check public schema security
-SELECT pg_linter.explain_rule('B005');
+SELECT pglinter.explain_rule('B005');
 
 -- Manual check
 SELECT has_schema_privilege('public', 'public', 'CREATE');
@@ -82,7 +82,7 @@ Identifies tables without proper access controls:
 
 ```sql
 -- Find tables without role-based access
-SELECT pg_linter.explain_rule('T009');
+SELECT pglinter.explain_rule('T009');
 ```
 
 **Recommendation**: Implement proper role-based access:
@@ -103,19 +103,19 @@ GRANT SELECT, INSERT, UPDATE ON TABLE user_table TO app_write;
 
 1. **Least Privilege Principle**
    ```sql
-   -- Create dedicated user for pg_linter
-   CREATE USER pg_linter_scanner WITH PASSWORD 'secure_password';
+   -- Create dedicated user for pglinter
+   CREATE USER pglinter_scanner WITH PASSWORD 'secure_password';
 
    -- Grant minimal required permissions
-   GRANT CONNECT ON DATABASE mydb TO pg_linter_scanner;
-   GRANT USAGE ON SCHEMA information_schema TO pg_linter_scanner;
-   GRANT SELECT ON ALL TABLES IN SCHEMA information_schema TO pg_linter_scanner;
+   GRANT CONNECT ON DATABASE mydb TO pglinter_scanner;
+   GRANT USAGE ON SCHEMA information_schema TO pglinter_scanner;
+   GRANT SELECT ON ALL TABLES IN SCHEMA information_schema TO pglinter_scanner;
    ```
 
 2. **Restricted File Access**
    ```sql
    -- Only write to designated log directory
-   SELECT pg_linter.perform_base_check('/var/log/pg_linter/scan_results.sarif');
+   SELECT pglinter.perform_base_check('/var/log/pglinter/scan_results.sarif');
    ```
 
 3. **Network Security**
@@ -136,9 +136,9 @@ GRANT SELECT, INSERT, UPDATE ON TABLE user_table TO app_write;
 2. **Limited Scope**
    ```sql
    -- Use read-only user for CI analysis
-   CREATE USER ci_pg_linter WITH PASSWORD '${CI_PASSWORD}';
-   GRANT CONNECT ON DATABASE mydb TO ci_pg_linter;
-   GRANT USAGE ON SCHEMA public TO ci_pg_linter;
+   CREATE USER ci_pglinter WITH PASSWORD '${CI_PASSWORD}';
+   GRANT CONNECT ON DATABASE mydb TO ci_pglinter;
+   GRANT USAGE ON SCHEMA public TO ci_pglinter;
    -- Grant only SELECT on metadata tables
    ```
 
@@ -160,7 +160,7 @@ When the PostgreSQL Anonymizer extension is available, T012 can detect potential
 
 ```sql
 -- Check for sensitive data patterns
-SELECT pg_linter.explain_rule('T012');
+SELECT pglinter.explain_rule('T012');
 ```
 
 **Common sensitive patterns**:
@@ -188,7 +188,7 @@ SARIF files may contain sensitive information:
 
 ### GDPR/Privacy Regulations
 
-pg_linter can help identify privacy compliance issues:
+pglinter can help identify privacy compliance issues:
 
 1. **Data Discovery**: Identify tables that might contain personal data
 2. **Access Controls**: Verify proper role-based access
@@ -214,7 +214,7 @@ For healthcare applications:
 
 ### Security Issue Detection
 
-If pg_linter identifies security issues:
+If pglinter identifies security issues:
 
 1. **Immediate Assessment**
    - Evaluate the severity
@@ -237,7 +237,7 @@ Sometimes security rules may flag acceptable configurations:
 
 ```sql
 -- Disable specific rules if justified
-SELECT pg_linter.disable_rule('B005') -- If public schema use is intentional
+SELECT pglinter.disable_rule('B005') -- If public schema use is intentional
 ```
 
 **Best Practice**: Document why rules are disabled rather than simply turning them off.
@@ -252,17 +252,17 @@ SELECT pg_linter.disable_rule('B005') -- If public schema use is intentional
 
 # Run security-focused rules
 psql -d mydb -c "
-SELECT pg_linter.disable_rule(rule_code)
-FROM pg_linter.show_rules()
+SELECT pglinter.disable_rule(rule_code)
+FROM pglinter.show_rules()
 WHERE rule_code NOT LIKE 'B005'
   AND rule_code NOT LIKE 'C002'
   AND rule_code NOT LIKE 'T009';
 
-SELECT pg_linter.perform_base_check('/var/log/pg_linter/security_scan.sarif');
+SELECT pglinter.perform_base_check('/var/log/pglinter/security_scan.sarif');
 "
 
 # Check for critical issues
-if grep -q '"level": "error"' /var/log/pg_linter/security_scan.sarif; then
+if grep -q '"level": "error"' /var/log/pglinter/security_scan.sarif; then
     echo "CRITICAL: Security issues found!"
     # Send alert
 fi
@@ -270,7 +270,7 @@ fi
 
 ### Integration with Security Tools
 
-pg_linter SARIF output integrates with:
+pglinter SARIF output integrates with:
 
 - **GitHub Security Tab**: Automatic security issue tracking
 - **GitLab Security Dashboard**: Centralized security reporting
@@ -288,7 +288,7 @@ SELECT
     level,
     message,
     count
-FROM pg_linter.perform_base_check()
+FROM pglinter.perform_base_check()
 WHERE rule_code IN ('B005', 'C002', 'T009')
 ORDER BY
     CASE level
@@ -302,7 +302,7 @@ ORDER BY
 
 Provide auditors with:
 
-1. **pg_linter Configuration**: Which rules are enabled
+1. **pglinter Configuration**: Which rules are enabled
 2. **Analysis Schedule**: How often scans are performed
 3. **Issue Resolution**: How security issues are addressed
 4. **Access Controls**: Who can run analysis and view results
@@ -313,7 +313,7 @@ Provide auditors with:
 2. **Regular Monitoring**: Schedule automated security scans
 3. **Secure Storage**: Protect SARIF output and configuration
 4. **Documentation**: Maintain security procedures and justifications
-5. **Integration**: Include pg_linter in broader security strategy
+5. **Integration**: Include pglinter in broader security strategy
 6. **Review**: Regularly review and update security configurations
 7. **Training**: Ensure team understands security implications
 

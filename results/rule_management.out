@@ -1,15 +1,15 @@
--- Test for pg_linter rule management functionality
+-- Test for pglinter rule management functionality
 BEGIN;
-DROP EXTENSION IF EXISTS pg_linter CASCADE;
-NOTICE:  extension "pg_linter" does not exist, skipping
+DROP EXTENSION IF EXISTS pglinter CASCADE;
+NOTICE:  extension "pglinter" does not exist, skipping
 CREATE TABLE IF NOT EXISTS test_table_for_rules (
     id INT,
     name TEXT
 );
-CREATE EXTENSION IF NOT EXISTS pg_linter;
+CREATE EXTENSION IF NOT EXISTS pglinter;
 -- Show initial rule status
-SELECT pg_linter.show_rules();
-NOTICE:  📋 pg_linter Rule Status:
+SELECT pglinter.show_rules();
+NOTICE:  📋 pglinter Rule Status:
 NOTICE:  ============================================================
 NOTICE:  Code   Status   Name
 NOTICE:  ------------------------------------------------------------
@@ -43,14 +43,14 @@ NOTICE:  📊 Summary: 22 enabled, 0 disabled
 (1 row)
 
 -- Test enabling and disabling a specific rule
-SELECT pg_linter.is_rule_enabled('B001') AS b001_initially_enabled;
+SELECT pglinter.is_rule_enabled('B001') AS b001_initially_enabled;
  b001_initially_enabled
 ------------------------
  t
 (1 row)
 
 -- Disable B001 rule
-SELECT pg_linter.disable_rule('B001') AS b001_disabled;
+SELECT pglinter.disable_rule('B001') AS b001_disabled;
 NOTICE:  🔴 Rule B001 has been disabled
  b001_disabled
 ---------------
@@ -58,15 +58,15 @@ NOTICE:  🔴 Rule B001 has been disabled
 (1 row)
 
 -- Check if it's disabled
-SELECT pg_linter.is_rule_enabled('B001') AS b001_after_disable;
+SELECT pglinter.is_rule_enabled('B001') AS b001_after_disable;
  b001_after_disable
 --------------------
  f
 (1 row)
 
 -- Run base check (should skip B001)
-SELECT pg_linter.perform_base_check();
-NOTICE:  🔍 pg_linter found 2 issue(s):
+SELECT pglinter.perform_base_check();
+NOTICE:  🔍 pglinter found 2 issue(s):
 NOTICE:  ==================================================
 NOTICE:  ⚠️  [B004] WARNING: Found 1 potentially unused indexes
 NOTICE:  ❌ [B005] ERROR: Public schema allows CREATE privilege for all users - security risk
@@ -79,7 +79,7 @@ NOTICE:  🔴 Critical issues found - please review and fix errors
 (1 row)
 
 -- Re-enable B001 rule
-SELECT pg_linter.enable_rule('B001') AS b001_enabled;
+SELECT pglinter.enable_rule('B001') AS b001_enabled;
 NOTICE:  ✅ Rule B001 has been enabled
  b001_enabled
 --------------
@@ -87,14 +87,14 @@ NOTICE:  ✅ Rule B001 has been enabled
 (1 row)
 
 -- Check if it's enabled again
-SELECT pg_linter.is_rule_enabled('B001') AS b001_after_enable;
+SELECT pglinter.is_rule_enabled('B001') AS b001_after_enable;
  b001_after_enable
 -------------------
  t
 (1 row)
 
 -- Test with non-existent rule
-SELECT pg_linter.disable_rule('NONEXISTENT') AS nonexistent_disable;
+SELECT pglinter.disable_rule('NONEXISTENT') AS nonexistent_disable;
 WARNING:  ⚠️  Rule NONEXISTENT not found
  nonexistent_disable
 ---------------------
@@ -102,8 +102,8 @@ WARNING:  ⚠️  Rule NONEXISTENT not found
 (1 row)
 
 -- Show final rule status
-SELECT pg_linter.show_rules();
-NOTICE:  📋 pg_linter Rule Status:
+SELECT pglinter.show_rules();
+NOTICE:  📋 pglinter Rule Status:
 NOTICE:  ============================================================
 NOTICE:  Code   Status   Name
 NOTICE:  ------------------------------------------------------------
