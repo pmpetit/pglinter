@@ -8,20 +8,23 @@ Complete reference for all PG Linter functions and their usage.
 
 Executes all enabled base rules (B-series) and returns or saves results.
 
-**Syntax:**
+## Syntax: perform_base_check
 
 ```sql
 SELECT pglinter.perform_base_check([output_file text]);
 ```
 
-**Parameters:**
+## Parameters
+
 - `output_file` (optional): Path to save SARIF results. If omitted, results are returned to console.
 
-**Returns:**
+## Returns
+
 - When `output_file` specified: Success message
 - When no file specified: Table with rule results
 
-**Examples:**
+## Examples
+
 ```sql
 -- Output to console
 SELECT * FROM pglinter.perform_base_check();
@@ -35,7 +38,8 @@ SELECT pglinter.perform_base_check(
 );
 ```
 
-**Rule Coverage:**
+## Rule Coverage
+
 - B001: Tables without primary keys
 - B002: Redundant indexes
 - B003: Tables without indexes on foreign keys
@@ -49,19 +53,23 @@ SELECT pglinter.perform_base_check(
 
 Executes all enabled cluster rules (C-series) for PostgreSQL configuration analysis.
 
-**Syntax:**
+## Syntax
+
 ```sql
 SELECT pglinter.perform_cluster_check([output_file text]);
 ```
 
-**Parameters:**
+## Parameters
+
 - `output_file` (optional): Path to save SARIF results
 
-**Returns:**
+## Returns
+
 - When `output_file` specified: Success message
 - When no file specified: Table with rule results
 
-**Examples:**
+## Examples
+
 ```sql
 -- Check cluster configuration
 SELECT * FROM pglinter.perform_cluster_check();
@@ -70,7 +78,8 @@ SELECT * FROM pglinter.perform_cluster_check();
 SELECT pglinter.perform_cluster_check('/tmp/cluster_analysis.sarif');
 ```
 
-**Rule Coverage:**
+## Rule Coverage
+
 - C001: Memory configuration issues
 - C002: Insecure pg_hba.conf entries
 
@@ -80,19 +89,23 @@ SELECT pglinter.perform_cluster_check('/tmp/cluster_analysis.sarif');
 
 Executes all enabled table rules (T-series) for individual table analysis.
 
-**Syntax:**
+## Syntax
+
 ```sql
 SELECT pglinter.perform_table_check([output_file text]);
 ```
 
-**Parameters:**
+## Parameters
+
 - `output_file` (optional): Path to save SARIF results
 
-**Returns:**
+## Returns
+
 - When `output_file` specified: Success message
 - When no file specified: Table with rule results
 
-**Examples:**
+## Examples
+
 ```sql
 -- Analyze all tables
 SELECT * FROM pglinter.perform_table_check();
@@ -101,7 +114,8 @@ SELECT * FROM pglinter.perform_table_check();
 SELECT pglinter.perform_table_check('/tmp/table_analysis.sarif');
 ```
 
-**Rule Coverage:**
+## Rule Coverage
+
 - T001: Individual tables without primary keys
 - T002: Tables without any indexes
 - T003: Tables with redundant indexes
@@ -121,19 +135,23 @@ SELECT pglinter.perform_table_check('/tmp/table_analysis.sarif');
 
 Executes all enabled schema rules (S-series) for schema-level analysis.
 
-**Syntax:**
+## Syntax
+
 ```sql
 SELECT pglinter.perform_schema_check([output_file text]);
 ```
 
-**Parameters:**
+## Parameters
+
 - `output_file` (optional): Path to save SARIF results
 
-**Returns:**
+## Returns
+
 - When `output_file` specified: Success message
 - When no file specified: Table with rule results
 
-**Examples:**
+## Examples
+
 ```sql
 -- Analyze schemas
 SELECT * FROM pglinter.perform_schema_check();
@@ -142,7 +160,8 @@ SELECT * FROM pglinter.perform_schema_check();
 SELECT pglinter.perform_schema_check('/tmp/schema_analysis.sarif');
 ```
 
-**Rule Coverage:**
+## Rule Coverage
+
 - S001: Schemas without proper privileges
 - S002: Schemas with public privileges
 
@@ -154,19 +173,21 @@ SELECT pglinter.perform_schema_check('/tmp/schema_analysis.sarif');
 
 Displays all available rules with their current status.
 
-**Syntax:**
+## Syntax
+
 ```sql
 SELECT * FROM pglinter.show_rules();
 ```
 
-**Returns:**
+## Returns
 Table with columns:
 - `rule_code`: Rule identifier (e.g., 'B001')
 - `description`: Brief rule description
 - `enabled`: Whether rule is currently enabled
 - `scope`: Rule category (Base, Cluster, Table, Schema)
 
-**Example:**
+## Example
+
 ```sql
 -- Show all rules
 SELECT * FROM pglinter.show_rules();
@@ -184,18 +205,22 @@ SELECT * FROM pglinter.show_rules() WHERE rule_code LIKE 'B%';
 
 Checks if a specific rule is currently enabled.
 
-**Syntax:**
+## Syntax
+
 ```sql
 SELECT pglinter.is_rule_enabled(rule_code text);
 ```
 
-**Parameters:**
+## Parameters
+
 - `rule_code`: Rule identifier (e.g., 'B001')
 
-**Returns:**
+## Returns
+
 - `boolean`: true if enabled, false if disabled, NULL if rule doesn't exist
 
-**Examples:**
+## Examples
+
 ```sql
 -- Check if B001 is enabled
 SELECT pglinter.is_rule_enabled('B001');
@@ -211,18 +236,22 @@ FROM (VALUES ('B001'), ('B002'), ('T001')) AS rules(rule_code);
 
 Enables a specific rule for future analysis.
 
-**Syntax:**
+## Syntax
+
 ```sql
 SELECT pglinter.enable_rule(rule_code text);
 ```
 
-**Parameters:**
+## Parameters
+
 - `rule_code`: Rule identifier to enable
 
-**Returns:**
+## Returns
+
 - `text`: Success or error message
 
-**Examples:**
+## Examples
+
 ```sql
 -- Enable a specific rule
 SELECT pglinter.enable_rule('B001');
@@ -244,18 +273,22 @@ WHERE rule_code LIKE 'B%';
 
 Disables a specific rule from future analysis.
 
-**Syntax:**
+## Syntax
+
 ```sql
 SELECT pglinter.disable_rule(rule_code text);
 ```
 
-**Parameters:**
+## Parameters
+
 - `rule_code`: Rule identifier to disable
 
-**Returns:**
+## Returns
+
 - `text`: Success or error message
 
-**Examples:**
+## Examples
+
 ```sql
 -- Disable a specific rule
 SELECT pglinter.disable_rule('B004');
@@ -272,18 +305,22 @@ SELECT pglinter.disable_rule('B004'), -- Unused indexes
 
 Provides detailed information about a specific rule including description and fixes.
 
-**Syntax:**
+## Syntax
+
 ```sql
 SELECT pglinter.explain_rule(rule_code text);
 ```
 
-**Parameters:**
+## Parameters
+
 - `rule_code`: Rule identifier to explain
 
-**Returns:**
+## Returns
+
 - `text`: Detailed rule explanation with description and numbered fix recommendations
 
-**Examples:**
+## Examples
+
 ```sql
 -- Get explanation for B002
 SELECT pglinter.explain_rule('B002');
@@ -294,8 +331,9 @@ FROM pglinter.show_rules()
 ORDER BY rule_code;
 ```
 
-**Sample Output:**
-```
+## Sample Output
+
+```text
 Rule B002: Redundant indexes
 
 Description: Detects redundant indexes that have identical column sets
@@ -313,15 +351,18 @@ How to fix:
 
 Enables all currently disabled rules in the system.
 
-**Syntax:**
+## Syntax
+
 ```sql
 SELECT pglinter.enable_all_rules();
 ```
 
-**Returns:**
+## Returns
+
 - `text`: Success message with count of rules enabled
 
-**Examples:**
+## Examples
+
 ```sql
 -- Enable all disabled rules
 SELECT pglinter.enable_all_rules();
@@ -339,15 +380,18 @@ FROM pglinter.show_rules();
 
 Disables all currently enabled rules in the system.
 
-**Syntax:**
+## Syntax
+
 ```sql
 SELECT pglinter.disable_all_rules();
 ```
 
-**Returns:**
+## Returns
+
 - `text`: Success message with count of rules disabled
 
-**Examples:**
+## Examples
+
 ```sql
 -- Disable all enabled rules
 SELECT pglinter.disable_all_rules();
@@ -364,7 +408,8 @@ SELECT pglinter.enable_rule('B001'),  -- Critical rules only
 
 Updates the warning and error thresholds for configurable rules.
 
-**Syntax:**
+## Syntax
+
 ```sql
 SELECT pglinter.update_rule_levels(
     rule_code text,
@@ -373,15 +418,18 @@ SELECT pglinter.update_rule_levels(
 );
 ```
 
-**Parameters:**
+## Parameters
+
 - `rule_code`: Rule identifier to update (e.g., 'T005')
 - `warning_level`: Warning threshold (NULL to keep current value)
 - `error_level`: Error threshold (NULL to keep current value)
 
-**Returns:**
+## Returns
+
 - `text`: Success message confirming the update
 
-**Examples:**
+## Examples
+
 ```sql
 -- Update both levels for T005 (sequential scan rule)
 SELECT pglinter.update_rule_levels('T005', 40.0, 80.0);
@@ -396,7 +444,8 @@ SELECT pglinter.update_rule_levels('T005', NULL, 95.0);
 -- Returns: "Updated rule T005: error_level=95"
 ```
 
-**Notes:**
+## Notes
+
 - Only applies to rules with configurable thresholds (currently T005)
 - Use NULL to preserve existing values for either parameter
 - For T005: values represent percentage thresholds for sequential scan ratio
@@ -407,18 +456,22 @@ SELECT pglinter.update_rule_levels('T005', NULL, 95.0);
 
 Retrieves the current warning and error threshold levels for a rule.
 
-**Syntax:**
+## Syntax
+
 ```sql
 SELECT pglinter.get_rule_levels(rule_code text);
 ```
 
-**Parameters:**
+## Parameters
+
 - `rule_code`: Rule identifier to query
 
-**Returns:**
+## Returns
+
 - `text`: Current warning and error levels, or default values if rule not configured
 
-**Examples:**
+## Examples
+
 ```sql
 -- Get current levels for T005
 SELECT pglinter.get_rule_levels('T005');
@@ -428,7 +481,8 @@ SELECT pglinter.get_rule_levels('T005');
 SELECT 'T005' as rule_code, pglinter.get_rule_levels('T005') as levels;
 ```
 
-**Notes:**
+## Notes
+
 - Returns default values (warning=50, error=90) for unconfigured rules
 - Currently only T005 supports configurable levels
 - Values for T005 represent percentage thresholds
@@ -445,11 +499,13 @@ Some rules support configurable warning and error thresholds that can be customi
 
 Rule T005 analyzes tables for potential missing indexes by calculating the percentage of tuples accessed via sequential scans versus total tuples accessed.
 
-**Default Thresholds:**
+## Default Thresholds
+
 - Warning: 50% (when ≥50% of tuple access is via sequential scans)
 - Error: 90% (when ≥90% of tuple access is via sequential scans)
 
-**Threshold Management:**
+## Threshold Management
+
 ```sql
 -- Check current T005 thresholds
 SELECT pglinter.get_rule_levels('T005');
@@ -464,7 +520,8 @@ SELECT pglinter.update_rule_levels('T005', 70.0, 95.0);
 SELECT pglinter.update_rule_levels('T005', 50.0, 90.0);
 ```
 
-**Understanding T005 Results:**
+## Understanding T005 Results
+
 ```sql
 -- Example T005 output
 -- "Table 'orders' has high sequential scan ratio: 75.5% (warning threshold: 50%)"
@@ -544,21 +601,27 @@ When an output file is specified, results are saved in SARIF (Static Analysis Re
 ### Common Errors
 
 1. **Permission Denied**
+
 ```sql
 ERROR: permission denied for function perform_base_check
 ```
+
 Solution: Ensure user has appropriate privileges
 
 2. **File Write Error**
+
 ```sql
 ERROR: could not open file "/invalid/path/results.sarif" for writing
 ```
+
 Solution: Check file path permissions and PostgreSQL file access settings
 
 3. **Invalid Rule Code**
+
 ```sql
 NOTICE: Rule 'INVALID' not found
 ```
+
 Solution: Use valid rule codes from `show_rules()`
 
 ### Error Response Format
@@ -587,12 +650,14 @@ SELECT pglinter.perform_base_check('/root/protected.sarif');
 ### Optimization Tips
 
 1. **Selective Analysis**
+
 ```sql
 -- Run only specific rule categories
 SELECT pglinter.perform_table_check(); -- Only table rules
 ```
 
-2. **Scheduled Analysis**
+1. **Scheduled Analysis**
+
 ```sql
 -- Run during low-usage periods
 SELECT cron.schedule('pglinter-weekly', '0 2 * * 0',
@@ -600,6 +665,7 @@ SELECT cron.schedule('pglinter-weekly', '0 2 * * 0',
 ```
 
 3. **Rule Management**
+
 ```sql
 -- Disable expensive rules in development
 SELECT pglinter.disable_rule('T005'); -- High seq scan analysis

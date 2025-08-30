@@ -203,6 +203,7 @@ help:
 	@echo "  fmt              - Format Rust code with cargo fmt"
 	@echo "  fmt-check        - Check if Rust code is properly formatted"
 	@echo "  lint-docs        - Lint markdown documentation files"
+	@echo "  lint-docs-fix    - Lint and automatically fix markdown files"
 	@echo "  spell-check      - Check spelling in documentation"
 	@echo "  audit            - Run security audit on dependencies"
 	@echo "  precommit        - Run all pre-commit checks (fmt, lint, docs, tests)"
@@ -210,7 +211,7 @@ help:
 	@echo "  install-precommit-hook - Install git pre-commit hook"
 	@echo "  help             - Show this help message"
 
-.PHONY: all extension install test-all installcheck start stop run psql clean help test-% test-prompt-% test-convenience lint fmt fmt-check lint-docs spell-check audit precommit precommit-fast install-precommit-hook
+.PHONY: all extension install test-all installcheck start stop run psql clean help test-% test-prompt-% test-convenience lint fmt fmt-check lint-docs lint-docs-fix spell-check audit precommit precommit-fast install-precommit-hook
 
 
 ##
@@ -233,8 +234,20 @@ lint-docs:
 	@if command -v rumdl > /dev/null; then \
 		echo "Linting markdown files..."; \
 		rumdl check docs/**/*.md *.md || true; \
+		echo ""; \
+		echo "💡 Tip: Run 'make lint-docs-fix' to automatically fix many issues"; \
 	else \
 		echo "rumdl not found, skipping markdown lint"; \
+	fi
+
+# Lint and automatically fix markdown files
+lint-docs-fix:
+	@if command -v rumdl > /dev/null; then \
+		echo "Linting and fixing markdown files..."; \
+		rumdl check --fix docs/**/*.md *.md; \
+		echo "✅ Auto-fixable markdown issues have been resolved!"; \
+	else \
+		echo "rumdl not found, skipping markdown lint and fix"; \
 	fi
 
 # Spell check documentation

@@ -31,6 +31,7 @@ make lint             # Run Rust clippy linting
 
 # Documentation
 make lint-docs        # Lint markdown documentation
+make lint-docs-fix    # Lint and auto-fix markdown files
 make spell-check      # Check spelling in docs
 
 # Security
@@ -63,7 +64,8 @@ make test-all         # Run all integration tests
 
 Once the hook is installed with `make install-precommit-hook`, every `git commit` will automatically run `make precommit-fast` to catch issues before they're committed.
 
-**To bypass the hook temporarily:**
+## To bypass the hook temporarily
+
 ```bash
 git commit --no-verify -m "Your commit message"
 ```
@@ -80,6 +82,7 @@ make precommit
 ## Troubleshooting
 
 ### Formatting Issues
+
 ```bash
 # Fix formatting automatically
 make fmt
@@ -90,6 +93,7 @@ git commit -m "Fix formatting"
 ```
 
 ### Linting Issues
+
 ```bash
 # See detailed linting output
 make lint
@@ -100,6 +104,7 @@ git commit -m "Fix linting issues"
 ```
 
 ### Test Failures
+
 ```bash
 # Run tests individually to debug
 make test
