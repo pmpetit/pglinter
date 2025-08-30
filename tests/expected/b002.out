@@ -31,7 +31,7 @@ CREATE INDEX idx_customer_date_1 ON orders_table (customer_id, order_date);
 CREATE INDEX idx_customer_date_2 ON orders_table (customer_id, order_date);
 CREATE EXTENSION IF NOT EXISTS dblinter;
 -- Test with file output
-SELECT dblinter.perform_base_check('/tmp/dblinter_b002_results.sarif');
+SELECT pg_linter.perform_base_check('/tmp/dblinter_b002_results.sarif');
  perform_base_check 
 --------------------
  t
@@ -41,7 +41,7 @@ SELECT dblinter.perform_base_check('/tmp/dblinter_b002_results.sarif');
 \! md5sum /tmp/dblinter_b002_results.sarif
 1f490c6cc56a91f032fee9da0c0a627a  /tmp/dblinter_b002_results.sarif
 -- Test with no output file (should output to prompt)
-SELECT dblinter.perform_base_check();
+SELECT pg_linter.perform_base_check();
 NOTICE:  🔍 dblinter found 3 issue(s):
 NOTICE:  ==================================================
 NOTICE:  ⚠️  [B002] WARNING: Found 8 potentially redundant indexes
@@ -56,7 +56,7 @@ NOTICE:  🔴 Critical issues found - please review and fix errors
 (1 row)
 
 -- Test rule management for B002
-SELECT dblinter.explain_rule('B002');
+SELECT pg_linter.explain_rule('B002');
 NOTICE:  📖 Rule Explanation for B002
 ============================================================
 
@@ -78,21 +78,21 @@ Count number of redundant index vs nb index.
 (1 row)
 
 -- Show that B002 is enabled
-SELECT dblinter.is_rule_enabled('B002') AS b002_enabled;
+SELECT pg_linter.is_rule_enabled('B002') AS b002_enabled;
  b002_enabled 
 --------------
  t
 (1 row)
 
 -- Disable B002 temporarily and test
-SELECT dblinter.disable_rule('B002') AS b002_disabled;
+SELECT pg_linter.disable_rule('B002') AS b002_disabled;
 NOTICE:  🔴 Rule B002 has been disabled
  b002_disabled 
 ---------------
  t
 (1 row)
 
-SELECT dblinter.perform_base_check();
+SELECT pg_linter.perform_base_check();
 NOTICE:  🔍 dblinter found 2 issue(s):
 NOTICE:  ==================================================
 NOTICE:  ⚠️  [B004] WARNING: Found 11 potentially unused indexes
@@ -106,7 +106,7 @@ NOTICE:  🔴 Critical issues found - please review and fix errors
 (1 row)
 
 -- Re-enable B002
-SELECT dblinter.enable_rule('B002') AS b002_re_enabled;
+SELECT pg_linter.enable_rule('B002') AS b002_re_enabled;
 NOTICE:  ✅ Rule B002 has been enabled
  b002_re_enabled 
 -----------------

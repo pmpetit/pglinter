@@ -8,13 +8,13 @@ Practical examples of using DBLinter in real-world scenarios.
 
 ```sql
 -- Quick health check
-SELECT * FROM dblinter.perform_base_check();
+SELECT * FROM pg_linter.perform_base_check();
 
 -- Save results to file
-SELECT dblinter.perform_base_check('/tmp/db_analysis.sarif');
+SELECT pg_linter.perform_base_check('/tmp/db_analysis.sarif');
 
 -- Check specific rule
-SELECT dblinter.explain_rule('B001');
+SELECT pg_linter.explain_rule('B001');
 ```
 
 ### Rule Management
@@ -22,15 +22,15 @@ SELECT dblinter.explain_rule('B001');
 ```sql
 -- View all rules
 SELECT rule_code, enabled, description
-FROM dblinter.show_rules()
+FROM pg_linter.show_rules()
 ORDER BY rule_code;
 
 -- Enable/disable rules
-SELECT dblinter.disable_rule('B005'); -- Public schema security
-SELECT dblinter.enable_rule('T004');  -- FK indexing
+SELECT pg_linter.disable_rule('B005'); -- Public schema security
+SELECT pg_linter.enable_rule('T004');  -- FK indexing
 
 -- Check rule status
-SELECT dblinter.is_rule_enabled('B002');
+SELECT pg_linter.is_rule_enabled('B002');
 ```
 
 ## Configuration Examples
@@ -42,16 +42,16 @@ SELECT dblinter.is_rule_enabled('B002');
 \echo 'Configuring DBLinter for development environment...'
 
 -- Disable strict rules for development
-SELECT dblinter.disable_rule('B005'); -- Public schema
-SELECT dblinter.disable_rule('C002'); -- pg_hba security
-SELECT dblinter.disable_rule('T009'); -- Role grants
-SELECT dblinter.disable_rule('T010'); -- Reserved keywords
+SELECT pg_linter.disable_rule('B005'); -- Public schema
+SELECT pg_linter.disable_rule('C002'); -- pg_hba security
+SELECT pg_linter.disable_rule('T009'); -- Role grants
+SELECT pg_linter.disable_rule('T010'); -- Reserved keywords
 
 -- Enable core data integrity rules
-SELECT dblinter.enable_rule('B001');  -- Primary keys
-SELECT dblinter.enable_rule('T001');  -- Table primary keys
-SELECT dblinter.enable_rule('T004');  -- FK indexing
-SELECT dblinter.enable_rule('T008');  -- FK type mismatches
+SELECT pg_linter.enable_rule('B001');  -- Primary keys
+SELECT pg_linter.enable_rule('T001');  -- Table primary keys
+SELECT pg_linter.enable_rule('T004');  -- FK indexing
+SELECT pg_linter.enable_rule('T008');  -- FK type mismatches
 
 \echo 'Development configuration complete.'
 ```
@@ -63,8 +63,8 @@ SELECT dblinter.enable_rule('T008');  -- FK type mismatches
 \echo 'Configuring DBLinter for production environment...'
 
 -- Enable all security and performance rules
-SELECT dblinter.enable_rule(rule_code)
-FROM dblinter.show_rules();
+SELECT pg_linter.enable_rule(rule_code)
+FROM pg_linter.show_rules();
 
 \echo 'Production configuration complete.'
 ```
@@ -76,8 +76,8 @@ FROM dblinter.show_rules();
 \echo 'Configuring DBLinter for performance analysis...'
 
 -- Disable non-performance rules
-SELECT dblinter.disable_rule(rule_code)
-FROM dblinter.show_rules()
+SELECT pg_linter.disable_rule(rule_code)
+FROM pg_linter.show_rules()
 WHERE rule_code NOT IN (
     'B002', -- Redundant indexes
     'B004', -- Unused indexes
@@ -94,7 +94,7 @@ WHERE rule_code NOT IN (
 ### GitHub Actions Workflow
 
 ```yaml
-# .github/workflows/dblinter.yml
+# .github/workflows/pg_linter.yml
 name: Database Linting
 
 on:
@@ -132,7 +132,7 @@ jobs:
     - name: Install DBLinter
       run: |
         # Add your installation steps here
-        PGPASSWORD=postgres psql -h localhost -U postgres -d testdb -c "CREATE EXTENSION dblinter;"
+        PGPASSWORD=postgres psql -h localhost -U postgres -d testdb -c "CREATE EXTENSION pg_linter;"
 
     - name: Configure for CI
       run: |
@@ -141,7 +141,7 @@ jobs:
     - name: Run analysis
       run: |
         PGPASSWORD=postgres psql -h localhost -U postgres -d testdb -c \
-          "SELECT dblinter.perform_base_check('/tmp/results.sarif');"
+          "SELECT pg_linter.perform_base_check('/tmp/results.sarif');"
 
     - name: Upload SARIF
       uses: github/codeql-action/upload-sarif@v2
@@ -179,11 +179,11 @@ db-lint:
   script:
     # Setup
     - psql -h postgres -U postgres -d testdb -f schema.sql
-    - psql -h postgres -U postgres -d testdb -c "CREATE EXTENSION dblinter;"
+    - psql -h postgres -U postgres -d testdb -c "CREATE EXTENSION pg_linter;"
     - psql -h postgres -U postgres -d testdb -f config/ci.sql
 
     # Analyze
-    - psql -h postgres -U postgres -d testdb -c "SELECT dblinter.perform_base_check('/tmp/results.sarif');"
+    - psql -h postgres -U postgres -d testdb -c "SELECT pg_linter.perform_base_check('/tmp/results.sarif');"
 
     # Check results
     - |
@@ -218,7 +218,7 @@ pipeline {
                 sh '''
                     export PGPASSWORD=$DB_PASS
                     psql -h $DB_HOST -U $DB_USER -d $DB_NAME -f schema.sql
-                    psql -h $DB_HOST -U $DB_USER -d $DB_NAME -c "CREATE EXTENSION IF NOT EXISTS dblinter;"
+                    psql -h $DB_HOST -U $DB_USER -d $DB_NAME -c "CREATE EXTENSION IF NOT EXISTS pg_linter;"
                 '''
             }
         }
@@ -229,7 +229,7 @@ pipeline {
                     export PGPASSWORD=$DB_PASS
                     psql -h $DB_HOST -U $DB_USER -d $DB_NAME -f config/jenkins.sql
                     psql -h $DB_HOST -U $DB_USER -d $DB_NAME -c \
-                        "SELECT dblinter.perform_base_check('${WORKSPACE}/results.sarif');"
+                        "SELECT pg_linter.perform_base_check('${WORKSPACE}/results.sarif');"
                 '''
             }
         }
@@ -283,12 +283,12 @@ echo "Starting daily DBLinter analysis for $DB_NAME..."
 # Run comprehensive analysis
 psql -d "$DB_NAME" -c "
 -- Configure for production monitoring
-SELECT dblinter.enable_rule(rule_code) FROM dblinter.show_rules();
+SELECT pg_linter.enable_rule(rule_code) FROM pg_linter.show_rules();
 
 -- Run all analysis types
-SELECT dblinter.perform_base_check('$LOG_DIR/base_$DATE.sarif');
-SELECT dblinter.perform_table_check('$LOG_DIR/tables_$DATE.sarif');
-SELECT dblinter.perform_cluster_check('$LOG_DIR/cluster_$DATE.sarif');
+SELECT pg_linter.perform_base_check('$LOG_DIR/base_$DATE.sarif');
+SELECT pg_linter.perform_table_check('$LOG_DIR/tables_$DATE.sarif');
+SELECT pg_linter.perform_cluster_check('$LOG_DIR/cluster_$DATE.sarif');
 "
 
 # Count issues by severity
@@ -332,13 +332,13 @@ echo "✅ Daily check completed successfully"
 # dblinter_exporter.sh - Export metrics for Prometheus
 
 DB_NAME="${1:-production_db}"
-METRICS_FILE="/var/lib/prometheus/node-exporter/dblinter.prom"
+METRICS_FILE="/var/lib/prometheus/node-exporter/pg_linter.prom"
 
 echo "Exporting DBLinter metrics for $DB_NAME..."
 
 # Run analysis and capture results
 ANALYSIS_RESULTS=$(mktemp)
-psql -t -d "$DB_NAME" -c "SELECT * FROM dblinter.perform_base_check();" > "$ANALYSIS_RESULTS"
+psql -t -d "$DB_NAME" -c "SELECT * FROM pg_linter.perform_base_check();" > "$ANALYSIS_RESULTS"
 
 # Initialize metrics file
 cat > "$METRICS_FILE" << EOF
@@ -438,13 +438,13 @@ for db in "${DATABASES[@]}"; do
     psql -d "$db" -c "
     -- Configure based on database type
     $(case $db in
-        *prod*) echo 'SELECT dblinter.enable_rule(rule_code) FROM dblinter.show_rules();' ;;
-        *staging*) echo 'SELECT dblinter.disable_rule(''T010''); SELECT dblinter.disable_rule(''C002'');' ;;
-        *analytics*) echo 'SELECT dblinter.disable_rule(''B001''); SELECT dblinter.disable_rule(''T001'');' ;;
+        *prod*) echo 'SELECT pg_linter.enable_rule(rule_code) FROM pg_linter.show_rules();' ;;
+        *staging*) echo 'SELECT pg_linter.disable_rule(''T010''); SELECT pg_linter.disable_rule(''C002'');' ;;
+        *analytics*) echo 'SELECT pg_linter.disable_rule(''B001''); SELECT pg_linter.disable_rule(''T001'');' ;;
     esac)
 
-    SELECT dblinter.perform_base_check('$REPORT_DIR/$db/base.sarif');
-    SELECT dblinter.perform_table_check('$REPORT_DIR/$db/tables.sarif');
+    SELECT pg_linter.perform_base_check('$REPORT_DIR/$db/base.sarif');
+    SELECT pg_linter.perform_table_check('$REPORT_DIR/$db/tables.sarif');
     "
 
     echo "✅ Completed analysis for $db"
@@ -483,7 +483,7 @@ echo "📊 Summary report created: $REPORT_DIR/summary.md"
 
 -- Create backup of current rules configuration
 CREATE TEMP TABLE rule_backup AS
-SELECT rule_code, enabled FROM dblinter.show_rules();
+SELECT rule_code, enabled FROM pg_linter.show_rules();
 
 -- Apply migration
 \i migration.sql
@@ -492,10 +492,10 @@ SELECT rule_code, enabled FROM dblinter.show_rules();
 \echo 'Running post-migration analysis...'
 
 -- Enable strict rules for migration validation
-SELECT dblinter.enable_rule('B001'); -- Primary keys
-SELECT dblinter.enable_rule('T001'); -- Table primary keys
-SELECT dblinter.enable_rule('T004'); -- FK indexing
-SELECT dblinter.enable_rule('T008'); -- FK type mismatches
+SELECT pg_linter.enable_rule('B001'); -- Primary keys
+SELECT pg_linter.enable_rule('T001'); -- Table primary keys
+SELECT pg_linter.enable_rule('T004'); -- FK indexing
+SELECT pg_linter.enable_rule('T008'); -- FK type mismatches
 
 -- Analyze results
 SELECT
@@ -504,9 +504,9 @@ SELECT
     message,
     count
 FROM (
-    SELECT * FROM dblinter.perform_base_check()
+    SELECT * FROM pg_linter.perform_base_check()
     UNION ALL
-    SELECT * FROM dblinter.perform_table_check()
+    SELECT * FROM pg_linter.perform_table_check()
 ) analysis
 WHERE level = 'error'
 ORDER BY
@@ -514,8 +514,8 @@ ORDER BY
     rule_code;
 
 -- Restore original configuration
-SELECT dblinter.disable_rule(rule_code) FROM dblinter.show_rules();
-SELECT dblinter.enable_rule(rb.rule_code)
+SELECT pg_linter.disable_rule(rule_code) FROM pg_linter.show_rules();
+SELECT pg_linter.enable_rule(rb.rule_code)
 FROM rule_backup rb
 WHERE rb.enabled = true;
 
@@ -645,8 +645,8 @@ for db in "${DATABASES[@]}"; do
     echo "Analyzing $db..."
 
     psql -d "$db" -c "
-    SELECT dblinter.perform_base_check('$TEMP_DIR/${db}_base.sarif');
-    SELECT dblinter.perform_table_check('$TEMP_DIR/${db}_tables.sarif');
+    SELECT pg_linter.perform_base_check('$TEMP_DIR/${db}_base.sarif');
+    SELECT pg_linter.perform_table_check('$TEMP_DIR/${db}_tables.sarif');
     "
 done
 

@@ -25,7 +25,7 @@ cargo install cargo-pgrx
 cargo pgrx init
 
 # Clone the repository
-git clone https://github.com/yourorg/dblinter.git
+git clone https://github.com/yourorg/pg_linter.git
 cd dblinter
 
 # Build the extension
@@ -56,7 +56,7 @@ cargo test test_b001_rule
 ```
 dblinter/
 ├── Cargo.toml              # Rust package configuration
-├── dblinter.control        # PostgreSQL extension control file
+├── pg_linter.control        # PostgreSQL extension control file
 ├── src/
 │   ├── lib.rs              # Main library entry point
 │   ├── rules_engine.rs     # Core rule engine implementation
@@ -156,7 +156,7 @@ pub fn execute_base_rules() -> Result<Vec<RuleResult>, String> {
 Add rule information to `sql/rules.sql`:
 
 ```sql
-INSERT INTO dblinter.rules (rule_code, description, enabled, fixes) VALUES
+INSERT INTO pg_linter.rules (rule_code, description, enabled, fixes) VALUES
 ('B007', 'Your rule description', TRUE, ARRAY[
     'Fix suggestion 1',
     'Fix suggestion 2',
@@ -175,14 +175,14 @@ BEGIN;
 -- Create test data that should trigger the rule
 CREATE TABLE test_table (...);
 
-CREATE EXTENSION IF NOT EXISTS dblinter;
+CREATE EXTENSION IF NOT EXISTS pg_linter;
 
 -- Test the rule
-SELECT dblinter.perform_base_check();
+SELECT pg_linter.perform_base_check();
 
 -- Test rule management
-SELECT dblinter.explain_rule('B007');
-SELECT dblinter.is_rule_enabled('B007');
+SELECT pg_linter.explain_rule('B007');
+SELECT pg_linter.is_rule_enabled('B007');
 
 -- Clean up
 DROP TABLE test_table;
@@ -245,10 +245,10 @@ BEGIN;
 CREATE TABLE test_table (id INT);
 
 -- Create extension
-CREATE EXTENSION IF NOT EXISTS dblinter;
+CREATE EXTENSION IF NOT EXISTS pg_linter;
 
 -- Test functionality
-SELECT dblinter.perform_base_check();
+SELECT pg_linter.perform_base_check();
 
 -- Verify results
 -- Add specific assertions
@@ -374,7 +374,7 @@ SET log_statement = 'all';
 SET log_duration = on;
 
 -- Run your analysis
-SELECT dblinter.perform_base_check();
+SELECT pg_linter.perform_base_check();
 ```
 
 ### Rust Debugging
@@ -445,7 +445,7 @@ jobs:
 ### Version Management
 
 1. Update version in `Cargo.toml`
-2. Update version in `dblinter.control`
+2. Update version in `pg_linter.control`
 3. Update CHANGELOG.md
 4. Tag the release
 

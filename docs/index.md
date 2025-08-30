@@ -8,7 +8,7 @@ So databases objects lives their own life, created by persons that do their best
 Database linting and analysis for PostgreSQL
 ===============================================================================
 
-`PG Linter` is a PostgreSQL extension that analyzes your database for potential issues, performance problems, and best practice violations. Written in Rust using pgrx, it provides deep integration with PostgreSQL for efficient database analysis.
+`pg_linter` is a PostgreSQL extension that analyzes your database for potential issues, performance problems, and best practice violations. Written in Rust using pgrx, it provides deep integration with PostgreSQL for efficient database analysis.
 
 The project has a **rule-based approach** to database analysis. This means you can enable or disable specific rules and configure thresholds to match your organization's standards and requirements.
 
@@ -64,28 +64,28 @@ Schema-level checks:
 
 1. **Installation**
    ```sql
-   CREATE EXTENSION dblinter;
+   CREATE EXTENSION pg_linter;
    ```
 
 2. **Run Analysis**
    ```sql
    -- Analyze entire database
-   SELECT dblinter.perform_base_check();
+   SELECT pg_linter.perform_base_check();
 
    -- Save results to file
-   SELECT dblinter.perform_base_check('/path/to/results.sarif');
+   SELECT pg_linter.perform_base_check('/path/to/results.sarif');
    ```
 
 3. **Manage Rules**
    ```sql
    -- Show all rules
-   SELECT dblinter.show_rules();
+   SELECT pg_linter.show_rules();
 
    -- Disable a specific rule
-   SELECT dblinter.disable_rule('B001');
+   SELECT pg_linter.disable_rule('B001');
 
    -- Get rule explanation
-   SELECT dblinter.explain_rule('B002');
+   SELECT pg_linter.explain_rule('B002');
    ```
 
 ## Documentation Structure
@@ -100,7 +100,7 @@ Schema-level checks:
 
 ## Integration
 
-DBLinter is designed to integrate seamlessly into your development workflow:
+pg_linter is designed to integrate seamlessly into your development workflow:
 
 - **CI/CD Pipelines**: Use SARIF output with GitHub Actions, GitLab CI, or other tools
 - **Database Migrations**: Run checks after schema changes
@@ -115,4 +115,4 @@ DBLinter is designed to integrate seamlessly into your development workflow:
 
 ## License
 
-DBLinter is released under the [LICENSE](../LICENSE) license.
+pg_linter is released under the [LICENSE](../LICENSE) license.

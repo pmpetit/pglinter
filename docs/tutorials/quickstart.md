@@ -14,7 +14,7 @@ Get started with DBLinter in 15 minutes! This tutorial will walk you through ins
 
 ```bash
 # Clone and build (replace with actual installation method)
-git clone https://github.com/yourorg/dblinter.git
+git clone https://github.com/yourorg/pg_linter.git
 cd dblinter
 cargo pgrx package
 sudo cargo pgrx install
@@ -27,7 +27,7 @@ sudo cargo pgrx install
 psql -d your_database
 
 -- Create the extension
-CREATE EXTENSION dblinter;
+CREATE EXTENSION pg_linter;
 
 -- Verify installation
 \dx dblinter
@@ -79,7 +79,7 @@ Now run your first analysis:
 
 ```sql
 -- Run basic database analysis
-SELECT * FROM dblinter.perform_base_check();
+SELECT * FROM pg_linter.perform_base_check();
 ```
 
 You should see results like:
@@ -111,7 +111,7 @@ DBLinter organizes rules into categories:
 
 ```sql
 -- Get detailed explanation of a rule
-SELECT dblinter.explain_rule('B001');
+SELECT pg_linter.explain_rule('B001');
 ```
 
 Output:
@@ -149,7 +149,7 @@ CREATE INDEX idx_orders_user_id ON orders(user_id);
 Now run the analysis again:
 
 ```sql
-SELECT * FROM dblinter.perform_base_check();
+SELECT * FROM pg_linter.perform_base_check();
 ```
 
 You should see no issues, or significantly fewer issues!
@@ -160,7 +160,7 @@ For CI/CD or reporting, save results to a SARIF file:
 
 ```sql
 -- Save to file
-SELECT dblinter.perform_base_check('/tmp/my_database_analysis.sarif');
+SELECT pg_linter.perform_base_check('/tmp/my_database_analysis.sarif');
 ```
 
 Check the file:
@@ -177,33 +177,33 @@ You'll see JSON output in SARIF format, which can be consumed by various tools.
 
 ```sql
 -- See all available rules
-SELECT * FROM dblinter.show_rules();
+SELECT * FROM pg_linter.show_rules();
 ```
 
 ### Enable/Disable Rules
 
 ```sql
 -- Disable a rule you don't need
-SELECT dblinter.disable_rule('B006'); -- Uppercase names
+SELECT pg_linter.disable_rule('B006'); -- Uppercase names
 
 -- Check if a rule is enabled
-SELECT dblinter.is_rule_enabled('B006');
+SELECT pg_linter.is_rule_enabled('B006');
 
 -- Re-enable it
-SELECT dblinter.enable_rule('B006');
+SELECT pg_linter.enable_rule('B006');
 ```
 
 ### Run Specific Analysis Types
 
 ```sql
 -- Run only table-specific analysis
-SELECT * FROM dblinter.perform_table_check();
+SELECT * FROM pg_linter.perform_table_check();
 
 -- Run cluster configuration analysis
-SELECT * FROM dblinter.perform_cluster_check();
+SELECT * FROM pg_linter.perform_cluster_check();
 
 -- Run schema analysis
-SELECT * FROM dblinter.perform_schema_check();
+SELECT * FROM pg_linter.perform_schema_check();
 ```
 
 ## Step 7: Real-World Scenarios
@@ -212,39 +212,39 @@ SELECT * FROM dblinter.perform_schema_check();
 
 ```sql
 -- Configure strict rules for production
-SELECT dblinter.enable_rule(rule_code)
-FROM dblinter.show_rules()
+SELECT pg_linter.enable_rule(rule_code)
+FROM pg_linter.show_rules()
 WHERE rule_code IN ('B001', 'B002', 'B003', 'T004', 'T008');
 
 -- Run comprehensive check
-SELECT dblinter.perform_base_check('/tmp/pre_deploy_check.sarif');
-SELECT dblinter.perform_table_check('/tmp/pre_deploy_tables.sarif');
+SELECT pg_linter.perform_base_check('/tmp/pre_deploy_check.sarif');
+SELECT pg_linter.perform_table_check('/tmp/pre_deploy_tables.sarif');
 ```
 
 ### Scenario 2: Performance Analysis
 
 ```sql
 -- Focus on performance-related rules
-SELECT dblinter.disable_rule(rule_code)
-FROM dblinter.show_rules()
+SELECT pg_linter.disable_rule(rule_code)
+FROM pg_linter.show_rules()
 WHERE rule_code NOT IN ('B002', 'B004', 'T003', 'T005', 'T007');
 
 -- Run performance-focused analysis
-SELECT * FROM dblinter.perform_base_check();
-SELECT * FROM dblinter.perform_table_check();
+SELECT * FROM pg_linter.perform_base_check();
+SELECT * FROM pg_linter.perform_table_check();
 ```
 
 ### Scenario 3: Security Audit
 
 ```sql
 -- Enable security-focused rules
-SELECT dblinter.enable_rule('B005'); -- Public schema security
-SELECT dblinter.enable_rule('C002'); -- pg_hba security
-SELECT dblinter.enable_rule('T009'); -- Role grants
+SELECT pg_linter.enable_rule('B005'); -- Public schema security
+SELECT pg_linter.enable_rule('C002'); -- pg_hba security
+SELECT pg_linter.enable_rule('T009'); -- Role grants
 
 -- Run security analysis
-SELECT * FROM dblinter.perform_base_check();
-SELECT * FROM dblinter.perform_cluster_check();
+SELECT * FROM pg_linter.perform_base_check();
+SELECT * FROM pg_linter.perform_cluster_check();
 ```
 
 ## Step 8: Integration Examples
@@ -263,7 +263,7 @@ RESULTS_FILE="/tmp/dblinter_results_$(date +%Y%m%d_%H%M%S).sarif"
 echo "Running DBLinter analysis on $DB_NAME..."
 
 # Run analysis
-psql -d "$DB_NAME" -c "SELECT dblinter.perform_base_check('$RESULTS_FILE');"
+psql -d "$DB_NAME" -c "SELECT pg_linter.perform_base_check('$RESULTS_FILE');"
 
 # Check for critical issues
 if grep -q '"level": "error"' "$RESULTS_FILE"; then
@@ -307,8 +307,8 @@ mkdir -p "$LOG_DIR"
 
 # Run analysis
 psql -d "$DB_NAME" -c "
-SELECT dblinter.perform_base_check('$LOG_DIR/base_$DATE.sarif');
-SELECT dblinter.perform_table_check('$LOG_DIR/tables_$DATE.sarif');
+SELECT pg_linter.perform_base_check('$LOG_DIR/base_$DATE.sarif');
+SELECT pg_linter.perform_table_check('$LOG_DIR/tables_$DATE.sarif');
 "
 
 # Count issues
@@ -358,7 +358,7 @@ GRANT EXECUTE ON ALL FUNCTIONS IN SCHEMA dblinter TO your_user;
 **No results returned:**
 ```sql
 -- Check if rules are enabled
-SELECT * FROM dblinter.show_rules() WHERE enabled = true;
+SELECT * FROM pg_linter.show_rules() WHERE enabled = true;
 
 -- Verify you have tables to analyze
 SELECT count(*) FROM pg_tables WHERE schemaname = 'public';

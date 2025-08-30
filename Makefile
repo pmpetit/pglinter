@@ -20,7 +20,7 @@ PG_BINDIR?=$(shell $(PG_CONFIG) --bindir)
 
 # pgrx always creates .so files, even on macOS
 LIB_SUFFIX?=so
-LIB=dblinter.$(LIB_SUFFIX)
+LIB=pg_linter.$(LIB_SUFFIX)
 
 # The instance
 PGDATA_DIR=~/.pgrx/data-$(PG_MAJOR_VERSION)
@@ -104,7 +104,7 @@ test-prompt-%: stop start
 	@echo "BEGIN;" > /tmp/test_$*.sql
 	@echo "CREATE TABLE IF NOT EXISTS my_table_without_pk (id INT, name TEXT, code TEXT, enable BOOL DEFAULT TRUE, query TEXT, warning_level INT, error_level INT, scope TEXT);" >> /tmp/test_$*.sql
 	@echo "CREATE EXTENSION IF NOT EXISTS dblinter;" >> /tmp/test_$*.sql
-	@echo "SELECT dblinter.perform_base_check();" >> /tmp/test_$*.sql
+	@echo "SELECT pg_linter.perform_base_check();" >> /tmp/test_$*.sql
 	@echo "ROLLBACK;" >> /tmp/test_$*.sql
 	psql $(PSQL_OPT) $(PGDATABASE) -f /tmp/test_$*.sql
 	@rm -f /tmp/test_$*.sql
@@ -117,11 +117,11 @@ test-convenience: stop start
 	@echo "BEGIN;" > /tmp/test_convenience.sql
 	@echo "CREATE TABLE IF NOT EXISTS my_table_without_pk (id INT, name TEXT);" >> /tmp/test_convenience.sql
 	@echo "CREATE EXTENSION IF NOT EXISTS dblinter;" >> /tmp/test_convenience.sql
-	@echo "SELECT dblinter.check_base();" >> /tmp/test_convenience.sql
-	@echo "SELECT dblinter.check_cluster();" >> /tmp/test_convenience.sql
-	@echo "SELECT dblinter.check_table();" >> /tmp/test_convenience.sql
-	@echo "SELECT dblinter.check_schema();" >> /tmp/test_convenience.sql
-	@echo "SELECT dblinter.check_all();" >> /tmp/test_convenience.sql
+	@echo "SELECT pg_linter.check_base();" >> /tmp/test_convenience.sql
+	@echo "SELECT pg_linter.check_cluster();" >> /tmp/test_convenience.sql
+	@echo "SELECT pg_linter.check_table();" >> /tmp/test_convenience.sql
+	@echo "SELECT pg_linter.check_schema();" >> /tmp/test_convenience.sql
+	@echo "SELECT pg_linter.check_all();" >> /tmp/test_convenience.sql
 	@echo "ROLLBACK;" >> /tmp/test_convenience.sql
 	psql $(PSQL_OPT) $(PGDATABASE) -f /tmp/test_convenience.sql
 	@rm -f /tmp/test_convenience.sql

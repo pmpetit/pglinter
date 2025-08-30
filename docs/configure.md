@@ -1,6 +1,6 @@
 # Configuration Guide
 
-DBLinter provides several configuration options to customize the analysis behavior for your specific environment and requirements.
+pg_linter provides several configuration options to customize the analysis behavior for your specific environment and requirements.
 
 ## Rule Management
 
@@ -8,27 +8,27 @@ DBLinter provides several configuration options to customize the analysis behavi
 
 ```sql
 -- Show all available rules with their status
-SELECT dblinter.show_rules();
+SELECT pg_linter.show_rules();
 
 -- Check if a specific rule is enabled
-SELECT dblinter.is_rule_enabled('B001');
+SELECT pg_linter.is_rule_enabled('B001');
 
 -- Get detailed information about a rule
-SELECT dblinter.explain_rule('B002');
+SELECT pg_linter.explain_rule('B002');
 ```
 
 ### Enabling and Disabling Rules
 
 ```sql
 -- Disable a rule you don't want to check
-SELECT dblinter.disable_rule('B001');
+SELECT pg_linter.disable_rule('B001');
 
 -- Re-enable a rule
-SELECT dblinter.enable_rule('B001');
+SELECT pg_linter.enable_rule('B001');
 
 -- Disable multiple rules
-SELECT dblinter.disable_rule('B004');
-SELECT dblinter.disable_rule('T007');
+SELECT pg_linter.disable_rule('B004');
+SELECT pg_linter.disable_rule('T007');
 ```
 
 ### Rule Categories
@@ -37,26 +37,26 @@ You can manage rules by category:
 
 ```sql
 -- Disable all base rules
-SELECT dblinter.disable_rule(rule_code)
-FROM dblinter.show_rules()
+SELECT pg_linter.disable_rule(rule_code)
+FROM pg_linter.show_rules()
 WHERE rule_code LIKE 'B%';
 
 -- Enable only table rules
-SELECT dblinter.enable_rule(rule_code)
-FROM dblinter.show_rules()
+SELECT pg_linter.enable_rule(rule_code)
+FROM pg_linter.show_rules()
 WHERE rule_code LIKE 'T%';
 ```
 
 ## Threshold Configuration
 
-Many rules have configurable thresholds. These are stored in the `dblinter.rules` table:
+Many rules have configurable thresholds. These are stored in the `pg_linter.rules` table:
 
 ### Viewing Current Thresholds
 
 ```sql
 -- View rule configuration
 SELECT rule_code, description, enabled, fixes
-FROM dblinter.rules
+FROM pg_linter.rules
 WHERE rule_code = 'B001';
 ```
 
@@ -92,10 +92,10 @@ Default threshold: 1MB minimum size to consider an index "unused"
 
 ```sql
 -- Save results to a specific file
-SELECT dblinter.perform_base_check('/var/log/dblinter/results.sarif');
+SELECT pg_linter.perform_base_check('/var/log/dblinter/results.sarif');
 
 -- Use timestamp in filename
-SELECT dblinter.perform_base_check(
+SELECT pg_linter.perform_base_check(
     '/var/log/dblinter/results_' || to_char(now(), 'YYYY-MM-DD_HH24-MI-SS') || '.sarif'
 );
 ```
@@ -104,11 +104,11 @@ SELECT dblinter.perform_base_check(
 
 ```sql
 -- Output results to console (no file parameter)
-SELECT dblinter.perform_base_check();
+SELECT pg_linter.perform_base_check();
 
 -- Format output for better readability
 \x on
-SELECT dblinter.perform_base_check();
+SELECT pg_linter.perform_base_check();
 \x off
 ```
 
@@ -120,9 +120,9 @@ For development, you might want to be more permissive:
 
 ```sql
 -- Disable strict rules that might not apply during development
-SELECT dblinter.disable_rule('B005'); -- Public schema security
-SELECT dblinter.disable_rule('T009'); -- Role grants
-SELECT dblinter.disable_rule('T010'); -- Reserved keywords
+SELECT pg_linter.disable_rule('B005'); -- Public schema security
+SELECT pg_linter.disable_rule('T009'); -- Role grants
+SELECT pg_linter.disable_rule('T010'); -- Reserved keywords
 ```
 
 ### Production Environment
@@ -131,13 +131,13 @@ For production, enable all security and performance rules:
 
 ```sql
 -- Ensure all critical rules are enabled
-SELECT dblinter.enable_rule('B001'); -- Primary keys
-SELECT dblinter.enable_rule('B002'); -- Redundant indexes
-SELECT dblinter.enable_rule('B003'); -- FK indexing
-SELECT dblinter.enable_rule('B004'); -- Unused indexes
-SELECT dblinter.enable_rule('B005'); -- Schema security
-SELECT dblinter.enable_rule('C001'); -- Memory configuration
-SELECT dblinter.enable_rule('C002'); -- pg_hba security
+SELECT pg_linter.enable_rule('B001'); -- Primary keys
+SELECT pg_linter.enable_rule('B002'); -- Redundant indexes
+SELECT pg_linter.enable_rule('B003'); -- FK indexing
+SELECT pg_linter.enable_rule('B004'); -- Unused indexes
+SELECT pg_linter.enable_rule('B005'); -- Schema security
+SELECT pg_linter.enable_rule('C001'); -- Memory configuration
+SELECT pg_linter.enable_rule('C002'); -- pg_hba security
 ```
 
 ### Testing Environment
@@ -146,15 +146,15 @@ For testing environments, focus on data integrity:
 
 ```sql
 -- Enable data integrity rules
-SELECT dblinter.enable_rule('B001'); -- Primary keys
-SELECT dblinter.enable_rule('T001'); -- Table primary keys
-SELECT dblinter.enable_rule('T004'); -- FK indexing
-SELECT dblinter.enable_rule('T008'); -- FK type mismatches
+SELECT pg_linter.enable_rule('B001'); -- Primary keys
+SELECT pg_linter.enable_rule('T001'); -- Table primary keys
+SELECT pg_linter.enable_rule('T004'); -- FK indexing
+SELECT pg_linter.enable_rule('T008'); -- FK type mismatches
 
 -- Disable performance rules that might not be relevant
-SELECT dblinter.disable_rule('B004'); -- Unused indexes
-SELECT dblinter.disable_rule('T007'); -- Unused indexes
-SELECT dblinter.disable_rule('T005'); -- Sequential scans
+SELECT pg_linter.disable_rule('B004'); -- Unused indexes
+SELECT pg_linter.disable_rule('T007'); -- Unused indexes
+SELECT pg_linter.disable_rule('T005'); -- Sequential scans
 ```
 
 ## Automated Configuration
@@ -165,23 +165,23 @@ Create reusable configuration scripts for different environments:
 
 ```sql
 -- config/development.sql
-\echo 'Configuring DBLinter for development environment...'
+\echo 'Configuring pg_linter for development environment...'
 
-SELECT dblinter.disable_rule('B005');
-SELECT dblinter.disable_rule('T009');
-SELECT dblinter.disable_rule('T010');
-SELECT dblinter.disable_rule('C002');
+SELECT pg_linter.disable_rule('B005');
+SELECT pg_linter.disable_rule('T009');
+SELECT pg_linter.disable_rule('T010');
+SELECT pg_linter.disable_rule('C002');
 
 \echo 'Development configuration complete.'
 ```
 
 ```sql
 -- config/production.sql
-\echo 'Configuring DBLinter for production environment...'
+\echo 'Configuring pg_linter for production environment...'
 
 -- Enable all rules
-SELECT dblinter.enable_rule(rule_code)
-FROM dblinter.show_rules();
+SELECT pg_linter.enable_rule(rule_code)
+FROM pg_linter.show_rules();
 
 \echo 'Production configuration complete.'
 ```
@@ -201,7 +201,7 @@ psql -d mydb -f config/production.sql
 ### GitHub Actions
 
 ```yaml
-# .github/workflows/dblinter.yml
+# .github/workflows/pg_linter.yml
 name: Database Linting
 on: [push, pull_request]
 
@@ -222,10 +222,10 @@ jobs:
     steps:
     - uses: actions/checkout@v3
 
-    - name: Install DBLinter
+    - name: Install pg_linter
       run: |
         # Install extension
-        psql -h localhost -U postgres -d postgres -c "CREATE EXTENSION dblinter;"
+        psql -h localhost -U postgres -d postgres -c "CREATE EXTENSION pg_linter;"
 
     - name: Run Database Analysis
       run: |
@@ -233,7 +233,7 @@ jobs:
         psql -h localhost -U postgres -d postgres -f config/production.sql
 
         # Run analysis
-        psql -h localhost -U postgres -d postgres -c "SELECT dblinter.perform_base_check('/tmp/results.sarif');"
+        psql -h localhost -U postgres -d postgres -c "SELECT pg_linter.perform_base_check('/tmp/results.sarif');"
 
     - name: Upload SARIF results
       uses: github/codeql-action/upload-sarif@v2
@@ -258,9 +258,9 @@ db-lint:
     POSTGRES_USER: postgres
     POSTGRES_PASSWORD: postgres
   script:
-    - psql -c "CREATE EXTENSION dblinter;"
+    - psql -c "CREATE EXTENSION pg_linter;"
     - psql -f config/ci.sql
-    - psql -c "SELECT dblinter.perform_base_check('/tmp/results.sarif');"
+    - psql -c "SELECT pg_linter.perform_base_check('/tmp/results.sarif');"
   artifacts:
     reports:
       sast: /tmp/results.sarif
@@ -288,14 +288,14 @@ impl DatabaseRule for CustomRule {
 
 ### Configuration Database
 
-DBLinter stores configuration in PostgreSQL tables:
+pg_linter stores configuration in PostgreSQL tables:
 
 ```sql
 -- View rule configuration table
-\d dblinter.rules
+\d pg_linter.rules
 
 -- Backup configuration
-pg_dump -t dblinter.rules mydb > dblinter_config_backup.sql
+pg_dump -t pg_linter.rules mydb > dblinter_config_backup.sql
 
 -- Restore configuration
 psql -d mydb -f dblinter_config_backup.sql
@@ -316,19 +316,19 @@ psql -d mydb -f dblinter_config_backup.sql
 ```sql
 -- Verify which rules are enabled
 SELECT rule_code, enabled
-FROM dblinter.show_rules()
+FROM pg_linter.show_rules()
 ORDER BY rule_code;
 
 -- Test a specific rule
-SELECT dblinter.perform_base_check() WHERE rule_code = 'B001';
+SELECT pg_linter.perform_base_check() WHERE rule_code = 'B001';
 ```
 
 ### Reset to Defaults
 
 ```sql
 -- Re-enable all rules (default state)
-SELECT dblinter.enable_rule(rule_code)
-FROM dblinter.show_rules();
+SELECT pg_linter.enable_rule(rule_code)
+FROM pg_linter.show_rules();
 ```
 
 ### Configuration Conflicts
