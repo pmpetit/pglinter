@@ -1,9 +1,9 @@
-How To Contribute to dblinter
+How To Contribute to pg_linter
 ===============================================================================
 
 This project is an **open project**. Any comment or idea is more than welcome.
 
-Here's a few tips to get started if you want to get involved with the dblinter PostgreSQL extension!
+Here's a few tips to get started if you want to get involved with the pg_linter PostgreSQL extension!
 
 Where to start?
 ------------------------------------------------------------------------------
@@ -12,7 +12,7 @@ If you want to help, here are a few ideas:
 
 1. **Testing**: You can install the extension and run extensive tests based on your database use cases. This is very useful to improve the stability of the code. If you can publish your test cases, please add them in the `/tests/sql` directory.
 
-2. **Documentation**: You can write documentation and examples to help new users understand how to use dblinter for database linting and optimization.
+2. **Documentation**: You can write documentation and examples to help new users understand how to use pg_linter for database linting and optimization.
 
 3. **Benchmark**: You can run tests on various database setups and measure the impact of the extension on performance.
 
@@ -96,7 +96,7 @@ To set up your development environment, follow the [PGRX install instructions]!
 ```bash
 # Clone the repository
 git clone https://github.com/your-username/pg_linter.git
-cd dblinter
+cd pg_linter
 
 # Build the extension
 make extension
@@ -114,7 +114,7 @@ make installcheck
 Adding new linting rules
 -------------------------------------------------------------------------------
 
-dblinter implements various database linting rules to help identify potential issues. Rules are categorized by scope:
+pg_linter implements various database linting rules to help identify potential issues. Rules are categorized by scope:
 
 - **B (Base)**: Fundamental database issues
 - **C (Cluster)**: PostgreSQL cluster configuration issues
@@ -235,7 +235,7 @@ Here's how to create a test named `new_test`:
 Testing different output modes
 -------------------------------------------------------------------------------
 
-dblinter supports two output modes:
+pg_linter supports two output modes:
 
 ### File Output (SARIF format)
 ```sql

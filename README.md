@@ -1,6 +1,6 @@
 # pg_linter - PostgreSQL Extension (Rust/pgrx)
 
-This is a conversion of the original Python [dblinter](https://github.com/decathlon/dblinter) to a PostgreSQL extension written in Rust using pgrx.
+This is a conversion of the original Python [pg_linter](https://github.com/decathlon/pg_linter) to a PostgreSQL extension written in Rust using pgrx.
 
 ## Overview
 In recent years, DBAs were more involved with the database engine itself—creating instances, configuring backups, and monitoring systems—while also overseeing developers' activities. Today, in the DBRE world where databases are cloud-managed, developers and operations teams often work independently, without a dedicated DBA.
@@ -165,7 +165,7 @@ Results are generated in SARIF 2.1.0 format:
 
 ## Conversion from Python
 
-This Rust implementation maintains compatibility with the original Python dblinter while offering:
+This Rust implementation maintains compatibility with the original Python pg_linter while offering:
 
 ### Advantages
 - **Performance**: 10-100x faster execution
@@ -203,4 +203,4 @@ cargo pgrx package
 
 ## License
 
-Same as original dblinter project.
+Same as original pg_linter project.

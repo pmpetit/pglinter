@@ -16,13 +16,8 @@ theme:
 
 nav:
   - 'Home': index.md
-  - 'Installation': INSTALL.md
   - 'Configuration': configure.md
   - 'Security': SECURITY.md
-  - 'Quick Start': tutorials/quickstart.md
-  - Tutorials:
-    - 'Overview': tutorials/README.md
-    - 'Quick Start (15 min)': tutorials/quickstart.md
   - How-To Guides:
     - 'Overview': how-to/README.md
   - Functions Reference:

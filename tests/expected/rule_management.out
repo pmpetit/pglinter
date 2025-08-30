@@ -1,15 +1,15 @@
--- Test for dblinter rule management functionality
+-- Test for pg_linter rule management functionality
 BEGIN;
-DROP EXTENSION IF EXISTS dblinter CASCADE;
-NOTICE:  extension "dblinter" does not exist, skipping
+DROP EXTENSION IF EXISTS pg_linter CASCADE;
+NOTICE:  extension "pg_linter" does not exist, skipping
 CREATE TABLE IF NOT EXISTS test_table_for_rules (
     id INT,
     name TEXT
 );
-CREATE EXTENSION IF NOT EXISTS dblinter;
+CREATE EXTENSION IF NOT EXISTS pg_linter;
 -- Show initial rule status
 SELECT pg_linter.show_rules();
-NOTICE:  📋 dblinter Rule Status:
+NOTICE:  📋 pg_linter Rule Status:
 NOTICE:  ============================================================
 NOTICE:  Code   Status   Name                                    
 NOTICE:  ------------------------------------------------------------
@@ -66,7 +66,7 @@ SELECT pg_linter.is_rule_enabled('B001') AS b001_after_disable;
 
 -- Run base check (should skip B001)
 SELECT pg_linter.perform_base_check();
-NOTICE:  🔍 dblinter found 2 issue(s):
+NOTICE:  🔍 pg_linter found 2 issue(s):
 NOTICE:  ==================================================
 NOTICE:  ⚠️  [B004] WARNING: Found 1 potentially unused indexes
 NOTICE:  ❌ [B005] ERROR: Public schema allows CREATE privilege for all users - security risk
@@ -103,7 +103,7 @@ WARNING:  ⚠️  Rule NONEXISTENT not found
 
 -- Show final rule status
 SELECT pg_linter.show_rules();
-NOTICE:  📋 dblinter Rule Status:
+NOTICE:  📋 pg_linter Rule Status:
 NOTICE:  ============================================================
 NOTICE:  Code   Status   Name                                    
 NOTICE:  ------------------------------------------------------------

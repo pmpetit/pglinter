@@ -1,17 +1,17 @@
 # How-To Guides
 
-Practical guides for common DBLinter scenarios and use cases.
+Practical guides for common pg_linter scenarios and use cases.
 
 ## Quick Navigation
 
-- [Setting Up DBLinter in CI/CD](#setting-up-dblinter-in-cicd)
+- [Setting Up pg_linter in CI/CD](#setting-up-pg_linter-in-cicd)
 - [Managing Rules for Different Environments](#managing-rules-for-different-environments)
 - [Analyzing Large Databases](#analyzing-large-databases)
 - [Integrating with Monitoring Systems](#integrating-with-monitoring-systems)
 - [Custom Reporting and Dashboards](#custom-reporting-and-dashboards)
 - [Troubleshooting Common Issues](#troubleshooting-common-issues)
 
-## Setting Up DBLinter in CI/CD
+## Setting Up pg_linter in CI/CD
 
 ### GitHub Actions
 
@@ -51,14 +51,14 @@ jobs:
       run: |
         PGPASSWORD=postgres psql -h localhost -U postgres -d testdb -f schema.sql
 
-    - name: Install DBLinter
+    - name: Install pg_linter
       run: |
         # Add installation steps here
         PGPASSWORD=postgres psql -h localhost -U postgres -d testdb -c "CREATE EXTENSION pg_linter;"
 
     - name: Configure rules for CI
       run: |
-        PGPASSWORD=postgres psql -h localhost -U postgres -d testdb -f .dblinter/ci-config.sql
+        PGPASSWORD=postgres psql -h localhost -U postgres -d testdb -f .pg_linter/ci-config.sql
 
     - name: Run database analysis
       run: |
@@ -108,9 +108,9 @@ db-lint:
     # Setup schema
     - psql -h postgres -U postgres -d testdb -f schema.sql
 
-    # Install and configure DBLinter
+    # Install and configure pg_linter
     - psql -h postgres -U postgres -d testdb -c "CREATE EXTENSION pg_linter;"
-    - psql -h postgres -U postgres -d testdb -f .dblinter/ci-config.sql
+    - psql -h postgres -U postgres -d testdb -f .pg_linter/ci-config.sql
 
     # Run analysis
     - psql -h postgres -U postgres -d testdb -c "SELECT pg_linter.perform_base_check('/tmp/results.sarif');"
@@ -154,11 +154,11 @@ pipeline {
             }
         }
 
-        stage('Configure DBLinter') {
+        stage('Configure pg_linter') {
             steps {
                 sh '''
                     export PGPASSWORD=$DB_PASS
-                    psql -h $DB_HOST -U $DB_USER -d $DB_NAME -f .dblinter/jenkins-config.sql
+                    psql -h $DB_HOST -U $DB_USER -d $DB_NAME -f .pg_linter/jenkins-config.sql
                 '''
             }
         }
@@ -204,10 +204,10 @@ pipeline {
 
 Create configuration files for each environment:
 
-**`.dblinter/development.sql`**:
+**`.pg_linter/development.sql`**:
 ```sql
 -- Development environment - More permissive
-\echo 'Configuring DBLinter for development...'
+\echo 'Configuring pg_linter for development...'
 
 -- Disable security rules that may not apply in dev
 SELECT pg_linter.disable_rule('B005'); -- Public schema
@@ -222,10 +222,10 @@ SELECT pg_linter.enable_rule('T004');  -- FK indexing
 \echo 'Development configuration complete.'
 ```
 
-**`.dblinter/staging.sql`**:
+**`.pg_linter/staging.sql`**:
 ```sql
 -- Staging environment - Production-like but flexible
-\echo 'Configuring DBLinter for staging...'
+\echo 'Configuring pg_linter for staging...'
 
 -- Enable most rules but allow some flexibility
 SELECT pg_linter.enable_rule(rule_code)
@@ -235,10 +235,10 @@ WHERE rule_code NOT IN ('T010', 'C002'); -- Reserved keywords, pg_hba
 \echo 'Staging configuration complete.'
 ```
 
-**`.dblinter/production.sql`**:
+**`.pg_linter/production.sql`**:
 ```sql
 -- Production environment - Strict rules
-\echo 'Configuring DBLinter for production...'
+\echo 'Configuring pg_linter for production...'
 
 -- Enable all rules for maximum scrutiny
 SELECT pg_linter.enable_rule(rule_code)
@@ -329,7 +329,7 @@ SELECT pg_linter.perform_table_check('/tmp/table_performance.sarif');
 # scheduled_analysis.sh - Daily database analysis
 
 DATE=$(date +%Y-%m-%d)
-ANALYSIS_DIR="/var/log/dblinter"
+ANALYSIS_DIR="/var/log/pg_linter"
 DB_NAME="production_db"
 
 # Create daily directory
@@ -369,7 +369,7 @@ fi
 
 ```bash
 #!/bin/bash
-# dblinter_exporter.sh - Export metrics for Prometheus
+# pg_linter_exporter.sh - Export metrics for Prometheus
 
 DB_NAME="mydb"
 METRICS_FILE="/var/lib/prometheus/node-exporter/pg_linter.prom"
@@ -378,8 +378,8 @@ METRICS_FILE="/var/lib/prometheus/node-exporter/pg_linter.prom"
 RESULT=$(psql -t -d $DB_NAME -c "SELECT * FROM pg_linter.perform_base_check();")
 
 # Parse results and create Prometheus metrics
-echo "# HELP dblinter_issues Number of database issues by rule and severity" > $METRICS_FILE
-echo "# TYPE dblinter_issues gauge" >> $METRICS_FILE
+echo "# HELP pg_linter_issues Number of database issues by rule and severity" > $METRICS_FILE
+echo "# TYPE pg_linter_issues gauge" >> $METRICS_FILE
 
 echo "$RESULT" | while IFS='|' read -r rule level message count; do
     # Clean up variables
@@ -388,12 +388,12 @@ echo "$RESULT" | while IFS='|' read -r rule level message count; do
     count=$(echo $count | xargs)
 
     if [[ -n "$rule" && -n "$level" && -n "$count" ]]; then
-        echo "dblinter_issues{rule=\"$rule\",level=\"$level\"} $count" >> $METRICS_FILE
+        echo "pg_linter_issues{rule=\"$rule\",level=\"$level\"} $count" >> $METRICS_FILE
     fi
 done
 
 # Add timestamp
-echo "dblinter_last_analysis_timestamp $(date +%s)" >> $METRICS_FILE
+echo "pg_linter_last_analysis_timestamp $(date +%s)" >> $METRICS_FILE
 ```
 
 ### Grafana Dashboard
@@ -402,16 +402,16 @@ Create a dashboard with these queries:
 
 ```promql
 # Total issues by severity
-sum by (level) (dblinter_issues)
+sum by (level) (pg_linter_issues)
 
 # Issues by rule
-sum by (rule) (dblinter_issues)
+sum by (rule) (pg_linter_issues)
 
 # Critical issues (errors only)
-sum(dblinter_issues{level="error"})
+sum(pg_linter_issues{level="error"})
 
 # Time since last analysis
-(time() - dblinter_last_analysis_timestamp) / 3600
+(time() - pg_linter_last_analysis_timestamp) / 3600
 ```
 
 ### Nagios/Icinga Check
@@ -495,7 +495,7 @@ def sarif_to_html(sarif_file, output_file):
     <!DOCTYPE html>
     <html>
     <head>
-        <title>DBLinter Analysis Report</title>
+        <title>pg_linter Analysis Report</title>
         <style>
             body {{ font-family: Arial, sans-serif; margin: 40px; }}
             .error {{ color: #d32f2f; font-weight: bold; }}
@@ -506,7 +506,7 @@ def sarif_to_html(sarif_file, output_file):
         </style>
     </head>
     <body>
-        <h1>DBLinter Analysis Report</h1>
+        <h1>pg_linter Analysis Report</h1>
         <p>Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}</p>
     """
 
@@ -611,7 +611,7 @@ ERROR: permission denied for function perform_base_check
 ```sql
 -- As superuser
 GRANT EXECUTE ON FUNCTION pg_linter.perform_base_check(text) TO username;
-GRANT EXECUTE ON ALL FUNCTIONS IN SCHEMA dblinter TO username;
+GRANT EXECUTE ON ALL FUNCTIONS IN SCHEMA pg_linter TO username;
 ```
 
 2. **Use a privileged user:**
@@ -623,10 +623,10 @@ sudo -u postgres psql -d mydb -c "SELECT pg_linter.perform_base_check();"
 3. **Check extension installation:**
 ```sql
 -- Verify extension is installed
-SELECT * FROM pg_extension WHERE extname = 'dblinter';
+SELECT * FROM pg_extension WHERE extname = 'pg_linter';
 
 -- Reinstall if necessary
-DROP EXTENSION IF EXISTS dblinter CASCADE;
+DROP EXTENSION IF EXISTS pg_linter CASCADE;
 CREATE EXTENSION pg_linter;
 ```
 
@@ -642,14 +642,14 @@ ERROR: could not open file "/path/to/results.sarif" for writing: Permission deni
 1. **Check directory permissions:**
 ```bash
 # Ensure PostgreSQL can write to directory
-sudo chown postgres:postgres /var/log/dblinter/
-sudo chmod 755 /var/log/dblinter/
+sudo chown postgres:postgres /var/log/pg_linter/
+sudo chmod 755 /var/log/pg_linter/
 ```
 
 2. **Use PostgreSQL data directory:**
 ```sql
 -- Write to PostgreSQL-accessible location
-SELECT pg_linter.perform_base_check(current_setting('data_directory') || '/dblinter_results.sarif');
+SELECT pg_linter.perform_base_check(current_setting('data_directory') || '/pg_linter_results.sarif');
 ```
 
 3. **Check postgresql.conf settings:**
@@ -720,7 +720,7 @@ ANALYZE;
 3. **Run during low-usage periods:**
 ```bash
 # Schedule for off-hours
-echo "0 2 * * * psql -d mydb -c \"SELECT pg_linter.perform_base_check('/var/log/dblinter/nightly.sarif');\"" | crontab -
+echo "0 2 * * * psql -d mydb -c \"SELECT pg_linter.perform_base_check('/var/log/pg_linter/nightly.sarif');\"" | crontab -
 ```
 
 ### Issue: Memory Usage
