@@ -1,8 +1,8 @@
-CREATE TABLE IF NOT EXISTS dblinter.rules (
+CREATE TABLE IF NOT EXISTS pg_linter.rules (
     id INT PRIMARY KEY,
     name TEXT,
     code TEXT,
-    enabled BOOL DEFAULT TRUE,
+    enable BOOL DEFAULT TRUE,
     warning_level INT,
     error_level INT,
     scope TEXT,
@@ -12,9 +12,9 @@ CREATE TABLE IF NOT EXISTS dblinter.rules (
 );
 
 -- Clear existing data and insert comprehensive rules
-DELETE FROM dblinter.rules;
+DELETE FROM pg_linter.rules;
 
-INSERT INTO dblinter.rules (id,name,code,warning_level,error_level,scope,description,message,fixes) VALUES
+INSERT INTO pg_linter.rules (id,name,code,warning_level,error_level,scope,description,message,fixes) VALUES
 -- Base Database Rules (B series)
 (1, 'HowManyTableWithoutPrimaryKey', 'B001', 10, 70, 'BASE',
     'Count number of tables without primary key.',

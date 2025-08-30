@@ -1,0 +1,6 @@
+comment = 'pg_linter: PostgreSQL Database Linting and Analysis Extension'
+default_version = '@CARGO_VERSION@'
+module_pathname = '$libdir/pg_linter'
+relocatable = false
+superuser = true
+trusted = false

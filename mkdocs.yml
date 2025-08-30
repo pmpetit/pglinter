@@ -1,0 +1,56 @@
+site_name: PG Linter
+site_description: PostgreSQL Database Linting and Analysis Extension
+site_author: pg_linter contributors
+copyright: Copyright 2024-2025 pg_linter contributors
+repo_url: https://github.com/your-username/pg_linter
+edit_uri: edit/main/docs/
+
+theme:
+  name: readthedocs
+  highlightjs: true
+  hljs_languages:
+    - yaml
+    - sql
+    - bash
+    - rust
+
+nav:
+  - 'Home': index.md
+  - 'Installation': INSTALL.md
+  - 'Configuration': configure.md
+  - 'Security': SECURITY.md
+  - 'Quick Start': tutorials/quickstart.md
+  - Tutorials:
+    - 'Overview': tutorials/README.md
+    - 'Quick Start (15 min)': tutorials/quickstart.md
+  - How-To Guides:
+    - 'Overview': how-to/README.md
+  - Functions Reference:
+    - 'Functions': functions/README.md
+  - Examples:
+    - 'Usage Examples': examples/README.md
+  - Development:
+    - 'Contributing': dev/README.md
+
+# Markdown settings
+markdown_extensions:
+  - admonition
+  - codehilite:
+      guess_lang: false
+  - toc:
+      permalink: true
+  - tables
+  - fenced_code
+
+# Additional settings
+use_directory_urls: true
+strict: false
+
+# Plugin settings
+plugins:
+  - search
+
+# Extra settings for ReadTheDocs
+extra:
+  version:
+    provider: mike
