@@ -34,7 +34,7 @@ To contribute code to this project, you can simply create your own fork.
 Add a new remote to your local repo:
 
 ```bash
-git remote add upstream https://github.com/your-username/dblinter.git
+git remote add upstream https://github.com/your-username/pg_linter.git
 ```
 
 ### Keep your main branch up to date
@@ -77,11 +77,11 @@ To set up your development environment, follow the [PGRX install instructions]!
 ### System Requirements
 
 1. **Rust toolchain**: Install via [rustup](https://rustup.rs/)
-2. **PostgreSQL development headers**: 
+2. **PostgreSQL development headers**:
    ```bash
    # Ubuntu/Debian
    sudo apt install postgresql-server-dev-all
-   
+
    # RHEL/CentOS/Fedora
    sudo yum install postgresql-devel
    ```
@@ -95,7 +95,7 @@ To set up your development environment, follow the [PGRX install instructions]!
 
 ```bash
 # Clone the repository
-git clone https://github.com/your-username/dblinter.git
+git clone https://github.com/your-username/pg_linter.git
 cd dblinter
 
 # Build the extension
@@ -117,7 +117,7 @@ Adding new linting rules
 dblinter implements various database linting rules to help identify potential issues. Rules are categorized by scope:
 
 - **B (Base)**: Fundamental database issues
-- **C (Cluster)**: PostgreSQL cluster configuration issues  
+- **C (Cluster)**: PostgreSQL cluster configuration issues
 - **T (Table)**: Table-specific issues
 - **S (Schema)**: Schema-level issues
 
@@ -131,14 +131,14 @@ fn execute_new_rule() -> Result<Option<RuleResult>, String> {
         SELECT count(*) as issue_count
         FROM your_check_query
         WHERE your_conditions";
-    
+
     let result: Result<Option<RuleResult>, spi::SpiError> = Spi::connect(|client| {
         let count: i64 = client
             .select(query, None, &[])?
             .first()
             .get::<i64>(1)?
             .unwrap_or(0);
-        
+
         if count > 0 {
             return Ok(Some(RuleResult {
                 ruleid: "T013".to_string(),
@@ -147,7 +147,7 @@ fn execute_new_rule() -> Result<Option<RuleResult>, String> {
                 count: Some(count),
             }));
         }
-        
+
         Ok(None)
     });
 
@@ -198,16 +198,16 @@ Here's how to create a test named `new_test`:
    ```sql
    -- Test description
    BEGIN;
-   
+
    CREATE TABLE test_table (id INT, name TEXT);
-   CREATE EXTENSION IF NOT EXISTS dblinter;
-   
+   CREATE EXTENSION IF NOT EXISTS pg_linter;
+
    -- Test with file output
-   SELECT dblinter.perform_base_check('/tmp/test_results.sarif');
-   
+   SELECT pg_linter.perform_base_check('/tmp/test_results.sarif');
+
    -- Test with prompt output
-   SELECT dblinter.perform_base_check();
-   
+   SELECT pg_linter.perform_base_check();
+
    ROLLBACK;
    ```
 
@@ -239,20 +239,20 @@ dblinter supports two output modes:
 
 ### File Output (SARIF format)
 ```sql
-SELECT dblinter.perform_base_check('/tmp/results.sarif');
+SELECT pg_linter.perform_base_check('/tmp/results.sarif');
 ```
 
 ### Prompt Output (formatted notices)
 ```sql
 -- Using NULL or no parameter
-SELECT dblinter.perform_base_check();
+SELECT pg_linter.perform_base_check();
 
 -- Using convenience functions
-SELECT dblinter.check_base();
-SELECT dblinter.check_cluster();
-SELECT dblinter.check_table();
-SELECT dblinter.check_schema();
-SELECT dblinter.check_all();
+SELECT pg_linter.check_base();
+SELECT pg_linter.check_cluster();
+SELECT pg_linter.check_table();
+SELECT pg_linter.check_schema();
+SELECT pg_linter.check_all();
 ```
 
 ### Testing with the Makefile
@@ -343,7 +343,7 @@ Performance Considerations
 When implementing new rules:
 
 1. **Avoid expensive queries** on large databases
-2. **Use appropriate indexes** in your rule queries  
+2. **Use appropriate indexes** in your rule queries
 3. **Consider query timeouts** for long-running checks
 4. **Test with realistic data volumes**
 5. **Use `EXPLAIN ANALYZE`** to verify query performance
@@ -352,7 +352,7 @@ Publishing a new Release
 --------------------------------------------------------------------------------
 
 1. Update version in `Cargo.toml`
-2. Update `dblinter.control` if needed
+2. Update `pg_linter.control` if needed
 3. Run full test suite: `make installcheck`
 4. Update CHANGELOG.md
 5. Create a Git tag

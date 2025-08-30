@@ -33,10 +33,10 @@ Users can now:
 
 The extension rename from `dblinter` to `pg_linter` has been completed successfully with all references updated throughout the codebase.ension Files
 - ✅ `Cargo.toml` - Updated package name and binary name
-- ✅ `pg_linter.control` - Renamed from dblinter.control and updated content
+- ✅ `pg_linter.control` - Renamed from pg_linter.control and updated content
 - ✅ `src/lib.rs` - Updated schema references, function names, and module names
 - ✅ `src/rules_engine.rs` - Updated database table references and SARIF output
-- ✅ `sql/rules.sql` - Updated table schema from dblinter.rules to pg_linter.rules
+- ✅ `sql/rules.sql` - Updated table schema from pg_linter.rules to pg_linter.rules
 
 ### Documentation Files
 - ✅ `README.md` - Updated all references to extension name and schema calls
@@ -46,29 +46,29 @@ The extension rename from `dblinter` to `pg_linter` has been completed successfu
 - ✅ `mkdocs.yml` - Updated site name, description, and repository references
 
 ### Test Files
-- ✅ All `tests/sql/*.sql` files - Updated schema references from dblinter.* to pg_linter.*
+- ✅ All `tests/sql/*.sql` files - Updated schema references from pg_linter.* to pg_linter.*
 
 ### Scripts and Utilities
-- ✅ `validate_pg_linter.sh` - Renamed from validate_dblinter.sh and updated content
+- ✅ `validate_pg_linter.sh` - Renamed from validate_pg_linter.sh and updated content
 - ✅ `serve_docs.sh` - Updated documentation server references
 - ✅ `PROJECT_STATUS.md` - Updated project status documentation
 
 ## Schema Changes
 
 All PostgreSQL function calls have been updated:
-- `dblinter.perform_base_check()` → `pg_linter.perform_base_check()`
-- `dblinter.perform_cluster_check()` → `pg_linter.perform_cluster_check()`
-- `dblinter.perform_table_check()` → `pg_linter.perform_table_check()`
-- `dblinter.perform_schema_check()` → `pg_linter.perform_schema_check()`
-- `dblinter.show_rules()` → `pg_linter.show_rules()`
-- `dblinter.enable_rule()` → `pg_linter.enable_rule()`
-- `dblinter.disable_rule()` → `pg_linter.disable_rule()`
-- `dblinter.is_rule_enabled()` → `pg_linter.is_rule_enabled()`
-- `dblinter.explain_rule()` → `pg_linter.explain_rule()`
+- `pg_linter.perform_base_check()` → `pg_linter.perform_base_check()`
+- `pg_linter.perform_cluster_check()` → `pg_linter.perform_cluster_check()`
+- `pg_linter.perform_table_check()` → `pg_linter.perform_table_check()`
+- `pg_linter.perform_schema_check()` → `pg_linter.perform_schema_check()`
+- `pg_linter.show_rules()` → `pg_linter.show_rules()`
+- `pg_linter.enable_rule()` → `pg_linter.enable_rule()`
+- `pg_linter.disable_rule()` → `pg_linter.disable_rule()`
+- `pg_linter.is_rule_enabled()` → `pg_linter.is_rule_enabled()`
+- `pg_linter.explain_rule()` → `pg_linter.explain_rule()`
 
 ## Database Schema Changes
 
-- Rules table: `dblinter.rules` → `pg_linter.rules`
+- Rules table: `pg_linter.rules` → `pg_linter.rules`
 - Extension creation: `CREATE EXTENSION dblinter` → `CREATE EXTENSION pg_linter`
 
 ## Installation Changes

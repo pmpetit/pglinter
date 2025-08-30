@@ -157,10 +157,10 @@ tests/sql/
 
 **What Changed:**
 - Package name: `dblinter` → `pg_linter`
-- Schema name: `dblinter.*` → `pg_linter.*`
+- Schema name: `pg_linter.*` → `pg_linter.*`
 - Extension creation: `CREATE EXTENSION dblinter` → `CREATE EXTENSION pg_linter`
-- All function calls: `dblinter.function()` → `pg_linter.function()`
-- Database tables: `dblinter.rules` → `pg_linter.rules`
+- All function calls: `pg_linter.function()` → `pg_linter.function()`
+- Database tables: `pg_linter.rules` → `pg_linter.rules`
 - Documentation: All references updated
 - Test files: All schema references updated
 - SARIF output: Tool name updated to "pg_linter"

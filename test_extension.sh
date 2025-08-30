@@ -16,13 +16,13 @@ echo "Loading extension..."
 psql -d dblinter_test -c "CREATE EXTENSION IF NOT EXISTS dblinter;"
 
 echo "Testing base check..."
-psql -d dblinter_test -c "SELECT dblinter.perform_base_check('/tmp/dblinter_base_results.sarif');"
+psql -d dblinter_test -c "SELECT pg_linter.perform_base_check('/tmp/dblinter_base_results.sarif');"
 
 echo "Testing cluster check..."
-psql -d dblinter_test -c "SELECT dblinter.perform_cluster_check('/tmp/dblinter_cluster_results.sarif');"
+psql -d dblinter_test -c "SELECT pg_linter.perform_cluster_check('/tmp/dblinter_cluster_results.sarif');"
 
 echo "Testing table check..."
-psql -d dblinter_test -c "SELECT dblinter.perform_table_check('/tmp/dblinter_table_results.sarif');"
+psql -d dblinter_test -c "SELECT pg_linter.perform_table_check('/tmp/dblinter_table_results.sarif');"
 
 echo "Checking SARIF output..."
 if [ -f "/tmp/dblinter_base_results.sarif" ]; then

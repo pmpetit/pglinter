@@ -12,7 +12,7 @@ CREATE TABLE IF NOT EXISTS my_table_without_pk (
 );
 CREATE EXTENSION IF NOT EXISTS dblinter;
 -- Test with file output
-SELECT dblinter.perform_base_check('/tmp/dblinter_base_results.sarif');
+SELECT pg_linter.perform_base_check('/tmp/dblinter_base_results.sarif');
  perform_base_check 
 --------------------
  t
@@ -22,7 +22,7 @@ SELECT dblinter.perform_base_check('/tmp/dblinter_base_results.sarif');
 \! md5sum /tmp/dblinter_base_results.sarif
 32e67d2ad135d8f404c1a9d30cfa00b7  /tmp/dblinter_base_results.sarif
 -- Test with no output file (should output to prompt)  
-SELECT dblinter.perform_base_check();
+SELECT pg_linter.perform_base_check();
 NOTICE:  🔍 dblinter found 3 issue(s):
 NOTICE:  ==================================================
 NOTICE:  ⚠️  [B001] WARNING: 1 tables without primary key exceed the warning threshold: 10%
