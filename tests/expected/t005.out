@@ -1,0 +1,136 @@
+-- Test for T005 rule - Tables with potential missing indexes (high sequential scan usage)
+BEGIN;
+DROP EXTENSION IF EXISTS pglinter CASCADE;
+NOTICE:  extension "pglinter" does not exist, skipping
+-- Create test table that will likely have high sequential scans
+CREATE TABLE test_table_seq_scan (
+    id INT,
+    name TEXT,
+    category TEXT,
+    value NUMERIC
+);
+-- Insert some test data to make the table more realistic
+INSERT INTO test_table_seq_scan (id, name, category, value)
+SELECT i, 'name_' || i, 'category_' || (i % 10), random() * 1000
+FROM generate_series(1, 1000) i;
+-- Create another table with proper indexing
+CREATE TABLE test_table_indexed (
+    id SERIAL PRIMARY KEY,
+    name TEXT,
+    category TEXT,
+    value NUMERIC
+);
+-- Add indexes to prevent high sequential scans
+CREATE INDEX idx_category ON test_table_indexed(category);
+CREATE INDEX idx_value ON test_table_indexed(value);
+-- Insert data
+INSERT INTO test_table_indexed (name, category, value)
+SELECT 'name_' || i, 'category_' || (i % 10), random() * 1000
+FROM generate_series(1, 1000) i;
+CREATE EXTENSION IF NOT EXISTS pglinter;
+-- Force some statistics collection
+ANALYZE test_table_seq_scan;
+ANALYZE test_table_indexed;
+-- Simulate some queries that would cause sequential scans
+SELECT COUNT(*) FROM test_table_seq_scan WHERE category = 'category_1';
+ count 
+-------
+   100
+(1 row)
+
+SELECT COUNT(*) FROM test_table_seq_scan WHERE value > 500;
+ count 
+-------
+   504
+(1 row)
+
+-- Simulate indexed queries (should not cause seq scans)
+SELECT COUNT(*) FROM test_table_indexed WHERE category = 'category_1';
+ count 
+-------
+   100
+(1 row)
+
+SELECT COUNT(*) FROM test_table_indexed WHERE value > 500;
+ count 
+-------
+   483
+(1 row)
+
+-- Test the T005 rule
+SELECT 'Testing T005 rule...' as test_info;
+      test_info       
+----------------------
+ Testing T005 rule...
+(1 row)
+
+-- Run table check to detect high sequential scan usage
+SELECT pglinter.perform_table_check();
+WARNING:  pglinter table check failed: T002 failed: Database error: Datum error: Postgres type name (Oid(19)) is not compatible with the Rust type alloc::string::String (Oid(25))
+ perform_table_check 
+---------------------
+ f
+(1 row)
+
+-- Test rule management for T005
+SELECT pglinter.explain_rule('T005');
+NOTICE:  📖 Rule Explanation for T005
+============================================================
+
+🎯 Rule Name: TableWithPotentialMissingIdx
+📋 Scope: TABLE
+
+📝 Description:
+table with high level of seq scan vs idx scan, base on pg_stat_user_tables.
+
+⚠️  Message Template:
+{0} table with seq scan exceed the threshold: {1}.
+
+🔧 How to Fix:
+   1. ask a dba
+============================================================
+ explain_rule 
+--------------
+ t
+(1 row)
+
+SELECT pglinter.is_rule_enabled('T005') AS t005_enabled;
+ t005_enabled 
+--------------
+ t
+(1 row)
+
+-- Test disabling T005
+SELECT pglinter.disable_rule('T005') AS t005_disabled;
+NOTICE:  🔴 Rule T005 has been disabled
+ t005_disabled 
+---------------
+ t
+(1 row)
+
+SELECT pglinter.perform_table_check(); -- Should skip T005
+WARNING:  pglinter table check failed: T002 failed: Database error: Datum error: Postgres type name (Oid(19)) is not compatible with the Rust type alloc::string::String (Oid(25))
+ perform_table_check 
+---------------------
+ f
+(1 row)
+
+-- Re-enable T005
+SELECT pglinter.enable_rule('T005') AS t005_reenabled;
+NOTICE:  ✅ Rule T005 has been enabled
+ t005_reenabled 
+----------------
+ t
+(1 row)
+
+SELECT pglinter.perform_table_check(); -- Should include T005 again
+WARNING:  pglinter table check failed: T002 failed: Database error: Datum error: Postgres type name (Oid(19)) is not compatible with the Rust type alloc::string::String (Oid(25))
+ perform_table_check 
+---------------------
+ f
+(1 row)
+
+-- Clean up
+DROP TABLE test_table_seq_scan CASCADE;
+DROP TABLE test_table_indexed CASCADE;
+ROLLBACK;

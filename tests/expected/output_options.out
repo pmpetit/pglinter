@@ -1,0 +1,107 @@
+-- Test for output_file parameter being optional - both file and prompt output
+BEGIN;
+DROP EXTENSION IF EXISTS pglinter CASCADE;
+NOTICE:  extension "pglinter" does not exist, skipping
+-- Create test data that will trigger multiple rules
+CREATE TABLE table_without_pk (
+    id INT,
+    name TEXT
+);
+-- Create redundant indexes
+CREATE INDEX idx_name_1 ON table_without_pk(name);
+CREATE INDEX idx_name_2 ON table_without_pk(name);
+-- Create table with uppercase (triggers B006 and T011)
+CREATE TABLE "UPPERCASE_TABLE" (
+    id SERIAL PRIMARY KEY,
+    "UPPER_COLUMN" TEXT
+);
+-- Create schema with environment prefix (triggers S002)
+CREATE SCHEMA prod_testing;
+CREATE EXTENSION IF NOT EXISTS pglinter;
+-- Test 1: Output to prompt (no file parameter)
+SELECT 'Testing output to prompt...' as test_info;
+          test_info          
+-----------------------------
+ Testing output to prompt...
+(1 row)
+
+SELECT pglinter.perform_base_check();
+NOTICE:  🔍 pglinter found 5 issue(s):
+NOTICE:  ==================================================
+NOTICE:  ⚠️  [B001] WARNING: 1 tables without primary key exceed the warning threshold: 10%
+NOTICE:  ⚠️  [B002] WARNING: Found 2 potentially redundant indexes
+NOTICE:  ⚠️  [B004] WARNING: Found 4 potentially unused indexes
+NOTICE:  ❌ [B005] ERROR: Public schema allows CREATE privilege for all users - security risk
+NOTICE:  ⚠️  [B006] WARNING: Found 2 database objects with uppercase letters
+NOTICE:  ==================================================
+NOTICE:  📊 Summary: 1 error(s), 4 warning(s), 0 info
+NOTICE:  🔴 Critical issues found - please review and fix errors
+ perform_base_check 
+--------------------
+ t
+(1 row)
+
+SELECT pglinter.perform_table_check();
+ERROR:  relation "public.uppercase_table" does not exist
+CONTEXT:  SQL statement "
+        SELECT COUNT(*)
+        FROM pg_tables pt
+        WHERE schemaname NOT IN ('pg_toast', 'pg_catalog', 'information_schema')
+        AND NOT EXISTS (
+            SELECT 1
+            FROM pg_constraint pc
+            WHERE pc.conrelid = (pt.schemaname||'.'||pt.tablename)::regclass
+            AND pc.contype = 'p'
+        )"
+SELECT pglinter.perform_schema_check();
+ERROR:  current transaction is aborted, commands ignored until end of transaction block
+-- Test 2: Output to prompt (NULL file parameter)
+SELECT 'Testing output to prompt with NULL...' as test_info;
+ERROR:  current transaction is aborted, commands ignored until end of transaction block
+SELECT pglinter.perform_base_check(NULL);
+ERROR:  current transaction is aborted, commands ignored until end of transaction block
+SELECT pglinter.perform_table_check(NULL);
+ERROR:  current transaction is aborted, commands ignored until end of transaction block
+SELECT pglinter.perform_schema_check(NULL);
+ERROR:  current transaction is aborted, commands ignored until end of transaction block
+-- Test 3: Output to file
+SELECT 'Testing output to file...' as test_info;
+ERROR:  current transaction is aborted, commands ignored until end of transaction block
+SELECT pglinter.perform_base_check('/tmp/test_base_output.sarif');
+ERROR:  current transaction is aborted, commands ignored until end of transaction block
+SELECT pglinter.perform_table_check('/tmp/test_table_output.sarif');
+ERROR:  current transaction is aborted, commands ignored until end of transaction block
+SELECT pglinter.perform_schema_check('/tmp/test_schema_output.sarif');
+ERROR:  current transaction is aborted, commands ignored until end of transaction block
+-- Test 4: Comprehensive check with different output options
+SELECT 'Testing comprehensive check - to prompt...' as test_info;
+ERROR:  current transaction is aborted, commands ignored until end of transaction block
+SELECT pglinter.check_all();
+ERROR:  current transaction is aborted, commands ignored until end of transaction block
+-- Test 5: Individual rule testing
+SELECT pglinter.explain_rule('B001');
+ERROR:  current transaction is aborted, commands ignored until end of transaction block
+SELECT pglinter.explain_rule('T003');
+ERROR:  current transaction is aborted, commands ignored until end of transaction block
+SELECT pglinter.explain_rule('S002');
+ERROR:  current transaction is aborted, commands ignored until end of transaction block
+-- Test 6: Rule management
+SELECT pglinter.show_rules();
+ERROR:  current transaction is aborted, commands ignored until end of transaction block
+-- Test 7: Rule enable/disable functionality
+SELECT pglinter.disable_rule('B006');
+ERROR:  current transaction is aborted, commands ignored until end of transaction block
+SELECT pglinter.perform_base_check(); -- Should skip B006
+ERROR:  current transaction is aborted, commands ignored until end of transaction block
+SELECT pglinter.enable_rule('B006');
+ERROR:  current transaction is aborted, commands ignored until end of transaction block
+SELECT pglinter.perform_base_check(); -- Should include B006 again
+ERROR:  current transaction is aborted, commands ignored until end of transaction block
+-- Clean up
+DROP SCHEMA prod_testing CASCADE;
+ERROR:  current transaction is aborted, commands ignored until end of transaction block
+DROP TABLE "UPPERCASE_TABLE" CASCADE;
+ERROR:  current transaction is aborted, commands ignored until end of transaction block
+DROP TABLE table_without_pk CASCADE;
+ERROR:  current transaction is aborted, commands ignored until end of transaction block
+ROLLBACK;

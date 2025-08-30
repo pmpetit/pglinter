@@ -1,8 +1,8 @@
-site_name: PG Linter
+site_name: pglinter
 site_description: PostgreSQL Database Linting and Analysis Extension
 site_author: pglinter contributors
 copyright: Copyright 2024-2025 pglinter contributors
-repo_url: https://github.com/your-username/pglinter
+repo_url: https://github.com/pmpetit/pglinter
 edit_uri: edit/main/docs/
 
 theme:

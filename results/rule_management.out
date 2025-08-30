@@ -11,40 +11,40 @@ CREATE EXTENSION IF NOT EXISTS pglinter;
 SELECT pglinter.show_rules();
 NOTICE:  📋 pglinter Rule Status:
 NOTICE:  ============================================================
-NOTICE:  Code   Status   Name
+NOTICE:  Code   Status   Name                                    
 NOTICE:  ------------------------------------------------------------
-NOTICE:  B001   ✅ ON     HowManyTableWithoutPrimaryKey
-NOTICE:  B002   ✅ ON     HowManyRedudantIndex
-NOTICE:  B003   ✅ ON     HowManyTableWithoutIndexOnFk
-NOTICE:  B004   ✅ ON     HowManyUnusedIndex
-NOTICE:  B005   ✅ ON     UnsecuredPublicSchema
-NOTICE:  B006   ✅ ON     HowManyTablesWithUppercase
+NOTICE:  B001   ✅ ON     HowManyTableWithoutPrimaryKey           
+NOTICE:  B002   ✅ ON     HowManyRedudantIndex                    
+NOTICE:  B003   ✅ ON     HowManyTableWithoutIndexOnFk            
+NOTICE:  B004   ✅ ON     HowManyUnusedIndex                      
+NOTICE:  B005   ✅ ON     UnsecuredPublicSchema                   
+NOTICE:  B006   ✅ ON     HowManyTablesWithUppercase              
 NOTICE:  C001   ✅ ON     MaxConnectionsByWorkMemIsNotLargerThanMemory
 NOTICE:  C002   ✅ ON     PgHbaEntriesWithMethodTrustOrPasswordShouldNotExists
-NOTICE:  S001   ✅ ON     SchemaWithDefaultRoleNotGranted
-NOTICE:  S002   ✅ ON     SchemaPrefixedOrSuffixedWithEnvt
-NOTICE:  T001   ✅ ON     TableWithoutPrimaryKey
-NOTICE:  T002   ✅ ON     TableWithoutIndex
-NOTICE:  T003   ✅ ON     TableWithRedundantIndex
-NOTICE:  T004   ✅ ON     TableWithFkNotIndexed
-NOTICE:  T005   ✅ ON     TableWithPotentialMissingIdx
-NOTICE:  T006   ✅ ON     TableWithFkOutsideSchema
-NOTICE:  T007   ✅ ON     TableWithUnusedIndex
-NOTICE:  T008   ✅ ON     TableWithFkMismatch
-NOTICE:  T009   ✅ ON     TableWithRoleNotGranted
-NOTICE:  T010   ✅ ON     ReservedKeyWord
-NOTICE:  T011   ✅ ON     TableWithUppercase
-NOTICE:  T012   ✅ ON     TableWithSensibleColumn
+NOTICE:  S001   ✅ ON     SchemaWithDefaultRoleNotGranted         
+NOTICE:  S002   ✅ ON     SchemaPrefixedOrSuffixedWithEnvt        
+NOTICE:  T001   ✅ ON     TableWithoutPrimaryKey                  
+NOTICE:  T002   ✅ ON     TableWithoutIndex                       
+NOTICE:  T003   ✅ ON     TableWithRedundantIndex                 
+NOTICE:  T004   ✅ ON     TableWithFkNotIndexed                   
+NOTICE:  T005   ✅ ON     TableWithPotentialMissingIdx            
+NOTICE:  T006   ✅ ON     TableWithFkOutsideSchema                
+NOTICE:  T007   ✅ ON     TableWithUnusedIndex                    
+NOTICE:  T008   ✅ ON     TableWithFkMismatch                     
+NOTICE:  T009   ✅ ON     TableWithRoleNotGranted                 
+NOTICE:  T010   ✅ ON     ReservedKeyWord                         
+NOTICE:  T011   ✅ ON     TableWithUppercase                      
+NOTICE:  T012   ✅ ON     TableWithSensibleColumn                 
 NOTICE:  ============================================================
 NOTICE:  📊 Summary: 22 enabled, 0 disabled
- show_rules
+ show_rules 
 ------------
  t
 (1 row)
 
 -- Test enabling and disabling a specific rule
 SELECT pglinter.is_rule_enabled('B001') AS b001_initially_enabled;
- b001_initially_enabled
+ b001_initially_enabled 
 ------------------------
  t
 (1 row)
@@ -52,14 +52,14 @@ SELECT pglinter.is_rule_enabled('B001') AS b001_initially_enabled;
 -- Disable B001 rule
 SELECT pglinter.disable_rule('B001') AS b001_disabled;
 NOTICE:  🔴 Rule B001 has been disabled
- b001_disabled
+ b001_disabled 
 ---------------
  t
 (1 row)
 
 -- Check if it's disabled
 SELECT pglinter.is_rule_enabled('B001') AS b001_after_disable;
- b001_after_disable
+ b001_after_disable 
 --------------------
  f
 (1 row)
@@ -73,7 +73,7 @@ NOTICE:  ❌ [B005] ERROR: Public schema allows CREATE privilege for all users -
 NOTICE:  ==================================================
 NOTICE:  📊 Summary: 1 error(s), 1 warning(s), 0 info
 NOTICE:  🔴 Critical issues found - please review and fix errors
- perform_base_check
+ perform_base_check 
 --------------------
  t
 (1 row)
@@ -81,14 +81,14 @@ NOTICE:  🔴 Critical issues found - please review and fix errors
 -- Re-enable B001 rule
 SELECT pglinter.enable_rule('B001') AS b001_enabled;
 NOTICE:  ✅ Rule B001 has been enabled
- b001_enabled
+ b001_enabled 
 --------------
  t
 (1 row)
 
 -- Check if it's enabled again
 SELECT pglinter.is_rule_enabled('B001') AS b001_after_enable;
- b001_after_enable
+ b001_after_enable 
 -------------------
  t
 (1 row)
@@ -96,7 +96,7 @@ SELECT pglinter.is_rule_enabled('B001') AS b001_after_enable;
 -- Test with non-existent rule
 SELECT pglinter.disable_rule('NONEXISTENT') AS nonexistent_disable;
 WARNING:  ⚠️  Rule NONEXISTENT not found
- nonexistent_disable
+ nonexistent_disable 
 ---------------------
  f
 (1 row)
@@ -105,33 +105,33 @@ WARNING:  ⚠️  Rule NONEXISTENT not found
 SELECT pglinter.show_rules();
 NOTICE:  📋 pglinter Rule Status:
 NOTICE:  ============================================================
-NOTICE:  Code   Status   Name
+NOTICE:  Code   Status   Name                                    
 NOTICE:  ------------------------------------------------------------
-NOTICE:  B001   ✅ ON     HowManyTableWithoutPrimaryKey
-NOTICE:  B002   ✅ ON     HowManyRedudantIndex
-NOTICE:  B003   ✅ ON     HowManyTableWithoutIndexOnFk
-NOTICE:  B004   ✅ ON     HowManyUnusedIndex
-NOTICE:  B005   ✅ ON     UnsecuredPublicSchema
-NOTICE:  B006   ✅ ON     HowManyTablesWithUppercase
+NOTICE:  B001   ✅ ON     HowManyTableWithoutPrimaryKey           
+NOTICE:  B002   ✅ ON     HowManyRedudantIndex                    
+NOTICE:  B003   ✅ ON     HowManyTableWithoutIndexOnFk            
+NOTICE:  B004   ✅ ON     HowManyUnusedIndex                      
+NOTICE:  B005   ✅ ON     UnsecuredPublicSchema                   
+NOTICE:  B006   ✅ ON     HowManyTablesWithUppercase              
 NOTICE:  C001   ✅ ON     MaxConnectionsByWorkMemIsNotLargerThanMemory
 NOTICE:  C002   ✅ ON     PgHbaEntriesWithMethodTrustOrPasswordShouldNotExists
-NOTICE:  S001   ✅ ON     SchemaWithDefaultRoleNotGranted
-NOTICE:  S002   ✅ ON     SchemaPrefixedOrSuffixedWithEnvt
-NOTICE:  T001   ✅ ON     TableWithoutPrimaryKey
-NOTICE:  T002   ✅ ON     TableWithoutIndex
-NOTICE:  T003   ✅ ON     TableWithRedundantIndex
-NOTICE:  T004   ✅ ON     TableWithFkNotIndexed
-NOTICE:  T005   ✅ ON     TableWithPotentialMissingIdx
-NOTICE:  T006   ✅ ON     TableWithFkOutsideSchema
-NOTICE:  T007   ✅ ON     TableWithUnusedIndex
-NOTICE:  T008   ✅ ON     TableWithFkMismatch
-NOTICE:  T009   ✅ ON     TableWithRoleNotGranted
-NOTICE:  T010   ✅ ON     ReservedKeyWord
-NOTICE:  T011   ✅ ON     TableWithUppercase
-NOTICE:  T012   ✅ ON     TableWithSensibleColumn
+NOTICE:  S001   ✅ ON     SchemaWithDefaultRoleNotGranted         
+NOTICE:  S002   ✅ ON     SchemaPrefixedOrSuffixedWithEnvt        
+NOTICE:  T001   ✅ ON     TableWithoutPrimaryKey                  
+NOTICE:  T002   ✅ ON     TableWithoutIndex                       
+NOTICE:  T003   ✅ ON     TableWithRedundantIndex                 
+NOTICE:  T004   ✅ ON     TableWithFkNotIndexed                   
+NOTICE:  T005   ✅ ON     TableWithPotentialMissingIdx            
+NOTICE:  T006   ✅ ON     TableWithFkOutsideSchema                
+NOTICE:  T007   ✅ ON     TableWithUnusedIndex                    
+NOTICE:  T008   ✅ ON     TableWithFkMismatch                     
+NOTICE:  T009   ✅ ON     TableWithRoleNotGranted                 
+NOTICE:  T010   ✅ ON     ReservedKeyWord                         
+NOTICE:  T011   ✅ ON     TableWithUppercase                      
+NOTICE:  T012   ✅ ON     TableWithSensibleColumn                 
 NOTICE:  ============================================================
 NOTICE:  📊 Summary: 22 enabled, 0 disabled
- show_rules
+ show_rules 
 ------------
  t
 (1 row)
