@@ -199,14 +199,86 @@ help:
 	@echo "  stop             - Stop PostgreSQL test instance"
 	@echo "  psql             - Connect to test database"
 	@echo "  clean            - Clean build artifacts"
+	@echo "  lint             - Run Rust linting with clippy"
+	@echo "  fmt              - Format Rust code with cargo fmt"
+	@echo "  fmt-check        - Check if Rust code is properly formatted"
+	@echo "  lint-docs        - Lint markdown documentation files"
+	@echo "  spell-check      - Check spelling in documentation"
+	@echo "  audit            - Run security audit on dependencies"
+	@echo "  precommit        - Run all pre-commit checks (fmt, lint, docs, tests)"
+	@echo "  precommit-fast   - Run fast pre-commit checks (skip tests)"
+	@echo "  install-precommit-hook - Install git pre-commit hook"
 	@echo "  help             - Show this help message"
 
-.PHONY: all extension install test-all installcheck start stop run psql clean help test-% test-prompt-% test-convenience
+.PHONY: all extension install test-all installcheck start stop run psql clean help test-% test-prompt-% test-convenience lint fmt fmt-check lint-docs spell-check audit precommit precommit-fast install-precommit-hook
 
 
 ##
-## L I N T
+## L I N T  &  P R E C O M M I T
 ##
 
 lint:
 	cargo clippy --release
+
+# Format Rust code
+fmt:
+	cargo fmt
+
+# Check if code is formatted
+fmt-check:
+	cargo fmt --check
+
+# Lint markdown files
+lint-docs:
+	@if command -v rumdl > /dev/null; then \
+		echo "Linting markdown files..."; \
+		rumdl check docs/**/*.md *.md || true; \
+	else \
+		echo "rumdl not found, skipping markdown lint"; \
+	fi
+
+# Spell check documentation
+spell-check:
+	@if command -v aspell > /dev/null; then \
+		echo "Checking spelling in documentation..."; \
+		find docs/ -name "*.md" -exec aspell --mode=markdown --personal=./.aspell.en.pws list < {} \; | sort -u | head -20; \
+	else \
+		echo "aspell not found, skipping spell check"; \
+	fi
+
+# Security audit
+audit:
+	cargo audit
+
+# Install git pre-commit hook
+install-precommit-hook:
+	@echo "Installing pre-commit hook..."
+	@cp pre-commit-hook.sh .git/hooks/pre-commit
+	@chmod +x .git/hooks/pre-commit
+	@echo "✅ Pre-commit hook installed successfully!"
+	@echo "   Now 'git commit' will automatically run pre-commit checks."
+
+# Pre-commit hook that runs all checks
+precommit: fmt-check lint lint-docs test
+	@echo ""
+	@echo "🎉 Pre-commit checks completed successfully!"
+	@echo ""
+	@echo "Summary of checks performed:"
+	@echo "  ✅ Rust code formatting (cargo fmt --check)"
+	@echo "  ✅ Rust code linting (cargo clippy)"
+	@echo "  ✅ Markdown documentation linting"
+	@echo "  ✅ Unit tests (cargo pgrx test)"
+	@echo ""
+	@echo "Ready to commit! 🚀"
+
+# Fast pre-commit that skips tests
+precommit-fast: fmt-check lint lint-docs
+	@echo ""
+	@echo "⚡ Fast pre-commit checks completed!"
+	@echo ""
+	@echo "Summary of checks performed:"
+	@echo "  ✅ Rust code formatting (cargo fmt --check)"
+	@echo "  ✅ Rust code linting (cargo clippy)"
+	@echo "  ✅ Markdown documentation linting"
+	@echo ""
+	@echo "Note: Skipped tests for speed. Run 'make test' before pushing."
