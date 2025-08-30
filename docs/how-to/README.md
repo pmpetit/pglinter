@@ -1,21 +1,21 @@
 # How-To Guides
 
-Practical guides for common pg_linter scenarios and use cases.
+Practical guides for common pglinter scenarios and use cases.
 
 ## Quick Navigation
 
-- [Setting Up pg_linter in CI/CD](#setting-up-pg_linter-in-cicd)
+- [Setting Up pglinter in CI/CD](#setting-up-pglinter-in-cicd)
 - [Managing Rules for Different Environments](#managing-rules-for-different-environments)
 - [Analyzing Large Databases](#analyzing-large-databases)
 - [Integrating with Monitoring Systems](#integrating-with-monitoring-systems)
 - [Custom Reporting and Dashboards](#custom-reporting-and-dashboards)
 - [Troubleshooting Common Issues](#troubleshooting-common-issues)
 
-## Setting Up pg_linter in CI/CD
+## Setting Up pglinter in CI/CD
 
 ### GitHub Actions
 
-Create `.github/workflows/pg_linter.yml`:
+Create `.github/workflows/pglinter.yml`:
 
 ```yaml
 name: Database Linting
@@ -51,19 +51,19 @@ jobs:
       run: |
         PGPASSWORD=postgres psql -h localhost -U postgres -d testdb -f schema.sql
 
-    - name: Install pg_linter
+    - name: Install pglinter
       run: |
         # Add installation steps here
-        PGPASSWORD=postgres psql -h localhost -U postgres -d testdb -c "CREATE EXTENSION pg_linter;"
+        PGPASSWORD=postgres psql -h localhost -U postgres -d testdb -c "CREATE EXTENSION pglinter;"
 
     - name: Configure rules for CI
       run: |
-        PGPASSWORD=postgres psql -h localhost -U postgres -d testdb -f .pg_linter/ci-config.sql
+        PGPASSWORD=postgres psql -h localhost -U postgres -d testdb -f .pglinter/ci-config.sql
 
     - name: Run database analysis
       run: |
         PGPASSWORD=postgres psql -h localhost -U postgres -d testdb -c \
-          "SELECT pg_linter.perform_base_check('/tmp/results.sarif');"
+          "SELECT pglinter.perform_base_check('/tmp/results.sarif');"
 
     - name: Upload SARIF results
       uses: github/codeql-action/upload-sarif@v2
@@ -108,12 +108,12 @@ db-lint:
     # Setup schema
     - psql -h postgres -U postgres -d testdb -f schema.sql
 
-    # Install and configure pg_linter
-    - psql -h postgres -U postgres -d testdb -c "CREATE EXTENSION pg_linter;"
-    - psql -h postgres -U postgres -d testdb -f .pg_linter/ci-config.sql
+    # Install and configure pglinter
+    - psql -h postgres -U postgres -d testdb -c "CREATE EXTENSION pglinter;"
+    - psql -h postgres -U postgres -d testdb -f .pglinter/ci-config.sql
 
     # Run analysis
-    - psql -h postgres -U postgres -d testdb -c "SELECT pg_linter.perform_base_check('/tmp/results.sarif');"
+    - psql -h postgres -U postgres -d testdb -c "SELECT pglinter.perform_base_check('/tmp/results.sarif');"
 
     # Check results
     - |
@@ -149,16 +149,16 @@ pipeline {
                 sh '''
                     export PGPASSWORD=$DB_PASS
                     psql -h $DB_HOST -U $DB_USER -d $DB_NAME -f schema.sql
-                    psql -h $DB_HOST -U $DB_USER -d $DB_NAME -c "CREATE EXTENSION IF NOT EXISTS pg_linter;"
+                    psql -h $DB_HOST -U $DB_USER -d $DB_NAME -c "CREATE EXTENSION IF NOT EXISTS pglinter;"
                 '''
             }
         }
 
-        stage('Configure pg_linter') {
+        stage('Configure pglinter') {
             steps {
                 sh '''
                     export PGPASSWORD=$DB_PASS
-                    psql -h $DB_HOST -U $DB_USER -d $DB_NAME -f .pg_linter/jenkins-config.sql
+                    psql -h $DB_HOST -U $DB_USER -d $DB_NAME -f .pglinter/jenkins-config.sql
                 '''
             }
         }
@@ -168,7 +168,7 @@ pipeline {
                 sh '''
                     export PGPASSWORD=$DB_PASS
                     psql -h $DB_HOST -U $DB_USER -d $DB_NAME -c \
-                        "SELECT pg_linter.perform_base_check('${WORKSPACE}/results.sarif');"
+                        "SELECT pglinter.perform_base_check('${WORKSPACE}/results.sarif');"
                 '''
             }
         }
@@ -204,45 +204,45 @@ pipeline {
 
 Create configuration files for each environment:
 
-**`.pg_linter/development.sql`**:
+**`.pglinter/development.sql`**:
 ```sql
 -- Development environment - More permissive
-\echo 'Configuring pg_linter for development...'
+\echo 'Configuring pglinter for development...'
 
 -- Disable security rules that may not apply in dev
-SELECT pg_linter.disable_rule('B005'); -- Public schema
-SELECT pg_linter.disable_rule('C002'); -- pg_hba security
-SELECT pg_linter.disable_rule('T009'); -- Role grants
+SELECT pglinter.disable_rule('B005'); -- Public schema
+SELECT pglinter.disable_rule('C002'); -- pg_hba security
+SELECT pglinter.disable_rule('T009'); -- Role grants
 
 -- Focus on data integrity
-SELECT pg_linter.enable_rule('B001');  -- Primary keys
-SELECT pg_linter.enable_rule('T001');  -- Table primary keys
-SELECT pg_linter.enable_rule('T004');  -- FK indexing
+SELECT pglinter.enable_rule('B001');  -- Primary keys
+SELECT pglinter.enable_rule('T001');  -- Table primary keys
+SELECT pglinter.enable_rule('T004');  -- FK indexing
 
 \echo 'Development configuration complete.'
 ```
 
-**`.pg_linter/staging.sql`**:
+**`.pglinter/staging.sql`**:
 ```sql
 -- Staging environment - Production-like but flexible
-\echo 'Configuring pg_linter for staging...'
+\echo 'Configuring pglinter for staging...'
 
 -- Enable most rules but allow some flexibility
-SELECT pg_linter.enable_rule(rule_code)
-FROM pg_linter.show_rules()
+SELECT pglinter.enable_rule(rule_code)
+FROM pglinter.show_rules()
 WHERE rule_code NOT IN ('T010', 'C002'); -- Reserved keywords, pg_hba
 
 \echo 'Staging configuration complete.'
 ```
 
-**`.pg_linter/production.sql`**:
+**`.pglinter/production.sql`**:
 ```sql
 -- Production environment - Strict rules
-\echo 'Configuring pg_linter for production...'
+\echo 'Configuring pglinter for production...'
 
 -- Enable all rules for maximum scrutiny
-SELECT pg_linter.enable_rule(rule_code)
-FROM pg_linter.show_rules();
+SELECT pglinter.enable_rule(rule_code)
+FROM pglinter.show_rules();
 
 \echo 'Production configuration complete.'
 ```
@@ -257,21 +257,21 @@ DECLARE
 BEGIN
     IF db_name LIKE '%_dev' OR db_name LIKE '%_development' THEN
         -- Development settings
-        PERFORM pg_linter.disable_rule('B005');
-        PERFORM pg_linter.disable_rule('C002');
+        PERFORM pglinter.disable_rule('B005');
+        PERFORM pglinter.disable_rule('C002');
         RAISE NOTICE 'Applied development configuration';
 
     ELSIF db_name LIKE '%_staging' OR db_name LIKE '%_test' THEN
         -- Staging settings
-        PERFORM pg_linter.enable_rule(rule_code)
-        FROM pg_linter.show_rules()
+        PERFORM pglinter.enable_rule(rule_code)
+        FROM pglinter.show_rules()
         WHERE rule_code NOT IN ('T010', 'C002');
         RAISE NOTICE 'Applied staging configuration';
 
     ELSE
         -- Production settings (strict)
-        PERFORM pg_linter.enable_rule(rule_code)
-        FROM pg_linter.show_rules();
+        PERFORM pglinter.enable_rule(rule_code)
+        FROM pglinter.show_rules();
         RAISE NOTICE 'Applied production configuration';
     END IF;
 END $$;
@@ -302,7 +302,7 @@ BEGIN
 
         -- Focus analysis on specific schema
         -- (Note: This would require schema-specific rules in future versions)
-        PERFORM pg_linter.perform_table_check(result_file);
+        PERFORM pglinter.perform_table_check(result_file);
 
         RAISE NOTICE 'Results saved to: %', result_file;
     END LOOP;
@@ -313,13 +313,13 @@ END $$;
 
 ```sql
 -- performance_focused.sql - Only run performance-related rules
-SELECT pg_linter.disable_rule(rule_code)
-FROM pg_linter.show_rules()
+SELECT pglinter.disable_rule(rule_code)
+FROM pglinter.show_rules()
 WHERE rule_code NOT IN ('B002', 'B004', 'T003', 'T005', 'T007');
 
 -- Run analysis
-SELECT pg_linter.perform_base_check('/tmp/performance_analysis.sarif');
-SELECT pg_linter.perform_table_check('/tmp/table_performance.sarif');
+SELECT pglinter.perform_base_check('/tmp/performance_analysis.sarif');
+SELECT pglinter.perform_table_check('/tmp/table_performance.sarif');
 ```
 
 ### Scheduled Analysis
@@ -329,7 +329,7 @@ SELECT pg_linter.perform_table_check('/tmp/table_performance.sarif');
 # scheduled_analysis.sh - Daily database analysis
 
 DATE=$(date +%Y-%m-%d)
-ANALYSIS_DIR="/var/log/pg_linter"
+ANALYSIS_DIR="/var/log/pglinter"
 DB_NAME="production_db"
 
 # Create daily directory
@@ -338,22 +338,22 @@ mkdir -p "$ANALYSIS_DIR/$DATE"
 # Run different analyses
 psql -d $DB_NAME -c "
 -- Quick daily check (performance focus)
-SELECT pg_linter.disable_rule(rule_code)
-FROM pg_linter.show_rules()
+SELECT pglinter.disable_rule(rule_code)
+FROM pglinter.show_rules()
 WHERE rule_code NOT IN ('B001', 'B002', 'B004', 'T004', 'T005');
 
-SELECT pg_linter.perform_base_check('$ANALYSIS_DIR/$DATE/daily_base.sarif');
-SELECT pg_linter.perform_table_check('$ANALYSIS_DIR/$DATE/daily_tables.sarif');
+SELECT pglinter.perform_base_check('$ANALYSIS_DIR/$DATE/daily_base.sarif');
+SELECT pglinter.perform_table_check('$ANALYSIS_DIR/$DATE/daily_tables.sarif');
 "
 
 # Weekly comprehensive analysis (Sundays)
 if [ $(date +%w) -eq 0 ]; then
     psql -d $DB_NAME -c "
     -- Enable all rules for comprehensive weekly check
-    SELECT pg_linter.enable_rule(rule_code) FROM pg_linter.show_rules();
+    SELECT pglinter.enable_rule(rule_code) FROM pglinter.show_rules();
 
-    SELECT pg_linter.perform_base_check('$ANALYSIS_DIR/$DATE/weekly_comprehensive.sarif');
-    SELECT pg_linter.perform_cluster_check('$ANALYSIS_DIR/$DATE/weekly_cluster.sarif');
+    SELECT pglinter.perform_base_check('$ANALYSIS_DIR/$DATE/weekly_comprehensive.sarif');
+    SELECT pglinter.perform_cluster_check('$ANALYSIS_DIR/$DATE/weekly_cluster.sarif');
     "
 fi
 
@@ -369,17 +369,17 @@ fi
 
 ```bash
 #!/bin/bash
-# pg_linter_exporter.sh - Export metrics for Prometheus
+# pglinter_exporter.sh - Export metrics for Prometheus
 
 DB_NAME="mydb"
-METRICS_FILE="/var/lib/prometheus/node-exporter/pg_linter.prom"
+METRICS_FILE="/var/lib/prometheus/node-exporter/pglinter.prom"
 
 # Run analysis and extract metrics
-RESULT=$(psql -t -d $DB_NAME -c "SELECT * FROM pg_linter.perform_base_check();")
+RESULT=$(psql -t -d $DB_NAME -c "SELECT * FROM pglinter.perform_base_check();")
 
 # Parse results and create Prometheus metrics
-echo "# HELP pg_linter_issues Number of database issues by rule and severity" > $METRICS_FILE
-echo "# TYPE pg_linter_issues gauge" >> $METRICS_FILE
+echo "# HELP pglinter_issues Number of database issues by rule and severity" > $METRICS_FILE
+echo "# TYPE pglinter_issues gauge" >> $METRICS_FILE
 
 echo "$RESULT" | while IFS='|' read -r rule level message count; do
     # Clean up variables
@@ -388,12 +388,12 @@ echo "$RESULT" | while IFS='|' read -r rule level message count; do
     count=$(echo $count | xargs)
 
     if [[ -n "$rule" && -n "$level" && -n "$count" ]]; then
-        echo "pg_linter_issues{rule=\"$rule\",level=\"$level\"} $count" >> $METRICS_FILE
+        echo "pglinter_issues{rule=\"$rule\",level=\"$level\"} $count" >> $METRICS_FILE
     fi
 done
 
 # Add timestamp
-echo "pg_linter_last_analysis_timestamp $(date +%s)" >> $METRICS_FILE
+echo "pglinter_last_analysis_timestamp $(date +%s)" >> $METRICS_FILE
 ```
 
 ### Grafana Dashboard
@@ -402,23 +402,23 @@ Create a dashboard with these queries:
 
 ```promql
 # Total issues by severity
-sum by (level) (pg_linter_issues)
+sum by (level) (pglinter_issues)
 
 # Issues by rule
-sum by (rule) (pg_linter_issues)
+sum by (rule) (pglinter_issues)
 
 # Critical issues (errors only)
-sum(pg_linter_issues{level="error"})
+sum(pglinter_issues{level="error"})
 
 # Time since last analysis
-(time() - pg_linter_last_analysis_timestamp) / 3600
+(time() - pglinter_last_analysis_timestamp) / 3600
 ```
 
 ### Nagios/Icinga Check
 
 ```bash
 #!/bin/bash
-# check_pg_linter.sh - Nagios check script
+# check_pglinter.sh - Nagios check script
 
 DB_NAME="$1"
 CRITICAL_THRESHOLD=${2:-1}
@@ -432,7 +432,7 @@ fi
 # Run analysis and count issues by severity
 RESULT=$(psql -t -d $DB_NAME -c "
 WITH analysis AS (
-    SELECT * FROM pg_linter.perform_base_check()
+    SELECT * FROM pglinter.perform_base_check()
 )
 SELECT
     level,
@@ -495,7 +495,7 @@ def sarif_to_html(sarif_file, output_file):
     <!DOCTYPE html>
     <html>
     <head>
-        <title>pg_linter Analysis Report</title>
+        <title>pglinter Analysis Report</title>
         <style>
             body {{ font-family: Arial, sans-serif; margin: 40px; }}
             .error {{ color: #d32f2f; font-weight: bold; }}
@@ -506,7 +506,7 @@ def sarif_to_html(sarif_file, output_file):
         </style>
     </head>
     <body>
-        <h1>pg_linter Analysis Report</h1>
+        <h1>pglinter Analysis Report</h1>
         <p>Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}</p>
     """
 
@@ -570,7 +570,7 @@ SARIF_FILE="/tmp/daily_report_$REPORT_DATE.sarif"
 HTML_FILE="/tmp/daily_report_$REPORT_DATE.html"
 
 # Run analysis
-psql -d $DB_NAME -c "SELECT pg_linter.perform_base_check('$SARIF_FILE');"
+psql -d $DB_NAME -c "SELECT pglinter.perform_base_check('$SARIF_FILE');"
 
 # Generate HTML report
 python3 generate_report.py "$SARIF_FILE" "$HTML_FILE"
@@ -610,24 +610,24 @@ ERROR: permission denied for function perform_base_check
 1. **Grant execution permissions:**
 ```sql
 -- As superuser
-GRANT EXECUTE ON FUNCTION pg_linter.perform_base_check(text) TO username;
-GRANT EXECUTE ON ALL FUNCTIONS IN SCHEMA pg_linter TO username;
+GRANT EXECUTE ON FUNCTION pglinter.perform_base_check(text) TO username;
+GRANT EXECUTE ON ALL FUNCTIONS IN SCHEMA pglinter TO username;
 ```
 
 2. **Use a privileged user:**
 ```bash
 # Run as postgres user
-sudo -u postgres psql -d mydb -c "SELECT pg_linter.perform_base_check();"
+sudo -u postgres psql -d mydb -c "SELECT pglinter.perform_base_check();"
 ```
 
 3. **Check extension installation:**
 ```sql
 -- Verify extension is installed
-SELECT * FROM pg_extension WHERE extname = 'pg_linter';
+SELECT * FROM pg_extension WHERE extname = 'pglinter';
 
 -- Reinstall if necessary
-DROP EXTENSION IF EXISTS pg_linter CASCADE;
-CREATE EXTENSION pg_linter;
+DROP EXTENSION IF EXISTS pglinter CASCADE;
+CREATE EXTENSION pglinter;
 ```
 
 ### Issue: File Access Errors
@@ -642,14 +642,14 @@ ERROR: could not open file "/path/to/results.sarif" for writing: Permission deni
 1. **Check directory permissions:**
 ```bash
 # Ensure PostgreSQL can write to directory
-sudo chown postgres:postgres /var/log/pg_linter/
-sudo chmod 755 /var/log/pg_linter/
+sudo chown postgres:postgres /var/log/pglinter/
+sudo chmod 755 /var/log/pglinter/
 ```
 
 2. **Use PostgreSQL data directory:**
 ```sql
 -- Write to PostgreSQL-accessible location
-SELECT pg_linter.perform_base_check(current_setting('data_directory') || '/pg_linter_results.sarif');
+SELECT pglinter.perform_base_check(current_setting('data_directory') || '/pglinter_results.sarif');
 ```
 
 3. **Check postgresql.conf settings:**
@@ -669,7 +669,7 @@ log_filename = 'postgresql-%Y-%m-%d_%H%M%S.log'
 
 1. **Check if rules are enabled:**
 ```sql
-SELECT * FROM pg_linter.show_rules() WHERE enabled = true;
+SELECT * FROM pglinter.show_rules() WHERE enabled = true;
 ```
 
 2. **Verify database has analyzable objects:**
@@ -686,7 +686,7 @@ WHERE schemaname NOT IN ('information_schema', 'pg_catalog', 'pg_toast');
 CREATE TABLE test_no_pk (id int, name text);
 
 -- Run analysis
-SELECT pg_linter.perform_base_check();
+SELECT pglinter.perform_base_check();
 
 -- Clean up
 DROP TABLE test_no_pk;
@@ -703,11 +703,11 @@ DROP TABLE test_no_pk;
 1. **Analyze specific rule categories:**
 ```sql
 -- Run only base rules (usually faster)
-SELECT pg_linter.perform_base_check();
+SELECT pglinter.perform_base_check();
 
 -- Skip table rules for large databases initially
-SELECT pg_linter.disable_rule(rule_code)
-FROM pg_linter.show_rules()
+SELECT pglinter.disable_rule(rule_code)
+FROM pglinter.show_rules()
 WHERE rule_code LIKE 'T%';
 ```
 
@@ -720,7 +720,7 @@ ANALYZE;
 3. **Run during low-usage periods:**
 ```bash
 # Schedule for off-hours
-echo "0 2 * * * psql -d mydb -c \"SELECT pg_linter.perform_base_check('/var/log/pg_linter/nightly.sarif');\"" | crontab -
+echo "0 2 * * * psql -d mydb -c \"SELECT pglinter.perform_base_check('/var/log/pglinter/nightly.sarif');\"" | crontab -
 ```
 
 ### Issue: Memory Usage
@@ -735,15 +735,15 @@ echo "0 2 * * * psql -d mydb -c \"SELECT pg_linter.perform_base_check('/var/log/
 ```sql
 -- Increase memory for analysis session
 SET work_mem = '256MB';
-SELECT pg_linter.perform_base_check();
+SELECT pglinter.perform_base_check();
 RESET work_mem;
 ```
 
 2. **Analyze in smaller chunks:**
 ```sql
 -- Disable resource-intensive rules
-SELECT pg_linter.disable_rule('T005'); -- Sequential scan analysis
-SELECT pg_linter.disable_rule('T007'); -- Unused index analysis
+SELECT pglinter.disable_rule('T005'); -- Sequential scan analysis
+SELECT pglinter.disable_rule('T007'); -- Unused index analysis
 ```
 
 3. **Check system resources:**

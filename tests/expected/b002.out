@@ -1,4 +1,4 @@
--- Test for pg_linter B002 rule: Redundant indexes
+-- Test for pglinter B002 rule: Redundant indexes
 BEGIN;
 -- Create test tables with redundant indexes
 CREATE TABLE IF NOT EXISTS test_table_with_redundant_indexes (
@@ -29,20 +29,20 @@ CREATE INDEX idx_customer_2 ON orders_table (customer_id);
 -- Case 4: Composite index redundancy
 CREATE INDEX idx_customer_date_1 ON orders_table (customer_id, order_date);
 CREATE INDEX idx_customer_date_2 ON orders_table (customer_id, order_date);
-CREATE EXTENSION IF NOT EXISTS pg_linter;
+CREATE EXTENSION IF NOT EXISTS pglinter;
 -- Test with file output
-SELECT pg_linter.perform_base_check('/tmp/pg_linter_b002_results.sarif');
+SELECT pglinter.perform_base_check('/tmp/pglinter_b002_results.sarif');
  perform_base_check 
 --------------------
  t
 (1 row)
 
 -- Test if file exists and show checksum
-\! md5sum /tmp/pg_linter_b002_results.sarif
-1f490c6cc56a91f032fee9da0c0a627a  /tmp/pg_linter_b002_results.sarif
+\! md5sum /tmp/pglinter_b002_results.sarif
+1f490c6cc56a91f032fee9da0c0a627a  /tmp/pglinter_b002_results.sarif
 -- Test with no output file (should output to prompt)
-SELECT pg_linter.perform_base_check();
-NOTICE:  🔍 pg_linter found 3 issue(s):
+SELECT pglinter.perform_base_check();
+NOTICE:  🔍 pglinter found 3 issue(s):
 NOTICE:  ==================================================
 NOTICE:  ⚠️  [B002] WARNING: Found 8 potentially redundant indexes
 NOTICE:  ⚠️  [B004] WARNING: Found 11 potentially unused indexes
@@ -56,7 +56,7 @@ NOTICE:  🔴 Critical issues found - please review and fix errors
 (1 row)
 
 -- Test rule management for B002
-SELECT pg_linter.explain_rule('B002');
+SELECT pglinter.explain_rule('B002');
 NOTICE:  📖 Rule Explanation for B002
 ============================================================
 
@@ -78,22 +78,22 @@ Count number of redundant index vs nb index.
 (1 row)
 
 -- Show that B002 is enabled
-SELECT pg_linter.is_rule_enabled('B002') AS b002_enabled;
+SELECT pglinter.is_rule_enabled('B002') AS b002_enabled;
  b002_enabled 
 --------------
  t
 (1 row)
 
 -- Disable B002 temporarily and test
-SELECT pg_linter.disable_rule('B002') AS b002_disabled;
+SELECT pglinter.disable_rule('B002') AS b002_disabled;
 NOTICE:  🔴 Rule B002 has been disabled
  b002_disabled 
 ---------------
  t
 (1 row)
 
-SELECT pg_linter.perform_base_check();
-NOTICE:  🔍 pg_linter found 2 issue(s):
+SELECT pglinter.perform_base_check();
+NOTICE:  🔍 pglinter found 2 issue(s):
 NOTICE:  ==================================================
 NOTICE:  ⚠️  [B004] WARNING: Found 11 potentially unused indexes
 NOTICE:  ❌ [B005] ERROR: Public schema allows CREATE privilege for all users - security risk
@@ -106,7 +106,7 @@ NOTICE:  🔴 Critical issues found - please review and fix errors
 (1 row)
 
 -- Re-enable B002
-SELECT pg_linter.enable_rule('B002') AS b002_re_enabled;
+SELECT pglinter.enable_rule('B002') AS b002_re_enabled;
 NOTICE:  ✅ Rule B002 has been enabled
  b002_re_enabled 
 -----------------

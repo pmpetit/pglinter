@@ -1,12 +1,12 @@
-# pg_linter - PostgreSQL Extension (Rust/pgrx)
+# pglinter - PostgreSQL Extension (Rust/pgrx)
 
-This is a conversion of the original Python [pg_linter](https://github.com/decathlon/pg_linter) to a PostgreSQL extension written in Rust using pgrx.
+This is a conversion of the original Python [pglinter](https://github.com/decathlon/pglinter) to a PostgreSQL extension written in Rust using pgrx.
 
 ## Overview
 In recent years, DBAs were more involved with the database engine itself—creating instances, configuring backups, and monitoring systems—while also overseeing developers' activities. Today, in the DBRE world where databases are cloud-managed, developers and operations teams often work independently, without a dedicated DBA.
-So databases objects lives their own life, created by persons that do their best. It can be usefull to be able to detect some wonrg desing creation (for example foreign keys created accross differents schemas...). That's what pg_linter was created for.
+So databases objects lives their own life, created by persons that do their best. It can be usefull to be able to detect some wonrg desing creation (for example foreign keys created accross differents schemas...). That's what pglinter was created for.
 
-pg_linter is a PostgreSQL database linter that analyzes your database for potential issues, performance problems, and best practice violations. This Rust implementation provides:
+pglinter is a PostgreSQL database linter that analyzes your database for potential issues, performance problems, and best practice violations. This Rust implementation provides:
 
 - **Better Performance**: Native Rust performance vs Python
 - **Deep Integration**: Runs directly inside PostgreSQL using pgrx
@@ -39,7 +39,7 @@ cargo pgrx package
 sudo cargo pgrx install
 
 # Load in your database
-psql -d your_database -c "CREATE EXTENSION pg_linter;"
+psql -d your_database -c "CREATE EXTENSION pglinter;"
 ```
 
 ## Usage
@@ -48,26 +48,26 @@ The extension provides comprehensive database analysis functions with optional f
 
 ```sql
 -- Quick comprehensive check (output to prompt)
-SELECT pg_linter.check_all();
+SELECT pglinter.check_all();
 
 -- Individual category checks (output to prompt)
-SELECT pg_linter.check_base();
-SELECT pg_linter.check_cluster();
-SELECT pg_linter.check_table();
-SELECT pg_linter.check_schema();
+SELECT pglinter.check_base();
+SELECT pglinter.check_cluster();
+SELECT pglinter.check_table();
+SELECT pglinter.check_schema();
 
 -- Generate SARIF reports to files
-SELECT pg_linter.perform_base_check('/path/to/base_results.sarif');
-SELECT pg_linter.perform_cluster_check('/path/to/cluster_results.sarif');
-SELECT pg_linter.perform_table_check('/path/to/table_results.sarif');
-SELECT pg_linter.perform_schema_check('/path/to/schema_results.sarif');
+SELECT pglinter.perform_base_check('/path/to/base_results.sarif');
+SELECT pglinter.perform_cluster_check('/path/to/cluster_results.sarif');
+SELECT pglinter.perform_table_check('/path/to/table_results.sarif');
+SELECT pglinter.perform_schema_check('/path/to/schema_results.sarif');
 
 -- Rule management
-SELECT pg_linter.show_rules();                    -- Show all rules and status
-SELECT pg_linter.explain_rule('B001');            -- Get rule details and fixes
-SELECT pg_linter.enable_rule('B001');             -- Enable specific rule
-SELECT pg_linter.disable_rule('B001');            -- Disable specific rule
-SELECT pg_linter.is_rule_enabled('B001');         -- Check rule status
+SELECT pglinter.show_rules();                    -- Show all rules and status
+SELECT pglinter.explain_rule('B001');            -- Get rule details and fixes
+SELECT pglinter.enable_rule('B001');             -- Enable specific rule
+SELECT pglinter.disable_rule('B001');            -- Disable specific rule
+SELECT pglinter.is_rule_enabled('B001');         -- Check rule status
 ```
 
 ## Implemented Rules
@@ -141,7 +141,7 @@ Results are generated in SARIF 2.1.0 format:
   "runs": [{
     "tool": {
       "driver": {
-        "name": "pg_linter",
+        "name": "pglinter",
         "version": "1.0.0"
       }
     },
@@ -165,7 +165,7 @@ Results are generated in SARIF 2.1.0 format:
 
 ## Conversion from Python
 
-This Rust implementation maintains compatibility with the original Python pg_linter while offering:
+This Rust implementation maintains compatibility with the original Python pglinter while offering:
 
 ### Advantages
 - **Performance**: 10-100x faster execution
@@ -203,4 +203,4 @@ cargo pgrx package
 
 ## License
 
-Same as original pg_linter project.
+Same as original pglinter project.

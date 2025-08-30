@@ -1,10 +1,10 @@
-# pg_linter Documentation Makefile
+# pglinter Documentation Makefile
 
 # Variables
-PANDOC_CONTAINER_ID?=pg_linter-pandoc-1
+PANDOC_CONTAINER_ID?=pglinter-pandoc-1
 PANDOC=docker exec $(PANDOC_CONTAINER_ID) pandoc
 
-PG_CONTAINER_ID?=pg_linter-pg-1
+PG_CONTAINER_ID?=pglinter-pg-1
 
 TUTORIALS?=$(sort $(wildcard tutorials/*.md))
 EXAMPLES?=$(sort $(wildcard examples/*.md))
@@ -89,7 +89,7 @@ pdf:
 		how-to/README.md \
 		examples/README.md \
 		dev/README.md \
-		-o build/pdf/pg_linter-documentation.pdf \
+		-o build/pdf/pglinter-documentation.pdf \
 		--pdf-engine=xelatex \
 		--toc \
 		--toc-depth=2 \
@@ -182,7 +182,7 @@ deploy:
 
 # Help
 help:
-	@echo "pg_linter Documentation Makefile"
+	@echo "pglinter Documentation Makefile"
 	@echo ""
 	@echo "Available targets:"
 	@echo "  up              - Start documentation containers"

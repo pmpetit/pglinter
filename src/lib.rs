@@ -3,23 +3,23 @@ use pgrx::prelude::*;
 
 mod rules_engine;
 
-// extension_sql_file!("../sql/rules.sql", name = "pg_linter");
-extension_sql_file!("../sql/rules.sql", name = "pg_linter", finalize);
+// extension_sql_file!("../sql/rules.sql", name = "pglinter");
+extension_sql_file!("../sql/rules.sql", name = "pglinter", finalize);
 
 ::pgrx::pg_module_magic!();
 
 #[pg_extern]
-fn hello_pg_linter() -> &'static str {
-    "Hello, pg_linter"
+fn hello_pglinter() -> &'static str {
+    "Hello, pglinter"
 }
 
 #[pg_schema]
-mod pg_linter {
+mod pglinter {
     use pgrx::prelude::*;
     use crate::rules_engine::{execute_base_rules, execute_cluster_rules, execute_table_rules, execute_schema_rules, generate_sarif_output_optional};
 
     #[pg_extern(sql = "
-        CREATE FUNCTION pg_linter.perform_base_check(output_file TEXT DEFAULT NULL)
+        CREATE FUNCTION pglinter.perform_base_check(output_file TEXT DEFAULT NULL)
         RETURNS BOOLEAN
         AS 'MODULE_PATHNAME', 'perform_base_check_wrapper'
         LANGUAGE C;
@@ -28,14 +28,14 @@ mod pg_linter {
         match execute_base_rules().and_then(|results| generate_sarif_output_optional(results, output_file)) {
             Ok(success) => Some(success),
             Err(e) => {
-                pgrx::warning!("pg_linter base check failed: {}", e);
+                pgrx::warning!("pglinter base check failed: {}", e);
                 Some(false)
             }
         }
     }
 
     #[pg_extern(sql = "
-        CREATE FUNCTION pg_linter.perform_cluster_check(output_file TEXT DEFAULT NULL)
+        CREATE FUNCTION pglinter.perform_cluster_check(output_file TEXT DEFAULT NULL)
         RETURNS BOOLEAN
         AS 'MODULE_PATHNAME', 'perform_cluster_check_wrapper'
         LANGUAGE C;
@@ -44,14 +44,14 @@ mod pg_linter {
         match execute_cluster_rules().and_then(|results| generate_sarif_output_optional(results, output_file)) {
             Ok(success) => Some(success),
             Err(e) => {
-                pgrx::warning!("pg_linter cluster check failed: {}", e);
+                pgrx::warning!("pglinter cluster check failed: {}", e);
                 Some(false)
             }
         }
     }
 
     #[pg_extern(sql = "
-        CREATE FUNCTION pg_linter.perform_table_check(output_file TEXT DEFAULT NULL)
+        CREATE FUNCTION pglinter.perform_table_check(output_file TEXT DEFAULT NULL)
         RETURNS BOOLEAN
         AS 'MODULE_PATHNAME', 'perform_table_check_wrapper'
         LANGUAGE C;
@@ -60,14 +60,14 @@ mod pg_linter {
         match execute_table_rules().and_then(|results| generate_sarif_output_optional(results, output_file)) {
             Ok(success) => Some(success),
             Err(e) => {
-                pgrx::warning!("pg_linter table check failed: {}", e);
+                pgrx::warning!("pglinter table check failed: {}", e);
                 Some(false)
             }
         }
     }
 
     #[pg_extern(sql = "
-        CREATE FUNCTION pg_linter.perform_schema_check(output_file TEXT DEFAULT NULL)
+        CREATE FUNCTION pglinter.perform_schema_check(output_file TEXT DEFAULT NULL)
         RETURNS BOOLEAN
         AS 'MODULE_PATHNAME', 'perform_schema_check_wrapper'
         LANGUAGE C;
@@ -76,7 +76,7 @@ mod pg_linter {
         match execute_schema_rules().and_then(|results| generate_sarif_output_optional(results, output_file)) {
             Ok(success) => Some(success),
             Err(e) => {
-                pgrx::warning!("pg_linter schema check failed: {}", e);
+                pgrx::warning!("pglinter schema check failed: {}", e);
                 Some(false)
             }
         }
@@ -105,7 +105,7 @@ mod pg_linter {
 
     #[pg_extern]
     fn check_all() -> Option<bool> {
-        pgrx::notice!("🔍 Running comprehensive pg_linter check...");
+        pgrx::notice!("🔍 Running comprehensive pglinter check...");
         pgrx::notice!("");
 
         let mut all_success = true;
@@ -135,9 +135,9 @@ mod pg_linter {
 
         pgrx::notice!("");
         if all_success {
-            pgrx::notice!("🎉 All pg_linter checks completed successfully!");
+            pgrx::notice!("🎉 All pglinter checks completed successfully!");
         } else {
-            pgrx::notice!("⚠️  Some pg_linter checks found issues - please review above");
+            pgrx::notice!("⚠️  Some pglinter checks found issues - please review above");
         }
 
         Some(all_success)
@@ -214,8 +214,8 @@ mod tests {
     use pgrx::prelude::*;
 
     #[pg_test]
-    fn test_hello_pg_linter() {
-        assert_eq!("Hello, pg_linter", crate::hello_pg_linter());
+    fn test_hello_pglinter() {
+        assert_eq!("Hello, pglinter", crate::hello_pglinter());
     }
 
 }

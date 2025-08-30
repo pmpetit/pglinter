@@ -1,4 +1,4 @@
-CREATE TABLE IF NOT EXISTS pg_linter.rules (
+CREATE TABLE IF NOT EXISTS pglinter.rules (
     id INT PRIMARY KEY,
     name TEXT,
     code TEXT,
@@ -12,9 +12,9 @@ CREATE TABLE IF NOT EXISTS pg_linter.rules (
 );
 
 -- Clear existing data and insert comprehensive rules
-DELETE FROM pg_linter.rules;
+DELETE FROM pglinter.rules;
 
-INSERT INTO pg_linter.rules (id,name,code,warning_level,error_level,scope,description,message,fixes) VALUES
+INSERT INTO pglinter.rules (id,name,code,warning_level,error_level,scope,description,message,fixes) VALUES
 -- Base Database Rules (B series)
 (1, 'HowManyTableWithoutPrimaryKey', 'B001', 10, 70, 'BASE',
     'Count number of tables without primary key.',

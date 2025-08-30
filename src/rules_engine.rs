@@ -1270,7 +1270,7 @@ pub fn output_results_to_prompt(results: Vec<RuleResult>) -> Result<bool, String
         return Ok(true);
     }
 
-    pgrx::notice!("🔍 pg_linter found {} issue(s):", results.len());
+    pgrx::notice!("🔍 pglinter found {} issue(s):", results.len());
     pgrx::notice!("{}", "=".repeat(50));
 
     for result in &results {
@@ -1350,9 +1350,9 @@ pub fn generate_sarif_output(results: Vec<RuleResult>, output_file: &str) -> Res
         "runs": [{
             "tool": {
                 "driver": {
-                    "name": "pg_linter",
+                    "name": "pglinter",
                     "version": "1.0.0",
-                    "informationUri": "https://github.com/decathlon/pg_linter"
+                    "informationUri": "https://github.com/decathlon/pglinter"
                 }
             },
             "results": sarif_results
@@ -1375,7 +1375,7 @@ pub fn enable_rule(rule_code: &str) -> Result<bool, String> {
     // First check if rule exists and get current status
     let check_query = "
         SELECT code, enable
-        FROM pg_linter.rules
+        FROM pglinter.rules
         WHERE code = $1";
 
     let result: Result<bool, spi::SpiError> = Spi::connect_mut(|client| {
@@ -1387,7 +1387,7 @@ pub fn enable_rule(rule_code: &str) -> Result<bool, String> {
 
         // Update the rule
         let enable_query = "
-            UPDATE pg_linter.rules
+            UPDATE pglinter.rules
             SET enable = true
             WHERE code = $1";
 
@@ -1413,7 +1413,7 @@ pub fn disable_rule(rule_code: &str) -> Result<bool, String> {
     // First check if rule exists and get current status
     let check_query = "
         SELECT code, enable
-        FROM pg_linter.rules
+        FROM pglinter.rules
         WHERE code = $1";
 
     let result: Result<bool, spi::SpiError> = Spi::connect_mut(|client| {
@@ -1425,7 +1425,7 @@ pub fn disable_rule(rule_code: &str) -> Result<bool, String> {
 
         // Update the rule
         let disable_query = "
-            UPDATE pg_linter.rules
+            UPDATE pglinter.rules
             SET enable = false
             WHERE code = $1";
 
@@ -1450,7 +1450,7 @@ pub fn disable_rule(rule_code: &str) -> Result<bool, String> {
 pub fn is_rule_enabled(rule_code: &str) -> Result<bool, String> {
     let check_query = "
         SELECT enable
-        FROM pg_linter.rules
+        FROM pglinter.rules
         WHERE code = $1";
 
     let result: Result<bool, spi::SpiError> = Spi::connect(|client| {
@@ -1472,7 +1472,7 @@ pub fn is_rule_enabled(rule_code: &str) -> Result<bool, String> {
 pub fn list_rules() -> Result<Vec<(String, String, bool)>, String> {
     let list_query = "
         SELECT code, name, enable
-        FROM pg_linter.rules
+        FROM pglinter.rules
         ORDER BY code";
 
     let result: Result<Vec<(String, String, bool)>, spi::SpiError> = Spi::connect(|client| {
@@ -1495,7 +1495,7 @@ pub fn list_rules() -> Result<Vec<(String, String, bool)>, String> {
 pub fn show_rule_status() -> Result<bool, String> {
     match list_rules() {
         Ok(rules) => {
-            pgrx::notice!("📋 pg_linter Rule Status:");
+            pgrx::notice!("📋 pglinter Rule Status:");
             pgrx::notice!("{}", "=".repeat(60));
             pgrx::notice!("{:<6} {:<8} {:<40}", "Code", "Status", "Name");
             pgrx::notice!("{}", "-".repeat(60));
@@ -1523,7 +1523,7 @@ pub fn show_rule_status() -> Result<bool, String> {
 pub fn explain_rule(rule_code: &str) -> Result<String, String> {
     let explain_query = "
         SELECT code, name, description, scope, message, fixes
-        FROM pg_linter.rules
+        FROM pglinter.rules
         WHERE code = $1";
     type RuleExplainRow = (String, String, String, String, String, Vec<Option<String>>);
     let result: Result<Option<RuleExplainRow>, spi::SpiError> = Spi::connect(|client| {

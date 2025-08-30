@@ -1,4 +1,4 @@
-pg_linter Development Team
+pglinter Development Team
 ===============================================================================
 
 This is an open project. Feel free to join us and improve this tool. To find out

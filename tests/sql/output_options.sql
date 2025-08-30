@@ -1,7 +1,7 @@
 -- Test for output_file parameter being optional - both file and prompt output
 BEGIN;
 
-DROP EXTENSION IF EXISTS pg_linter CASCADE;
+DROP EXTENSION IF EXISTS pglinter CASCADE;
 
 -- Create test data that will trigger multiple rules
 CREATE TABLE table_without_pk (
@@ -22,43 +22,43 @@ CREATE TABLE "UPPERCASE_TABLE" (
 -- Create schema with environment prefix (triggers S002)
 CREATE SCHEMA prod_testing;
 
-CREATE EXTENSION IF NOT EXISTS pg_linter;
+CREATE EXTENSION IF NOT EXISTS pglinter;
 
 -- Test 1: Output to prompt (no file parameter)
 SELECT 'Testing output to prompt...' as test_info;
-SELECT pg_linter.perform_base_check();
-SELECT pg_linter.perform_table_check();
-SELECT pg_linter.perform_schema_check();
+SELECT pglinter.perform_base_check();
+SELECT pglinter.perform_table_check();
+SELECT pglinter.perform_schema_check();
 
 -- Test 2: Output to prompt (NULL file parameter)
 SELECT 'Testing output to prompt with NULL...' as test_info;
-SELECT pg_linter.perform_base_check(NULL);
-SELECT pg_linter.perform_table_check(NULL);
-SELECT pg_linter.perform_schema_check(NULL);
+SELECT pglinter.perform_base_check(NULL);
+SELECT pglinter.perform_table_check(NULL);
+SELECT pglinter.perform_schema_check(NULL);
 
 -- Test 3: Output to file
 SELECT 'Testing output to file...' as test_info;
-SELECT pg_linter.perform_base_check('/tmp/test_base_output.sarif');
-SELECT pg_linter.perform_table_check('/tmp/test_table_output.sarif');
-SELECT pg_linter.perform_schema_check('/tmp/test_schema_output.sarif');
+SELECT pglinter.perform_base_check('/tmp/test_base_output.sarif');
+SELECT pglinter.perform_table_check('/tmp/test_table_output.sarif');
+SELECT pglinter.perform_schema_check('/tmp/test_schema_output.sarif');
 
 -- Test 4: Comprehensive check with different output options
 SELECT 'Testing comprehensive check - to prompt...' as test_info;
-SELECT pg_linter.check_all();
+SELECT pglinter.check_all();
 
 -- Test 5: Individual rule testing
-SELECT pg_linter.explain_rule('B001');
-SELECT pg_linter.explain_rule('T003');
-SELECT pg_linter.explain_rule('S002');
+SELECT pglinter.explain_rule('B001');
+SELECT pglinter.explain_rule('T003');
+SELECT pglinter.explain_rule('S002');
 
 -- Test 6: Rule management
-SELECT pg_linter.show_rules();
+SELECT pglinter.show_rules();
 
 -- Test 7: Rule enable/disable functionality
-SELECT pg_linter.disable_rule('B006');
-SELECT pg_linter.perform_base_check(); -- Should skip B006
-SELECT pg_linter.enable_rule('B006');
-SELECT pg_linter.perform_base_check(); -- Should include B006 again
+SELECT pglinter.disable_rule('B006');
+SELECT pglinter.perform_base_check(); -- Should skip B006
+SELECT pglinter.enable_rule('B006');
+SELECT pglinter.perform_base_check(); -- Should include B006 again
 
 -- Clean up
 DROP SCHEMA prod_testing CASCADE;

@@ -1,7 +1,7 @@
 -- Test for T005 rule - Tables with potential missing indexes (high sequential scan usage)
 BEGIN;
 
-DROP EXTENSION IF EXISTS pg_linter CASCADE;
+DROP EXTENSION IF EXISTS pglinter CASCADE;
 
 -- Create test table that will likely have high sequential scans
 CREATE TABLE test_table_seq_scan (
@@ -33,7 +33,7 @@ INSERT INTO test_table_indexed (name, category, value)
 SELECT 'name_' || i, 'category_' || (i % 10), random() * 1000
 FROM generate_series(1, 1000) i;
 
-CREATE EXTENSION IF NOT EXISTS pg_linter;
+CREATE EXTENSION IF NOT EXISTS pglinter;
 
 -- Force some statistics collection
 ANALYZE test_table_seq_scan;
@@ -51,19 +51,19 @@ SELECT COUNT(*) FROM test_table_indexed WHERE value > 500;
 SELECT 'Testing T005 rule...' as test_info;
 
 -- Run table check to detect high sequential scan usage
-SELECT pg_linter.perform_table_check();
+SELECT pglinter.perform_table_check();
 
 -- Test rule management for T005
-SELECT pg_linter.explain_rule('T005');
-SELECT pg_linter.is_rule_enabled('T005') AS t005_enabled;
+SELECT pglinter.explain_rule('T005');
+SELECT pglinter.is_rule_enabled('T005') AS t005_enabled;
 
 -- Test disabling T005
-SELECT pg_linter.disable_rule('T005') AS t005_disabled;
-SELECT pg_linter.perform_table_check(); -- Should skip T005
+SELECT pglinter.disable_rule('T005') AS t005_disabled;
+SELECT pglinter.perform_table_check(); -- Should skip T005
 
 -- Re-enable T005
-SELECT pg_linter.enable_rule('T005') AS t005_reenabled;
-SELECT pg_linter.perform_table_check(); -- Should include T005 again
+SELECT pglinter.enable_rule('T005') AS t005_reenabled;
+SELECT pglinter.perform_table_check(); -- Should include T005 again
 
 -- Clean up
 DROP TABLE test_table_seq_scan CASCADE;

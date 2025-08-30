@@ -1,9 +1,9 @@
-How To Contribute to pg_linter
+How To Contribute to pglinter
 ===============================================================================
 
 This project is an **open project**. Any comment or idea is more than welcome.
 
-Here's a few tips to get started if you want to get involved with the pg_linter PostgreSQL extension!
+Here's a few tips to get started if you want to get involved with the pglinter PostgreSQL extension!
 
 Where to start?
 ------------------------------------------------------------------------------
@@ -12,7 +12,7 @@ If you want to help, here are a few ideas:
 
 1. **Testing**: You can install the extension and run extensive tests based on your database use cases. This is very useful to improve the stability of the code. If you can publish your test cases, please add them in the `/tests/sql` directory.
 
-2. **Documentation**: You can write documentation and examples to help new users understand how to use pg_linter for database linting and optimization.
+2. **Documentation**: You can write documentation and examples to help new users understand how to use pglinter for database linting and optimization.
 
 3. **Benchmark**: You can run tests on various database setups and measure the impact of the extension on performance.
 
@@ -34,7 +34,7 @@ To contribute code to this project, you can simply create your own fork.
 Add a new remote to your local repo:
 
 ```bash
-git remote add upstream https://github.com/your-username/pg_linter.git
+git remote add upstream https://github.com/your-username/pglinter.git
 ```
 
 ### Keep your main branch up to date
@@ -95,8 +95,8 @@ To set up your development environment, follow the [PGRX install instructions]!
 
 ```bash
 # Clone the repository
-git clone https://github.com/your-username/pg_linter.git
-cd pg_linter
+git clone https://github.com/your-username/pglinter.git
+cd pglinter
 
 # Build the extension
 make extension
@@ -114,7 +114,7 @@ make installcheck
 Adding new linting rules
 -------------------------------------------------------------------------------
 
-pg_linter implements various database linting rules to help identify potential issues. Rules are categorized by scope:
+pglinter implements various database linting rules to help identify potential issues. Rules are categorized by scope:
 
 - **B (Base)**: Fundamental database issues
 - **C (Cluster)**: PostgreSQL cluster configuration issues
@@ -200,13 +200,13 @@ Here's how to create a test named `new_test`:
    BEGIN;
 
    CREATE TABLE test_table (id INT, name TEXT);
-   CREATE EXTENSION IF NOT EXISTS pg_linter;
+   CREATE EXTENSION IF NOT EXISTS pglinter;
 
    -- Test with file output
-   SELECT pg_linter.perform_base_check('/tmp/test_results.sarif');
+   SELECT pglinter.perform_base_check('/tmp/test_results.sarif');
 
    -- Test with prompt output
-   SELECT pg_linter.perform_base_check();
+   SELECT pglinter.perform_base_check();
 
    ROLLBACK;
    ```
@@ -235,24 +235,24 @@ Here's how to create a test named `new_test`:
 Testing different output modes
 -------------------------------------------------------------------------------
 
-pg_linter supports two output modes:
+pglinter supports two output modes:
 
 ### File Output (SARIF format)
 ```sql
-SELECT pg_linter.perform_base_check('/tmp/results.sarif');
+SELECT pglinter.perform_base_check('/tmp/results.sarif');
 ```
 
 ### Prompt Output (formatted notices)
 ```sql
 -- Using NULL or no parameter
-SELECT pg_linter.perform_base_check();
+SELECT pglinter.perform_base_check();
 
 -- Using convenience functions
-SELECT pg_linter.check_base();
-SELECT pg_linter.check_cluster();
-SELECT pg_linter.check_table();
-SELECT pg_linter.check_schema();
-SELECT pg_linter.check_all();
+SELECT pglinter.check_base();
+SELECT pglinter.check_cluster();
+SELECT pglinter.check_table();
+SELECT pglinter.check_schema();
+SELECT pglinter.check_all();
 ```
 
 ### Testing with the Makefile
@@ -352,7 +352,7 @@ Publishing a new Release
 --------------------------------------------------------------------------------
 
 1. Update version in `Cargo.toml`
-2. Update `pg_linter.control` if needed
+2. Update `pglinter.control` if needed
 3. Run full test suite: `make installcheck`
 4. Update CHANGELOG.md
 5. Create a Git tag

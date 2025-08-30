@@ -1,5 +1,5 @@
 [package]
-name = "pg_linter"
+name = "pglinter"
 version = "0.0.0"
 edition = "2021"
 
@@ -7,7 +7,7 @@ edition = "2021"
 crate-type = ["cdylib", "lib"]
 
 [[bin]]
-name = "pgrx_embed_pg_linter"
+name = "pgrx_embed_pglinter"
 path = "./src/bin/pgrx_embed.rs"
 
 [features]

@@ -1,5 +1,5 @@
 ##
-## pg_linter Makefile
+## pglinter Makefile
 ##
 ## This Makefile is based on the PGXS Makefile pattern
 ##
@@ -7,11 +7,11 @@
 PGRX?=cargo pgrx
 PGVER?=$(shell grep 'default = \[".*\"]' Cargo.toml | sed -e 's/.*\["//' | sed -e 's/"].*//')
 PG_MAJOR_VERSION=$(PGVER:pg%=%)
-pg_linter_VERSION?=$(shell grep '^version *= *' Cargo.toml | sed 's/^version *= *//' | tr -d '\"' | tr -d ' ' )
+pglinter_VERSION?=$(shell grep '^version *= *' Cargo.toml | sed 's/^version *= *//' | tr -d '\"' | tr -d ' ' )
 
 # use `TARGET=debug make run` for more detailed errors
 TARGET?=release
-TARGET_DIR?=target/$(TARGET)/pg_linter-$(PGVER)/
+TARGET_DIR?=target/$(TARGET)/pglinter-$(PGVER)/
 PG_CONFIG?=`$(PGRX) info pg-config $(PGVER) 2> /dev/null || echo pg_config`
 PG_SHAREDIR?=$(shell $(PG_CONFIG) --sharedir)
 PG_LIBDIR?=$(shell $(PG_CONFIG) --libdir)
@@ -20,7 +20,7 @@ PG_BINDIR?=$(shell $(PG_CONFIG) --bindir)
 
 # pgrx always creates .so files, even on macOS
 LIB_SUFFIX?=so
-LIB=pg_linter.$(LIB_SUFFIX)
+LIB=pglinter.$(LIB_SUFFIX)
 
 # The instance
 PGDATA_DIR=~/.pgrx/data-$(PG_MAJOR_VERSION)
@@ -37,7 +37,7 @@ PG_SOCKET_DIR?=/var/lib/postgresql/.pgrx/
 PGHOST?=localhost
 PGPORT?=288$(subst pg,,$(PGVER))
 PSQL_OPT?=--host $(PGHOST) --port $(PGPORT)
-PGDATABASE?=pg_linter_test
+PGDATABASE?=pglinter_test
 
 ##
 ## Test configuration
@@ -87,7 +87,7 @@ test-%: stop start
 
 # Run all tests
 test-all: stop start
-	@echo "Running all pg_linter tests..."
+	@echo "Running all pglinter tests..."
 	dropdb $(PSQL_OPT) --if-exists $(PGDATABASE) || echo 'Database did not exist'
 	createdb $(PSQL_OPT) $(PGDATABASE)
 	@for test in $(REGRESS_TESTS); do \
@@ -103,8 +103,8 @@ test-prompt-%: stop start
 	createdb $(PSQL_OPT) $(PGDATABASE)
 	@echo "BEGIN;" > /tmp/test_$*.sql
 	@echo "CREATE TABLE IF NOT EXISTS my_table_without_pk (id INT, name TEXT, code TEXT, enable BOOL DEFAULT TRUE, query TEXT, warning_level INT, error_level INT, scope TEXT);" >> /tmp/test_$*.sql
-	@echo "CREATE EXTENSION IF NOT EXISTS pg_linter;" >> /tmp/test_$*.sql
-	@echo "SELECT pg_linter.perform_base_check();" >> /tmp/test_$*.sql
+	@echo "CREATE EXTENSION IF NOT EXISTS pglinter;" >> /tmp/test_$*.sql
+	@echo "SELECT pglinter.perform_base_check();" >> /tmp/test_$*.sql
 	@echo "ROLLBACK;" >> /tmp/test_$*.sql
 	psql $(PSQL_OPT) $(PGDATABASE) -f /tmp/test_$*.sql
 	@rm -f /tmp/test_$*.sql
@@ -116,12 +116,12 @@ test-convenience: stop start
 	createdb $(PSQL_OPT) $(PGDATABASE)
 	@echo "BEGIN;" > /tmp/test_convenience.sql
 	@echo "CREATE TABLE IF NOT EXISTS my_table_without_pk (id INT, name TEXT);" >> /tmp/test_convenience.sql
-	@echo "CREATE EXTENSION IF NOT EXISTS pg_linter;" >> /tmp/test_convenience.sql
-	@echo "SELECT pg_linter.check_base();" >> /tmp/test_convenience.sql
-	@echo "SELECT pg_linter.check_cluster();" >> /tmp/test_convenience.sql
-	@echo "SELECT pg_linter.check_table();" >> /tmp/test_convenience.sql
-	@echo "SELECT pg_linter.check_schema();" >> /tmp/test_convenience.sql
-	@echo "SELECT pg_linter.check_all();" >> /tmp/test_convenience.sql
+	@echo "CREATE EXTENSION IF NOT EXISTS pglinter;" >> /tmp/test_convenience.sql
+	@echo "SELECT pglinter.check_base();" >> /tmp/test_convenience.sql
+	@echo "SELECT pglinter.check_cluster();" >> /tmp/test_convenience.sql
+	@echo "SELECT pglinter.check_table();" >> /tmp/test_convenience.sql
+	@echo "SELECT pglinter.check_schema();" >> /tmp/test_convenience.sql
+	@echo "SELECT pglinter.check_all();" >> /tmp/test_convenience.sql
 	@echo "ROLLBACK;" >> /tmp/test_convenience.sql
 	psql $(PSQL_OPT) $(PGDATABASE) -f /tmp/test_convenience.sql
 	@rm -f /tmp/test_convenience.sql
