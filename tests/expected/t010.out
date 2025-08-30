@@ -1,0 +1,81 @@
+-- Test for T010 rule - Tables using reserved keywords
+BEGIN;
+DROP EXTENSION IF EXISTS pglinter CASCADE;
+NOTICE:  extension "pglinter" does not exist, skipping
+-- Create tables and columns using reserved keywords (should trigger T010)
+CREATE TABLE "SELECT" (
+    id SERIAL PRIMARY KEY,
+    name TEXT
+);
+CREATE TABLE users (
+    id SERIAL PRIMARY KEY,
+    "FROM" TEXT, -- Reserved keyword as column name
+    "WHERE" TEXT, -- Reserved keyword as column name
+    username TEXT
+);
+CREATE TABLE products (
+    id SERIAL PRIMARY KEY,
+    "ORDER" TEXT, -- Reserved keyword as column name
+    price NUMERIC
+);
+-- Create a table with non-reserved names (should not trigger T010)
+CREATE TABLE clean_table (
+    id SERIAL PRIMARY KEY,
+    description TEXT,
+    category_name TEXT,
+    status_flag BOOLEAN
+);
+-- Insert some test data
+INSERT INTO "SELECT" (name) VALUES ('test1');
+INSERT INTO users ("FROM", "WHERE", username) VALUES ('location1', 'condition1', 'user1');
+INSERT INTO products ("ORDER", price) VALUES ('desc', 99.99);
+INSERT INTO clean_table (description, category_name, status_flag) VALUES ('Clean test', 'Category A', true);
+CREATE EXTENSION IF NOT EXISTS pglinter;
+-- Test the T010 rule
+SELECT 'Testing T010 rule - Reserved keywords...' as test_info;
+                test_info                 
+------------------------------------------
+ Testing T010 rule - Reserved keywords...
+(1 row)
+
+-- Run table check to detect reserved keyword usage
+SELECT pglinter.perform_table_check();
+ERROR:  relation "public.select" does not exist
+CONTEXT:  SQL statement "
+        SELECT COUNT(*)
+        FROM pg_tables pt
+        WHERE schemaname NOT IN ('pg_toast', 'pg_catalog', 'information_schema')
+        AND NOT EXISTS (
+            SELECT 1
+            FROM pg_constraint pc
+            WHERE pc.conrelid = (pt.schemaname||'.'||pt.tablename)::regclass
+            AND pc.contype = 'p'
+        )"
+-- Test rule management
+SELECT pglinter.explain_rule('T010');
+ERROR:  current transaction is aborted, commands ignored until end of transaction block
+SELECT pglinter.is_rule_enabled('T010') AS t010_enabled;
+ERROR:  current transaction is aborted, commands ignored until end of transaction block
+-- Test disabling T010
+SELECT pglinter.disable_rule('T010') AS t010_disabled;
+ERROR:  current transaction is aborted, commands ignored until end of transaction block
+SELECT pglinter.perform_table_check(); -- Should skip T010
+ERROR:  current transaction is aborted, commands ignored until end of transaction block
+-- Re-enable T010
+SELECT pglinter.enable_rule('T010') AS t010_reenabled;
+ERROR:  current transaction is aborted, commands ignored until end of transaction block
+SELECT pglinter.perform_table_check(); -- Should include T010 again
+ERROR:  current transaction is aborted, commands ignored until end of transaction block
+-- Show all rules status
+SELECT pglinter.show_rules();
+ERROR:  current transaction is aborted, commands ignored until end of transaction block
+-- Clean up
+DROP TABLE clean_table CASCADE;
+ERROR:  current transaction is aborted, commands ignored until end of transaction block
+DROP TABLE products CASCADE;
+ERROR:  current transaction is aborted, commands ignored until end of transaction block
+DROP TABLE users CASCADE;
+ERROR:  current transaction is aborted, commands ignored until end of transaction block
+DROP TABLE "SELECT" CASCADE;
+ERROR:  current transaction is aborted, commands ignored until end of transaction block
+ROLLBACK;

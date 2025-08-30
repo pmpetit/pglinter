@@ -599,7 +599,7 @@ fn execute_t001_rule() -> Result<Option<RuleResult>, String> {
 fn execute_t002_rule() -> Result<Option<RuleResult>, String> {
     // T002: Tables without any index
     let tables_without_index_query = "
-        SELECT t.schemaname, t.tablename
+        SELECT t.schemaname::text, t.tablename::text
         FROM pg_tables t
         WHERE t.schemaname NOT IN ('pg_toast', 'pg_catalog', 'information_schema')
         AND NOT EXISTS (
@@ -641,8 +641,8 @@ fn execute_t002_rule() -> Result<Option<RuleResult>, String> {
 fn execute_t003_rule() -> Result<Option<RuleResult>, String> {
     // T003: Tables with redundant indexes
     let redundant_indexes_query = "
-        SELECT t.schemaname, t.tablename,
-            array_agg(i.indexname) as redundant_indexes
+        SELECT t.schemaname::text, t.tablename::text,
+            array_agg(t.indexname) as redundant_indexes
         FROM (
             SELECT DISTINCT i1.schemaname, i1.tablename, i1.indexname
             FROM pg_indexes i1
@@ -693,7 +693,7 @@ fn execute_t003_rule() -> Result<Option<RuleResult>, String> {
 fn execute_t004_rule() -> Result<Option<RuleResult>, String> {
     // T004: Tables with foreign keys not indexed
     let fk_not_indexed_query = "
-        SELECT DISTINCT tc.table_schema, tc.table_name, tc.constraint_name
+        SELECT DISTINCT tc.table_schema::text, tc.table_name::text, tc.constraint_name::text
         FROM information_schema.table_constraints tc
         JOIN information_schema.key_column_usage kcu
             ON tc.constraint_name = kcu.constraint_name
@@ -742,7 +742,7 @@ fn execute_t005_rule() -> Result<Option<RuleResult>, String> {
     let threshold = 10000i64; // Default threshold for sequential scans
 
     let high_seq_scan_query = "
-        SELECT schemaname, relname, seq_scan, seq_tup_read,
+        SELECT schemaname::text, relname::text, seq_scan, seq_tup_read,
             CASE WHEN seq_scan > 0 THEN seq_tup_read / seq_scan ELSE 0 END as avg_seq_tup_read
         FROM pg_stat_user_tables
         WHERE seq_scan > 0
@@ -782,8 +782,8 @@ fn execute_t005_rule() -> Result<Option<RuleResult>, String> {
 fn execute_t006_rule() -> Result<Option<RuleResult>, String> {
     // T006: Tables with foreign keys referencing other schemas
     let fk_outside_schema_query = "
-        SELECT tc.table_schema, tc.table_name, tc.constraint_name,
-            ccu.table_schema as referenced_schema
+        SELECT tc.table_schema::text, tc.table_name::text, tc.constraint_name::text,
+            ccu.table_schema::text as referenced_schema
         FROM information_schema.table_constraints tc
         JOIN information_schema.constraint_column_usage ccu
             ON tc.constraint_name = ccu.constraint_name
@@ -828,7 +828,7 @@ fn execute_t007_rule() -> Result<Option<RuleResult>, String> {
     let size_threshold_bytes = size_threshold_mb * 1024 * 1024;
 
     let unused_indexes_query = "
-        SELECT pi.schemaname, pi.tablename, pi.indexname,
+        SELECT pi.schemaname::text, pi.tablename::text, pi.indexname::text,
             pg_relation_size(indexrelid) as index_size
         FROM pg_stat_user_indexes psi
         JOIN pg_indexes pi ON psi.indexrelname = pi.indexname
@@ -874,10 +874,10 @@ fn execute_t008_rule() -> Result<Option<RuleResult>, String> {
     // T008: Tables with foreign key type mismatches
     let fk_type_mismatch_query = "
         SELECT
-            tc.table_schema, tc.table_name, tc.constraint_name,
-            kcu.column_name, col1.data_type as fk_type,
-            ccu.table_name as ref_table, ccu.column_name as ref_column,
-            col2.data_type as ref_type
+            tc.table_schema::text, tc.table_name::text, tc.constraint_name::text,
+            kcu.column_name::text, col1.data_type::text as fk_type,
+            ccu.table_name::text as ref_table, ccu.column_name::text as ref_column,
+            col2.data_type::text as ref_type
         FROM information_schema.table_constraints tc
         JOIN information_schema.key_column_usage kcu
             ON tc.constraint_name = kcu.constraint_name
@@ -935,7 +935,7 @@ fn execute_t008_rule() -> Result<Option<RuleResult>, String> {
 fn execute_t009_rule() -> Result<Option<RuleResult>, String> {
     // T009: Tables with no roles granted (only for non-public schemas)
     let tables_without_roles_query = "
-        SELECT t.table_schema, t.table_name
+        SELECT t.table_schema::text, t.table_name::text
         FROM information_schema.tables t
         WHERE t.table_schema NOT IN ('public', 'pg_toast', 'pg_catalog', 'information_schema')
         AND NOT EXISTS (
@@ -1001,7 +1001,7 @@ fn execute_t010_rule() -> Result<Option<RuleResult>, String> {
     let keyword_clause = keyword_conditions.join(" OR ");
 
     let reserved_keyword_query = format!("
-        SELECT table_schema, table_name, 'table' as object_type
+        SELECT table_schema::text, table_name::text, 'table' as object_type
         FROM information_schema.tables
         WHERE table_schema NOT IN ('pg_toast', 'pg_catalog', 'information_schema')
         AND ({})
@@ -1050,12 +1050,12 @@ fn execute_t010_rule() -> Result<Option<RuleResult>, String> {
 fn execute_t011_rule() -> Result<Option<RuleResult>, String> {
     // T011: Tables with uppercase names/columns (similar to B006 but table-specific)
     let uppercase_objects_query = "
-        SELECT table_schema, table_name, 'table' as object_type
+        SELECT table_schema::text, table_name::text, 'table'::text as object_type
         FROM information_schema.tables
         WHERE table_schema NOT IN ('pg_toast', 'pg_catalog', 'information_schema')
         AND table_name != lower(table_name)
         UNION
-        SELECT table_schema, table_name, 'column:' || column_name as object_type
+        SELECT table_schema::text, table_name::text, 'column:' || column_name::text as object_type
         FROM information_schema.columns
         WHERE table_schema NOT IN ('pg_toast', 'pg_catalog', 'information_schema')
         AND column_name != lower(column_name)";
@@ -1117,7 +1117,7 @@ fn execute_t012_rule() -> Result<Option<RuleResult>, String> {
 
         // If anon extension is available, try to detect sensitive columns
         let sensitive_columns_query = "
-            SELECT table_schema, table_name, column_name, identifiers_category
+            SELECT table_schema::text, table_name::text, column_name::text, identifiers_category::text
             FROM (
                 SELECT table_schema, table_name, column_name, identifiers_category
                 FROM anon.detect('en_US')
@@ -1171,7 +1171,7 @@ fn execute_t012_rule() -> Result<Option<RuleResult>, String> {
 fn execute_s001_rule() -> Result<Option<RuleResult>, String> {
     // S001: Schemas without default role grants
     let schemas_without_default_privileges_query = "
-        SELECT DISTINCT n.nspname as schema_name
+        SELECT DISTINCT n.nspname::text as schema_name
         FROM pg_namespace n
         WHERE n.nspname NOT IN ('public', 'pg_toast', 'pg_catalog', 'information_schema')
         AND n.nspname NOT LIKE 'pg_%'
@@ -1229,7 +1229,7 @@ fn execute_s002_rule() -> Result<Option<RuleResult>, String> {
     let condition_clause = all_conditions.join(" OR ");
 
     let environment_schema_query = format!("
-        SELECT nspname as schema_name
+        SELECT nspname::text as schema_name
         FROM pg_namespace
         WHERE nspname NOT IN ('public', 'pg_toast', 'pg_catalog', 'information_schema')
         AND nspname NOT LIKE 'pg_%'

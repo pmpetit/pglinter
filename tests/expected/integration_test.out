@@ -1,0 +1,159 @@
+-- Comprehensive integration test for pglinter
+-- Tests multiple rules across all categories (B, C, T, S series)
+BEGIN;
+DROP EXTENSION IF EXISTS pglinter CASCADE;
+NOTICE:  extension "pglinter" does not exist, skipping
+-- Create various test scenarios to trigger multiple rules
+-- 1. Tables without primary keys (B001, T001)
+CREATE TABLE users_no_pk (
+    id INT,
+    username TEXT,
+    email TEXT
+);
+-- 2. Redundant indexes (B002, T003)
+CREATE TABLE products (
+    id SERIAL PRIMARY KEY,
+    name TEXT,
+    category TEXT,
+    price NUMERIC
+);
+CREATE INDEX idx_name_1 ON products(name);
+CREATE INDEX idx_name_2 ON products(name); -- redundant
+CREATE INDEX idx_composite_1 ON products(category, price);
+CREATE INDEX idx_composite_2 ON products(category, price); -- redundant
+-- 3. Foreign keys without indexes (B003, T004)
+CREATE TABLE orders (
+    id SERIAL PRIMARY KEY,
+    user_id INT,
+    product_id INT,
+    total NUMERIC
+);
+-- Add foreign keys without creating indexes
+ALTER TABLE orders ADD CONSTRAINT fk_user
+    FOREIGN KEY (user_id) REFERENCES users_no_pk(id);
+ERROR:  there is no unique constraint matching given keys for referenced table "users_no_pk"
+ALTER TABLE orders ADD CONSTRAINT fk_product
+    FOREIGN KEY (product_id) REFERENCES products(id);
+ERROR:  current transaction is aborted, commands ignored until end of transaction block
+-- 4. Tables with uppercase names/columns (B006, T011)
+CREATE TABLE "UPPERCASE_ISSUES" (
+    id SERIAL PRIMARY KEY,
+    "UPPER_NAME" TEXT,
+    "DESCRIPTION" TEXT
+);
+ERROR:  current transaction is aborted, commands ignored until end of transaction block
+-- 5. Reserved keywords (T010)
+CREATE TABLE items (
+    id SERIAL PRIMARY KEY,
+    "SELECT" TEXT, -- reserved keyword
+    "FROM" TEXT,   -- reserved keyword
+    description TEXT
+);
+ERROR:  current transaction is aborted, commands ignored until end of transaction block
+-- 6. Environment-prefixed schemas (S002)
+CREATE SCHEMA prod_analytics;
+ERROR:  current transaction is aborted, commands ignored until end of transaction block
+CREATE SCHEMA dev_reports;
+ERROR:  current transaction is aborted, commands ignored until end of transaction block
+CREATE SCHEMA staging_data;
+ERROR:  current transaction is aborted, commands ignored until end of transaction block
+-- Add some tables to the schemas
+CREATE TABLE prod_analytics.metrics (
+    id SERIAL PRIMARY KEY,
+    metric_name TEXT
+);
+ERROR:  current transaction is aborted, commands ignored until end of transaction block
+CREATE TABLE dev_reports.summaries (
+    id SERIAL PRIMARY KEY,
+    report_data TEXT
+);
+ERROR:  current transaction is aborted, commands ignored until end of transaction block
+-- Create extension
+CREATE EXTENSION IF NOT EXISTS pglinter;
+ERROR:  current transaction is aborted, commands ignored until end of transaction block
+-- Run comprehensive analysis
+SELECT '=== COMPREHENSIVE pglinter ANALYSIS ===' as info;
+ERROR:  current transaction is aborted, commands ignored until end of transaction block
+-- Test all rule categories
+SELECT 'BASE RULES:' as category;
+ERROR:  current transaction is aborted, commands ignored until end of transaction block
+SELECT pglinter.perform_base_check();
+ERROR:  current transaction is aborted, commands ignored until end of transaction block
+SELECT 'TABLE RULES:' as category;
+ERROR:  current transaction is aborted, commands ignored until end of transaction block
+SELECT pglinter.perform_table_check();
+ERROR:  current transaction is aborted, commands ignored until end of transaction block
+SELECT 'SCHEMA RULES:' as category;
+ERROR:  current transaction is aborted, commands ignored until end of transaction block
+SELECT pglinter.perform_schema_check();
+ERROR:  current transaction is aborted, commands ignored until end of transaction block
+SELECT 'CLUSTER RULES:' as category;
+ERROR:  current transaction is aborted, commands ignored until end of transaction block
+SELECT pglinter.perform_cluster_check();
+ERROR:  current transaction is aborted, commands ignored until end of transaction block
+-- Test comprehensive check
+SELECT 'COMPREHENSIVE CHECK:' as category;
+ERROR:  current transaction is aborted, commands ignored until end of transaction block
+SELECT pglinter.check_all();
+ERROR:  current transaction is aborted, commands ignored until end of transaction block
+-- Test rule management features
+SELECT '=== RULE MANAGEMENT ===' as info;
+ERROR:  current transaction is aborted, commands ignored until end of transaction block
+-- Show all rules
+SELECT pglinter.show_rules();
+ERROR:  current transaction is aborted, commands ignored until end of transaction block
+-- Test some explanations
+SELECT pglinter.explain_rule('B001');
+ERROR:  current transaction is aborted, commands ignored until end of transaction block
+SELECT pglinter.explain_rule('T003');
+ERROR:  current transaction is aborted, commands ignored until end of transaction block
+SELECT pglinter.explain_rule('S002');
+ERROR:  current transaction is aborted, commands ignored until end of transaction block
+-- Test output to file functionality
+SELECT '=== OUTPUT TO FILE TEST ===' as info;
+ERROR:  current transaction is aborted, commands ignored until end of transaction block
+SELECT pglinter.perform_base_check('/tmp/integration_base.sarif');
+ERROR:  current transaction is aborted, commands ignored until end of transaction block
+SELECT pglinter.perform_table_check('/tmp/integration_table.sarif');
+ERROR:  current transaction is aborted, commands ignored until end of transaction block
+SELECT pglinter.perform_schema_check('/tmp/integration_schema.sarif');
+ERROR:  current transaction is aborted, commands ignored until end of transaction block
+-- Test rule disable/enable functionality
+SELECT '=== RULE TOGGLE TEST ===' as info;
+ERROR:  current transaction is aborted, commands ignored until end of transaction block
+-- Disable some rules
+SELECT pglinter.disable_rule('B001');
+ERROR:  current transaction is aborted, commands ignored until end of transaction block
+SELECT pglinter.disable_rule('T003');
+ERROR:  current transaction is aborted, commands ignored until end of transaction block
+-- Run checks (should skip disabled rules)
+SELECT pglinter.perform_base_check();
+ERROR:  current transaction is aborted, commands ignored until end of transaction block
+SELECT pglinter.perform_table_check();
+ERROR:  current transaction is aborted, commands ignored until end of transaction block
+-- Re-enable rules
+SELECT pglinter.enable_rule('B001');
+ERROR:  current transaction is aborted, commands ignored until end of transaction block
+SELECT pglinter.enable_rule('T003');
+ERROR:  current transaction is aborted, commands ignored until end of transaction block
+-- Final comprehensive check
+SELECT pglinter.check_all();
+ERROR:  current transaction is aborted, commands ignored until end of transaction block
+-- Clean up
+DROP SCHEMA prod_analytics CASCADE;
+ERROR:  current transaction is aborted, commands ignored until end of transaction block
+DROP SCHEMA dev_reports CASCADE;
+ERROR:  current transaction is aborted, commands ignored until end of transaction block
+DROP SCHEMA staging_data CASCADE;
+ERROR:  current transaction is aborted, commands ignored until end of transaction block
+DROP TABLE items CASCADE;
+ERROR:  current transaction is aborted, commands ignored until end of transaction block
+DROP TABLE "UPPERCASE_ISSUES" CASCADE;
+ERROR:  current transaction is aborted, commands ignored until end of transaction block
+DROP TABLE orders CASCADE;
+ERROR:  current transaction is aborted, commands ignored until end of transaction block
+DROP TABLE products CASCADE;
+ERROR:  current transaction is aborted, commands ignored until end of transaction block
+DROP TABLE users_no_pk CASCADE;
+ERROR:  current transaction is aborted, commands ignored until end of transaction block
+ROLLBACK;
