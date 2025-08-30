@@ -5,3 +5,12 @@
 **/*.rs.bk
 Cargo.lock
 .vscode
+
+# MkDocs
+/site/
+
+# tests
+regression.out
+*.diffs
+_blackbox_*
+contrib_regression_test_restore.pgsql

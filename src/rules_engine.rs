@@ -226,6 +226,32 @@ pub fn execute_table_rules() -> Result<Vec<RuleResult>, String> {
     Ok(results)
 }
 
+// Schema rules implementation for S001-S002
+
+pub fn execute_schema_rules() -> Result<Vec<RuleResult>, String> {
+    let mut results = Vec::new();
+
+    // S001: Schemas without default role grants
+    if is_rule_enabled("S001").unwrap_or(true) {
+        match execute_s001_rule() {
+            Ok(Some(result)) => results.push(result),
+            Ok(None) => {},
+            Err(e) => return Err(format!("S001 failed: {e}"))
+        }
+    }
+
+    // S002: Schemas prefixed/suffixed with environment names
+    if is_rule_enabled("S002").unwrap_or(true) {
+        match execute_s002_rule() {
+            Ok(Some(result)) => results.push(result),
+            Ok(None) => {},
+            Err(e) => return Err(format!("S002 failed: {e}"))
+        }
+    }
+
+    Ok(results)
+}
+
 fn execute_b001_rule() -> Result<Option<RuleResult>, String> {
     let warning_threshold = 10i64; // 10%
 
@@ -1142,6 +1168,101 @@ fn execute_t012_rule() -> Result<Option<RuleResult>, String> {
     }
 }
 
+fn execute_s001_rule() -> Result<Option<RuleResult>, String> {
+    // S001: Schemas without default role grants
+    let schemas_without_default_privileges_query = "
+        SELECT DISTINCT n.nspname as schema_name
+        FROM pg_namespace n
+        WHERE n.nspname NOT IN ('public', 'pg_toast', 'pg_catalog', 'information_schema')
+        AND n.nspname NOT LIKE 'pg_%'
+        AND NOT EXISTS (
+            SELECT 1
+            FROM pg_default_acl da
+            WHERE da.defaclnamespace = n.oid
+            AND da.defaclrole != n.nspowner
+        )";
+
+    let result: Result<Option<RuleResult>, spi::SpiError> = Spi::connect(|client| {
+        let mut count = 0i64;
+        let mut schemas = Vec::new();
+
+        for row in client.select(schemas_without_default_privileges_query, None, &[])? {
+            let schema: String = row.get(1)?.unwrap_or_default();
+            schemas.push(schema);
+            count += 1;
+        }
+
+        if count > 0 {
+            return Ok(Some(RuleResult {
+                ruleid: "S001".to_string(),
+                level: "warning".to_string(),
+                message: format!("Found {count} schemas without default role grants: {}", schemas.join(", ")),
+                count: Some(count),
+            }));
+        }
+
+        Ok(None)
+    });
+
+    match result {
+        Ok(res) => Ok(res),
+        Err(e) => Err(format!("Database error: {e}"))
+    }
+}
+
+fn execute_s002_rule() -> Result<Option<RuleResult>, String> {
+    // S002: Schemas prefixed/suffixed with environment names
+    let environment_keywords = vec![
+        "staging", "stg", "preprod", "prod", "production", "dev", "development",
+        "test", "testing", "sandbox", "sbox", "demo", "uat", "qa"
+    ];
+
+    // Build the query conditions for environment patterns
+    let prefix_conditions: Vec<String> = environment_keywords.iter()
+        .map(|env| format!("nspname ILIKE '{env}_%'"))
+        .collect();
+    let suffix_conditions: Vec<String> = environment_keywords.iter()
+        .map(|env| format!("nspname ILIKE '%_{env}'"))
+        .collect();
+
+    let all_conditions = [prefix_conditions, suffix_conditions].concat();
+    let condition_clause = all_conditions.join(" OR ");
+
+    let environment_schema_query = format!("
+        SELECT nspname as schema_name
+        FROM pg_namespace
+        WHERE nspname NOT IN ('public', 'pg_toast', 'pg_catalog', 'information_schema')
+        AND nspname NOT LIKE 'pg_%'
+        AND ({condition_clause})");
+
+    let result: Result<Option<RuleResult>, spi::SpiError> = Spi::connect(|client| {
+        let mut count = 0i64;
+        let mut schemas = Vec::new();
+
+        for row in client.select(&environment_schema_query, None, &[])? {
+            let schema: String = row.get(1)?.unwrap_or_default();
+            schemas.push(schema);
+            count += 1;
+        }
+
+        if count > 0 {
+            return Ok(Some(RuleResult {
+                ruleid: "S002".to_string(),
+                level: "warning".to_string(),
+                message: format!("Found {count} schemas with environment prefixes/suffixes: {}", schemas.join(", ")),
+                count: Some(count),
+            }));
+        }
+
+        Ok(None)
+    });
+
+    match result {
+        Ok(res) => Ok(res),
+        Err(e) => Err(format!("Database error: {e}"))
+    }
+}
+
 // Add function to output results to PostgreSQL logs/notices
 pub fn output_results_to_prompt(results: Vec<RuleResult>) -> Result<bool, String> {
     if results.is_empty() {
@@ -1149,7 +1270,7 @@ pub fn output_results_to_prompt(results: Vec<RuleResult>) -> Result<bool, String
         return Ok(true);
     }
 
-    pgrx::notice!("🔍 dblinter found {} issue(s):", results.len());
+    pgrx::notice!("🔍 pg_linter found {} issue(s):", results.len());
     pgrx::notice!("{}", "=".repeat(50));
 
     for result in &results {
@@ -1229,9 +1350,9 @@ pub fn generate_sarif_output(results: Vec<RuleResult>, output_file: &str) -> Res
         "runs": [{
             "tool": {
                 "driver": {
-                    "name": "dblinter",
+                    "name": "pg_linter",
                     "version": "1.0.0",
-                    "informationUri": "https://github.com/decathlon/dblinter"
+                    "informationUri": "https://github.com/decathlon/pg_linter"
                 }
             },
             "results": sarif_results
@@ -1254,7 +1375,7 @@ pub fn enable_rule(rule_code: &str) -> Result<bool, String> {
     // First check if rule exists and get current status
     let check_query = "
         SELECT code, enable
-        FROM dblinter.rules
+        FROM pg_linter.rules
         WHERE code = $1";
 
     let result: Result<bool, spi::SpiError> = Spi::connect_mut(|client| {
@@ -1266,7 +1387,7 @@ pub fn enable_rule(rule_code: &str) -> Result<bool, String> {
 
         // Update the rule
         let enable_query = "
-            UPDATE dblinter.rules
+            UPDATE pg_linter.rules
             SET enable = true
             WHERE code = $1";
 
@@ -1292,7 +1413,7 @@ pub fn disable_rule(rule_code: &str) -> Result<bool, String> {
     // First check if rule exists and get current status
     let check_query = "
         SELECT code, enable
-        FROM dblinter.rules
+        FROM pg_linter.rules
         WHERE code = $1";
 
     let result: Result<bool, spi::SpiError> = Spi::connect_mut(|client| {
@@ -1304,7 +1425,7 @@ pub fn disable_rule(rule_code: &str) -> Result<bool, String> {
 
         // Update the rule
         let disable_query = "
-            UPDATE dblinter.rules
+            UPDATE pg_linter.rules
             SET enable = false
             WHERE code = $1";
 
@@ -1329,7 +1450,7 @@ pub fn disable_rule(rule_code: &str) -> Result<bool, String> {
 pub fn is_rule_enabled(rule_code: &str) -> Result<bool, String> {
     let check_query = "
         SELECT enable
-        FROM dblinter.rules
+        FROM pg_linter.rules
         WHERE code = $1";
 
     let result: Result<bool, spi::SpiError> = Spi::connect(|client| {
@@ -1351,7 +1472,7 @@ pub fn is_rule_enabled(rule_code: &str) -> Result<bool, String> {
 pub fn list_rules() -> Result<Vec<(String, String, bool)>, String> {
     let list_query = "
         SELECT code, name, enable
-        FROM dblinter.rules
+        FROM pg_linter.rules
         ORDER BY code";
 
     let result: Result<Vec<(String, String, bool)>, spi::SpiError> = Spi::connect(|client| {
@@ -1374,7 +1495,7 @@ pub fn list_rules() -> Result<Vec<(String, String, bool)>, String> {
 pub fn show_rule_status() -> Result<bool, String> {
     match list_rules() {
         Ok(rules) => {
-            pgrx::notice!("📋 dblinter Rule Status:");
+            pgrx::notice!("📋 pg_linter Rule Status:");
             pgrx::notice!("{}", "=".repeat(60));
             pgrx::notice!("{:<6} {:<8} {:<40}", "Code", "Status", "Name");
             pgrx::notice!("{}", "-".repeat(60));
@@ -1402,7 +1523,7 @@ pub fn show_rule_status() -> Result<bool, String> {
 pub fn explain_rule(rule_code: &str) -> Result<String, String> {
     let explain_query = "
         SELECT code, name, description, scope, message, fixes
-        FROM dblinter.rules
+        FROM pg_linter.rules
         WHERE code = $1";
     type RuleExplainRow = (String, String, String, String, String, Vec<Option<String>>);
     let result: Result<Option<RuleExplainRow>, spi::SpiError> = Spi::connect(|client| {

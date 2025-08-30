@@ -1,6 +1,0 @@
-comment = 'dblinter:  Created by pgrx'
-default_version = '@CARGO_VERSION@'
-module_pathname = '$libdir/dblinter'
-relocatable = false
-superuser = true
-trusted = false
