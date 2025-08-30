@@ -2,6 +2,13 @@
 
 Guide for contributing to pglinter development.
 
+## Quick Start for Contributors
+
+1. **Setup Development Environment** - See [Development Environment Setup](#development-environment-setup)
+2. **Install Pre-commit Hooks** - `make install-precommit-hook` (recommended)
+3. **Run Quality Checks** - `make precommit-fast` before committing
+4. **Complete Guide** - See [Pre-commit System](precommit.md) for details
+
 ## Development Environment Setup
 
 ### Prerequisites
@@ -391,9 +398,31 @@ gdb postgres
 
 ### Pre-commit Checks
 
+The project includes an automated pre-commit system accessible via Makefile targets:
+
+```bash
+# Install the git pre-commit hook (recommended for contributors)
+make install-precommit-hook
+
+# Run all pre-commit checks manually
+make precommit
+
+# Run fast pre-commit checks (skip tests)
+make precommit-fast
+```
+
+**Automated Checks Include:**
+- Rust code formatting validation (`cargo fmt --check`)
+- Rust code linting (`cargo clippy`)
+- Markdown documentation linting
+- Unit tests (in full `precommit` target)
+
+**Manual Git Hook Example:**
+If you prefer a custom git hook, you can create `.git/hooks/pre-commit`:
+
 ```bash
 #!/bin/bash
-# .git/hooks/pre-commit
+# Custom pre-commit hook
 
 # Format code
 cargo fmt --check || exit 1

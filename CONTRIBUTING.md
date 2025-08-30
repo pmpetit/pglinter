@@ -291,20 +291,58 @@ This provides access to:
 Code Style and Linting
 --------------------------------------------------------------------------------
 
-### Rust Code
+### Pre-commit System
 
-We follow standard Rust conventions:
+We provide a comprehensive pre-commit system to ensure code quality:
+
+```bash
+# Install the git pre-commit hook (recommended)
+make install-precommit-hook
+
+# Run all pre-commit checks manually (includes tests)
+make precommit
+
+# Run fast pre-commit checks (skips tests, good for rapid development)
+make precommit-fast
+```
+
+**What the pre-commit checks include:**
+- ✅ Rust code formatting (`cargo fmt --check`)
+- ✅ Rust code linting (`cargo clippy`)
+- ✅ Markdown documentation linting
+- ✅ Unit tests (in full `precommit` target)
+
+### Manual Quality Checks
+
+You can also run individual components:
 
 ```bash
 # Format code
-cargo fmt
+make fmt
+
+# Check formatting without changing files
+make fmt-check
 
 # Run clippy for linting
-cargo clippy
+make lint
+
+# Lint documentation
+make lint-docs
+
+# Run security audit
+make audit
 
 # Run tests
-cargo test
+make test
 ```
+
+### Rust Code Style
+
+We follow standard Rust conventions:
+- Use `cargo fmt` for formatting
+- Address all `cargo clippy` warnings
+- Write descriptive variable and function names
+- Add comments for complex logic
 
 ### SQL Code
 

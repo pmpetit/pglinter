@@ -9,6 +9,7 @@ Complete reference for all PG Linter functions and their usage.
 Executes all enabled base rules (B-series) and returns or saves results.
 
 **Syntax:**
+
 ```sql
 SELECT pglinter.perform_base_check([output_file text]);
 ```
@@ -105,7 +106,7 @@ SELECT pglinter.perform_table_check('/tmp/table_analysis.sarif');
 - T002: Tables without any indexes
 - T003: Tables with redundant indexes
 - T004: Tables with foreign keys not indexed
-- T005: Tables with potential missing indexes
+- T005: Tables with potential missing indexes (percentage-based sequential scan analysis)
 - T006: Tables with foreign keys referencing other schemas
 - T007: Tables with unused indexes
 - T008: Tables with foreign key type mismatches
@@ -304,6 +305,187 @@ How to fix:
 2. Drop unnecessary duplicate indexes
 3. Keep the most appropriately named index
 4. Consider if indexes serve different purposes (unique vs non-unique)
+```
+
+---
+
+### enable_all_rules()
+
+Enables all currently disabled rules in the system.
+
+**Syntax:**
+```sql
+SELECT pglinter.enable_all_rules();
+```
+
+**Returns:**
+- `text`: Success message with count of rules enabled
+
+**Examples:**
+```sql
+-- Enable all disabled rules
+SELECT pglinter.enable_all_rules();
+-- Returns: "Enabled 5 rules"
+
+-- Check effect
+SELECT count(*) as total_rules,
+       sum(case when enabled then 1 else 0 end) as enabled_rules
+FROM pglinter.show_rules();
+```
+
+---
+
+### disable_all_rules()
+
+Disables all currently enabled rules in the system.
+
+**Syntax:**
+```sql
+SELECT pglinter.disable_all_rules();
+```
+
+**Returns:**
+- `text`: Success message with count of rules disabled
+
+**Examples:**
+```sql
+-- Disable all enabled rules
+SELECT pglinter.disable_all_rules();
+-- Returns: "Disabled 12 rules"
+
+-- Selective re-enable
+SELECT pglinter.enable_rule('B001'),  -- Critical rules only
+       pglinter.enable_rule('T001');
+```
+
+---
+
+### update_rule_levels(rule_code, warning_level, error_level)
+
+Updates the warning and error thresholds for configurable rules.
+
+**Syntax:**
+```sql
+SELECT pglinter.update_rule_levels(
+    rule_code text,
+    warning_level numeric,
+    error_level numeric
+);
+```
+
+**Parameters:**
+- `rule_code`: Rule identifier to update (e.g., 'T005')
+- `warning_level`: Warning threshold (NULL to keep current value)
+- `error_level`: Error threshold (NULL to keep current value)
+
+**Returns:**
+- `text`: Success message confirming the update
+
+**Examples:**
+```sql
+-- Update both levels for T005 (sequential scan rule)
+SELECT pglinter.update_rule_levels('T005', 40.0, 80.0);
+-- Returns: "Updated rule T005: warning_level=40, error_level=80"
+
+-- Update only warning level
+SELECT pglinter.update_rule_levels('T005', 30.0, NULL);
+-- Returns: "Updated rule T005: warning_level=30"
+
+-- Update only error level
+SELECT pglinter.update_rule_levels('T005', NULL, 95.0);
+-- Returns: "Updated rule T005: error_level=95"
+```
+
+**Notes:**
+- Only applies to rules with configurable thresholds (currently T005)
+- Use NULL to preserve existing values for either parameter
+- For T005: values represent percentage thresholds for sequential scan ratio
+
+---
+
+### get_rule_levels(rule_code)
+
+Retrieves the current warning and error threshold levels for a rule.
+
+**Syntax:**
+```sql
+SELECT pglinter.get_rule_levels(rule_code text);
+```
+
+**Parameters:**
+- `rule_code`: Rule identifier to query
+
+**Returns:**
+- `text`: Current warning and error levels, or default values if rule not configured
+
+**Examples:**
+```sql
+-- Get current levels for T005
+SELECT pglinter.get_rule_levels('T005');
+-- Returns: "Rule T005: warning_level=50, error_level=90"
+
+-- Check levels for all configurable rules
+SELECT 'T005' as rule_code, pglinter.get_rule_levels('T005') as levels;
+```
+
+**Notes:**
+- Returns default values (warning=50, error=90) for unconfigured rules
+- Currently only T005 supports configurable levels
+- Values for T005 represent percentage thresholds
+
+---
+
+## Configurable Rule Thresholds
+
+Some rules support configurable warning and error thresholds that can be customized based on your environment's needs.
+
+### Supported Configurable Rules
+
+#### T005: Sequential Scan Analysis
+
+Rule T005 analyzes tables for potential missing indexes by calculating the percentage of tuples accessed via sequential scans versus total tuples accessed.
+
+**Default Thresholds:**
+- Warning: 50% (when ≥50% of tuple access is via sequential scans)
+- Error: 90% (when ≥90% of tuple access is via sequential scans)
+
+**Threshold Management:**
+```sql
+-- Check current T005 thresholds
+SELECT pglinter.get_rule_levels('T005');
+
+-- Set more sensitive thresholds
+SELECT pglinter.update_rule_levels('T005', 30.0, 70.0);
+
+-- Set more relaxed thresholds for development environment
+SELECT pglinter.update_rule_levels('T005', 70.0, 95.0);
+
+-- Reset to defaults
+SELECT pglinter.update_rule_levels('T005', 50.0, 90.0);
+```
+
+**Understanding T005 Results:**
+```sql
+-- Example T005 output
+-- "Table 'orders' has high sequential scan ratio: 75.5% (warning threshold: 50%)"
+-- This means 75.5% of tuple access on the 'orders' table uses sequential scans
+```
+
+### Best Practices for Threshold Configuration
+
+1. **Development Environment**: Use higher thresholds (70%/95%) to reduce noise
+2. **Staging Environment**: Use moderate thresholds (40%/80%) for testing
+3. **Production Environment**: Use sensitive thresholds (30%/70%) for optimal performance
+4. **High-Traffic Systems**: Consider very sensitive thresholds (20%/50%)
+
+### Future Configurable Rules
+
+Additional rules may support configurable thresholds in future versions. Use `get_rule_levels()` to check if a rule supports configuration:
+
+```sql
+-- Check if a rule supports configuration
+SELECT pglinter.get_rule_levels('B001');
+-- Returns default values if not configurable
 ```
 
 ---

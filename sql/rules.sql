@@ -78,8 +78,8 @@ INSERT INTO pglinter.rules (id,name,code,warning_level,error_level,scope,descrip
     'unindexed fk {0}.{1}.{2}.',
     ARRAY['{3}']),
 
-(24, 'TableWithPotentialMissingIdx', 'T005', 1, 1, 'TABLE',
-    'table with high level of seq scan vs idx scan, base on pg_stat_user_tables.',
+(24, 'TableWithPotentialMissingIdx', 'T005', 50, 90, 'TABLE',
+    'table with high level of seq scan, base on pg_stat_user_tables.',
     '{0} table with seq scan exceed the threshold: {1}.',
     ARRAY['ask a dba']),
 
