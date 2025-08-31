@@ -19,17 +19,35 @@ CREATE TABLE IF NOT EXISTS orders_table (
 -- Create redundant indexes to trigger B002 rule
 -- Case 1: Exact duplicate indexes on same columns
 CREATE INDEX idx_name_1 ON test_table_with_redundant_indexes (name);
-CREATE INDEX idx_name_2 ON test_table_with_redundant_indexes (name);
+CREATE INDEX idx_name_2 ON test_table_with_redundant_indexes (name, created_at);
+CREATE INDEX idx_name_3 ON test_table_with_redundant_indexes (name, created_at, email);
 -- Case 2: Multiple indexes on same composite key
 CREATE INDEX idx_email_status_1 ON test_table_with_redundant_indexes (email, status);
-CREATE INDEX idx_email_status_2 ON test_table_with_redundant_indexes (email, status);
+CREATE INDEX idx_email_status_2 ON test_table_with_redundant_indexes (email, status, created_at);
 -- Case 3: Redundant indexes on the orders table
-CREATE INDEX idx_customer_1 ON orders_table (customer_id);
-CREATE INDEX idx_customer_2 ON orders_table (customer_id);
+CREATE INDEX idx_customer_1 ON orders_table (order_id);
+-- Case 3-bis: Non Redundant indexes on the orders table
+CREATE INDEX idx_customer_2 ON orders_table (customer_id,order_id);
 -- Case 4: Composite index redundancy
-CREATE INDEX idx_customer_date_1 ON orders_table (customer_id, order_date);
-CREATE INDEX idx_customer_date_2 ON orders_table (customer_id, order_date);
+CREATE INDEX idx_customer_date_1 ON orders_table (product_name, order_date);
+CREATE INDEX idx_customer_date_2 ON orders_table (product_name, order_date);
 CREATE EXTENSION IF NOT EXISTS pglinter;
+-- First, disable all rules to isolate B001 testing
+SELECT pglinter.disable_all_rules() AS all_rules_disabled;
+NOTICE:  🔴 Disabled 22 rule(s)
+ all_rules_disabled 
+--------------------
+                 22
+(1 row)
+
+-- Enable only B002 for focused testing
+SELECT pglinter.enable_rule('B002') AS b001_enabled;
+NOTICE:  ✅ Rule B002 has been enabled
+ b001_enabled 
+--------------
+ t
+(1 row)
+
 -- Test with file output
 SELECT pglinter.perform_base_check('/tmp/pglinter_b002_results.sarif');
  perform_base_check 
@@ -39,17 +57,15 @@ SELECT pglinter.perform_base_check('/tmp/pglinter_b002_results.sarif');
 
 -- Test if file exists and show checksum
 \! md5sum /tmp/pglinter_b002_results.sarif
-5017b553f4610ddf11c626dd86b40c9f  /tmp/pglinter_b002_results.sarif
+09521d25e925328916352d256d0b909d  /tmp/pglinter_b002_results.sarif
 -- Test with no output file (should output to prompt)
 SELECT pglinter.perform_base_check();
-NOTICE:  🔍 pglinter found 3 issue(s):
+NOTICE:  🔍 pglinter found 1 issue(s):
 NOTICE:  ==================================================
-NOTICE:  ⚠️  [B002] WARNING: Found 8 potentially redundant indexes
-NOTICE:  ⚠️  [B004] WARNING: Found 11 potentially unused indexes
-NOTICE:  ❌ [B005] ERROR: Public schema allows CREATE privilege for all users - security risk
+NOTICE:  ⚠️  [B002] WARNING: 36% redundant indexes exceed the warning threshold: 20%
 NOTICE:  ==================================================
-NOTICE:  📊 Summary: 1 error(s), 2 warning(s), 0 info
-NOTICE:  🔴 Critical issues found - please review and fix errors
+NOTICE:  📊 Summary: 0 error(s), 1 warning(s), 0 info
+NOTICE:  🟡 Some warnings found - consider reviewing for optimization
  perform_base_check 
 --------------------
  t
@@ -93,13 +109,7 @@ NOTICE:  🔴 Rule B002 has been disabled
 (1 row)
 
 SELECT pglinter.perform_base_check();
-NOTICE:  🔍 pglinter found 2 issue(s):
-NOTICE:  ==================================================
-NOTICE:  ⚠️  [B004] WARNING: Found 11 potentially unused indexes
-NOTICE:  ❌ [B005] ERROR: Public schema allows CREATE privilege for all users - security risk
-NOTICE:  ==================================================
-NOTICE:  📊 Summary: 1 error(s), 1 warning(s), 0 info
-NOTICE:  🔴 Critical issues found - please review and fix errors
+NOTICE:  ✅ No issues found - database schema looks good!
  perform_base_check 
 --------------------
  t

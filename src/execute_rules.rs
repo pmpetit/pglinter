@@ -4,6 +4,32 @@ use serde_json::json;
 use std::fs::File;
 use std::io::Write;
 
+// Embed SQL files at compile time
+const B001_TOTAL_TABLES_SQL: &str = include_str!("../sql/b001_total_tables.sql");
+const B001_TABLES_WITH_PK_SQL: &str = include_str!("../sql/b001_tables_with_pk.sql");
+const B002_TOTAL_INDEXES_SQL: &str = include_str!("../sql/b002_total_indexes.sql");
+const B002_REDUNDANT_INDEXES_SQL: &str = include_str!("../sql/b002_redundant_indexes.sql");
+const B003_SQL: &str = include_str!("../sql/b003.sql");
+const B004_SQL: &str = include_str!("../sql/b004.sql");
+const B005_SQL: &str = include_str!("../sql/b005.sql");
+const B006_SQL: &str = include_str!("../sql/b006.sql");
+const C001_SQL: &str = include_str!("../sql/c001.sql");
+const C002_SQL: &str = include_str!("../sql/c002.sql");
+const T001_SQL: &str = include_str!("../sql/t001.sql");
+const T002_SQL: &str = include_str!("../sql/t002.sql");
+const T003_SQL: &str = include_str!("../sql/t003.sql");
+const T004_SQL: &str = include_str!("../sql/t004.sql");
+const T005_SQL: &str = include_str!("../sql/t005.sql");
+const T006_SQL: &str = include_str!("../sql/t006.sql");
+const T007_SQL: &str = include_str!("../sql/t007.sql");
+const T008_SQL: &str = include_str!("../sql/t008.sql");
+const T009_SQL: &str = include_str!("../sql/t009.sql");
+const T010_SQL: &str = include_str!("../sql/t010.sql");
+const T011_SQL: &str = include_str!("../sql/t011.sql");
+const T012_SQL: &str = include_str!("../sql/t012.sql");
+const S001_SQL: &str = include_str!("../sql/s001.sql");
+const S002_SQL: &str = include_str!("../sql/s002.sql");
+
 // Import the rule management functions
 use crate::manage_rules::is_rule_enabled;
 
@@ -292,32 +318,23 @@ pub fn execute_schema_rules() -> Result<Vec<RuleResult>, String> {
 
 // Individual rule implementations
 fn execute_b001_rule() -> Result<Option<RuleResult>, String> {
-    let warning_threshold = 10i64; // 10%
-
-    let total_tables_query = "
-        SELECT count(*)
-        FROM pg_catalog.pg_tables pt
-        WHERE schemaname NOT IN ('pg_toast', 'pg_catalog', 'information_schema', 'pglinter')";
-
-    let tables_with_pk_query = "
-        SELECT count(distinct(pg_class.relname))
-        FROM pg_index, pg_class, pg_attribute, pg_namespace
-        WHERE indrelid = pg_class.oid AND
-        nspname NOT IN ('pg_toast', 'pg_catalog', 'information_schema', 'pglinter') AND
-        pg_class.relnamespace = pg_namespace.oid AND
-        pg_attribute.attrelid = pg_class.oid AND
-        pg_attribute.attnum = any(pg_index.indkey)
-        AND indisprimary";
+    // Get thresholds from rules table
+    let (warning_threshold, error_threshold, _rule_message) = match get_rule_config("B001") {
+        Ok(config) => config,
+        Err(e) => {
+            return Err(format!("Failed to get B001 configuration: {e}"));
+        }
+    };
 
     let result: Result<Option<RuleResult>, spi::SpiError> = Spi::connect(|client| {
         let total_tables: i64 = client
-            .select(total_tables_query, None, &[])?
+            .select(B001_TOTAL_TABLES_SQL, None, &[])?
             .first()
             .get::<i64>(1)?
             .unwrap_or(0);
 
         let tables_with_pk: i64 = client
-            .select(tables_with_pk_query, None, &[])?
+            .select(B001_TABLES_WITH_PK_SQL, None, &[])?
             .first()
             .get::<i64>(1)?
             .unwrap_or(0);
@@ -327,14 +344,26 @@ fn execute_b001_rule() -> Result<Option<RuleResult>, String> {
         if total_tables > 0 {
             let percentage = (tables_without_pk * 100) / total_tables;
 
-            if percentage > warning_threshold {
+            // Check error threshold first (higher severity)
+            if percentage > error_threshold {
+                return Ok(Some(RuleResult {
+                    ruleid: "B001".to_string(),
+                    level: "error".to_string(),
+                    message: format!(
+                        "{percentage}% tables without primary key exceed the error threshold: {error_threshold}%"
+                    ),
+                    count: Some(total_tables),
+                }));
+            }
+            // Check warning threshold
+            else if percentage > warning_threshold {
                 return Ok(Some(RuleResult {
                     ruleid: "B001".to_string(),
                     level: "warning".to_string(),
                     message: format!(
-                        "{tables_without_pk} tables without primary key exceed the warning threshold: {warning_threshold}%"
+                        "{percentage}% tables without primary key exceed the warning threshold: {warning_threshold}%"
                     ),
-                    count: Some(tables_without_pk),
+                    count: Some(total_tables),
                 }));
             }
         }
@@ -349,30 +378,52 @@ fn execute_b001_rule() -> Result<Option<RuleResult>, String> {
 }
 
 fn execute_b002_rule() -> Result<Option<RuleResult>, String> {
-    let _warning_threshold = 5i64; // 5% - will be used for threshold checking later
-
-    // Simplified redundant index check
-    let redundant_check_query = "
-        SELECT COUNT(*) as potential_redundant
-        FROM pg_index i1, pg_index i2
-        WHERE i1.indrelid = i2.indrelid
-        AND i1.indexrelid != i2.indexrelid
-        AND i1.indkey = i2.indkey";
+    // Get thresholds from rules table
+    let (warning_threshold, error_threshold, _rule_message) = match get_rule_config("B002") {
+        Ok(config) => config,
+        Err(e) => {
+            return Err(format!("Failed to get B002 configuration: {e}"));
+        }
+    };
 
     let result: Result<Option<RuleResult>, spi::SpiError> = Spi::connect(|client| {
-        let redundant_count: i64 = client
-            .select(redundant_check_query, None, &[])?
+        let total_indexes: i64 = client
+            .select(B002_TOTAL_INDEXES_SQL, None, &[])?
             .first()
             .get::<i64>(1)?
             .unwrap_or(0);
 
-        if redundant_count > 0 {
-            return Ok(Some(RuleResult {
-                ruleid: "B002".to_string(),
-                level: "warning".to_string(),
-                message: format!("Found {redundant_count} potentially redundant indexes"),
-                count: Some(redundant_count),
-            }));
+        let redundant_indexes: i64 = client
+            .select(B002_REDUNDANT_INDEXES_SQL, None, &[])?
+            .first()
+            .get::<i64>(1)?
+            .unwrap_or(0);
+
+        if total_indexes > 0 {
+            let percentage = (redundant_indexes * 100) / total_indexes;
+
+            // Check error threshold first (higher severity)
+            if percentage >= error_threshold {
+                return Ok(Some(RuleResult {
+                    ruleid: "B002".to_string(),
+                    level: "error".to_string(),
+                    message: format!(
+                        "{percentage}% redundant indexes exceed the error threshold: {error_threshold}%"
+                    ),
+                    count: Some(total_indexes),
+                }));
+            }
+            // Check warning threshold
+            else if percentage >= warning_threshold {
+                return Ok(Some(RuleResult {
+                    ruleid: "B002".to_string(),
+                    level: "warning".to_string(),
+                    message: format!(
+                        "{percentage}% redundant indexes exceed the warning threshold: {warning_threshold}%"
+                    ),
+                    count: Some(total_indexes),
+                }));
+            }
         }
 
         Ok(None)
@@ -386,26 +437,9 @@ fn execute_b002_rule() -> Result<Option<RuleResult>, String> {
 
 fn execute_b003_rule() -> Result<Option<RuleResult>, String> {
     // B003: Tables without indexes on foreign keys
-    let fk_without_index_query = "
-        SELECT COUNT(*) as tables_without_fk_index
-        FROM (
-            SELECT DISTINCT
-                ccu.column_name
-            FROM information_schema.table_constraints tc
-            JOIN information_schema.constraint_column_usage ccu
-                ON tc.constraint_name = ccu.constraint_name
-            WHERE tc.constraint_type = 'FOREIGN KEY'
-            AND tc.table_schema NOT IN ('pg_toast', 'pg_catalog', 'information_schema', 'pglinter')
-            AND NOT EXISTS (
-                SELECT 1 FROM pg_indexes pi
-                WHERE pi.schemaname = tc.table_schema
-                AND pi.tablename = tc.table_name
-            )
-        ) fk_tables";
-
     let result: Result<Option<RuleResult>, spi::SpiError> = Spi::connect(|client| {
         let count: i64 = client
-            .select(fk_without_index_query, None, &[])?
+            .select(B003_SQL, None, &[])?
             .first()
             .get::<i64>(1)?
             .unwrap_or(0);
@@ -430,15 +464,9 @@ fn execute_b003_rule() -> Result<Option<RuleResult>, String> {
 
 fn execute_b004_rule() -> Result<Option<RuleResult>, String> {
     // B004: Unused indexes (simplified check using pg_stat_user_indexes)
-    let unused_indexes_query = "
-        SELECT COUNT(*) as unused_indexes
-        FROM pg_stat_user_indexes
-        WHERE idx_scan = 0
-        AND schemaname NOT IN ('pg_toast', 'pg_catalog', 'information_schema', 'pglinter')";
-
     let result: Result<Option<RuleResult>, spi::SpiError> = Spi::connect(|client| {
         let count: i64 = client
-            .select(unused_indexes_query, None, &[])?
+            .select(B004_SQL, None, &[])?
             .first()
             .get::<i64>(1)?
             .unwrap_or(0);
@@ -463,12 +491,9 @@ fn execute_b004_rule() -> Result<Option<RuleResult>, String> {
 
 fn execute_b005_rule() -> Result<Option<RuleResult>, String> {
     // B005: Unsecured public schema
-    let public_schema_check_query = "
-        SELECT has_schema_privilege('public', 'public', 'CREATE') as public_create";
-
     let result: Result<Option<RuleResult>, spi::SpiError> = Spi::connect(|client| {
         let has_public_create: bool = client
-            .select(public_schema_check_query, None, &[])?
+            .select(B005_SQL, None, &[])?
             .first()
             .get::<bool>(1)?
             .unwrap_or(false);
@@ -494,23 +519,9 @@ fn execute_b005_rule() -> Result<Option<RuleResult>, String> {
 
 fn execute_b006_rule() -> Result<Option<RuleResult>, String> {
     // B006: Tables with uppercase names/columns
-    let uppercase_check_query = "
-        SELECT COUNT(*) as uppercase_objects
-        FROM (
-            SELECT table_name
-            FROM information_schema.tables
-            WHERE table_schema NOT IN ('pg_toast', 'pg_catalog', 'information_schema', 'pglinter')
-            AND table_name != lower(table_name)
-            UNION
-            SELECT column_name
-            FROM information_schema.columns
-            WHERE table_schema NOT IN ('pg_toast', 'pg_catalog', 'information_schema', 'pglinter')
-            AND column_name != lower(column_name)
-        ) uppercase_objects";
-
     let result: Result<Option<RuleResult>, spi::SpiError> = Spi::connect(|client| {
         let count: i64 = client
-            .select(uppercase_check_query, None, &[])?
+            .select(B006_SQL, None, &[])?
             .first()
             .get::<i64>(1)?
             .unwrap_or(0);
@@ -534,14 +545,8 @@ fn execute_b006_rule() -> Result<Option<RuleResult>, String> {
 }
 
 fn execute_c001_rule() -> Result<Option<RuleResult>, String> {
-    let memory_check_query = "
-        SELECT
-            current_setting('max_connections')::int as max_connections,
-            current_setting('work_mem') as work_mem_setting
-    ";
-
     let result: Result<Option<RuleResult>, spi::SpiError> = Spi::connect(|client| {
-        for row in client.select(memory_check_query, None, &[])? {
+        for row in client.select(C001_SQL, None, &[])? {
             let max_connections: i32 = row.get(1)?.unwrap_or(100);
             let _work_mem_str: String = row.get(2)?.unwrap_or("4MB".to_string());
 
@@ -567,15 +572,9 @@ fn execute_c001_rule() -> Result<Option<RuleResult>, String> {
 fn execute_c002_rule() -> Result<Option<RuleResult>, String> {
     // C002: Insecure pg_hba.conf entries (simplified check)
     // Note: This is a simplified version as we can't directly read pg_hba.conf from SQL
-    let auth_check_query = "
-        SELECT COUNT(*) as potential_insecure
-        FROM pg_stat_activity
-        WHERE state = 'active'
-        AND application_name != 'psql'";
-
     let result: Result<Option<RuleResult>, spi::SpiError> = Spi::connect(|client| {
         let _count: i64 = client
-            .select(auth_check_query, None, &[])?
+            .select(C002_SQL, None, &[])?
             .first()
             .get::<i64>(1)?
             .unwrap_or(0);
@@ -597,29 +596,25 @@ fn execute_c002_rule() -> Result<Option<RuleResult>, String> {
 }
 
 fn execute_t001_rule() -> Result<Option<RuleResult>, String> {
-    let tables_without_pk_query = "
-        SELECT COUNT(*)
-        FROM pg_tables pt
-        WHERE schemaname NOT IN ('pg_toast', 'pg_catalog', 'information_schema', 'pglinter')
-        AND NOT EXISTS (
-            SELECT 1
-            FROM pg_constraint pc
-            WHERE pc.conrelid = (pt.schemaname||'.'||pt.tablename)::regclass
-            AND pc.contype = 'p'
-        )";
-
     let result: Result<Option<RuleResult>, spi::SpiError> = Spi::connect(|client| {
-        let count: i64 = client
-            .select(tables_without_pk_query, None, &[])?
-            .first()
-            .get::<i64>(1)?
-            .unwrap_or(0);
+        let mut count = 0i64;
+        let mut tables = Vec::new();
+
+        for row in client.select(T001_SQL, None, &[])? {
+            let schema: String = row.get(1)?.unwrap_or_default();
+            let table: String = row.get(2)?.unwrap_or_default();
+            tables.push(format!("{schema}.{table}"));
+            count += 1;
+        }
 
         if count > 0 {
             return Ok(Some(RuleResult {
                 ruleid: "T001".to_string(),
                 level: "warning".to_string(),
-                message: format!("Found {count} tables without primary key"),
+                message: format!(
+                    "Found {count} tables without primary key: {}",
+                    tables.join(", ")
+                ),
                 count: Some(count),
             }));
         }
@@ -635,22 +630,11 @@ fn execute_t001_rule() -> Result<Option<RuleResult>, String> {
 
 fn execute_t002_rule() -> Result<Option<RuleResult>, String> {
     // T002: Tables without any index
-    let tables_without_index_query = "
-        SELECT t.schemaname::text, t.tablename::text
-        FROM pg_tables t
-        WHERE t.schemaname NOT IN ('pg_toast', 'pg_catalog', 'information_schema', 'pglinter')
-        AND NOT EXISTS (
-            SELECT 1
-            FROM pg_indexes i
-            WHERE i.schemaname = t.schemaname
-            AND i.tablename = t.tablename
-        )";
-
     let result: Result<Option<RuleResult>, spi::SpiError> = Spi::connect(|client| {
         let mut count = 0i64;
         let mut tables = Vec::new();
 
-        for row in client.select(tables_without_index_query, None, &[])? {
+        for row in client.select(T002_SQL, None, &[])? {
             let schema: String = row.get(1)?.unwrap_or_default();
             let table: String = row.get(2)?.unwrap_or_default();
             tables.push(format!("{schema}.{table}"));
@@ -680,35 +664,18 @@ fn execute_t002_rule() -> Result<Option<RuleResult>, String> {
 
 fn execute_t003_rule() -> Result<Option<RuleResult>, String> {
     // T003: Tables with redundant indexes
-    let redundant_indexes_query = "
-        SELECT t.schemaname::text, t.tablename::text,
-            array_agg(t.indexname) as redundant_indexes
-        FROM (
-            SELECT DISTINCT i1.schemaname, i1.tablename, i1.indexname
-            FROM pg_indexes i1
-            JOIN pg_indexes i2 ON i1.schemaname = i2.schemaname
-                AND i1.tablename = i2.tablename
-                AND i1.indexname != i2.indexname
-            WHERE i1.schemaname NOT IN ('pg_toast', 'pg_catalog', 'information_schema', 'pglinter')
-            AND EXISTS (
-                SELECT 1 FROM pg_index idx1, pg_index idx2, pg_class c1, pg_class c2
-                WHERE c1.relname = i1.indexname AND c2.relname = i2.indexname
-                AND idx1.indexrelid = c1.oid AND idx2.indexrelid = c2.oid
-                AND idx1.indrelid = idx2.indrelid
-                AND idx1.indkey = idx2.indkey
-            )
-        ) t
-        GROUP BY t.schemaname, t.tablename";
-
     let result: Result<Option<RuleResult>, spi::SpiError> = Spi::connect(|client| {
         let mut count = 0i64;
         let mut details = Vec::new();
 
-        for row in client.select(redundant_indexes_query, None, &[])? {
-            let schema: String = row.get(1)?.unwrap_or_default();
-            let table: String = row.get(2)?.unwrap_or_default();
-            let indexes: String = row.get(3)?.unwrap_or_default();
-            details.push(format!("{schema}.{table} (indexes: {indexes})"));
+        for row in client.select(T003_SQL, None, &[])? {
+            let redundant_index: String = row.get(1)?.unwrap_or_default();
+            let superset_index: String = row.get(2)?.unwrap_or_default();
+            let schema: String = row.get(3)?.unwrap_or_default();
+            let table: String = row.get(4)?.unwrap_or_default();
+            details.push(format!(
+                "{schema}.{table} (redundant index: {redundant_index}, superset: {superset_index})"
+            ));
             count += 1;
         }
 
@@ -717,7 +684,7 @@ fn execute_t003_rule() -> Result<Option<RuleResult>, String> {
                 ruleid: "T003".to_string(),
                 level: "warning".to_string(),
                 message: format!(
-                    "Found {} tables with redundant indexes: {}",
+                    "Found {} redundant idx in table: {}",
                     count,
                     details.join(", ")
                 ),
@@ -736,26 +703,11 @@ fn execute_t003_rule() -> Result<Option<RuleResult>, String> {
 
 fn execute_t004_rule() -> Result<Option<RuleResult>, String> {
     // T004: Tables with foreign keys not indexed
-    let fk_not_indexed_query = "
-        SELECT DISTINCT tc.table_schema::text, tc.table_name::text, tc.constraint_name::text
-        FROM information_schema.table_constraints tc
-        JOIN information_schema.key_column_usage kcu
-            ON tc.constraint_name = kcu.constraint_name
-            AND tc.table_schema = kcu.table_schema
-        WHERE tc.constraint_type = 'FOREIGN KEY'
-        AND tc.table_schema NOT IN ('pg_toast', 'pg_catalog', 'information_schema', 'pglinter')
-        AND NOT EXISTS (
-            SELECT 1 FROM pg_indexes pi
-            WHERE pi.schemaname = tc.table_schema
-            AND pi.tablename = tc.table_name
-            AND pi.indexdef LIKE '%' || kcu.column_name || '%'
-        )";
-
     let result: Result<Option<RuleResult>, spi::SpiError> = Spi::connect(|client| {
         let mut count = 0i64;
         let mut tables = Vec::new();
 
-        for row in client.select(fk_not_indexed_query, None, &[])? {
+        for row in client.select(T004_SQL, None, &[])? {
             let schema: String = row.get(1)?.unwrap_or_default();
             let table: String = row.get(2)?.unwrap_or_default();
             let constraint: String = row.get(3)?.unwrap_or_default();
@@ -796,28 +748,12 @@ fn execute_t005_rule() -> Result<Option<RuleResult>, String> {
         }
     };
 
-    let high_seq_scan_query = "
-        SELECT
-            schemaname::text,
-            relname::text, seq_scan, seq_tup_read,
-            CASE
-                WHEN (seq_tup_read + idx_tup_fetch) > 0 THEN
-                    ROUND((seq_tup_read::numeric / (seq_tup_read + idx_tup_fetch)::numeric) * 100,0)::float8
-                ELSE 0.0::float8
-            END as seq_scan_percentage
-        FROM pg_stat_user_tables
-        WHERE schemaname NOT IN ('pg_toast', 'pg_catalog', 'information_schema', 'pglinter')
-        AND (CASE
-                WHEN (seq_tup_read + idx_tup_fetch) > 0 THEN
-                    (seq_tup_read::numeric / (seq_tup_read + idx_tup_fetch)::numeric) * 100
-                ELSE 0
-            END) > $1";
     let result: Result<Option<RuleResult>, spi::SpiError> = Spi::connect(|client| {
         let mut count = 0i64;
         let mut tables = Vec::new();
 
         // First check with warning threshold
-        for row in client.select(high_seq_scan_query, None, &[warning_threshold.into()])? {
+        for row in client.select(T005_SQL, None, &[warning_threshold.into()])? {
             let schema: String = row.get(1)?.unwrap_or_default();
             let table: String = row.get(2)?.unwrap_or_default();
             let seq_percentage: f64 = row.get(5)?.unwrap_or(0.0);
@@ -834,7 +770,7 @@ fn execute_t005_rule() -> Result<Option<RuleResult>, String> {
             let mut error_tables = Vec::new();
 
             // Check if any tables exceed error threshold
-            for row in client.select(high_seq_scan_query, None, &[error_threshold.into()])? {
+            for row in client.select(T005_SQL, None, &[error_threshold.into()])? {
                 let schema: String = row.get(1)?.unwrap_or_default();
                 let table: String = row.get(2)?.unwrap_or_default();
                 let seq_percentage: f64 = row.get(5)?.unwrap_or(0.0);
@@ -849,7 +785,7 @@ fn execute_t005_rule() -> Result<Option<RuleResult>, String> {
                 (
                     "error",
                     format!(
-                        "Found {} tables with seq scan percentage > {}%: {}",
+                        "Found {} tables with high level of seq scan > {}%: {}",
                         error_count,
                         error_threshold,
                         error_tables.join(", ")
@@ -859,7 +795,7 @@ fn execute_t005_rule() -> Result<Option<RuleResult>, String> {
                 (
                     "warning",
                     format!(
-                        "Found {} tables with seq scan percentage > {}%: {}",
+                        "Found {} tables with high level of seq scan > {}%: {}",
                         count,
                         warning_threshold,
                         tables.join(", ")
@@ -886,21 +822,11 @@ fn execute_t005_rule() -> Result<Option<RuleResult>, String> {
 
 fn execute_t006_rule() -> Result<Option<RuleResult>, String> {
     // T006: Tables with foreign keys referencing other schemas
-    let fk_outside_schema_query = "
-        SELECT tc.table_schema::text, tc.table_name::text, tc.constraint_name::text,
-            ccu.table_schema::text as referenced_schema
-        FROM information_schema.table_constraints tc
-        JOIN information_schema.constraint_column_usage ccu
-            ON tc.constraint_name = ccu.constraint_name
-        WHERE tc.constraint_type = 'FOREIGN KEY'
-        AND tc.table_schema != ccu.table_schema
-        AND tc.table_schema NOT IN ('pg_toast', 'pg_catalog', 'information_schema', 'pglinter')";
-
     let result: Result<Option<RuleResult>, spi::SpiError> = Spi::connect(|client| {
         let mut count = 0i64;
         let mut violations = Vec::new();
 
-        for row in client.select(fk_outside_schema_query, None, &[])? {
+        for row in client.select(T006_SQL, None, &[])? {
             let schema: String = row.get(1)?.unwrap_or_default();
             let table: String = row.get(2)?.unwrap_or_default();
             let constraint: String = row.get(3)?.unwrap_or_default();
@@ -937,22 +863,11 @@ fn execute_t007_rule() -> Result<Option<RuleResult>, String> {
     let size_threshold_mb = 1i64; // 1MB minimum size to consider
     let size_threshold_bytes = size_threshold_mb * 1024 * 1024;
 
-    let unused_indexes_query = "
-        SELECT pi.schemaname::text, pi.tablename::text, pi.indexname::text,
-            pg_relation_size(indexrelid) as index_size
-        FROM pg_stat_user_indexes psi
-        JOIN pg_indexes pi ON psi.indexrelname = pi.indexname
-            AND psi.schemaname = pi.schemaname
-        WHERE psi.idx_scan = 0
-        AND pi.indexdef !~* 'unique'
-        AND pi.schemaname NOT IN ('pg_toast', 'pg_catalog', 'information_schema', 'pglinter')
-        AND pg_relation_size(indexrelid) > $1";
-
     let result: Result<Option<RuleResult>, spi::SpiError> = Spi::connect(|client| {
         let mut count = 0i64;
         let mut unused_indexes = Vec::new();
 
-        for row in client.select(unused_indexes_query, None, &[size_threshold_bytes.into()])? {
+        for row in client.select(T007_SQL, None, &[size_threshold_bytes.into()])? {
             let schema: String = row.get(1)?.unwrap_or_default();
             let table: String = row.get(2)?.unwrap_or_default();
             let index: String = row.get(3)?.unwrap_or_default();
@@ -985,35 +900,11 @@ fn execute_t007_rule() -> Result<Option<RuleResult>, String> {
 
 fn execute_t008_rule() -> Result<Option<RuleResult>, String> {
     // T008: Tables with foreign key type mismatches
-    let fk_type_mismatch_query = "
-        SELECT
-            tc.table_schema::text, tc.table_name::text, tc.constraint_name::text,
-            kcu.column_name::text, col1.data_type::text as fk_type,
-            ccu.table_name::text as ref_table, ccu.column_name::text as ref_column,
-            col2.data_type::text as ref_type
-        FROM information_schema.table_constraints tc
-        JOIN information_schema.key_column_usage kcu
-            ON tc.constraint_name = kcu.constraint_name
-            AND tc.table_schema = kcu.table_schema
-        JOIN information_schema.constraint_column_usage ccu
-            ON tc.constraint_name = ccu.constraint_name
-        JOIN information_schema.columns col1
-            ON kcu.table_schema = col1.table_schema
-            AND kcu.table_name = col1.table_name
-            AND kcu.column_name = col1.column_name
-        JOIN information_schema.columns col2
-            ON ccu.table_schema = col2.table_schema
-            AND ccu.table_name = col2.table_name
-            AND ccu.column_name = col2.column_name
-        WHERE tc.constraint_type = 'FOREIGN KEY'
-        AND tc.table_schema NOT IN ('pg_toast', 'pg_catalog', 'information_schema', 'pglinter')
-        AND col1.data_type != col2.data_type";
-
     let result: Result<Option<RuleResult>, spi::SpiError> = Spi::connect(|client| {
         let mut count = 0i64;
         let mut mismatches = Vec::new();
 
-        for row in client.select(fk_type_mismatch_query, None, &[])? {
+        for row in client.select(T008_SQL, None, &[])? {
             let schema: String = row.get(1)?.unwrap_or_default();
             let table: String = row.get(2)?.unwrap_or_default();
             let constraint: String = row.get(3)?.unwrap_or_default();
@@ -1050,24 +941,11 @@ fn execute_t008_rule() -> Result<Option<RuleResult>, String> {
 
 fn execute_t009_rule() -> Result<Option<RuleResult>, String> {
     // T009: Tables with no roles granted (only for non-public schemas)
-    let tables_without_roles_query = "
-        SELECT t.table_schema::text, t.table_name::text
-        FROM information_schema.tables t
-        WHERE t.table_schema NOT IN ('public', 'pg_toast', 'pg_catalog', 'information_schema')
-        AND NOT EXISTS (
-            SELECT 1
-            FROM information_schema.role_table_grants rtg
-            JOIN pg_roles pr ON pr.rolname = rtg.grantee
-            WHERE rtg.table_schema = t.table_schema
-            AND rtg.table_name = t.table_name
-            AND pr.rolcanlogin = false
-        )";
-
     let result: Result<Option<RuleResult>, spi::SpiError> = Spi::connect(|client| {
         let mut count = 0i64;
         let mut tables = Vec::new();
 
-        for row in client.select(tables_without_roles_query, None, &[])? {
+        for row in client.select(T009_SQL, None, &[])? {
             let schema: String = row.get(1)?.unwrap_or_default();
             let table: String = row.get(2)?.unwrap_or_default();
             tables.push(format!("{schema}.{table}"));
@@ -1200,31 +1078,25 @@ fn execute_t010_rule() -> Result<Option<RuleResult>, String> {
         "WITH",
     ];
 
+    // Read SQL template from file
+    let sql_template = T010_SQL;
+
     // Create keyword check conditions
-    let keyword_conditions: Vec<String> = reserved_keywords
+    let keyword_conditions_tables: Vec<String> = reserved_keywords
         .iter()
         .map(|kw| format!("UPPER(table_name) = '{kw}'"))
         .collect();
-    let keyword_clause = keyword_conditions.join(" OR ");
+    let keyword_conditions_columns: Vec<String> = reserved_keywords
+        .iter()
+        .map(|kw| format!("UPPER(column_name) = '{kw}'"))
+        .collect();
 
-    let reserved_keyword_query = format!(
-        "
-        SELECT table_schema::text, table_name::text, 'table' as object_type
-        FROM information_schema.tables
-        WHERE table_schema NOT IN ('pg_toast', 'pg_catalog', 'information_schema', 'pglinter')
-        AND ({})
-        UNION
-        SELECT table_schema, table_name, 'column:' || column_name as object_type
-        FROM information_schema.columns
-        WHERE table_schema NOT IN ('pg_toast', 'pg_catalog', 'information_schema', 'pglinter')
-        AND ({})",
-        keyword_clause,
-        reserved_keywords
-            .iter()
-            .map(|kw| format!("UPPER(column_name) = '{kw}'"))
-            .collect::<Vec<_>>()
-            .join(" OR ")
-    );
+    let keyword_clause_tables = keyword_conditions_tables.join(" OR ");
+    let keyword_clause_columns = keyword_conditions_columns.join(" OR ");
+
+    let reserved_keyword_query = sql_template
+        .replace("{KEYWORD_CONDITIONS_TABLES}", &keyword_clause_tables)
+        .replace("{KEYWORD_CONDITIONS_COLUMNS}", &keyword_clause_columns);
 
     let result: Result<Option<RuleResult>, spi::SpiError> = Spi::connect(|client| {
         let mut count = 0i64;
@@ -1261,22 +1133,11 @@ fn execute_t010_rule() -> Result<Option<RuleResult>, String> {
 
 fn execute_t011_rule() -> Result<Option<RuleResult>, String> {
     // T011: Tables with uppercase names/columns (similar to B006 but table-specific)
-    let uppercase_objects_query = "
-        SELECT table_schema::text, table_name::text, 'table'::text as object_type
-        FROM information_schema.tables
-        WHERE table_schema NOT IN ('pg_toast', 'pg_catalog', 'information_schema', 'pglinter')
-        AND table_name != lower(table_name)
-        UNION
-        SELECT table_schema::text, table_name::text, 'column:' || column_name::text as object_type
-        FROM information_schema.columns
-        WHERE table_schema NOT IN ('pg_toast', 'pg_catalog', 'information_schema', 'pglinter')
-        AND column_name != lower(column_name)";
-
     let result: Result<Option<RuleResult>, spi::SpiError> = Spi::connect(|client| {
         let mut count = 0i64;
         let mut objects = Vec::new();
 
-        for row in client.select(uppercase_objects_query, None, &[])? {
+        for row in client.select(T011_SQL, None, &[])? {
             let schema: String = row.get(1)?.unwrap_or_default();
             let table: String = row.get(2)?.unwrap_or_default();
             let object_type: String = row.get(3)?.unwrap_or_default();
@@ -1331,23 +1192,10 @@ fn execute_t012_rule() -> Result<Option<RuleResult>, String> {
         }
 
         // If anon extension is available, try to detect sensitive columns
-        let sensitive_columns_query = "
-            SELECT table_schema::text, table_name::text, column_name::text, identifiers_category::text
-            FROM (
-                SELECT table_schema, table_name, column_name, identifiers_category
-                FROM anon.detect('en_US')
-                WHERE table_schema NOT IN ('pg_toast', 'pg_catalog', 'information_schema', 'pglinter')
-                UNION
-                SELECT table_schema, table_name, column_name, identifiers_category
-                FROM anon.detect('fr_FR')
-                WHERE table_schema NOT IN ('pg_toast', 'pg_catalog', 'information_schema', 'pglinter')
-            ) detected
-            GROUP BY table_schema, table_name, column_name, identifiers_category";
-
         let mut count = 0i64;
         let mut sensitive_data = Vec::new();
 
-        for row in client.select(sensitive_columns_query, None, &[])? {
+        for row in client.select(T012_SQL, None, &[])? {
             let schema: String = row.get(1)?.unwrap_or_default();
             let table: String = row.get(2)?.unwrap_or_default();
             let column: String = row.get(3)?.unwrap_or_default();
@@ -1388,23 +1236,11 @@ fn execute_t012_rule() -> Result<Option<RuleResult>, String> {
 
 fn execute_s001_rule() -> Result<Option<RuleResult>, String> {
     // S001: Schemas without default role grants
-    let schemas_without_default_privileges_query = "
-        SELECT DISTINCT n.nspname::text as schema_name
-        FROM pg_namespace n
-        WHERE n.nspname NOT IN ('public', 'pg_toast', 'pg_catalog', 'information_schema')
-        AND n.nspname NOT LIKE 'pg_%'
-        AND NOT EXISTS (
-            SELECT 1
-            FROM pg_default_acl da
-            WHERE da.defaclnamespace = n.oid
-            AND da.defaclrole != n.nspowner
-        )";
-
     let result: Result<Option<RuleResult>, spi::SpiError> = Spi::connect(|client| {
         let mut count = 0i64;
         let mut schemas = Vec::new();
 
-        for row in client.select(schemas_without_default_privileges_query, None, &[])? {
+        for row in client.select(S001_SQL, None, &[])? {
             let schema: String = row.get(1)?.unwrap_or_default();
             schemas.push(schema);
             count += 1;
@@ -1450,6 +1286,9 @@ fn execute_s002_rule() -> Result<Option<RuleResult>, String> {
         "qa",
     ];
 
+    // Read SQL template from file
+    let sql_template = S002_SQL;
+
     // Build the query conditions for environment patterns
     let prefix_conditions: Vec<String> = environment_keywords
         .iter()
@@ -1463,14 +1302,8 @@ fn execute_s002_rule() -> Result<Option<RuleResult>, String> {
     let all_conditions = [prefix_conditions, suffix_conditions].concat();
     let condition_clause = all_conditions.join(" OR ");
 
-    let environment_schema_query = format!(
-        "
-        SELECT nspname::text as schema_name
-        FROM pg_namespace
-        WHERE nspname NOT IN ('public', 'pg_toast', 'pg_catalog', 'information_schema')
-        AND nspname NOT LIKE 'pg_%'
-        AND ({condition_clause})"
-    );
+    let environment_schema_query =
+        sql_template.replace("{ENVIRONMENT_CONDITIONS}", &condition_clause);
 
     let result: Result<Option<RuleResult>, spi::SpiError> = Spi::connect(|client| {
         let mut count = 0i64;

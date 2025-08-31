@@ -39,13 +39,13 @@ SELECT pglinter.perform_base_check('/tmp/pglinter_b002_results.sarif');
 
 -- Test if file exists and show checksum
 \! md5sum /tmp/pglinter_b002_results.sarif
-5017b553f4610ddf11c626dd86b40c9f  /tmp/pglinter_b002_results.sarif
+802593d535f8fd83065ef73c26e4f07a  /tmp/pglinter_b002_results.sarif
 -- Test with no output file (should output to prompt)
 SELECT pglinter.perform_base_check();
 NOTICE:  🔍 pglinter found 3 issue(s):
 NOTICE:  ==================================================
 NOTICE:  ⚠️  [B002] WARNING: Found 8 potentially redundant indexes
-NOTICE:  ⚠️  [B004] WARNING: Found 11 potentially unused indexes
+NOTICE:  ⚠️  [B004] WARNING: Found 10 potentially unused indexes
 NOTICE:  ❌ [B005] ERROR: Public schema allows CREATE privilege for all users - security risk
 NOTICE:  ==================================================
 NOTICE:  📊 Summary: 1 error(s), 2 warning(s), 0 info
@@ -95,7 +95,7 @@ NOTICE:  🔴 Rule B002 has been disabled
 SELECT pglinter.perform_base_check();
 NOTICE:  🔍 pglinter found 2 issue(s):
 NOTICE:  ==================================================
-NOTICE:  ⚠️  [B004] WARNING: Found 11 potentially unused indexes
+NOTICE:  ⚠️  [B004] WARNING: Found 10 potentially unused indexes
 NOTICE:  ❌ [B005] ERROR: Public schema allows CREATE privilege for all users - security risk
 NOTICE:  ==================================================
 NOTICE:  📊 Summary: 1 error(s), 1 warning(s), 0 info

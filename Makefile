@@ -51,8 +51,9 @@ REGRESS_TESTS+= integration_test
 REGRESS_TESTS+= output_options
 REGRESS_TESTS+= rule_management
 REGRESS_TESTS+= schema_rules
+REGRESS_TESTS+= simple_primary_keys
 REGRESS_TESTS+= t003
-REGRESS_TESTS+= t005
+REGRESS_TESTS+= simple_missing_index
 REGRESS_TESTS+= t008
 REGRESS_TESTS+= t010
 
@@ -205,7 +206,6 @@ help:
 	@echo "  lint-docs        - Lint markdown documentation files"
 	@echo "  lint-docs-fix    - Lint and automatically fix markdown files"
 	@echo "  spell-check      - Check spelling in documentation"
-	@echo "  audit            - Run security audit on dependencies"
 	@echo "  precommit        - Run all pre-commit checks (fmt, lint, docs, tests)"
 	@echo "  precommit-fast   - Run fast pre-commit checks (skip tests)"
 	@echo "  install-precommit-hook - Install git pre-commit hook"
@@ -258,10 +258,6 @@ spell-check:
 	else \
 		echo "aspell not found, skipping spell check"; \
 	fi
-
-# Security audit
-audit:
-	cargo audit
 
 # Install git pre-commit hook
 install-precommit-hook:

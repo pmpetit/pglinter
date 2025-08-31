@@ -63,6 +63,7 @@ WHERE rule_code = 'B001';
 ### Common Threshold Adjustments
 
 #### B001: Tables without primary keys
+
 Default threshold: 10% of tables without primary keys triggers warning
 
 ```sql
@@ -71,6 +72,7 @@ Default threshold: 10% of tables without primary keys triggers warning
 ```
 
 #### T005: High sequential scan usage
+
 Default threshold: 10,000 average tuples read per sequential scan
 
 ```sql
@@ -79,6 +81,7 @@ Default threshold: 10,000 average tuples read per sequential scan
 ```
 
 #### T007: Unused indexes
+
 Default threshold: 1MB minimum size to consider an index "unused"
 
 ```sql
@@ -138,107 +141,6 @@ SELECT pglinter.enable_rule('B004'); -- Unused indexes
 SELECT pglinter.enable_rule('B005'); -- Schema security
 SELECT pglinter.enable_rule('C001'); -- Memory configuration
 SELECT pglinter.enable_rule('C002'); -- pg_hba security
-```
-
-### Testing Environment
-
-For testing environments, focus on data integrity:
-
-```sql
--- Enable data integrity rules
-SELECT pglinter.enable_rule('B001'); -- Primary keys
-SELECT pglinter.enable_rule('T001'); -- Table primary keys
-SELECT pglinter.enable_rule('T004'); -- FK indexing
-SELECT pglinter.enable_rule('T008'); -- FK type mismatches
-
--- Disable performance rules that might not be relevant
-SELECT pglinter.disable_rule('B004'); -- Unused indexes
-SELECT pglinter.disable_rule('T007'); -- Unused indexes
-SELECT pglinter.disable_rule('T005'); -- Sequential scans
-```
-
-## Automated Configuration
-
-### Configuration Scripts
-
-Create reusable configuration scripts for different environments:
-
-```sql
--- config/development.sql
-\echo 'Configuring pglinter for development environment...'
-
-SELECT pglinter.disable_rule('B005');
-SELECT pglinter.disable_rule('T009');
-SELECT pglinter.disable_rule('T010');
-SELECT pglinter.disable_rule('C002');
-
-\echo 'Development configuration complete.'
-```
-
-```sql
--- config/production.sql
-\echo 'Configuring pglinter for production environment...'
-
--- Enable all rules
-SELECT pglinter.enable_rule(rule_code)
-FROM pglinter.show_rules();
-
-\echo 'Production configuration complete.'
-```
-
-### Apply Configuration
-
-```bash
-# Apply development configuration
-psql -d mydb -f config/development.sql
-
-# Apply production configuration
-psql -d mydb -f config/production.sql
-```
-
-## Integration with CI/CD
-
-### GitHub Actions
-
-```yaml
-# .github/workflows/pglinter.yml
-name: Database Linting
-on: [push, pull_request]
-
-jobs:
-  lint:
-    runs-on: ubuntu-latest
-    services:
-      postgres:
-        image: postgres:14
-        env:
-          POSTGRES_PASSWORD: postgres
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-
-    steps:
-    - uses: actions/checkout@v3
-
-    - name: Install pglinter
-      run: |
-        # Install extension
-        psql -h localhost -U postgres -d postgres -c "CREATE EXTENSION pglinter;"
-
-    - name: Run Database Analysis
-      run: |
-        # Apply production configuration
-        psql -h localhost -U postgres -d postgres -f config/production.sql
-
-        # Run analysis
-        psql -h localhost -U postgres -d postgres -c "SELECT pglinter.perform_base_check('/tmp/results.sarif');"
-
-    - name: Upload SARIF results
-      uses: github/codeql-action/upload-sarif@v2
-      with:
-        sarif_file: /tmp/results.sarif
 ```
 
 ## Advanced Configuration
