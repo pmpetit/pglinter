@@ -69,7 +69,7 @@ jobs:
           sudo npm install -g markdownlint-cli
 
       - name: Cache pre-commit
-        uses: actions/cache@v3.3.3
+        uses: actions/cache@v4.2.4
         with:
           path: ~/.cache/pre-commit
           key: pre-commit-${{ runner.os }}-${{ hashFiles('.pre-commit-config.yaml') }}
@@ -131,7 +131,7 @@ jobs:
           sudo npm install -g markdownlint-cli
 
       - name: Cache pre-commit
-        uses: actions/cache@v3.3.3
+        uses: actions/cache@v4.2.4
         with:
           path: ~/.cache/pre-commit
           key: pre-commit-${{ runner.os }}-${{ hashFiles('.pre-commit-config.yaml') }}
