@@ -5,6 +5,13 @@ CREATE TABLE test_no_pk (
     id INTEGER,
     name TEXT
 );
+CREATE TABLE test_with_pk (
+    id INTEGER PRIMARY KEY,
+    name TEXT
+);
+-- Drop extension if exists to reset state
+DROP EXTENSION IF EXISTS pglinter;
+NOTICE:  extension "pglinter" does not exist, skipping
 -- Create extension
 CREATE EXTENSION IF NOT EXISTS pglinter;
 -- First, disable all rules to isolate B001 testing
@@ -34,7 +41,7 @@ SELECT warning_level, error_level FROM pglinter.rules WHERE code = 'B001';
 SELECT pglinter.perform_base_check();
 NOTICE:  🔍 pglinter found 1 issue(s):
 NOTICE:  ==================================================
-NOTICE:  ⚠️  [B001] WARNING: 1 tables without primary key exceed the warning threshold: 20%
+NOTICE:  ⚠️  [B001] WARNING: 50% tables without primary key exceed the warning threshold: 20%
 NOTICE:  ==================================================
 NOTICE:  📊 Summary: 0 error(s), 1 warning(s), 0 info
 NOTICE:  🟡 Some warnings found - consider reviewing for optimization
@@ -43,9 +50,9 @@ NOTICE:  🟡 Some warnings found - consider reviewing for optimization
  t
 (1 row)
 
--- Update B001 thresholds to very low values (1%, 2%) to trigger on any table without PK
-SELECT pglinter.update_rule_levels('B001', 1, 2);
-NOTICE:  ✅ Updated rule B001 levels: warning=1, error=2
+-- Update B001 thresholds to very large values (60%, 80%) not to trigger on any table without PK
+SELECT pglinter.update_rule_levels('B001', 60, 80);
+NOTICE:  ✅ Updated rule B001 levels: warning=60, error=80
  update_rule_levels 
 --------------------
  t
@@ -55,18 +62,21 @@ NOTICE:  ✅ Updated rule B001 levels: warning=1, error=2
 SELECT warning_level, error_level FROM pglinter.rules WHERE code = 'B001';
  warning_level | error_level 
 ---------------+-------------
-             1 |           2
+            60 |          80
 (1 row)
 
 -- Test B001 rule again - should now trigger with new thresholds
 SELECT pglinter.perform_base_check();
-NOTICE:  🔍 pglinter found 1 issue(s):
-NOTICE:  ==================================================
-NOTICE:  ⚠️  [B001] WARNING: 1 tables without primary key exceed the warning threshold: 20%
-NOTICE:  ==================================================
-NOTICE:  📊 Summary: 0 error(s), 1 warning(s), 0 info
-NOTICE:  🟡 Some warnings found - consider reviewing for optimization
+NOTICE:  ✅ No issues found - database schema looks good!
  perform_base_check 
+--------------------
+ t
+(1 row)
+
+-- Update B001 thresholds to very low values (1%, 2%) not to trigger on any table without PK
+SELECT pglinter.update_rule_levels('B001', 60, 80);
+NOTICE:  ✅ Updated rule B001 levels: warning=60, error=80
+ update_rule_levels 
 --------------------
  t
 (1 row)

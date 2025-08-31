@@ -1,0 +1,42 @@
+-- Test for pglinter T003 rule: Tables with redundant indexes (minimal test)
+BEGIN;
+-- Create one simple test table
+CREATE TABLE test_redundant (
+    id INT PRIMARY KEY,
+    name TEXT
+);
+-- Create two identical indexes (redundant)
+CREATE INDEX idx_name_1 ON test_redundant (name);
+CREATE INDEX idx_name_2 ON test_redundant (name);
+CREATE EXTENSION IF NOT EXISTS pglinter;
+-- Enable only T003
+SELECT pglinter.disable_all_rules();
+NOTICE:  🔴 Disabled 22 rule(s)
+ disable_all_rules 
+-------------------
+                22
+(1 row)
+
+SELECT pglinter.enable_rule('T003');
+NOTICE:  ✅ Rule T003 has been enabled
+ enable_rule 
+-------------
+ t
+(1 row)
+
+-- Test T003
+SELECT pglinter.perform_table_check();
+NOTICE:  🔍 pglinter found 1 issue(s):
+NOTICE:  ==================================================
+NOTICE:  ⚠️  [T003] WARNING: Found 1 tables with redundant indexes: public.test_redundant (indexes: idx_name_1, idx_name_2)
+NOTICE:  ==================================================
+NOTICE:  📊 Summary: 0 error(s), 1 warning(s), 0 info
+NOTICE:  🟡 Some warnings found - consider reviewing for optimization
+ perform_table_check 
+---------------------
+ t
+(1 row)
+
+-- Cleanup
+DROP TABLE test_redundant CASCADE;
+ROLLBACK;
