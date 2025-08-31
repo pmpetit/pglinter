@@ -219,10 +219,10 @@ cargo pgrx test
 ### Rule Implementation Guidelines
 
 1. **Use Consistent Naming**: Follow the pattern `execute_RULEID_rule()`
-2. **Handle Errors Gracefully**: Return descriptive error messages
+1. **Handle Errors Gracefully**: Return descriptive error messages
 3. **Optimize Queries**: Use efficient PostgreSQL queries
-4. **Consider Performance**: Large databases should be handled efficiently
-5. **Document Thresholds**: Make configurable values clear
+2. **Consider Performance**: Large databases should be handled efficiently
+3. **Document Thresholds**: Make configurable values clear
 
 ## Testing
 
@@ -341,7 +341,7 @@ ORDER BY tc.table_schema, tc.table_name;
 1. **Use Appropriate Indexes**: Ensure your queries can use existing indexes
 2. **Limit Scope**: Filter out system schemas early
 3. **Avoid N+1 Queries**: Use JOINs instead of multiple queries
-4. **Consider Large Tables**: Test with realistic data sizes
+1. **Consider Large Tables**: Test with realistic data sizes
 
 ### Memory Management
 

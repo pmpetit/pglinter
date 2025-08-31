@@ -291,7 +291,7 @@ mod tests {
         // Enable the rule
         let result = manage_rules::enable_rule("TEST001");
         assert!(result.is_ok());
-        assert_eq!(result.unwrap(), true);
+        assert!(result.unwrap());
 
         // Verify it's enabled in the database
         let enabled =
@@ -305,7 +305,7 @@ mod tests {
         // Test enabling a non-existent rule
         let result = manage_rules::enable_rule("NONEXISTENT");
         assert!(result.is_ok());
-        assert_eq!(result.unwrap(), false);
+        assert!(!result.unwrap());
     }
 
     #[pg_test]
@@ -318,7 +318,7 @@ mod tests {
         // Disable the rule
         let result = manage_rules::disable_rule("TEST002");
         assert!(result.is_ok());
-        assert_eq!(result.unwrap(), true);
+        assert!(result.unwrap());
 
         // Verify it's disabled in the database
         let enabled =
@@ -332,7 +332,7 @@ mod tests {
         // Test disabling a non-existent rule
         let result = manage_rules::disable_rule("NONEXISTENT");
         assert!(result.is_ok());
-        assert_eq!(result.unwrap(), false);
+        assert!(!result.unwrap());
     }
 
     #[pg_test]
@@ -343,7 +343,7 @@ mod tests {
 
         let result = manage_rules::is_rule_enabled("TEST003");
         assert!(result.is_ok());
-        assert_eq!(result.unwrap(), true);
+        assert!(result.unwrap());
     }
 
     #[pg_test]
@@ -354,7 +354,7 @@ mod tests {
 
         let result = manage_rules::is_rule_enabled("TEST004");
         assert!(result.is_ok());
-        assert_eq!(result.unwrap(), false);
+        assert!(!result.unwrap());
     }
 
     #[pg_test]
@@ -362,7 +362,7 @@ mod tests {
         // Test checking if a non-existent rule is enabled
         let result = manage_rules::is_rule_enabled("NONEXISTENT");
         assert!(result.is_ok());
-        assert_eq!(result.unwrap(), false);
+        assert!(!result.unwrap());
     }
 
     #[pg_test]
@@ -383,13 +383,13 @@ mod tests {
         assert!(test005.is_some());
         let (_, name, enabled) = test005.unwrap();
         assert_eq!(name, "Test Rule 5");
-        assert_eq!(*enabled, true);
+        assert!(*enabled);
 
         let test006 = rules.iter().find(|(code, _, _)| code == "TEST006");
         assert!(test006.is_some());
         let (_, name, enabled) = test006.unwrap();
         assert_eq!(name, "Test Rule 6");
-        assert_eq!(*enabled, false);
+        assert!(!(*enabled));
     }
 
     #[pg_test]
@@ -400,7 +400,7 @@ mod tests {
 
         let result = manage_rules::show_rule_status();
         assert!(result.is_ok());
-        assert_eq!(result.unwrap(), true);
+        assert!(result.unwrap());
     }
 
     #[pg_test]
@@ -440,23 +440,23 @@ mod tests {
 
         // Initially disabled
         let status = manage_rules::is_rule_enabled("TEST009").unwrap();
-        assert_eq!(status, false);
+        assert!(!status);
 
         // Enable the rule
         let enable_result = manage_rules::enable_rule("TEST009").unwrap();
-        assert_eq!(enable_result, true);
+        assert!(enable_result);
 
         // Should now be enabled
         let status = manage_rules::is_rule_enabled("TEST009").unwrap();
-        assert_eq!(status, true);
+        assert!(status);
 
         // Disable the rule
         let disable_result = manage_rules::disable_rule("TEST009").unwrap();
-        assert_eq!(disable_result, true);
+        assert!(disable_result);
 
         // Should now be disabled again
         let status = manage_rules::is_rule_enabled("TEST009").unwrap();
-        assert_eq!(status, false);
+        assert!(!status);
     }
 
     #[pg_test]
