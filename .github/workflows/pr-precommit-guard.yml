@@ -21,25 +21,25 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v4.3.0
         with:
           # Fetch enough history for pre-commit to work properly
           fetch-depth: 0
 
       - name: Set up Rust toolchain
-        uses: actions-rust-lang/setup-rust-toolchain@v1
+        uses: actions-rust-lang/setup-rust-toolchain@v1.10.1
         with:
           components: rustfmt, clippy
           cache: true
 
       - name: Set up Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v4.8.0
         with:
           python-version: '3.11'
           cache: 'pip'
 
       - name: Set up Node.js for markdownlint
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v4.1.0
         with:
           node-version: '18'
           cache: 'npm'
@@ -54,7 +54,7 @@ jobs:
           npm install -g markdownlint-cli
 
       - name: Cache pre-commit
-        uses: actions/cache@v3
+        uses: actions/cache@v3.3.3
         with:
           path: ~/.cache/pre-commit
           key: pre-commit-${{ runner.os }}-${{ hashFiles('.pre-commit-config.yaml') }}
@@ -92,7 +92,7 @@ jobs:
 
       - name: 💬 Comment on PR (success)
         if: success()
-        uses: actions/github-script@v7
+        uses: actions/github-script@v7.0.1
         with:
           script: |
             const { owner, repo } = context.repo;
@@ -138,7 +138,7 @@ jobs:
 
       - name: 💬 Comment on PR (failure)
         if: failure()
-        uses: actions/github-script@v7
+        uses: actions/github-script@v7.0.1
         with:
           script: |
             const { owner, repo } = context.repo;
