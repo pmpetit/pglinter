@@ -292,7 +292,13 @@ pub fn execute_schema_rules() -> Result<Vec<RuleResult>, String> {
 
 // Individual rule implementations
 fn execute_b001_rule() -> Result<Option<RuleResult>, String> {
-    let warning_threshold = 10i64; // 10%
+    // Get thresholds from rules table
+    let (warning_threshold, error_threshold, _rule_message) = match get_rule_config("B001") {
+        Ok(config) => config,
+        Err(e) => {
+            return Err(format!("Failed to get B001 configuration: {e}"));
+        }
+    };
 
     let total_tables_query = "
         SELECT count(*)
@@ -327,14 +333,26 @@ fn execute_b001_rule() -> Result<Option<RuleResult>, String> {
         if total_tables > 0 {
             let percentage = (tables_without_pk * 100) / total_tables;
 
-            if percentage > warning_threshold {
+            // Check error threshold first (higher severity)
+            if percentage > error_threshold {
+                return Ok(Some(RuleResult {
+                    ruleid: "B001".to_string(),
+                    level: "error".to_string(),
+                    message: format!(
+                        "{percentage}% tables without primary key exceed the error threshold: {error_threshold}%"
+                    ),
+                    count: Some(total_tables),
+                }));
+            }
+            // Check warning threshold
+            else if percentage > warning_threshold {
                 return Ok(Some(RuleResult {
                     ruleid: "B001".to_string(),
                     level: "warning".to_string(),
                     message: format!(
-                        "{tables_without_pk} tables without primary key exceed the warning threshold: {warning_threshold}%"
+                        "{percentage}% tables without primary key exceed the warning threshold: {warning_threshold}%"
                     ),
-                    count: Some(tables_without_pk),
+                    count: Some(total_tables),
                 }));
             }
         }
@@ -349,7 +367,7 @@ fn execute_b001_rule() -> Result<Option<RuleResult>, String> {
 }
 
 fn execute_b002_rule() -> Result<Option<RuleResult>, String> {
-    let _warning_threshold = 5i64; // 5% - will be used for threshold checking later
+    let _warning_threshold = 20i64; // 20% - will be used for threshold checking later
 
     // Simplified redundant index check
     let redundant_check_query = "
@@ -598,7 +616,7 @@ fn execute_c002_rule() -> Result<Option<RuleResult>, String> {
 
 fn execute_t001_rule() -> Result<Option<RuleResult>, String> {
     let tables_without_pk_query = "
-        SELECT COUNT(*)
+        SELECT pt.schemaname::text, pt.tablename::text
         FROM pg_tables pt
         WHERE schemaname NOT IN ('pg_toast', 'pg_catalog', 'information_schema', 'pglinter')
         AND NOT EXISTS (
@@ -609,17 +627,24 @@ fn execute_t001_rule() -> Result<Option<RuleResult>, String> {
         )";
 
     let result: Result<Option<RuleResult>, spi::SpiError> = Spi::connect(|client| {
-        let count: i64 = client
-            .select(tables_without_pk_query, None, &[])?
-            .first()
-            .get::<i64>(1)?
-            .unwrap_or(0);
+        let mut count = 0i64;
+        let mut tables = Vec::new();
+
+        for row in client.select(tables_without_pk_query, None, &[])? {
+            let schema: String = row.get(1)?.unwrap_or_default();
+            let table: String = row.get(2)?.unwrap_or_default();
+            tables.push(format!("{schema}.{table}"));
+            count += 1;
+        }
 
         if count > 0 {
             return Ok(Some(RuleResult {
                 ruleid: "T001".to_string(),
                 level: "warning".to_string(),
-                message: format!("Found {count} tables without primary key"),
+                message: format!(
+                    "Found {count} tables without primary key: {}",
+                    tables.join(", ")
+                ),
                 count: Some(count),
             }));
         }
@@ -849,7 +874,7 @@ fn execute_t005_rule() -> Result<Option<RuleResult>, String> {
                 (
                     "error",
                     format!(
-                        "Found {} tables with seq scan percentage > {}%: {}",
+                        "Found {} tables with high level of seq scan > {}%: {}",
                         error_count,
                         error_threshold,
                         error_tables.join(", ")
@@ -859,7 +884,7 @@ fn execute_t005_rule() -> Result<Option<RuleResult>, String> {
                 (
                     "warning",
                     format!(
-                        "Found {} tables with seq scan percentage > {}%: {}",
+                        "Found {} tables with high level of seq scan > {}%: {}",
                         count,
                         warning_threshold,
                         tables.join(", ")

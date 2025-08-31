@@ -1,0 +1,318 @@
+-- Simple example to demonstrate missing primary keys and T001 rule detection
+-- This script creates tables without primary keys and shows how the T001 rule detects this issue.
+BEGIN;
+-- Create tables without primary keys (should trigger T001)
+CREATE TABLE customer_orders (
+    order_id INTEGER NOT NULL,
+    customer_id INTEGER NOT NULL,
+    product_id INTEGER NOT NULL,
+    order_date DATE NOT NULL DEFAULT CURRENT_DATE,
+    quantity INTEGER DEFAULT 1,
+    total_amount DECIMAL(10,2),
+    status VARCHAR(20) DEFAULT 'pending',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+CREATE TABLE product_reviews (
+    review_id INTEGER NOT NULL,
+    product_id INTEGER NOT NULL,
+    customer_id INTEGER NOT NULL,
+    rating INTEGER CHECK (rating >= 1 AND rating <= 5),
+    review_text TEXT,
+    review_date DATE DEFAULT CURRENT_DATE,
+    helpful_votes INTEGER DEFAULT 0
+);
+CREATE TABLE user_sessions (
+    session_id VARCHAR(64) NOT NULL,
+    user_id INTEGER NOT NULL,
+    login_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    logout_time TIMESTAMP,
+    ip_address INET,
+    user_agent TEXT,
+    is_active BOOLEAN DEFAULT TRUE
+);
+CREATE TABLE inventory_logs (
+    log_id INTEGER NOT NULL,
+    product_id INTEGER NOT NULL,
+    change_type VARCHAR(20) NOT NULL, -- 'addition', 'removal', 'adjustment'
+    quantity_change INTEGER NOT NULL,
+    previous_quantity INTEGER,
+    new_quantity INTEGER,
+    reason TEXT,
+    logged_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    logged_by VARCHAR(50)
+);
+-- Create one table WITH a proper primary key (should NOT trigger T001)
+CREATE TABLE good_table_with_pk (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(100) NOT NULL,
+    description TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+-- Insert some test data to make the tables more realistic
+INSERT INTO customer_orders (order_id, customer_id, product_id, quantity, total_amount, status)
+VALUES
+    (1001, 1, 101, 2, 59.98, 'completed'),
+    (1002, 2, 102, 1, 29.99, 'pending'),
+    (1003, 1, 103, 3, 89.97, 'shipped'),
+    (1004, 3, 101, 1, 29.99, 'completed');
+INSERT INTO product_reviews (review_id, product_id, customer_id, rating, review_text)
+VALUES
+    (2001, 101, 1, 5, 'Excellent product, highly recommended!'),
+    (2002, 102, 2, 4, 'Good quality, fast delivery'),
+    (2003, 103, 1, 3, 'Average product, could be better'),
+    (2004, 101, 3, 5, 'Amazing quality and value');
+INSERT INTO user_sessions (session_id, user_id, ip_address, user_agent)
+VALUES
+    ('sess_abc123def456', 1, '192.168.1.100', 'Mozilla/5.0 Chrome/91.0'),
+    ('sess_xyz789uvw012', 2, '192.168.1.101', 'Mozilla/5.0 Firefox/89.0'),
+    ('sess_mno345pqr678', 3, '192.168.1.102', 'Mozilla/5.0 Safari/14.1');
+INSERT INTO inventory_logs (log_id, product_id, change_type, quantity_change, previous_quantity, new_quantity, reason, logged_by)
+VALUES
+    (3001, 101, 'addition', 50, 100, 150, 'Restocking from supplier', 'admin'),
+    (3002, 102, 'removal', -5, 75, 70, 'Damaged items removed', 'manager'),
+    (3003, 103, 'adjustment', -2, 50, 48, 'Inventory count correction', 'admin'),
+    (3004, 101, 'removal', -2, 150, 148, 'Customer purchase', 'system');
+INSERT INTO good_table_with_pk (name, description)
+VALUES
+    ('Sample Item 1', 'This table has a proper primary key'),
+    ('Sample Item 2', 'Primary keys are essential for data integrity'),
+    ('Sample Item 3', 'This table should not trigger T001 rule');
+-- Update table statistics
+ANALYZE customer_orders;
+ANALYZE product_reviews;
+ANALYZE user_sessions;
+ANALYZE inventory_logs;
+ANALYZE good_table_with_pk;
+CREATE EXTENSION IF NOT EXISTS pglinter;
+-- Disable all rules first to isolate T001 testing
+SELECT 'Disabling all rules to test T001 specifically...' as status;
+                      status                      
+--------------------------------------------------
+ Disabling all rules to test T001 specifically...
+(1 row)
+
+SELECT pglinter.disable_all_rules() AS all_rules_disabled;
+NOTICE:  🔴 Disabled 22 rule(s)
+ all_rules_disabled 
+--------------------
+                 22
+(1 row)
+
+-- Run table check (should show no results since all rules are disabled)
+SELECT 'Running table check with all rules disabled (should show no T001 results):' as test_info;
+                                 test_info                                  
+----------------------------------------------------------------------------
+ Running table check with all rules disabled (should show no T001 results):
+(1 row)
+
+SELECT pglinter.perform_table_check();
+NOTICE:  ✅ No issues found - database schema looks good!
+ perform_table_check 
+---------------------
+ t
+(1 row)
+
+-- Test rule management for T001
+SELECT 'Testing T001 rule management:' as test_info;
+           test_info           
+-------------------------------
+ Testing T001 rule management:
+(1 row)
+
+SELECT pglinter.explain_rule('T001');
+NOTICE:  📖 Rule Explanation for T001
+============================================================
+
+🎯 Rule Name: TableWithoutPrimaryKey
+📋 Scope: TABLE
+
+📝 Description:
+table without primary key.
+
+⚠️  Message Template:
+No primary key on table {0}.{1}.{2}.
+
+🔧 How to Fix:
+   1. create a primary key
+============================================================
+ explain_rule 
+--------------
+ t
+(1 row)
+
+SELECT pglinter.is_rule_enabled('T001') AS t001_enabled;
+ t001_enabled 
+--------------
+ f
+(1 row)
+
+-- Enable T001 specifically
+SELECT 'Enabling T001 rule...' as status;
+        status         
+-----------------------
+ Enabling T001 rule...
+(1 row)
+
+SELECT pglinter.enable_rule('T001') AS t001_reenabled;
+NOTICE:  ✅ Rule T001 has been enabled
+ t001_reenabled 
+----------------
+ t
+(1 row)
+
+SELECT pglinter.is_rule_enabled('T001') AS t001_enabled_after;
+ t001_enabled_after 
+--------------------
+ t
+(1 row)
+
+-- Run table check to detect tables without primary keys
+SELECT 'Running table check with T001 enabled - should detect tables without primary keys:' as test_info;
+                                     test_info                                      
+------------------------------------------------------------------------------------
+ Running table check with T001 enabled - should detect tables without primary keys:
+(1 row)
+
+SELECT pglinter.perform_table_check(); -- Should include T001 results
+NOTICE:  🔍 pglinter found 1 issue(s):
+NOTICE:  ==================================================
+NOTICE:  ⚠️  [T001] WARNING: Found 4 tables without primary key: public.customer_orders, public.product_reviews, public.user_sessions, public.inventory_logs
+NOTICE:  ==================================================
+NOTICE:  📊 Summary: 0 error(s), 1 warning(s), 0 info
+NOTICE:  🟡 Some warnings found - consider reviewing for optimization
+ perform_table_check 
+---------------------
+ t
+(1 row)
+
+-- Test disabling T001 temporarily
+SELECT 'Testing T001 disable/enable cycle:' as test_info;
+             test_info              
+------------------------------------
+ Testing T001 disable/enable cycle:
+(1 row)
+
+SELECT pglinter.disable_rule('T001') AS t001_disabled;
+NOTICE:  🔴 Rule T001 has been disabled
+ t001_disabled 
+---------------
+ t
+(1 row)
+
+SELECT pglinter.perform_table_check(); -- Should skip T001
+NOTICE:  ✅ No issues found - database schema looks good!
+ perform_table_check 
+---------------------
+ t
+(1 row)
+
+-- Re-enable T001 and test again
+SELECT pglinter.enable_rule('T001') AS t001_re_enabled;
+NOTICE:  ✅ Rule T001 has been enabled
+ t001_re_enabled 
+-----------------
+ t
+(1 row)
+
+SELECT pglinter.perform_table_check(); -- Should include T001 again
+NOTICE:  🔍 pglinter found 1 issue(s):
+NOTICE:  ==================================================
+NOTICE:  ⚠️  [T001] WARNING: Found 4 tables without primary key: public.customer_orders, public.product_reviews, public.user_sessions, public.inventory_logs
+NOTICE:  ==================================================
+NOTICE:  📊 Summary: 0 error(s), 1 warning(s), 0 info
+NOTICE:  🟡 Some warnings found - consider reviewing for optimization
+ perform_table_check 
+---------------------
+ t
+(1 row)
+
+-- Now let's fix the primary key issues to show the difference
+SELECT 'Adding primary keys to demonstrate T001 behavior change...' as status;
+                           status                           
+------------------------------------------------------------
+ Adding primary keys to demonstrate T001 behavior change...
+(1 row)
+
+-- Add primary keys to tables
+ALTER TABLE customer_orders ADD CONSTRAINT pk_customer_orders PRIMARY KEY (order_id);
+ALTER TABLE product_reviews ADD CONSTRAINT pk_product_reviews PRIMARY KEY (review_id);
+ALTER TABLE user_sessions ADD CONSTRAINT pk_user_sessions PRIMARY KEY (session_id);
+ALTER TABLE inventory_logs ADD CONSTRAINT pk_inventory_logs PRIMARY KEY (log_id);
+-- Update statistics after schema changes
+ANALYZE customer_orders;
+ANALYZE product_reviews;
+ANALYZE user_sessions;
+ANALYZE inventory_logs;
+-- Run T001 check again (should show no issues now)
+SELECT 'Running T001 check after adding primary keys (should show no issues):' as test_info;
+                               test_info                               
+-----------------------------------------------------------------------
+ Running T001 check after adding primary keys (should show no issues):
+(1 row)
+
+SELECT pglinter.perform_table_check();
+NOTICE:  ✅ No issues found - database schema looks good!
+ perform_table_check 
+---------------------
+ t
+(1 row)
+
+SELECT 'Summary:' as info;
+   info   
+----------
+ Summary:
+(1 row)
+
+SELECT '
+This example demonstrates:
+1. How tables without primary keys are detected by the T001 rule
+2. The difference between T001 (individual table detection) and B001 (database-wide percentage)
+3. How adding primary keys resolves T001 violations
+4. Why primary keys are essential for database design
+
+The T001 rule specifically identifies individual tables that lack primary keys.
+Primary keys are crucial for:
+- Ensuring row uniqueness and data integrity
+- Enabling efficient replication
+- Supporting foreign key relationships
+- Optimizing query performance
+- Meeting database design best practices
+
+Key differences from B001:
+- T001: Lists specific tables without primary keys (table-level rule)
+- B001: Reports percentage of tables without primary keys (database-wide rule)
+- T001: Part of table checks (pglinter.perform_table_check())
+- B001: Part of base checks (pglinter.perform_base_check())
+
+The T001 rule helps database administrators identify exactly which tables need
+primary keys, making it easier to prioritize and fix data integrity issues.
+' as explanation;
+                                           explanation                                           
+-------------------------------------------------------------------------------------------------
+                                                                                                +
+ This example demonstrates:                                                                     +
+ 1. How tables without primary keys are detected by the T001 rule                               +
+ 2. The difference between T001 (individual table detection) and B001 (database-wide percentage)+
+ 3. How adding primary keys resolves T001 violations                                            +
+ 4. Why primary keys are essential for database design                                          +
+                                                                                                +
+ The T001 rule specifically identifies individual tables that lack primary keys.                +
+ Primary keys are crucial for:                                                                  +
+ - Ensuring row uniqueness and data integrity                                                   +
+ - Enabling efficient replication                                                               +
+ - Supporting foreign key relationships                                                         +
+ - Optimizing query performance                                                                 +
+ - Meeting database design best practices                                                       +
+                                                                                                +
+ Key differences from B001:                                                                     +
+ - T001: Lists specific tables without primary keys (table-level rule)                          +
+ - B001: Reports percentage of tables without primary keys (database-wide rule)                 +
+ - T001: Part of table checks (pglinter.perform_table_check())                                  +
+ - B001: Part of base checks (pglinter.perform_base_check())                                    +
+                                                                                                +
+ The T001 rule helps database administrators identify exactly which tables need                 +
+ primary keys, making it easier to prioritize and fix data integrity issues.                    +
+ 
+(1 row)
+
+ROLLBACK;

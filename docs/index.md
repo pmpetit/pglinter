@@ -102,7 +102,7 @@ Schema-level checks:
 ## Documentation Structure
 
 * **[Configuration](configure.md)**: How to configure rules and thresholds
-* **[Functions Reference](functions/)**: Complete function reference
+* **[Functions Reference](functions/README.md)**: Complete function reference
 * **[Rule Reference](rules/)**: Detailed description of all rules
 * **[How-To Guides](how-to/)**: Practical guides for common scenarios
 * **[Development](dev/)**: Contributing and development guides

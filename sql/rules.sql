@@ -16,32 +16,32 @@ DELETE FROM pglinter.rules;
 
 INSERT INTO pglinter.rules (id,name,code,warning_level,error_level,scope,description,message,fixes) VALUES
 -- Base Database Rules (B series)
-(1, 'HowManyTableWithoutPrimaryKey', 'B001', 10, 70, 'BASE',
+(1, 'HowManyTableWithoutPrimaryKey', 'B001', 20, 80, 'BASE',
     'Count number of tables without primary key.',
     '{0} table without primary key exceed the warning threshold: {1}%.',
     ARRAY['create a primary key or change warning/error threshold']),
 
-(2, 'HowManyRedudantIndex', 'B002', 5, 50, 'BASE',
+(2, 'HowManyRedudantIndex', 'B002', 20, 80, 'BASE',
     'Count number of redundant index vs nb index.',
     '{0} redundant(s) index exceed the warning threshold: {1}%.',
     ARRAY['remove duplicated index or change warning/error threshold']),
 
-(3, 'HowManyTableWithoutIndexOnFk', 'B003', 10, 70, 'BASE',
+(3, 'HowManyTableWithoutIndexOnFk', 'B003', 20, 80, 'BASE',
     'Count number of tables without index on foreign key.',
     '{0} table without index on foreign key exceed the warning threshold: {1}%.',
     ARRAY['create a index on foreign key or change warning/error threshold']),
 
-(4, 'HowManyUnusedIndex', 'B004', 5, 50, 'BASE',
+(4, 'HowManyUnusedIndex', 'B004', 20, 80, 'BASE',
     'Count number of unused index vs nb index (base on pg_stat_user_indexes, indexes associated to unique constraints are discard.)',
     '{0} table(s) with unused index exceed the warning threshold: {1}%.',
     ARRAY['remove unused index or change warning/error threshold']),
 
-(5, 'UnsecuredPublicSchema', 'B005', 1, 1, 'BASE',
+(5, 'UnsecuredPublicSchema', 'B005', 1, 0, 'BASE',
     'Only authorized users should be allowed to create new objects.',
     'All schemas on search_path are unsecured, all users can create objects.',
     ARRAY['REVOKE CREATE ON SCHEMA public FROM PUBLIC']),
 
-(6, 'HowManyTablesWithUppercase', 'B006', 10, 70, 'BASE',
+(6, 'HowManyTablesWithUppercase', 'B006', 20, 80, 'BASE',
     'Count number of tables with uppercase in name or in columns.',
     '{0} tables using uppercase for name or columns exceed the warning threshold: {1}%.',
     ARRAY['Do not use uppercase for any database objects']),
@@ -79,7 +79,7 @@ INSERT INTO pglinter.rules (id,name,code,warning_level,error_level,scope,descrip
     ARRAY['{3}']),
 
 (24, 'TableWithPotentialMissingIdx', 'T005', 50, 90, 'TABLE',
-    'table with high level of seq scan, base on pg_stat_user_tables.',
+    ' with high level of seq scan, base on pg_stat_user_tables.',
     '{0} table with seq scan exceed the threshold: {1}.',
     ARRAY['ask a dba']),
 

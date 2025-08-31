@@ -66,12 +66,11 @@ SELECT pglinter.is_rule_enabled('B001') AS b001_after_disable;
 
 -- Run base check (should skip B001)
 SELECT pglinter.perform_base_check();
-NOTICE:  🔍 pglinter found 2 issue(s):
+NOTICE:  🔍 pglinter found 1 issue(s):
 NOTICE:  ==================================================
-NOTICE:  ⚠️  [B004] WARNING: Found 1 potentially unused indexes
 NOTICE:  ❌ [B005] ERROR: Public schema allows CREATE privilege for all users - security risk
 NOTICE:  ==================================================
-NOTICE:  📊 Summary: 1 error(s), 1 warning(s), 0 info
+NOTICE:  📊 Summary: 1 error(s), 0 warning(s), 0 info
 NOTICE:  🔴 Critical issues found - please review and fix errors
  perform_base_check 
 --------------------

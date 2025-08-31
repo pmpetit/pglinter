@@ -41,7 +41,7 @@ SELECT COUNT(*) FROM test_table_seq_scan WHERE category = 'category_1';
 SELECT COUNT(*) FROM test_table_seq_scan WHERE value > 500;
  count 
 -------
-   504
+   480
 (1 row)
 
 -- Simulate indexed queries (should not cause seq scans)
@@ -54,7 +54,7 @@ SELECT COUNT(*) FROM test_table_indexed WHERE category = 'category_1';
 SELECT COUNT(*) FROM test_table_indexed WHERE value > 500;
  count 
 -------
-   483
+   534
 (1 row)
 
 -- Test the T005 rule
