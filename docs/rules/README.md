@@ -32,7 +32,7 @@ Database-wide checks that analyze overall database health and structure.
 
 **Example Output**:
 
-```
+```text
 5 tables without primary key exceed the warning threshold: 20%
 ```
 
@@ -70,7 +70,7 @@ ALTER TABLE user_roles ADD PRIMARY KEY (user_id, role_id);
 
 **Example Output**:
 
-```
+```text
 Found potential redundant indexes in the database
 ```
 
@@ -109,7 +109,7 @@ DROP INDEX idx_users_email_duplicate;
 
 **Example Output**:
 
-```
+```text
 Found 3 foreign key columns without indexes
 ```
 
@@ -145,7 +145,7 @@ CREATE INDEX idx_order_items_order_product ON order_items (order_id, product_id)
 
 **Example Output**:
 
-```
+```text
 Found 2 potentially unused indexes
 ```
 
@@ -184,7 +184,7 @@ DROP INDEX idx_rarely_used_column;
 
 **Example Output**:
 
-```
+```text
 Public schema security issues detected
 ```
 
@@ -223,7 +223,7 @@ GRANT USAGE ON SCHEMA app TO app_user;
 
 **Example Output**:
 
-```
+```text
 Found 4 database objects with uppercase letters
 ```
 
@@ -263,7 +263,7 @@ PostgreSQL cluster configuration checks for system-level settings.
 
 **Example Output**:
 
-```
+```text
 work_mem * max_connections is bigger than available RAM
 ```
 
@@ -303,7 +303,7 @@ SHOW work_mem;
 
 **Example Output**:
 
-```
+```text
 2 entries in pg_hba.conf with trust or password authentication method exceed the warning threshold
 ```
 
@@ -316,7 +316,7 @@ SHOW work_mem;
 
 **Configuration Example**:
 
-```
+```text
 # Instead of:
 # host    all    all    0.0.0.0/0    trust
 
@@ -344,7 +344,7 @@ Individual table-specific checks for data structure and performance.
 
 **Example Output**:
 
-```
+```text
 No primary key on table public.logs
 ```
 
@@ -369,7 +369,7 @@ No primary key on table public.logs
 
 **Example Output**:
 
-```
+```text
 Found 2 tables without any index: public.logs, public.temp_data
 ```
 
@@ -404,7 +404,7 @@ CREATE INDEX idx_logs_timestamp ON logs (created_at);
 
 **Example Output**:
 
-```
+```text
 Found 2 tables with redundant indexes: public.users, public.orders
 ```
 
@@ -428,7 +428,7 @@ Found 2 tables with redundant indexes: public.users, public.orders
 
 **Example Output**:
 
-```
+```text
 Found 3 foreign keys without indexes: public.orders (FK: fk_customer), public.items (FK: fk_order)
 ```
 
@@ -458,7 +458,7 @@ Found 3 foreign keys without indexes: public.orders (FK: fk_customer), public.it
 
 **Example Output**:
 
-```
+```text
 Found 2 tables with seq scan percentage > 50%: public.orders (seq scan %: 75.1), public.logs (seq scan %: 82.3)
 ```
 
@@ -495,7 +495,7 @@ SELECT pglinter.get_rule_levels('T005');
 
 **Example Output**:
 
-```
+```text
 Found tables with cross-schema foreign keys
 ```
 
@@ -522,7 +522,7 @@ Found tables with cross-schema foreign keys
 
 **Example Output**:
 
-```
+```text
 Found 2 unused indexes larger than 1MB: public.orders.idx_old_status (5MB), public.users.idx_temp (3MB)
 ```
 
@@ -547,7 +547,7 @@ Found 2 unused indexes larger than 1MB: public.orders.idx_old_status (5MB), publ
 
 **Example Output**:
 
-```
+```text
 Found 1 foreign key type mismatches: public.orders.customer_id (integer) -> customers.id (bigint) [FK: fk_customer]
 ```
 
@@ -580,7 +580,7 @@ ALTER TABLE orders ALTER COLUMN customer_id TYPE bigint;
 
 **Example Output**:
 
-```
+```text
 Found 3 tables without role grants: public.logs, public.temp_data, public.archive
 ```
 
@@ -617,7 +617,7 @@ ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT SELECT ON TABLES TO app_user;
 
 **Example Output**:
 
-```
+```text
 Found tables/columns using reserved keywords
 ```
 
@@ -658,7 +658,7 @@ ALTER TABLE products RENAME COLUMN "select" TO selection_flag;
 
 **Example Output**:
 
-```
+```text
 Found 2 database objects with uppercase letters: public.UserProfiles (table), public.orders.CustomerId (column)
 ```
 
@@ -685,7 +685,7 @@ Found 2 database objects with uppercase letters: public.UserProfiles (table), pu
 
 **Example Output**:
 
-```
+```text
 Found 3 potentially sensitive columns: public.users.email (email), public.customers.phone (phone), public.profiles.ssn (identifier)
 ```
 
@@ -726,7 +726,7 @@ Schema-level checks for organization and security.
 
 **Example Output**:
 
-```
+```text
 Found 2 schemas without default role grants: reporting, analytics
 ```
 
@@ -764,7 +764,7 @@ GRANT USAGE ON SEQUENCES TO app_user;
 
 **Example Output**:
 
-```
+```text
 Found 3 schemas with environment prefixes/suffixes: dev_analytics, prod_sales, testing_data
 ```
 
@@ -961,4 +961,7 @@ SARIF files can be consumed by:
 
 ---
 
-_This documentation covers all currently implemented rules. New rules and features are added regularly - check the [Functions Reference](../functions/README.md) for the latest capabilities._
+# This documentation covers all currently implemented rules. New rules and
+
+features are added regularly - check the [Functions
+Reference](../functions/README.md) for the latest capabilities

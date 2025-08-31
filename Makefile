@@ -219,7 +219,7 @@ help:
 ##
 
 lint:
-	cargo clippy --release
+	cargo clippy --no-default-features --features pg13 --release
 
 # Format Rust code
 fmt:

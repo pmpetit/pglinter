@@ -1,0 +1,53 @@
+name: Required Status Check
+
+# This workflow is designed to be used as a required status check
+# It runs the essential checks that must pass before merging
+on:
+  pull_request:
+    branches: [ main ]
+  push:
+    branches: [ main ]
+
+jobs:
+  required-checks:
+    name: ✅ Required Checks for Main
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4.3.0
+
+      - name: Set up Rust toolchain
+        uses: actions-rust-lang/setup-rust-toolchain@v1.10.1
+        with:
+          components: rustfmt, clippy
+          cache: true
+
+      - name: Install dependencies
+        run: |
+          # Install pre-commit and codespell
+          python -m pip install --upgrade pip
+          pip install pre-commit codespell
+
+          # Install markdownlint
+          sudo npm install -g markdownlint-cli
+
+      - name: ✅ Check code formatting
+        run: |
+          cargo fmt --all -- --check
+
+      - name: ✅ Run linting
+        run: |
+          cargo clippy --no-default-features --features pg13 --all-targets -- -D warnings
+
+      - name: ✅ Check pre-commit hooks
+        run: |
+          pre-commit run --all-files
+
+      - name: ✅ Build extension
+        run: |
+          cargo build --release
+
+      - name: 🎉 All required checks passed
+        run: |
+          echo "All required checks for merging to main have passed!"
