@@ -74,7 +74,7 @@ jobs:
       - name: 📎 Run Rust linting (Clippy)
         run: |
           echo "📎 Running Rust linting with Clippy..."
-          cargo clippy --all-targets --all-features -- -D warnings
+          cargo clippy --no-default-features --features pg13 --all-targets -- -D warnings
 
       - name: 📚 Lint documentation
         run: |
