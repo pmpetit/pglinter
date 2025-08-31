@@ -14,6 +14,17 @@ CREATE TABLE IF NOT EXISTS my_table_without_pk (
 
 CREATE EXTENSION IF NOT EXISTS pglinter;
 
+-- Disable all rules first
+SELECT pglinter.disable_all_rules() AS all_rules_disabled;
+
+-- Run table check to detect tables without PK
+SELECT pglinter.perform_table_check();
+
+-- Test rule management for B001
+SELECT pglinter.explain_rule('B001');
+SELECT pglinter.is_rule_enabled('B001') AS b001_enabled;
+
+
 -- Test with file output
 SELECT pglinter.perform_base_check('/tmp/pglinter_base_results.sarif');
 

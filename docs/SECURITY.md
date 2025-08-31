@@ -17,6 +17,7 @@ pglinter operates with the privileges of the user who calls its functions:
 pglinter analyzes database metadata and structure, NOT actual data:
 
 ✅ **What pglinter accesses:**
+
 - Table and column names
 - Index definitions
 - Constraint information
@@ -25,6 +26,7 @@ pglinter analyzes database metadata and structure, NOT actual data:
 - Database statistics (pg_stat_*)
 
 ❌ **What pglinter does NOT access:**
+
 - Actual row data
 - User passwords
 - Sensitive application data
@@ -72,6 +74,7 @@ Identifies potentially insecure authentication configurations:
 ```
 
 **Recommendations**:
+
 - Use `md5`, `scram-sha-256`, or certificate authentication
 - Limit host ranges to specific networks
 - Require SSL for remote connections
@@ -102,6 +105,7 @@ GRANT SELECT, INSERT, UPDATE ON TABLE user_table TO app_write;
 ### Production Environment
 
 1. **Least Privilege Principle**
+
    ```sql
    -- Create dedicated user for pglinter
    CREATE USER pglinter_scanner WITH PASSWORD 'secure_password';
@@ -113,6 +117,7 @@ GRANT SELECT, INSERT, UPDATE ON TABLE user_table TO app_write;
    ```
 
 2. **Restricted File Access**
+
    ```sql
    -- Only write to designated log directory
    SELECT pglinter.perform_base_check('/var/log/pglinter/scan_results.sarif');
@@ -122,35 +127,6 @@ GRANT SELECT, INSERT, UPDATE ON TABLE user_table TO app_write;
    - Run analysis from trusted networks only
    - Use SSL connections
    - Consider VPN for remote analysis
-
-### CI/CD Security
-
-1. **Secrets Management**
-   ```yaml
-   # Use secure secret storage
-   env:
-     DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
-     DB_HOST: ${{ secrets.DB_HOST }}
-   ```
-
-2. **Limited Scope**
-   ```sql
-   -- Use read-only user for CI analysis
-   CREATE USER ci_pglinter WITH PASSWORD '${CI_PASSWORD}';
-   GRANT CONNECT ON DATABASE mydb TO ci_pglinter;
-   GRANT USAGE ON SCHEMA public TO ci_pglinter;
-   -- Grant only SELECT on metadata tables
-   ```
-
-3. **Artifact Security**
-   ```yaml
-   # Limit SARIF artifact exposure
-   - name: Upload SARIF results
-     uses: github/codeql-action/upload-sarif@v2
-     with:
-       sarif_file: results.sarif
-     if: github.event.pull_request.head.repo.full_name == github.repository
-   ```
 
 ## Sensitive Information Handling
 
@@ -164,6 +140,7 @@ SELECT pglinter.explain_rule('T012');
 ```
 
 **Common sensitive patterns**:
+
 - Email addresses
 - Social security numbers
 - Credit card numbers
@@ -179,6 +156,7 @@ SARIF files may contain sensitive information:
 3. **Configuration Details**: Server settings
 
 **Recommendations**:
+
 - Store SARIF files securely
 - Limit access to analysis results
 - Consider sanitizing output for external sharing
@@ -241,80 +219,3 @@ SELECT pglinter.disable_rule('B005') -- If public schema use is intentional
 ```
 
 **Best Practice**: Document why rules are disabled rather than simply turning them off.
-
-## Security Monitoring
-
-### Regular Security Scans
-
-```bash
-#!/bin/bash
-# security_scan.sh - Regular security analysis
-
-# Run security-focused rules
-psql -d mydb -c "
-SELECT pglinter.disable_rule(rule_code)
-FROM pglinter.show_rules()
-WHERE rule_code NOT LIKE 'B005'
-  AND rule_code NOT LIKE 'C002'
-  AND rule_code NOT LIKE 'T009';
-
-SELECT pglinter.perform_base_check('/var/log/pglinter/security_scan.sarif');
-"
-
-# Check for critical issues
-if grep -q '"level": "error"' /var/log/pglinter/security_scan.sarif; then
-    echo "CRITICAL: Security issues found!"
-    # Send alert
-fi
-```
-
-### Integration with Security Tools
-
-pglinter SARIF output integrates with:
-
-- **GitHub Security Tab**: Automatic security issue tracking
-- **GitLab Security Dashboard**: Centralized security reporting
-- **SIEM Systems**: Parse SARIF for security monitoring
-- **Vulnerability Scanners**: Include database analysis
-
-## Audit and Compliance Reporting
-
-### Generate Compliance Reports
-
-```sql
--- Security-focused analysis for compliance
-SELECT
-    rule_code,
-    level,
-    message,
-    count
-FROM pglinter.perform_base_check()
-WHERE rule_code IN ('B005', 'C002', 'T009')
-ORDER BY
-    CASE level
-        WHEN 'error' THEN 1
-        WHEN 'warning' THEN 2
-        ELSE 3
-    END;
-```
-
-### Documentation for Auditors
-
-Provide auditors with:
-
-1. **pglinter Configuration**: Which rules are enabled
-2. **Analysis Schedule**: How often scans are performed
-3. **Issue Resolution**: How security issues are addressed
-4. **Access Controls**: Who can run analysis and view results
-
-## Best Practices Summary
-
-1. **Principle of Least Privilege**: Grant minimal required permissions
-2. **Regular Monitoring**: Schedule automated security scans
-3. **Secure Storage**: Protect SARIF output and configuration
-4. **Documentation**: Maintain security procedures and justifications
-5. **Integration**: Include pglinter in broader security strategy
-6. **Review**: Regularly review and update security configurations
-7. **Training**: Ensure team understands security implications
-
-For additional security guidance, consult your organization's security team and follow PostgreSQL security best practices.

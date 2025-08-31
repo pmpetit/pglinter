@@ -90,6 +90,7 @@ pglinter/
 ### Rule Categories
 
 Rules are organized by category:
+
 - **B-series**: Base/Database-wide rules
 - **C-series**: Cluster configuration rules
 - **T-series**: Table-specific rules
@@ -218,10 +219,10 @@ cargo pgrx test
 ### Rule Implementation Guidelines
 
 1. **Use Consistent Naming**: Follow the pattern `execute_RULEID_rule()`
-1. **Handle Errors Gracefully**: Return descriptive error messages
+2. **Handle Errors Gracefully**: Return descriptive error messages
 3. **Optimize Queries**: Use efficient PostgreSQL queries
-2. **Consider Performance**: Large databases should be handled efficiently
-3. **Document Thresholds**: Make configurable values clear
+4. **Consider Performance**: Large databases should be handled efficiently
+5. **Document Thresholds**: Make configurable values clear
 
 ## Testing
 
@@ -322,7 +323,7 @@ JOIN information_schema.key_column_usage kcu
     ON tc.constraint_name = kcu.constraint_name
     AND tc.table_schema = kcu.table_schema
 WHERE tc.constraint_type = 'FOREIGN KEY'
-AND tc.table_schema NOT IN ('pg_toast', 'pg_catalog', 'information_schema')
+AND tc.table_schema NOT IN ('pg_toast', 'pg_catalog', 'information_schema', 'pglinter')
 ORDER BY tc.table_schema, tc.table_name;
 ```
 
@@ -340,7 +341,7 @@ ORDER BY tc.table_schema, tc.table_name;
 1. **Use Appropriate Indexes**: Ensure your queries can use existing indexes
 2. **Limit Scope**: Filter out system schemas early
 3. **Avoid N+1 Queries**: Use JOINs instead of multiple queries
-1. **Consider Large Tables**: Test with realistic data sizes
+4. **Consider Large Tables**: Test with realistic data sizes
 
 ### Memory Management
 
@@ -358,6 +359,7 @@ let all_rows: Vec<_> = client.select(query, None, &[])?.collect();
 ### Caching Strategies
 
 Future versions may include caching. Consider:
+
 - Rule result caching
 - Metadata caching
 - Query plan caching
@@ -545,6 +547,7 @@ cargo pgrx run --release
 #### VS Code
 
 Recommended extensions:
+
 - rust-analyzer
 - PostgreSQL syntax highlighting
 - SARIF Viewer
@@ -552,6 +555,7 @@ Recommended extensions:
 #### Vim/Neovim
 
 Useful plugins:
+
 - coc-rust-analyzer
 - vim-pgsql
 - ale (for linting)

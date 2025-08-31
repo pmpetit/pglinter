@@ -45,18 +45,22 @@ make test-all         # Run all integration tests
 ## What Gets Checked
 
 ### ✅ Rust Code Formatting
+
 - Validates code follows `cargo fmt` standards
 - Ensures consistent formatting across the codebase
 
 ### ✅ Rust Code Linting
+
 - Runs `cargo clippy` to catch common issues
 - Enforces Rust best practices and idioms
 
 ### ✅ Documentation Linting
+
 - Checks markdown files for style consistency using `rumdl` (Rust MarkDown Linter)
 - Provides comprehensive markdown validation and auto-fix capabilities
 
 ### ✅ Unit Tests (full `precommit` only)
+
 - Runs all Rust unit tests
 - Validates core functionality works correctly
 
@@ -126,11 +130,13 @@ make lint-docs
 ## Configuration
 
 ### Markdown Linting
+
 - Configured via `.rumdl.toml`
 - Excludes MD024 (duplicate headings) rule
 - Allows longer lines in code blocks and tables
 
 ### Rust Linting
+
 - Uses standard `cargo clippy` configuration
 - Can be customized via `clippy.toml` if needed
 
