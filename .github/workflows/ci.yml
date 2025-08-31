@@ -1,0 +1,111 @@
+name: CI
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  test:
+    name: Test PostgreSQL ${{ matrix.postgres-version }}
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        postgres-version: [13, 14, 15, 16]
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Rust toolchain
+        uses: actions-rust-lang/setup-rust-toolchain@v1
+        with:
+          components: rustfmt, clippy
+          cache: true
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            build-essential \
+            libreadline-dev \
+            zlib1g-dev \
+            flex \
+            bison \
+            libxml2-dev \
+            libxslt-dev \
+            libssl-dev \
+            libxml2-utils \
+            xsltproc \
+            ccache
+
+      - name: Install pgrx
+        run: |
+          cargo install --locked cargo-pgrx
+
+      - name: Initialize pgrx for PostgreSQL ${{ matrix.postgres-version }}
+        run: |
+          cargo pgrx init --pg${{ matrix.postgres-version }} download
+
+      - name: Run tests
+        run: |
+          cargo pgrx test pg${{ matrix.postgres-version }}
+
+      - name: Build extension
+        run: |
+          cargo pgrx package --pg-config ~/.pgrx/${{ matrix.postgres-version }}.*/pgrx-install/bin/pg_config
+
+  lint:
+    name: Lint and Format Check
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Rust toolchain
+        uses: actions-rust-lang/setup-rust-toolchain@v1
+        with:
+          components: rustfmt, clippy
+          cache: true
+
+      - name: Check formatting
+        run: cargo fmt --all -- --check
+
+      - name: Run Clippy
+        run: cargo clippy --all-targets --all-features -- -D warnings
+
+      - name: Install dependencies for docs linting
+        run: |
+          sudo npm install -g markdownlint-cli
+
+      - name: Lint documentation
+        run: |
+          markdownlint docs/ README.md CONTRIBUTING.md AUTHORS.md
+
+  security:
+    name: Security Audit
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Rust toolchain
+        uses: actions-rust-lang/setup-rust-toolchain@v1
+
+      - name: Install cargo-audit
+        run: cargo install cargo-audit
+
+      - name: Run security audit
+        run: cargo audit
