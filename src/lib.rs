@@ -256,7 +256,7 @@ mod pglinter {
     fn get_rule_levels(rule_code: &str) -> Option<String> {
         match manage_rules::get_rule_levels(rule_code) {
             Ok((warning, error)) => {
-                Some(format!("warning_level={}, error_level={}", warning, error))
+                Some(format!("warning_level={warning}, error_level={error}"))
             }
             Err(e) => {
                 pgrx::warning!("Failed to get rule levels for {}: {}", rule_code, e);

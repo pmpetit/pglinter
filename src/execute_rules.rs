@@ -58,16 +58,14 @@ fn get_rule_config(rule_code: &str) -> Result<(i64, i64, String), String> {
             if warning_level == 0 && error_level == 0 && message.is_empty() {
                 // This indicates rule not found
                 Err(format!(
-                    "Rule '{}' not found in pglinter.rules table",
-                    rule_code
+                    "Rule '{rule_code}' not found in pglinter.rules table"
                 ))
             } else {
                 Ok((warning_level, error_level, message))
             }
         }
         Err(e) => Err(format!(
-            "Database error while fetching rule '{}': {}",
-            rule_code, e
+            "Database error while fetching rule '{rule_code}': {e}"
         )),
     }
 }
@@ -758,8 +756,7 @@ fn execute_t005_rule() -> Result<Option<RuleResult>, String> {
             let table: String = row.get(2)?.unwrap_or_default();
             let seq_percentage: f64 = row.get(5)?.unwrap_or(0.0);
             tables.push(format!(
-                "{schema}.{table} (seq scan %: {:.1})",
-                seq_percentage
+                "{schema}.{table} (seq scan %: {seq_percentage:.1})"
             ));
             count += 1;
         }
@@ -775,8 +772,7 @@ fn execute_t005_rule() -> Result<Option<RuleResult>, String> {
                 let table: String = row.get(2)?.unwrap_or_default();
                 let seq_percentage: f64 = row.get(5)?.unwrap_or(0.0);
                 error_tables.push(format!(
-                    "{schema}.{table} (seq scan %: {:.1})",
-                    seq_percentage
+                    "{schema}.{table} (seq scan %: {seq_percentage:.1})"
                 ));
                 error_count += 1;
             }
