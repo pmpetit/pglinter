@@ -40,7 +40,7 @@ PSQL_OPT?=--host $(PGHOST) --port $(PGPORT)
 PGDATABASE?=pglinter_test
 
 ##
-## Test configuration
+## Test configuration.
 ##
 
 # List of test files (without .sql extension)
