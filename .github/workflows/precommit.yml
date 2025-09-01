@@ -1,0 +1,76 @@
+name: Pre-commit Checks
+
+# Run precommit checks on pushes and PRs
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+
+# Ensure only one workflow runs at a time per PR/branch
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  precommit:
+    name: 🔍 Pre-commit Checks
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4.3.0
+
+      - name: Set up Rust toolchain
+        uses: actions-rust-lang/setup-rust-toolchain@v1.10.1
+        with:
+          components: rustfmt, clippy
+          cache: true
+
+      - name: Set up Python for documentation tools
+        uses: actions/setup-python@v4.8.0
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Set up Node.js for markdownlint
+        uses: actions/setup-node@v4.1.0
+        with:
+          node-version: '18'
+
+      - name: Install documentation tools
+        run: |
+          # Install markdownlint for markdown linting
+          npm install -g markdownlint-cli
+
+          # Install other documentation tools if needed
+          pip install --upgrade pip
+
+      - name: 🎨 Check Rust code formatting
+        run: |
+          echo "🎨 Checking Rust code formatting..."
+          make fmt-check
+
+      - name: 📎 Run Rust linting (Clippy)
+        run: |
+          echo "📎 Running Rust linting with Clippy..."
+          make lint
+
+      - name: 📚 Lint documentation
+        run: |
+          echo "📚 Linting Markdown documentation..."
+          make lint-docs
+
+      - name: ⚡ Run fast precommit checks
+        run: |
+          echo "⚡ Running comprehensive precommit checks..."
+          make precommit-fast
+
+      - name: ✅ All precommit checks passed
+        run: |
+          echo "🎉 All precommit checks passed successfully!"
+          echo "✅ Code formatting is correct"
+          echo "✅ No linting issues found"
+          echo "✅ Documentation is properly formatted"
+          echo ""
+          echo "Code quality standards maintained! 🚀"
