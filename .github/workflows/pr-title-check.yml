@@ -1,0 +1,46 @@
+name: 'PR Title Validation'
+
+on:
+  pull_request_target:
+    types:
+      - opened
+      - edited
+      - reopened
+
+permissions:
+  pull-requests: write
+  statuses: write
+
+jobs:
+  validate-title:
+    name: Validate PR title
+    runs-on: ubuntu-latest
+    steps:
+      - uses: amannn/action-semantic-pull-request@v6
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          requireScope: false
+
+      - uses: marocchino/sticky-pull-request-comment@v2
+        if: always() && failure()
+        with:
+          header: pr-title-lint-error
+          message: |
+            👋 Hi! Your PR title doesn't follow our [Conventional Commits](https://www.conventionalcommits.org/) format.
+
+            Please update your PR title to match this pattern:
+            ```
+            type(scope): description
+            ```
+
+            Examples:
+            - `feat: add new linting rule`
+            - `fix(docs): correct typo in README`
+            - `refactor(core): improve error handling`
+
+      - uses: marocchino/sticky-pull-request-comment@v2
+        if: success()
+        with:
+          header: pr-title-lint-error
+          delete: true
