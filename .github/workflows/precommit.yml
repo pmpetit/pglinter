@@ -21,5 +21,9 @@ jobs:
           toolchain: stable
           profile: minimal
           override: true
+      - name: Install Cargo
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y cargo
       - name: Run precommit
         run: make precommit
