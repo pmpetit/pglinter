@@ -5,6 +5,7 @@
 **/*.rs.bk
 Cargo.lock
 .vscode
+.github/*.md
 
 # MkDocs
 /site/
