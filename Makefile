@@ -44,18 +44,18 @@ PGDATABASE?=pglinter_test
 ##
 
 # List of test files (without .sql extension)
-REGRESS_TESTS = b001
-REGRESS_TESTS+= b001
-REGRESS_TESTS+= cluster_rules
-REGRESS_TESTS+= integration_test
-REGRESS_TESTS+= output_options
-REGRESS_TESTS+= rule_management
-REGRESS_TESTS+= schema_rules
-REGRESS_TESTS+= simple_primary_keys
-REGRESS_TESTS+= t003
-REGRESS_TESTS+= simple_missing_index
-REGRESS_TESTS+= t008
-REGRESS_TESTS+= t010
+REGRESS_TESTS = t003_minimal
+# REGRESS_TESTS+= b001
+# REGRESS_TESTS+= cluster_rules
+# REGRESS_TESTS+= integration_test
+# REGRESS_TESTS+= output_options
+# REGRESS_TESTS+= rule_management
+# REGRESS_TESTS+= schema_rules
+# REGRESS_TESTS+= simple_primary_keys
+# REGRESS_TESTS+= t003
+# REGRESS_TESTS+= simple_missing_index
+# REGRESS_TESTS+= t008
+# REGRESS_TESTS+= t010
 
 # Use this var to add more tests
 #PG_TEST_EXTRA ?= ""

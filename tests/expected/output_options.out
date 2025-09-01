@@ -28,9 +28,9 @@ SELECT 'Testing output to prompt...' as test_info;
 SELECT pglinter.perform_base_check();
 NOTICE:  🔍 pglinter found 5 issue(s):
 NOTICE:  ==================================================
-NOTICE:  ⚠️  [B001] WARNING: 1 tables without primary key exceed the warning threshold: 10%
-NOTICE:  ⚠️  [B002] WARNING: Found 2 potentially redundant indexes
-NOTICE:  ⚠️  [B004] WARNING: Found 4 potentially unused indexes
+NOTICE:  ⚠️  [B001] WARNING: 50% tables without primary key exceed the warning threshold: 20%
+NOTICE:  ⚠️  [B002] WARNING: 66% redundant indexes exceed the warning threshold: 20%
+NOTICE:  ⚠️  [B004] WARNING: Found 3 potentially unused indexes
 NOTICE:  ❌ [B005] ERROR: Public schema allows CREATE privilege for all users - security risk
 NOTICE:  ⚠️  [B006] WARNING: Found 2 database objects with uppercase letters
 NOTICE:  ==================================================
@@ -43,16 +43,16 @@ NOTICE:  🔴 Critical issues found - please review and fix errors
 
 SELECT pglinter.perform_table_check();
 ERROR:  relation "public.uppercase_table" does not exist
-CONTEXT:  SQL statement "
-        SELECT COUNT(*)
-        FROM pg_tables pt
-        WHERE schemaname NOT IN ('pg_toast', 'pg_catalog', 'information_schema')
-        AND NOT EXISTS (
-            SELECT 1
-            FROM pg_constraint pc
-            WHERE pc.conrelid = (pt.schemaname||'.'||pt.tablename)::regclass
-            AND pc.contype = 'p'
-        )"
+CONTEXT:  SQL statement "SELECT pt.schemaname::text, pt.tablename::text
+FROM pg_tables pt
+WHERE schemaname NOT IN ('pg_toast', 'pg_catalog', 'information_schema', 'pglinter')
+AND NOT EXISTS (
+    SELECT 1
+    FROM pg_constraint pc
+    WHERE pc.conrelid = (pt.schemaname||'.'||pt.tablename)::regclass
+    AND pc.contype = 'p'
+)
+"
 SELECT pglinter.perform_schema_check();
 ERROR:  current transaction is aborted, commands ignored until end of transaction block
 -- Test 2: Output to prompt (NULL file parameter)

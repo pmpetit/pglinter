@@ -33,10 +33,16 @@ SELECT 'Testing schema rules S001 and S002...' as test_info;
 
 -- Run schema check to detect environment-named schemas and default privilege issues
 SELECT pglinter.perform_schema_check();
-WARNING:  pglinter schema check failed: S001 failed: Database error: Datum error: Postgres type name (Oid(19)) is not compatible with the Rust type alloc::string::String (Oid(25))
+NOTICE:  🔍 pglinter found 2 issue(s):
+NOTICE:  ==================================================
+NOTICE:  ⚠️  [S001] WARNING: Found 6 schemas without default role grants: business_logic, dev_analytics, prod_sales, reports_staging, testing_data, tests
+NOTICE:  ⚠️  [S002] WARNING: Found 5 schemas with environment prefixes/suffixes: prod_sales, dev_analytics, testing_data, reports_staging, tests
+NOTICE:  ==================================================
+NOTICE:  📊 Summary: 0 error(s), 2 warning(s), 0 info
+NOTICE:  🟡 Some warnings found - consider reviewing for optimization
  perform_schema_check 
 ----------------------
- f
+ t
 (1 row)
 
 -- Test individual schema rules
@@ -104,10 +110,15 @@ NOTICE:  🔴 Rule S002 has been disabled
 (1 row)
 
 SELECT pglinter.perform_schema_check(); -- Should skip S002
-WARNING:  pglinter schema check failed: S001 failed: Database error: Datum error: Postgres type name (Oid(19)) is not compatible with the Rust type alloc::string::String (Oid(25))
+NOTICE:  🔍 pglinter found 1 issue(s):
+NOTICE:  ==================================================
+NOTICE:  ⚠️  [S001] WARNING: Found 6 schemas without default role grants: business_logic, dev_analytics, prod_sales, reports_staging, testing_data, tests
+NOTICE:  ==================================================
+NOTICE:  📊 Summary: 0 error(s), 1 warning(s), 0 info
+NOTICE:  🟡 Some warnings found - consider reviewing for optimization
  perform_schema_check 
 ----------------------
- f
+ t
 (1 row)
 
 -- Re-enable S002
@@ -119,10 +130,16 @@ NOTICE:  ✅ Rule S002 has been enabled
 (1 row)
 
 SELECT pglinter.perform_schema_check(); -- Should include S002 again
-WARNING:  pglinter schema check failed: S001 failed: Database error: Datum error: Postgres type name (Oid(19)) is not compatible with the Rust type alloc::string::String (Oid(25))
+NOTICE:  🔍 pglinter found 2 issue(s):
+NOTICE:  ==================================================
+NOTICE:  ⚠️  [S001] WARNING: Found 6 schemas without default role grants: business_logic, dev_analytics, prod_sales, reports_staging, testing_data, tests
+NOTICE:  ⚠️  [S002] WARNING: Found 5 schemas with environment prefixes/suffixes: prod_sales, dev_analytics, testing_data, reports_staging, tests
+NOTICE:  ==================================================
+NOTICE:  📊 Summary: 0 error(s), 2 warning(s), 0 info
+NOTICE:  🟡 Some warnings found - consider reviewing for optimization
  perform_schema_check 
 ----------------------
- f
+ t
 (1 row)
 
 -- Test the comprehensive check including schemas
@@ -130,13 +147,12 @@ SELECT pglinter.check_all();
 NOTICE:  🔍 Running comprehensive pglinter check...
 NOTICE:  
 NOTICE:  📋 BASE CHECKS:
-NOTICE:  🔍 pglinter found 3 issue(s):
+NOTICE:  🔍 pglinter found 2 issue(s):
 NOTICE:  ==================================================
-NOTICE:  ⚠️  [B001] WARNING: 1 tables without primary key exceed the warning threshold: 10%
-NOTICE:  ⚠️  [B004] WARNING: Found 4 potentially unused indexes
+NOTICE:  ⚠️  [B004] WARNING: Found 3 potentially unused indexes
 NOTICE:  ❌ [B005] ERROR: Public schema allows CREATE privilege for all users - security risk
 NOTICE:  ==================================================
-NOTICE:  📊 Summary: 1 error(s), 2 warning(s), 0 info
+NOTICE:  📊 Summary: 1 error(s), 1 warning(s), 0 info
 NOTICE:  🔴 Critical issues found - please review and fix errors
 NOTICE:  
 NOTICE:  🖥️  CLUSTER CHECKS:
@@ -148,37 +164,36 @@ NOTICE:  📊 Summary: 0 error(s), 0 warning(s), 1 info
 NOTICE:  🟢 Only informational messages - good job!
 NOTICE:  
 NOTICE:  📊 TABLE CHECKS:
-ERROR:  missing FROM-clause entry for table "i"
-LINE 3:             array_agg(i.indexname) as redundant_indexes
-                              ^
-QUERY:  
-        SELECT t.schemaname, t.tablename,
-            array_agg(i.indexname) as redundant_indexes
-        FROM (
-            SELECT DISTINCT i1.schemaname, i1.tablename, i1.indexname
-            FROM pg_indexes i1
-            JOIN pg_indexes i2 ON i1.schemaname = i2.schemaname
-                AND i1.tablename = i2.tablename
-                AND i1.indexname != i2.indexname
-            WHERE i1.schemaname NOT IN ('pg_toast', 'pg_catalog', 'information_schema')
-            AND EXISTS (
-                SELECT 1 FROM pg_index idx1, pg_index idx2, pg_class c1, pg_class c2
-                WHERE c1.relname = i1.indexname AND c2.relname = i2.indexname
-                AND idx1.indexrelid = c1.oid AND idx2.indexrelid = c2.oid
-                AND idx1.indrelid = idx2.indrelid
-                AND idx1.indkey = idx2.indkey
-            )
-        ) t
-        GROUP BY t.schemaname, t.tablename
+NOTICE:  🔍 pglinter found 2 issue(s):
+NOTICE:  ==================================================
+NOTICE:  ⚠️  [T009] WARNING: Found 4 tables without role grants: prod_sales.customers, dev_analytics.metrics, business_logic.rules, pglinter.rules
+NOTICE:  ℹ️  [T012] INFO: Anon extension not found. Install postgresql-anonymizer to detect sensitive columns
+NOTICE:  ==================================================
+NOTICE:  📊 Summary: 0 error(s), 1 warning(s), 1 info
+NOTICE:  🟡 Some warnings found - consider reviewing for optimization
+NOTICE:  
+NOTICE:  🗂️  SCHEMA CHECKS:
+NOTICE:  🔍 pglinter found 2 issue(s):
+NOTICE:  ==================================================
+NOTICE:  ⚠️  [S001] WARNING: Found 6 schemas without default role grants: business_logic, dev_analytics, prod_sales, reports_staging, testing_data, tests
+NOTICE:  ⚠️  [S002] WARNING: Found 5 schemas with environment prefixes/suffixes: prod_sales, dev_analytics, testing_data, reports_staging, tests
+NOTICE:  ==================================================
+NOTICE:  📊 Summary: 0 error(s), 2 warning(s), 0 info
+NOTICE:  🟡 Some warnings found - consider reviewing for optimization
+NOTICE:  
+NOTICE:  🎉 All pglinter checks completed successfully!
+ check_all 
+-----------
+ t
+(1 row)
+
 -- Clean up schemas
 DROP SCHEMA prod_sales CASCADE;
-ERROR:  current transaction is aborted, commands ignored until end of transaction block
+NOTICE:  drop cascades to table prod_sales.customers
 DROP SCHEMA dev_analytics CASCADE;
-ERROR:  current transaction is aborted, commands ignored until end of transaction block
+NOTICE:  drop cascades to table dev_analytics.metrics
 DROP SCHEMA testing_data CASCADE;
-ERROR:  current transaction is aborted, commands ignored until end of transaction block
 DROP SCHEMA reports_staging CASCADE;
-ERROR:  current transaction is aborted, commands ignored until end of transaction block
 DROP SCHEMA business_logic CASCADE;
-ERROR:  current transaction is aborted, commands ignored until end of transaction block
+NOTICE:  drop cascades to table business_logic.rules
 ROLLBACK;

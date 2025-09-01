@@ -3,11 +3,15 @@ BEGIN;
 -- Create one simple test table
 CREATE TABLE test_redundant (
     id INT PRIMARY KEY,
-    name TEXT
+    first_name VARCHAR(100),
+    last_name VARCHAR(100),
+    tel TEXT
 );
 -- Create two identical indexes (redundant)
-CREATE INDEX idx_name_1 ON test_redundant (name);
-CREATE INDEX idx_name_2 ON test_redundant (name);
+CREATE INDEX idx_name_1 ON test_redundant (first_name);
+CREATE INDEX idx_name_2 ON test_redundant (first_name,last_name);
+CREATE INDEX idx_name_3 ON test_redundant (first_name,last_name,tel);
+CREATE INDEX idx_name_4 ON test_redundant (tel,last_name);
 CREATE EXTENSION IF NOT EXISTS pglinter;
 -- Enable only T003
 SELECT pglinter.disable_all_rules();
@@ -28,7 +32,7 @@ NOTICE:  ✅ Rule T003 has been enabled
 SELECT pglinter.perform_table_check();
 NOTICE:  🔍 pglinter found 1 issue(s):
 NOTICE:  ==================================================
-NOTICE:  ⚠️  [T003] WARNING: Found 1 tables with redundant indexes: public.test_redundant (indexes: idx_name_1, idx_name_2)
+NOTICE:  ⚠️  [T003] WARNING: Found 3 redundant idx in table: public.test_redundant (redundant index: idx_name_1, superset: idx_name_3), public.test_redundant (redundant index: idx_name_1, superset: idx_name_2), public.test_redundant (redundant index: idx_name_2, superset: idx_name_3)
 NOTICE:  ==================================================
 NOTICE:  📊 Summary: 0 error(s), 1 warning(s), 0 info
 NOTICE:  🟡 Some warnings found - consider reviewing for optimization
