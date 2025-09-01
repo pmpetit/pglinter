@@ -6,6 +6,9 @@ on:
       - main
 
 jobs:
+  concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
   precommit:
     runs-on: ubuntu-latest
     steps:
