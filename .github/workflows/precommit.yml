@@ -42,4 +42,4 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
       - name: Run check_title workflow
-        uses: ./.github/workflows/check_title.yml
+        uses: ./.github/actions/check_title.yml
