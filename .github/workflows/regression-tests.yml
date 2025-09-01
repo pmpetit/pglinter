@@ -45,7 +45,7 @@ jobs:
           wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo apt-key add -
           echo "deb http://apt.postgresql.org/pub/repos/apt/ $(lsb_release -cs)-pgdg main" | sudo tee /etc/apt/sources.list.d/pgdg.list
           sudo apt-get update
-
+          
           # Install PostgreSQL and development packages
           sudo apt-get install -y \
             postgresql-${{ matrix.pg_version }} \
@@ -54,8 +54,9 @@ jobs:
 
       - name: Install pgrx
         run: |
-          cargo install --locked cargo-pgrx
-          cargo pgrx init --pg${{ matrix.pg_version }} /usr/bin/pg_config
+          cargo install --locked cargo-pgrx --force
+          # Use version-specific pg_config
+          cargo pgrx init --pg${{ matrix.pg_version }} /usr/lib/postgresql/${{ matrix.pg_version }}/bin/pg_config
 
       - name: Build extension
         run: |
@@ -67,14 +68,12 @@ jobs:
           echo "📦 Installing pglinter extension..."
           sudo PGVER=pg${{ matrix.pg_version }} make install
 
-      - name: Start PostgreSQL service
+      - name: Setup PostgreSQL environment
         run: |
-          echo "🚀 Starting PostgreSQL ${{ matrix.pg_version }}..."
-          sudo systemctl start postgresql
-          sudo systemctl enable postgresql
-
-          # Create test role
-          sudo -u postgres createuser --superuser runner || true
+          echo "🚀 Setting up PostgreSQL ${{ matrix.pg_version }} environment..."
+          # pgrx will manage PostgreSQL instances via `make start`
+          # No need to start system PostgreSQL service
+          echo "PostgreSQL ${{ matrix.pg_version }} is ready for pgrx management"
 
       - name: Run regression tests (all)
         if: github.event.inputs.regress_tests == ''
@@ -83,8 +82,7 @@ jobs:
           PGVER=pg${{ matrix.pg_version }} make installcheck
         env:
           PGHOST: localhost
-          PGPORT: 5432
-          PGUSER: runner
+          PGUSER: postgres
           PGDATABASE: pglinter_test
 
       - name: Run regression tests (specific)
@@ -94,13 +92,12 @@ jobs:
           PGVER=pg${{ matrix.pg_version }} make installcheck REGRESS="${{ github.event.inputs.regress_tests }}"
         env:
           PGHOST: localhost
-          PGPORT: 5432
-          PGUSER: runner
+          PGUSER: postgres
           PGDATABASE: pglinter_test
 
       - name: Upload regression test results
         if: failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v4.6.2
         with:
           name: regression-results-pg${{ matrix.pg_version }}
           path: |
