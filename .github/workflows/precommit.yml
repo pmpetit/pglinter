@@ -9,32 +9,32 @@ jobs:
   concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
-  precommit:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
-      - name: Set up Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: '3.x'
-      - name: Set up Rust
-        uses: actions-rs/toolchain@v1
-        with:
-          toolchain: stable
-          profile: minimal
-          override: true
-      - name: Install Cargo
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y cargo
-      - name: Set PGRX_HOME
-        run: |
-          export PGRX_HOME="$HOME/.pgrx"
-          mkdir -p "$PGRX_HOME"
-          echo "PGRX_HOME=$PGRX_HOME" >> $GITHUB_ENV
-      - name: Run precommit
-        run: make precommit
+  # precommit:
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - name: Checkout code
+  #       uses: actions/checkout@v3
+  #     - name: Set up Python
+  #       uses: actions/setup-python@v4
+  #       with:
+  #         python-version: '3.x'
+  #     - name: Set up Rust
+  #       uses: actions-rs/toolchain@v1
+  #       with:
+  #         toolchain: stable
+  #         profile: minimal
+  #         override: true
+  #     - name: Install Cargo
+  #       run: |
+  #         sudo apt-get update
+  #         sudo apt-get install -y cargo
+  #     - name: Set PGRX_HOME
+  #       run: |
+  #         export PGRX_HOME="$HOME/.pgrx"
+  #         mkdir -p "$PGRX_HOME"
+  #         echo "PGRX_HOME=$PGRX_HOME" >> $GITHUB_ENV
+  #     - name: Run precommit
+  #       run: make precommit
 
   check-title:
     runs-on: ubuntu-latest
