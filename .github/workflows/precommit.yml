@@ -1,0 +1,25 @@
+name: Precommit Check
+
+on:
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  precommit:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.x'
+      - name: Set up Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          profile: minimal
+          override: true
+      - name: Run precommit
+        run: make precommit
