@@ -27,15 +27,15 @@ jobs:
           components: rustfmt, clippy
           cache: true
 
-      - name: Install PostgreSQL for pgrx
+      - name: Install PostgreSQL development packages
         run: |
           sudo apt-get update
-          sudo apt-get install -y postgresql-server-dev-13 postgresql-13
+          sudo apt-get install -y libpq-dev postgresql-server-dev-all
           
-      - name: Install pgrx
+      - name: Set PostgreSQL environment for pgrx
         run: |
-          cargo install --locked cargo-pgrx
-          cargo pgrx init --pg13 pg_config
+          echo "PG_CONFIG=$(which pg_config)" >> $GITHUB_ENV
+          echo "PGRX_PG_CONFIG_PATH=$(which pg_config)" >> $GITHUB_ENV
 
       - name: Set up Python for documentation tools
         uses: actions/setup-python@v4.8.0
