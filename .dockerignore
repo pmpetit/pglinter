@@ -1,0 +1,44 @@
+# Build artifacts
+target/
+*.so
+*.dylib
+*.dll
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Git
+.git/
+.gitignore
+
+# Documentation build
+site/
+docs/site/
+
+# Test results
+results/
+regression.diffs
+regression.out
+
+# Local development
+.env
+.env.local
+
+# Cache
+.cache/
+node_modules/
+
+# Logs
+*.log
+
+# Temporary files
+tmp/
+temp/

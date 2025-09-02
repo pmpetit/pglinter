@@ -1,0 +1,92 @@
+version: '3.8'
+
+services:
+  pglinter-pg13:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        PG_MAJOR_VERSION: 13
+    image: ghcr.io/pmpetit/pglinter:pg13-latest
+    container_name: pglinter-pg13
+    ports:
+      - "5413:5432"
+    environment:
+      POSTGRES_DB: pglinter_test
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    volumes:
+      - ./tests:/tests
+    command: postgres -c log_statement=all
+
+  pglinter-pg14:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        PG_MAJOR_VERSION: 14
+    image: ghcr.io/pmpetit/pglinter:pg14-latest
+    container_name: pglinter-pg14
+    ports:
+      - "5414:5432"
+    environment:
+      POSTGRES_DB: pglinter_test
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    volumes:
+      - ./tests:/tests
+    command: postgres -c log_statement=all
+
+  pglinter-pg15:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        PG_MAJOR_VERSION: 15
+    image: ghcr.io/pmpetit/pglinter:pg15-latest
+    container_name: pglinter-pg15
+    ports:
+      - "5415:5432"
+    environment:
+      POSTGRES_DB: pglinter_test
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    volumes:
+      - ./tests:/tests
+    command: postgres -c log_statement=all
+
+  pglinter-pg16:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        PG_MAJOR_VERSION: 16
+    image: ghcr.io/pmpetit/pglinter:pg16-latest
+    container_name: pglinter-pg16
+    ports:
+      - "5416:5432"
+    environment:
+      POSTGRES_DB: pglinter_test
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    volumes:
+      - ./tests:/tests
+    command: postgres -c log_statement=all
+
+  pglinter-pg17:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        PG_MAJOR_VERSION: 17
+    image: ghcr.io/pmpetit/pglinter:pg17-latest
+    container_name: pglinter-pg17
+    ports:
+      - "5417:5432"
+    environment:
+      POSTGRES_DB: pglinter_test
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    volumes:
+      - ./tests:/tests
+    command: postgres -c log_statement=all

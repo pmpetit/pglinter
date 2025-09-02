@@ -210,6 +210,73 @@ ifdef EXTRA_CLEAN
 endif
 
 ##
+## DOCKER
+##
+
+# Docker build targets
+docker-build-pg13:
+	docker build --build-arg PG_MAJOR_VERSION=13 -t ghcr.io/pmpetit/pglinter:pg13-latest .
+
+docker-build-pg14:
+	docker build --build-arg PG_MAJOR_VERSION=14 -t ghcr.io/pmpetit/pglinter:pg14-latest .
+
+docker-build-pg15:
+	docker build --build-arg PG_MAJOR_VERSION=15 -t ghcr.io/pmpetit/pglinter:pg15-latest .
+
+docker-build-pg16:
+	docker build --build-arg PG_MAJOR_VERSION=16 -t ghcr.io/pmpetit/pglinter:pg16-latest .
+
+docker-build-pg17:
+	docker build --build-arg PG_MAJOR_VERSION=17 -t ghcr.io/pmpetit/pglinter:pg17-latest .
+
+# Build all Docker images
+docker-build-all: docker-build-pg13 docker-build-pg14 docker-build-pg15 docker-build-pg16 docker-build-pg17
+
+# Push Docker images to registry
+docker-push:
+	docker push ghcr.io/pmpetit/pglinter:pg13-latest
+	docker push ghcr.io/pmpetit/pglinter:pg14-latest
+	docker push ghcr.io/pmpetit/pglinter:pg15-latest
+	docker push ghcr.io/pmpetit/pglinter:pg16-latest
+	docker push ghcr.io/pmpetit/pglinter:pg17-latest
+
+# Run Docker container for specific PostgreSQL version
+docker-run-pg13:
+	docker run -d --name pglinter-pg13 -p 5413:5432 -e POSTGRES_PASSWORD=postgres ghcr.io/pmpetit/pglinter:pg13-latest
+
+docker-run-pg14:
+	docker run -d --name pglinter-pg14 -p 5414:5432 -e POSTGRES_PASSWORD=postgres ghcr.io/pmpetit/pglinter:pg14-latest
+
+docker-run-pg15:
+	docker run -d --name pglinter-pg15 -p 5415:5432 -e POSTGRES_PASSWORD=postgres ghcr.io/pmpetit/pglinter:pg15-latest
+
+docker-run-pg16:
+	docker run -d --name pglinter-pg16 -p 5416:5432 -e POSTGRES_PASSWORD=postgres ghcr.io/pmpetit/pglinter:pg16-latest
+
+docker-run-pg17:
+	docker run -d --name pglinter-pg17 -p 5417:5432 -e POSTGRES_PASSWORD=postgres ghcr.io/pmpetit/pglinter:pg17-latest
+
+# Test Docker container
+docker-test:
+	@echo "Testing pglinter Docker container..."
+	docker exec pglinter-pg$(PG_MAJOR_VERSION) psql -U postgres -d pglinter_test -c "SELECT pglinter.hello_pglinter();"
+
+# Stop and remove Docker containers
+docker-clean:
+	docker stop pglinter-pg13 pglinter-pg14 pglinter-pg15 pglinter-pg16 pglinter-pg17 || true
+	docker rm pglinter-pg13 pglinter-pg14 pglinter-pg15 pglinter-pg16 pglinter-pg17 || true
+
+# Docker Compose operations
+docker-compose-up:
+	cd docker && docker-compose up -d
+
+docker-compose-down:
+	cd docker && docker-compose down
+
+docker-compose-logs:
+	cd docker && docker-compose logs -f
+
+##
 ## Help
 ##
 
@@ -230,6 +297,22 @@ help:
 	@echo "  stop             - Stop PostgreSQL test instance"
 	@echo "  psql             - Connect to test database"
 	@echo "  clean            - Clean build artifacts"
+	@echo ""
+	@echo "🐳 Docker targets:"
+	@echo "  docker-build-pg13 - Build PostgreSQL 13 Docker image"
+	@echo "  docker-build-pg14 - Build PostgreSQL 14 Docker image"
+	@echo "  docker-build-pg15 - Build PostgreSQL 15 Docker image"
+	@echo "  docker-build-pg16 - Build PostgreSQL 16 Docker image"
+	@echo "  docker-build-pg17 - Build PostgreSQL 17 Docker image"
+	@echo "  docker-build-all  - Build all PostgreSQL Docker images"
+	@echo "  docker-push       - Push all images to GitHub Container Registry"
+	@echo "  docker-run-pg17   - Run PostgreSQL 17 container (port 5417)"
+	@echo "  docker-test       - Test Docker container functionality"
+	@echo "  docker-clean      - Stop and remove all containers"
+	@echo "  docker-compose-up - Start all containers with docker-compose"
+	@echo "  docker-compose-down - Stop all containers with docker-compose"
+	@echo ""
+	@echo "🔧 Development targets:"
 	@echo "  lint             - Run Rust linting with clippy"
 	@echo "  fmt              - Format Rust code with cargo fmt"
 	@echo "  fmt-check        - Check if Rust code is properly formatted"
@@ -241,7 +324,7 @@ help:
 	@echo "  install-precommit-hook - Install git pre-commit hook"
 	@echo "  help             - Show this help message"
 
-.PHONY: all extension install test-all installcheck start stop run psql clean help test-% test-prompt-% test-convenience lint fmt fmt-check lint-docs lint-docs-fix spell-check audit precommit precommit-fast install-precommit-hook
+.PHONY: all extension install test-all installcheck installcheck-ci installcheck-ci-only start stop run psql clean help test-% test-prompt-% test-convenience lint fmt fmt-check lint-docs lint-docs-fix spell-check audit precommit precommit-fast install-precommit-hook docker-build-pg13 docker-build-pg14 docker-build-pg15 docker-build-pg16 docker-build-pg17 docker-build-all docker-push docker-run-pg13 docker-run-pg14 docker-run-pg15 docker-run-pg16 docker-run-pg17 docker-test docker-clean docker-compose-up docker-compose-down docker-compose-logs
 
 
 ##
