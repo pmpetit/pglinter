@@ -21,7 +21,7 @@ concurrency:
 
 jobs:
   regression-tests:
-    name: 🧪 PostgreSQL Regression Tests
+    name: 🧪 PgLinter Regression Tests
     runs-on: ubuntu-latest
 
     strategy:
