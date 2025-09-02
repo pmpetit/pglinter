@@ -3,7 +3,7 @@ version: '3.8'
 services:
   pglinter-pg13:
     build:
-      context: .
+      context: ..
       dockerfile: Dockerfile
       args:
         PG_MAJOR_VERSION: 13
@@ -21,7 +21,7 @@ services:
 
   pglinter-pg14:
     build:
-      context: .
+      context: ..
       dockerfile: Dockerfile
       args:
         PG_MAJOR_VERSION: 14
@@ -39,7 +39,7 @@ services:
 
   pglinter-pg15:
     build:
-      context: .
+      context: ..
       dockerfile: Dockerfile
       args:
         PG_MAJOR_VERSION: 15
@@ -57,7 +57,7 @@ services:
 
   pglinter-pg16:
     build:
-      context: .
+      context: ..
       dockerfile: Dockerfile
       args:
         PG_MAJOR_VERSION: 16
@@ -75,7 +75,7 @@ services:
 
   pglinter-pg17:
     build:
-      context: .
+      context: ..
       dockerfile: Dockerfile
       args:
         PG_MAJOR_VERSION: 17
