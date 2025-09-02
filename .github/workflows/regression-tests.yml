@@ -26,7 +26,7 @@ jobs:
 
     strategy:
       matrix:
-        pg_version: [13, 14, 15, 16]
+        pg_version: [13, 14, 15, 16, 17]
       fail-fast: false
 
     steps:
@@ -161,6 +161,7 @@ jobs:
           echo "| 14 | ${{ needs.regression-tests.result == 'success' && '✅ Passed' || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY
           echo "| 15 | ${{ needs.regression-tests.result == 'success' && '✅ Passed' || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY
           echo "| 16 | ${{ needs.regression-tests.result == 'success' && '✅ Passed' || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| 17 | ${{ needs.regression-tests.result == 'success' && '✅ Passed' || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
 
           if [ "${{ needs.regression-tests.result }}" == "success" ]; then
