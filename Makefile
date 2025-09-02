@@ -80,8 +80,14 @@ extension:
 ##
 
 install:
-	cp -r $(TARGET_SHAREDIR)/extension/* $(PG_SHAREDIR)/extension/
-	install $(TARGET_PKGLIBDIR)/$(LIB) $(PG_PKGLIBDIR)
+	# Try system-style paths first (for CI), then pgrx-managed paths (for local dev)
+	if [ -d "$(TARGET_DIR)usr/share/postgresql/$(PG_MAJOR_VERSION)/extension" ]; then \
+		cp -r $(TARGET_DIR)usr/share/postgresql/$(PG_MAJOR_VERSION)/extension/* $(PG_SHAREDIR)/extension/; \
+		install $(TARGET_DIR)usr/lib/postgresql/$(PG_MAJOR_VERSION)/lib/$(LIB) $(PG_PKGLIBDIR); \
+	else \
+		cp -r $(TARGET_DIR)$(PG_SHAREDIR)/extension/* $(PG_SHAREDIR)/extension/; \
+		install $(TARGET_DIR)$(PG_PKGLIBDIR)/$(LIB) $(PG_PKGLIBDIR); \
+	fi
 
 ##
 ## TESTING
@@ -136,7 +142,7 @@ test-convenience: stop start
 	@rm -f /tmp/test_convenience.sql
 
 # PGXS-style installcheck using pg_regress
-installcheck: stop start
+installcheck: extension install stop start
 	dropdb $(PSQL_OPT) --if-exists $(PGDATABASE) || echo 'Database did not exist'
 	createdb $(PSQL_OPT) $(PGDATABASE)
 	$(PG_REGRESS) \
