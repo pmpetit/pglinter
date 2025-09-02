@@ -61,12 +61,13 @@ jobs:
       - name: Build extension
         run: |
           echo "🔨 Building pglinter extension for PostgreSQL ${{ matrix.pg_version }}..."
-          PGVER=pg${{ matrix.pg_version }} make extension
+          cargo pgrx package --pg-config /usr/lib/postgresql/${{ matrix.pg_version }}/bin/pg_config
 
       - name: Install extension
         run: |
           echo "📦 Installing pglinter extension..."
-          sudo PGVER=pg${{ matrix.pg_version }} make install
+          sudo cp -r target/release/pglinter-pg${{ matrix.pg_version }}/usr/share/postgresql/${{ matrix.pg_version }}/extension/* /usr/share/postgresql/${{ matrix.pg_version }}/extension/
+          sudo cp target/release/pglinter-pg${{ matrix.pg_version }}/usr/lib/postgresql/${{ matrix.pg_version }}/lib/pglinter.so /usr/lib/postgresql/${{ matrix.pg_version }}/lib/
 
       - name: Setup PostgreSQL environment
         run: |
@@ -79,6 +80,8 @@ jobs:
         if: github.event.inputs.regress_tests == ''
         run: |
           echo "🧪 Running all regression tests..."
+          cargo pgrx start pg${{ matrix.pg_version }}
+          sleep 5  # Give PostgreSQL time to start
           PGVER=pg${{ matrix.pg_version }} make installcheck
         env:
           PGHOST: localhost
@@ -89,11 +92,19 @@ jobs:
         if: github.event.inputs.regress_tests != ''
         run: |
           echo "🧪 Running specific regression tests: ${{ github.event.inputs.regress_tests }}"
+          cargo pgrx start pg${{ matrix.pg_version }}
+          sleep 5  # Give PostgreSQL time to start
           PGVER=pg${{ matrix.pg_version }} make installcheck REGRESS="${{ github.event.inputs.regress_tests }}"
         env:
           PGHOST: localhost
           PGUSER: postgres
           PGDATABASE: pglinter_test
+
+      - name: Cleanup PostgreSQL
+        if: always()
+        run: |
+          echo "🧹 Stopping PostgreSQL test instance..."
+          cargo pgrx stop pg${{ matrix.pg_version }} || true
 
       - name: Upload regression test results
         if: failure()

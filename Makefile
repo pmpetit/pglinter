@@ -28,9 +28,9 @@ PGDATA_DIR=~/.pgrx/data-$(PG_MAJOR_VERSION)
 # Be sure to use the PGRX version (PGVER) of the postgres binaries
 PATH:=$(PG_BINDIR):${PATH}
 
-# This is where the package is placed
-TARGET_SHAREDIR?=$(TARGET_DIR)$(PG_SHAREDIR)
-TARGET_PKGLIBDIR?=$(TARGET_DIR)$(PG_PKGLIBDIR)
+# This is where the package is placed - updated for pgrx 0.16.0 structure
+TARGET_SHAREDIR?=$(TARGET_DIR)usr/share/postgresql/$(PG_MAJOR_VERSION)
+TARGET_PKGLIBDIR?=$(TARGET_DIR)usr/lib/postgresql/$(PG_MAJOR_VERSION)/lib
 
 PG_REGRESS?=$(PG_PKGLIBDIR)/pgxs/src/test/regress/pg_regress
 PG_SOCKET_DIR?=/var/lib/postgresql/.pgrx/
