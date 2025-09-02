@@ -18,6 +18,8 @@ RUN apt-get update && apt-get install -y \
     git \
     wget \
     ca-certificates \
+    libssl-dev \
+    openssl \
     && rm -rf /var/lib/apt/lists/*
 
 # Set working directory
@@ -71,7 +73,7 @@ COPY --from=builder /build/target/release/pglinter-pg${PG_MAJOR_VERSION}/usr/lib
     /usr/lib/postgresql/${PG_MAJOR_VERSION}/lib/
 
 # Copy test files for regression testing
-COPY tests/ /tests/
+COPY docker/tests/ /tests/
 
 # Create initialization script
 RUN mkdir -p /docker-entrypoint-initdb.d

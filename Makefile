@@ -259,7 +259,7 @@ docker-run-pg17:
 # Test Docker container
 docker-test:
 	@echo "Testing pglinter Docker container..."
-	docker exec pglinter-pg$(PG_MAJOR_VERSION) psql -U postgres -d pglinter_test -c "SELECT pglinter.hello_pglinter();"
+	docker exec pglinter-pg$(PG_MAJOR_VERSION) psql -U postgres -d pglinter_test -f /tests/basic_test.sql
 
 # Stop and remove Docker containers
 docker-clean:
@@ -275,6 +275,28 @@ docker-compose-down:
 
 docker-compose-logs:
 	cd docker && docker-compose logs -f
+
+# Run integration tests on Docker containers
+docker-test-all:
+	cd docker && ./tests/run_tests.sh
+
+# Build and test specific version
+docker-build-and-test-pg17: docker-build-pg17
+	docker run -d --name test-pglinter-pg17 -p 5432:5432 -e POSTGRES_PASSWORD=postgres ghcr.io/pmpetit/pglinter:pg17-latest
+	@echo "Waiting for PostgreSQL to start..."
+	@sleep 10
+	docker exec test-pglinter-pg17 psql -U postgres -d pglinter_test -c "SELECT pglinter.hello_pglinter(); SELECT pglinter.list_rules();"
+	docker stop test-pglinter-pg17
+	docker rm test-pglinter-pg17
+
+# Interactive shell in container
+docker-shell-pg17:
+	docker exec -it pglinter-pg17 bash
+
+# Show Docker image sizes
+docker-images-info:
+	@echo "pglinter Docker images:"
+	@docker images | grep "ghcr.io/pmpetit/pglinter" || echo "No pglinter images found"
 
 ##
 ## Help
