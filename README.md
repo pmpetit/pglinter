@@ -14,6 +14,17 @@ pglinter is a PostgreSQL database linter that analyzes your database for potenti
 - **SARIF Output**: Industry-standard Static Analysis Results Interchange Format
 - **Extensible Rules**: Easy to add new rules using Rust traits
 
+## PostgreSQL Compatibility
+
+This extension is built with **pgrx 0.16.0** and supports:
+
+- PostgreSQL 13
+- PostgreSQL 14
+- PostgreSQL 15
+- PostgreSQL 16
+- PostgreSQL 17
+- PostgreSQL 18beta2 ✨ (latest with pgrx 0.16.0)
+
 ## Architecture
 
 ### Rule Categories
@@ -32,12 +43,29 @@ pglinter is a PostgreSQL database linter that analyzes your database for potenti
 
 ## Installation
 
+### Requirements
+
+- Rust 1.88.0+ (required for pgrx 0.16.0)
+- PostgreSQL 13-18 development packages
+- cargo-pgrx 0.16.0
+
+### Build and Install
+
 ```bash
-# Build the extension
+# Install cargo-pgrx if not already installed
+cargo install --locked cargo-pgrx
+
+# Initialize pgrx (one time setup)
+cargo pgrx init
+
+# Build the extension for your PostgreSQL version
 cargo pgrx package
 
-# Install (requires PostgreSQL dev packages)
-sudo cargo pgrx install
+# Install using the Makefile (handles both system and pgrx-managed PostgreSQL)
+sudo make install
+
+# Or install manually for a specific PostgreSQL version
+sudo PGVER=pg16 make install
 
 # Load in your database
 psql -d your_database -c "CREATE EXTENSION pglinter;"
