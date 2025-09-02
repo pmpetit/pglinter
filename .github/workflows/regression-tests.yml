@@ -52,36 +52,36 @@ jobs:
             postgresql-server-dev-${{ matrix.pg_version }} \
             postgresql-client-${{ matrix.pg_version }}
 
-      - name: Install pgrx
+      - name: Install pgrx and setup PostgreSQL
         run: |
           cargo install --locked cargo-pgrx --force
-          # Use version-specific pg_config
+          # Use system PostgreSQL for CI (already installed via apt)
           cargo pgrx init --pg${{ matrix.pg_version }} /usr/lib/postgresql/${{ matrix.pg_version }}/bin/pg_config
+          echo "✅ pgrx initialized with system PostgreSQL ${{ matrix.pg_version }}"
 
-      - name: Build extension
+      - name: Build and install extension
         run: |
           echo "🔨 Building pglinter extension for PostgreSQL ${{ matrix.pg_version }}..."
+          # Build with system PostgreSQL to get system-style paths
           cargo pgrx package --pg-config /usr/lib/postgresql/${{ matrix.pg_version }}/bin/pg_config
-
-      - name: Install extension
-        run: |
           echo "📦 Installing pglinter extension..."
+          # Use sudo for system directory installation
           sudo cp -r target/release/pglinter-pg${{ matrix.pg_version }}/usr/share/postgresql/${{ matrix.pg_version }}/extension/* /usr/share/postgresql/${{ matrix.pg_version }}/extension/
           sudo cp target/release/pglinter-pg${{ matrix.pg_version }}/usr/lib/postgresql/${{ matrix.pg_version }}/lib/pglinter.so /usr/lib/postgresql/${{ matrix.pg_version }}/lib/
 
-      - name: Setup PostgreSQL environment
+      - name: Start PostgreSQL service
         run: |
-          echo "🚀 Setting up PostgreSQL ${{ matrix.pg_version }} environment..."
-          # pgrx will manage PostgreSQL instances via `make start`
-          # No need to start system PostgreSQL service
-          echo "PostgreSQL ${{ matrix.pg_version }} is ready for pgrx management"
+          echo "🚀 Starting PostgreSQL ${{ matrix.pg_version }} service..."
+          sudo systemctl start postgresql
+          sudo systemctl enable postgresql
+          # Create test database
+          sudo -u postgres createdb pglinter_test || echo "Database may already exist"
+          echo "✅ PostgreSQL ${{ matrix.pg_version }} service started"
 
       - name: Run regression tests (all)
         if: github.event.inputs.regress_tests == ''
         run: |
           echo "🧪 Running all regression tests..."
-          cargo pgrx start pg${{ matrix.pg_version }}
-          sleep 5  # Give PostgreSQL time to start
           PGVER=pg${{ matrix.pg_version }} make installcheck
         env:
           PGHOST: localhost
@@ -92,8 +92,6 @@ jobs:
         if: github.event.inputs.regress_tests != ''
         run: |
           echo "🧪 Running specific regression tests: ${{ github.event.inputs.regress_tests }}"
-          cargo pgrx start pg${{ matrix.pg_version }}
-          sleep 5  # Give PostgreSQL time to start
           PGVER=pg${{ matrix.pg_version }} make installcheck REGRESS="${{ github.event.inputs.regress_tests }}"
         env:
           PGHOST: localhost
@@ -103,8 +101,8 @@ jobs:
       - name: Cleanup PostgreSQL
         if: always()
         run: |
-          echo "🧹 Stopping PostgreSQL test instance..."
-          cargo pgrx stop pg${{ matrix.pg_version }} || true
+          echo "🧹 Cleaning up PostgreSQL..."
+          sudo -u postgres dropdb pglinter_test || echo "Database cleanup completed"
 
       - name: Upload regression test results
         if: failure()
