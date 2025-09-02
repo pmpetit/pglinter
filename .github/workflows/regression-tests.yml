@@ -82,7 +82,7 @@ jobs:
         if: github.event.inputs.regress_tests == ''
         run: |
           echo "🧪 Running all regression tests..."
-          PGVER=pg${{ matrix.pg_version }} make installcheck
+          PGVER=pg${{ matrix.pg_version }} make installcheck-ci-only
         env:
           PGHOST: localhost
           PGUSER: postgres
@@ -92,7 +92,7 @@ jobs:
         if: github.event.inputs.regress_tests != ''
         run: |
           echo "🧪 Running specific regression tests: ${{ github.event.inputs.regress_tests }}"
-          PGVER=pg${{ matrix.pg_version }} make installcheck REGRESS="${{ github.event.inputs.regress_tests }}"
+          PGVER=pg${{ matrix.pg_version }} make installcheck-ci-only REGRESS="${{ github.event.inputs.regress_tests }}"
         env:
           PGHOST: localhost
           PGUSER: postgres

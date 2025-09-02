@@ -153,6 +153,30 @@ installcheck: extension install stop start
 		$(REGRESS_OPTS) \
 		$(REGRESS)
 
+# CI-friendly installcheck that skips install step (extension already installed via sudo)
+installcheck-ci: extension stop start
+	dropdb $(PSQL_OPT) --if-exists $(PGDATABASE) || echo 'Database did not exist'
+	createdb $(PSQL_OPT) $(PGDATABASE)
+	$(PG_REGRESS) \
+		$(PSQL_OPT) \
+		--use-existing \
+		--inputdir=./tests/ \
+		--dbname=$(PGDATABASE) \
+		$(REGRESS_OPTS) \
+		$(REGRESS)
+
+# CI-only installcheck that assumes PostgreSQL service is already running and extension is installed
+installcheck-ci-only: extension
+	dropdb $(PSQL_OPT) --if-exists $(PGDATABASE) || echo 'Database did not exist'
+	createdb $(PSQL_OPT) $(PGDATABASE)
+	$(PG_REGRESS) \
+		$(PSQL_OPT) \
+		--use-existing \
+		--inputdir=./tests/ \
+		--dbname=$(PGDATABASE) \
+		$(REGRESS_OPTS) \
+		$(REGRESS)
+
 ##
 ## PGRX commands
 ##
