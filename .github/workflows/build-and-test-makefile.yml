@@ -1,0 +1,32 @@
+name: Build and Test
+
+on:
+  workflow_dispatch:
+  pull_request:
+    branches:
+      - main
+  push:
+    branches:
+      - main
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        pg_version: [13, 14, 15, 16, 17]
+      fail-fast: false
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      - name: Set up dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y make
+      - name: Build and Test
+        run: |
+          make build PG_VERSION=${{ matrix.pg_version }}
+          make test PG_VERSION=${{ matrix.pg_version }}
+        shell: bash
