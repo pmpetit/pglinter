@@ -7,7 +7,7 @@ This is a conversion of the original Python [pglinter](https://github.com/decath
 In recent years, DBAs were more involved with the database engine itself—creating instances, configuring backups, and monitoring systems—while also overseeing developers' activities. Today, in the DBRE world where databases are cloud-managed, developers and operations teams often work independently, without a dedicated DBA.
 So databases objects lives their own life, created by persons that do their best. It can be usefull to be able to detect some wonrg desing creation (for example foreign keys created accross differents schemas...). That's what pglinter was created for.
 
-pglinter is a PostgreSQL database linter that analyzes your database for potential issues, performance problems, and best practice violations. This Rust implementation provides:
+pglinter is a PostgreSQL linter that analyzes your database for potential issues, performance problems, and best practice violations. This Rust implementation provides:
 
 - **Better Performance**: Native Rust performance vs Python
 - **Deep Integration**: Runs directly inside PostgreSQL using pgrx
