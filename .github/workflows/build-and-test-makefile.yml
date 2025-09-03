@@ -48,9 +48,16 @@ jobs:
           # Use system PostgreSQL for CI (already installed via apt)
           cargo pgrx init --pg${{ matrix.pg_version }} /usr/lib/postgresql/${{ matrix.pg_version }}/bin/pg_config
           echo "✅ pgrx initialized with system PostgreSQL ${{ matrix.pg_version }}"
-      - name: Build and Test
+      - name: Unit tests
         run: |
           pgver=$(echo pg${{ matrix.pg_version }})
           make
           make test
+        shell: bash
+      - name: Regtests
+        run: |
+          pgver=$(echo pg${{ matrix.pg_version }})
+          export PG_CONFIG=$(cargo pgrx info | grep "PG_CONFIG" | awk '{print $2}')
+          make install
+          make installcheck
         shell: bash
