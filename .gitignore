@@ -18,3 +18,4 @@ contrib_regression_test_restore.pgsql
 results/*
 tests/results/*
 tests/tmp/*
+generated/
