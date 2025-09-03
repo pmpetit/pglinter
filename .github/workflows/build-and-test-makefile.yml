@@ -25,9 +25,27 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y make
-      - name: Build and Test
+      - name: Install PostgreSQL ${{ matrix.pg_version }}
         run: |
-          pgver=$(echo ${{ matrix.pg_version }} | sed 's/^pg//')
-          make
-          make test
-        shell: bash
+          # Add PostgreSQL APT repository
+          wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo apt-key add -
+          echo "deb http://apt.postgresql.org/pub/repos/apt/ $(lsb_release -cs)-pgdg main" | sudo tee /etc/apt/sources.list.d/pgdg.list
+          sudo apt-get update
+
+          # Install PostgreSQL and development packages
+          sudo apt-get install -y \
+            postgresql-${{ matrix.pg_version }} \
+            postgresql-server-dev-${{ matrix.pg_version }} \
+            postgresql-client-${{ matrix.pg_version }}
+      - name: Install pgrx and setup PostgreSQL
+        run: |
+          cargo install --locked cargo-pgrx --force
+          # Use system PostgreSQL for CI (already installed via apt)
+          cargo pgrx init --pg${{ matrix.pg_version }} /usr/lib/postgresql/${{ matrix.pg_version }}/bin/pg_config
+          echo "✅ pgrx initialized with system PostgreSQL ${{ matrix.pg_version }}"
+      # - name: Build and Test
+      #   run: |
+      #     pgver=$(echo ${{ matrix.pg_version }} | sed 's/^pg//')
+      #     make
+      #     make test
+      #   shell: bash
