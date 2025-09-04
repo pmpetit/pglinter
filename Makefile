@@ -248,13 +248,6 @@ docker_bash: #: enter the docker image (useful for testing)
 pgrx_bash:
 	docker run --rm --interactive --tty --volume  `pwd`:/pgrx $(PGRX_IMAGE)
 
-COMPOSE=docker compose --file docker/docker-compose.yml
-
-docker_init: #: start a docker container
-	$(COMPOSE) down
-	$(COMPOSE) up -d
-	@echo "The Postgres server may take a few seconds to start. Please wait."
-
 ##
 ## L I N T
 ##
