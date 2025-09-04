@@ -15,6 +15,12 @@ on:
         description: 'The PostgreSQL major version with the "pg" prefix (e.g. `pg13`, `pg16`, etc.)'
         type: string
         required: true
+  workflow_dispatch:
+    inputs:
+      pg_version:
+        description: 'PostgreSQL version'
+        required: true
+        default: '13'
 
 env:
   PGVER: ${{ inputs.pgver }}
