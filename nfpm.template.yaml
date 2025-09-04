@@ -1,5 +1,5 @@
 ---
-name: "postgresql_anonymizer_${PG_MAJOR_VERSION}"
+name: "postgresql_pglinter${PG_MAJOR_VERSION}"
 arch: "amd64"
 platform: "linux"
 version: "v${ANON_MINOR_VERSION}"

@@ -7,10 +7,9 @@ ARG DOCKER_PG_MAJOR_VERSION=17
 ##
 ## First Stage: build pg_dump_anon
 ##
-FROM golang:latest AS gobuilder
-WORKDIR /go/src
-COPY pg_dump_anon .
-RUN CGO_ENABLED=0 GOOS=linux go build .
+# FROM golang:latest AS gobuilder
+# WORKDIR /go/src
+# RUN CGO_ENABLED=0 GOOS=linux go build .
 
 ##
 ## Second Stage
@@ -29,20 +28,20 @@ RUN apt-get update \
  && rm -rf /var/lib/apt/lists/*
 
 # Install anon extension
-ARG ANON_VERSION=latest
-RUN wget https://gitlab.com/api/v4/projects/7709206/packages/generic/deb/$ANON_VERSION/postgresql_anonymizer_pg$DOCKER_PG_MAJOR_VERSION-$ANON_VERSION.amd64.deb \
- && dpkg -i postgresql_anonymizer_pg$DOCKER_PG_MAJOR_VERSION-$ANON_VERSION.amd64.deb
+ARG PGLINTER_VERSION=latest
+RUN wget https://ghcr.io/api/v4/projects/7709206/packages/generic/deb/$PGLINTER_VERSION/postgresql_pglinter_pg$DOCKER_PG_MAJOR_VERSION-$PGLINTER_VERSION.amd64.deb \
+ && dpkg -i postgresql_pglinter_pg$DOCKER_PG_MAJOR_VERSION-$PGLINTER_VERSION.amd64.deb
 
 # Install pg_dump_anon from the previous stage
-COPY --from=gobuilder /go/src/pg_dump_anon /usr/bin/
+# COPY --from=gobuilder /go/src/pg_dump_anon /usr/bin/
 
 # init script
 RUN mkdir -p /docker-entrypoint-initdb.d
-COPY ./docker/init_anon.sh /docker-entrypoint-initdb.d/init_anon.sh
+COPY ./docker/init_pglinter.sh /docker-entrypoint-initdb.d/init_pglinter.sh
 
 # Entrypoint for Anonymized Dumps (pg_dump_anon / V1)
 # This is deprecated but kept for backward compatibility
-COPY docker/anon.sh /anon.sh
+COPY docker/pglinter.sh /pglinter.sh
 
-# Entrypoint for Anonymized Dumps (pg_dump / V2)
-COPY docker/dump.sh /dump.sh
+# # Entrypoint for Anonymized Dumps (pg_dump / V2)
+# COPY docker/dump.sh /dump.sh

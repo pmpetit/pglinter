@@ -221,7 +221,7 @@ package:
 ##
 
 DOCKER_TAG?=latest
-DOCKER_IMAGE?=registry.gitlab.com/dalibo/postgresql_anonymizer:$(DOCKER_TAG)
+DOCKER_IMAGE?=ghcr.io/pmpetit/postgresql_pglinter:$(DOCKER_TAG)
 
 ifneq ($(DOCKER_PG_MAJOR_VERSION),)
 DOCKER_BUILD_ARG := --build-arg DOCKER_PG_MAJOR_VERSION=$(DOCKER_PG_MAJOR_VERSION)
