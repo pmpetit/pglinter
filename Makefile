@@ -221,7 +221,7 @@ package:
 ##
 
 DOCKER_TAG?=latest
-DOCKER_IMAGE?=ghcr.io/pmpetit/postgresql_pglinter:$(DOCKER_TAG)
+DOCKER_IMAGE?=ghcr.io/pmpetit/postgresql_pglinter
 
 ifneq ($(DOCKER_PG_MAJOR_VERSION),)
 DOCKER_BUILD_ARG := --build-arg DOCKER_PG_MAJOR_VERSION=$(DOCKER_PG_MAJOR_VERSION)
@@ -231,7 +231,7 @@ PGRX_IMAGE?=$(DOCKER_IMAGE):pgrx
 PGRX_BUILD_ARGS?=
 
 docker_image: docker/Dockerfile #: build the docker image
-	docker build --tag $(DOCKER_IMAGE) . --file $^  $(DOCKER_BUILD_ARG)
+	docker build --tag $(DOCKER_IMAGE):$(DOCKER_TAG) . --file $^  $(DOCKER_BUILD_ARG)
 
 pgrx_image: docker/pgrx/Dockerfile
 	docker build --tag $(PGRX_IMAGE) . --file $^ $(PGRX_BUILD_ARGS)

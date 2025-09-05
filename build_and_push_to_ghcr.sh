@@ -23,11 +23,33 @@ fi
 
 # Check if logged in to GHCR
 echo "🔐 Checking GitHub Container Registry authentication..."
-if ! docker pull ghcr.io/hello-world &> /dev/null; then
-    echo "❌ Not authenticated with GHCR. Please login first:"
-    echo "💡 Run: echo 'YOUR_GITHUB_TOKEN' | docker login ghcr.io -u ${GITHUB_USER} --password-stdin"
-    echo "📋 Your token needs 'write:packages' and 'read:packages' scopes"
-    exit 1
+
+# Try to authenticate using environment variables
+if [ -n "$GITHUB_TOKEN" ]; then
+    echo "🔑 Using GITHUB_TOKEN environment variable for authentication..."
+    echo "$GITHUB_TOKEN" | docker login ghcr.io -u ${GITHUB_USER} --password-stdin
+elif [ -n "$CR_PAT" ]; then
+    echo "🔑 Using CR_PAT environment variable for authentication..."
+    echo "$CR_PAT" | docker login ghcr.io -u ${GITHUB_USER} --password-stdin
+elif [ -n "$GITHUB_PAT" ]; then
+    echo "🔑 Using GITHUB_PAT environment variable for authentication..."
+    echo "$GITHUB_PAT" | docker login ghcr.io -u ${GITHUB_USER} --password-stdin
+else
+    # Check if already authenticated
+    if ! docker pull ghcr.io/hello-world &> /dev/null; then
+        echo "❌ Not authenticated with GHCR and no token environment variable found."
+        echo "💡 Set one of these environment variables:"
+        echo "   export GITHUB_TOKEN='your_token'"
+        echo "   export CR_PAT='your_token'"
+        echo "   export GITHUB_PAT='your_token'"
+        echo ""
+        echo "🔗 Or login manually:"
+        echo "   echo 'YOUR_GITHUB_TOKEN' | docker login ghcr.io -u ${GITHUB_USER} --password-stdin"
+        echo ""
+        echo "📋 Your token needs 'write:packages' and 'read:packages' scopes"
+        exit 1
+    fi
+    echo "✅ Already authenticated with GHCR"
 fi
 
 # Build the container

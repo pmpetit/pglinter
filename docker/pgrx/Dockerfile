@@ -8,7 +8,7 @@
 
 FROM rockylinux:8 AS rhel8_devtools
 
-ARG PGRX_VERSION=0.14.1
+ARG PGRX_VERSION=0.16.0
 
 COPY docker/pgrx/goreleaser.repo /etc/yum.repos.d/goreleaser.repo
 
