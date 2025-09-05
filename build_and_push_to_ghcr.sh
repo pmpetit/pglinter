@@ -54,7 +54,11 @@ fi
 
 # Build the container
 echo "🏗️  Building Docker image..."
-if [ -f "docker/Dockerfile" ]; then
+if [ -f "docker/pgrx/Dockerfile" ]; then
+    # Build the pgrx development container
+    echo "📦 Building pgrx development container..."
+    docker build -t "${FULL_IMAGE_NAME}" -f docker/pgrx/Dockerfile .
+elif [ -f "docker/Dockerfile" ]; then
     # Build from docker subdirectory if it exists
     docker build -t "${FULL_IMAGE_NAME}" -f docker/Dockerfile .
 elif [ -f "Dockerfile" ]; then
