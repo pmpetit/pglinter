@@ -17,10 +17,11 @@ on:
         required: true
   workflow_dispatch:
     inputs:
-      pg_version:
-        description: 'PostgreSQL version'
+      pgver:
+        description: 'PostgreSQL version with pg prefix (e.g., pg13, pg16)'
         required: true
-        default: '13'
+        default: 'pg16'
+        type: string
 
 env:
   PGVER: ${{ inputs.pgver }}
