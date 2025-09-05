@@ -1,0 +1,42 @@
+name: Deploy Packages
+
+on:
+  push:
+    tags:
+      - '*' # Triggers the workflow on any tag push
+  workflow_dispatch:
+    inputs:
+      pgver:
+        description: 'PostgreSQL version'
+        required: true
+        default: '16'
+
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write # This is crucial for uploading packages to GitHub Packages
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Download artifacts
+        uses: actions/download-artifact@v3
+        with:
+          name: built-packages # This should match the name from your 'build' job
+          path: target/release/anon-${{ inputs.pgver }}
+
+      - name: Upload .deb package to GitHub Packages
+        uses: actions/upload-artifact@v3
+        with:
+          name: postgresql_anonymizer_${{ inputs.pgver }}-${{ github.ref_name }}.amd64.deb
+          path: target/release/anon-${{ inputs.pgver }}/*.deb
+
+      - name: Upload .rpm package to GitHub Packages
+        uses: actions/upload-artifact@v3
+        with:
+          name: postgresql_anonymizer_${{ inputs.pgver }}-${{ github.ref_name }}.x86_64.rpm
+          path: target/release/anon-${{ inputs.pgver }}/*.rpm
