@@ -35,7 +35,7 @@ jobs:
     name: 'build-${{ inputs.pgver }}'
     runs-on: ubuntu-latest
     # Use GitHub Container Registry for pmpetit
-    container: ghcr.io/pmpetit/postgresql_pglinter:pgrx
+    # container: ghcr.io/pmpetit/postgresql_pglinter:pgrx
 
     # Convert GitLab rules to GitHub Actions conditions
     if: |
