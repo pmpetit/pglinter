@@ -17,6 +17,11 @@ on:
         required: true
   workflow_dispatch:
     inputs:
+      always:
+        description: 'If defined, all jobs are launched in any case. Usually you want at least 1 major version to be built/tested on all pipelines.'
+        type: string
+        default: ''
+        required: false
       pgver:
         description: 'PostgreSQL version with pg prefix (e.g., pg13, pg16)'
         required: true
