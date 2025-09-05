@@ -1,3 +1,11 @@
+# Deploy Packages
+#
+# This workflow deploys built packages to GitHub Releases (for tags) or as artifacts (for manual runs).
+# It expects artifacts to be available from a previous build job.
+#
+# For automatic deployment, use the build_and_test_pgver.yml workflow which includes deployment.
+# This standalone deploy workflow is for manual deployment scenarios.
+
 name: Deploy Packages
 
 on:
@@ -7,9 +15,10 @@ on:
   workflow_dispatch:
     inputs:
       pgver:
-        description: 'PostgreSQL version'
+        description: 'PostgreSQL version with pg prefix (e.g., pg13, pg16)'
         required: true
-        default: '16'
+        default: 'pg16'
+        type: string
 
 
 jobs:
@@ -21,22 +30,56 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Download artifacts
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: built-packages # This should match the name from your 'build' job
-          path: target/release/anon-${{ inputs.pgver }}
+          path: target/release/pglinter-${{ inputs.pgver }}
 
-      - name: Upload .deb package to GitHub Packages
-        uses: actions/upload-artifact@v3
-        with:
-          name: postgresql_anonymizer_${{ inputs.pgver }}-${{ github.ref_name }}.amd64.deb
-          path: target/release/anon-${{ inputs.pgver }}/*.deb
+      - name: Verify packages exist
+        run: |
+          echo "Checking for built packages..."
+          if [ ! -d "target/release/pglinter-${{ inputs.pgver }}" ]; then
+            echo "❌ Error: No packages found in target/release/pglinter-${{ inputs.pgver }}"
+            echo "💡 Make sure to run a build job first that creates 'built-packages' artifacts"
+            exit 1
+          fi
 
-      - name: Upload .rpm package to GitHub Packages
-        uses: actions/upload-artifact@v3
+          deb_count=$(find target/release/pglinter-${{ inputs.pgver }} -name "*.deb" | wc -l)
+          rpm_count=$(find target/release/pglinter-${{ inputs.pgver }} -name "*.rpm" | wc -l)
+
+          echo "📦 Found $deb_count .deb packages"
+          echo "📦 Found $rpm_count .rpm packages"
+
+          if [ "$deb_count" -eq 0 ] && [ "$rpm_count" -eq 0 ]; then
+            echo "❌ Error: No .deb or .rpm packages found"
+            exit 1
+          fi
+
+      - name: Upload .deb package to GitHub Releases
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v1
         with:
-          name: postgresql_anonymizer_${{ inputs.pgver }}-${{ github.ref_name }}.x86_64.rpm
-          path: target/release/anon-${{ inputs.pgver }}/*.rpm
+          files: target/release/pglinter-${{ inputs.pgver }}/*.deb
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload .rpm package to GitHub Releases
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v1
+        with:
+          files: target/release/pglinter-${{ inputs.pgver }}/*.rpm
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload artifacts for manual dispatch
+        if: github.event_name == 'workflow_dispatch'
+        uses: actions/upload-artifact@v4
+        with:
+          name: pglinter_${{ inputs.pgver }}-packages
+          path: |
+            target/release/pglinter-${{ inputs.pgver }}/*.deb
+            target/release/pglinter-${{ inputs.pgver }}/*.rpm
+          retention-days: 7
