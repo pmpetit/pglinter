@@ -7,7 +7,7 @@
 PGRX?=cargo pgrx
 PGVER?=$(shell grep 'default = \[".*\"]' Cargo.toml | sed -e 's/.*\["//' | sed -e 's/"].*//')
 PG_MAJOR_VERSION=$(PGVER:pg%=%)
-pglinter_VERSION?=$(shell grep '^version *= *' Cargo.toml | sed 's/^version *= *//' | tr -d '\"' | tr -d ' ' )
+PGLINTER_VERSION?=$(shell grep '^version *= *' Cargo.toml | sed 's/^version *= *//' | tr -d '\"' | tr -d ' ' )
 
 # use `TARGET=debug make run` for more detailed errors
 TARGET?=release
@@ -28,16 +28,16 @@ PGDATA_DIR=~/.pgrx/data-$(PG_MAJOR_VERSION)
 # Be sure to use the PGRX version (PGVER) of the postgres binaries
 PATH:=$(PG_BINDIR):${PATH}
 
-# This is where the package is placed
-TARGET_SHAREDIR?=$(TARGET_DIR)$(PG_SHAREDIR)
-TARGET_PKGLIBDIR?=$(TARGET_DIR)$(PG_PKGLIBDIR)
+# This is where the package is placed - updated for pgrx 0.16.0 structure
+TARGET_SHAREDIR?=$(TARGET_DIR)usr/share/postgresql/$(PG_MAJOR_VERSION)
+TARGET_PKGLIBDIR?=$(TARGET_DIR)usr/lib/postgresql/$(PG_MAJOR_VERSION)/lib
 
 PG_REGRESS?=$(PG_PKGLIBDIR)/pgxs/src/test/regress/pg_regress
 PG_SOCKET_DIR?=/var/lib/postgresql/.pgrx/
 PGHOST?=localhost
 PGPORT?=288$(subst pg,,$(PGVER))
 PSQL_OPT?=--host $(PGHOST) --port $(PGPORT)
-PGDATABASE?=pglinter_test
+PGDATABASE?=contrib_regression
 
 ##
 ## Test configuration.
@@ -56,6 +56,23 @@ REGRESS_TESTS = t003_minimal
 # REGRESS_TESTS+= simple_missing_index
 # REGRESS_TESTS+= t008
 # REGRESS_TESTS+= t010
+
+# We try our best to write tests that produce the same output on all the 5
+# current Postgres major versions. But sometimes it's really hard to do and
+# we generally prefer simplicity over complex output manipulation tricks.
+#
+# In these few special cases, we use conditional tests with the following
+# naming rules:
+# * the _PG15+ suffix means PostgreSQL 15 and all the major versions after
+# * the _PG13- suffix means PostgreSQL 13 and all the major versions below
+
+REGRESS_TESTS_PG13 = elevation_via_rule_PG15- elevation_via_security_definer_function_PG14-
+REGRESS_TESTS_PG14 = elevation_via_rule_PG15- elevation_via_security_definer_function_PG14-
+REGRESS_TESTS_PG15 = elevation_via_rule_PG15-
+REGRESS_TESTS_PG16 =
+REGRESS_TESTS_PG17 =
+
+REGRESS_TESTS+=${REGRESS_TESTS_PG${PG_MAJOR_VERSION}}
 
 # Use this var to add more tests
 #PG_TEST_EXTRA ?= ""
@@ -80,60 +97,18 @@ extension:
 ##
 
 install:
-	cp -r $(TARGET_SHAREDIR)/extension/* $(PG_SHAREDIR)/extension/
-	install $(TARGET_PKGLIBDIR)/$(LIB) $(PG_PKGLIBDIR)
+		cp -r $(TARGET_DIR)$(PG_SHAREDIR)/extension/* $(PG_SHAREDIR)/extension/; \
+		install $(TARGET_DIR)$(PG_PKGLIBDIR)/$(LIB) $(PG_PKGLIBDIR); \
 
 ##
-## TESTING
+## INSTALLCHECK
+##
+## These are the functional tests, the unit tests are run with Cargo
 ##
 
-# Test a single file (e.g., make test-b001)
-test-%: stop start
-	@echo "Running test: $*"
-	dropdb $(PSQL_OPT) --if-exists $(PGDATABASE) || echo 'Database did not exist'
-	createdb $(PSQL_OPT) $(PGDATABASE)
-	psql $(PSQL_OPT) $(PGDATABASE) -f tests/sql/$*.sql
-
-# Run all tests
-test-all: stop start
-	@echo "Running all pglinter tests..."
-	dropdb $(PSQL_OPT) --if-exists $(PGDATABASE) || echo 'Database did not exist'
-	createdb $(PSQL_OPT) $(PGDATABASE)
-	@for test in $(REGRESS_TESTS); do \
-		echo "Running test: $$test"; \
-		psql $(PSQL_OPT) $(PGDATABASE) -f tests/sql/$$test.sql || exit 1; \
-	done
-	@echo "All tests completed successfully!"
-
-# Test with output to prompt (no file output)
-test-prompt-%: stop start
-	@echo "Running test with prompt output: $*"
-	dropdb $(PSQL_OPT) --if-exists $(PGDATABASE) || echo 'Database did not exist'
-	createdb $(PSQL_OPT) $(PGDATABASE)
-	@echo "BEGIN;" > /tmp/test_$*.sql
-	@echo "CREATE TABLE IF NOT EXISTS my_table_without_pk (id INT, name TEXT, code TEXT, enable BOOL DEFAULT TRUE, query TEXT, warning_level INT, error_level INT, scope TEXT);" >> /tmp/test_$*.sql
-	@echo "CREATE EXTENSION IF NOT EXISTS pglinter;" >> /tmp/test_$*.sql
-	@echo "SELECT pglinter.perform_base_check();" >> /tmp/test_$*.sql
-	@echo "ROLLBACK;" >> /tmp/test_$*.sql
-	psql $(PSQL_OPT) $(PGDATABASE) -f /tmp/test_$*.sql
-	@rm -f /tmp/test_$*.sql
-
-# Test convenience functions
-test-convenience: stop start
-	@echo "Testing convenience functions..."
-	dropdb $(PSQL_OPT) --if-exists $(PGDATABASE) || echo 'Database did not exist'
-	createdb $(PSQL_OPT) $(PGDATABASE)
-	@echo "BEGIN;" > /tmp/test_convenience.sql
-	@echo "CREATE TABLE IF NOT EXISTS my_table_without_pk (id INT, name TEXT);" >> /tmp/test_convenience.sql
-	@echo "CREATE EXTENSION IF NOT EXISTS pglinter;" >> /tmp/test_convenience.sql
-	@echo "SELECT pglinter.check_base();" >> /tmp/test_convenience.sql
-	@echo "SELECT pglinter.check_cluster();" >> /tmp/test_convenience.sql
-	@echo "SELECT pglinter.check_table();" >> /tmp/test_convenience.sql
-	@echo "SELECT pglinter.check_schema();" >> /tmp/test_convenience.sql
-	@echo "SELECT pglinter.check_all();" >> /tmp/test_convenience.sql
-	@echo "ROLLBACK;" >> /tmp/test_convenience.sql
-	psql $(PSQL_OPT) $(PGDATABASE) -f /tmp/test_convenience.sql
-	@rm -f /tmp/test_convenience.sql
+# With PGXS: the postgres instance is created on-the-fly to run the test.
+# With PGRX: the postgres instance is created previously by `cargo run`. This
+# means we have some extra tasks to prepare the instance
 
 # PGXS-style installcheck using pg_regress
 installcheck: stop start
@@ -170,6 +145,41 @@ run:
 psql:
 	psql --host localhost --port 288$(PG_MAJOR_VERSION)
 
+
+##
+## Coverage
+##
+
+COVERAGE_DIR?=target/$(TARGET)/coverage
+
+clean_profiles:
+	rm -fr *.profraw
+
+coverage: clean_profiles coverage_test covergage_report
+
+coverage_test:
+	export RUSTFLAGS=-Cinstrument-coverage \
+	export LLVM_PROFILE_FILE=$(TARGET)-%p-%m.profraw \
+	&& $(PGRX) test $(PGVER) $(RELEASE_OPT) --verbose
+
+coverage_report:
+	mkdir -p $(COVERAGE_DIR)
+	export LLVM_PROFILE_FILE=$(TARGET)-%p-%m.profraw \
+	&& grcov . \
+	      --binary-path target/$(TARGET) \
+	      --source-dir . \
+	      --output-path $(COVERAGE_DIR)\
+	      --keep-only 'src/*' \
+	      --llvm \
+	      --ignore-not-existing \
+	      --output-types html,cobertura
+	# Terse output
+	grep '<p class="heading">Lines</p>' -A2 $(COVERAGE_DIR)/html/index.html \
+	  | tail -n 1 \
+	  | xargs \
+	  | sed 's,%.*,,' \
+	  | sed 's/.*>/Coverage: /'
+
 ##
 ## CLEAN
 ##
@@ -179,115 +189,88 @@ ifdef EXTRA_CLEAN
 	rm -rf $(EXTRA_CLEAN)
 endif
 
-##
-## Help
-##
-
-help:
-	@echo "Available targets:"
-	@echo "  all              - Build the extension"
-	@echo "  extension        - Build the extension package"
-	@echo "  install          - Install the extension to PostgreSQL"
-	@echo "  test-b001        - Run the b001 test specifically"
-	@echo "  test-all         - Run all tests"
-	@echo "  test-prompt-b001 - Run b001 test with prompt output (no file)"
-	@echo "  test-convenience - Test convenience functions (check_base, etc.)"
-	@echo "  installcheck     - Run tests using pg_regress (all tests)"
-	@echo "  installcheck REGRESS=testname - Run specific test with pg_regress"
-	@echo "                   Example: make installcheck REGRESS=b001"
-	@echo "                   Example: make installcheck REGRESS=\"b001 b001_prompt\""
-	@echo "  start            - Start PostgreSQL test instance"
-	@echo "  stop             - Stop PostgreSQL test instance"
-	@echo "  psql             - Connect to test database"
-	@echo "  clean            - Clean build artifacts"
-	@echo "  lint             - Run Rust linting with clippy"
-	@echo "  fmt              - Format Rust code with cargo fmt"
-	@echo "  fmt-check        - Check if Rust code is properly formatted"
-	@echo "  lint-docs        - Lint markdown documentation files"
-	@echo "  lint-docs-fix    - Lint and automatically fix markdown files"
-	@echo "  spell-check      - Check spelling in documentation"
-	@echo "  precommit        - Run all pre-commit checks (fmt, lint, docs, tests)"
-	@echo "  precommit-fast   - Run fast pre-commit checks (skip tests)"
-	@echo "  install-precommit-hook - Install git pre-commit hook"
-	@echo "  help             - Show this help message"
-
-.PHONY: all extension install test-all installcheck start stop run psql clean help test-% test-prompt-% test-convenience lint fmt fmt-check lint-docs lint-docs-fix spell-check audit precommit precommit-fast install-precommit-hook
 
 
 ##
-## L I N T  &  P R E C O M M I T
+## All targets below are not part of the PGXS Makefile
+##
+
+##
+## P A C K A G E S
+##
+
+# The packages are built from the $(TARGET_DIR) folder.
+# So the $(PG_PKGLIBDIR) and $(PG_SHAREDIR) are relative to that folder
+rpm deb: package
+	export PG_PKGLIBDIR=".$(PG_PKGLIBDIR)" && \
+	export PG_SHAREDIR=".$(PG_SHAREDIR)" && \
+	export PG_MAJOR_VERSION="$(PG_MAJOR_VERSION)" && \
+	export ANON_MINOR_VERSION="$(ANON_MINOR_VERSION)" && \
+	envsubst < nfpm.template.yaml > $(TARGET_DIR)/nfpm.yaml
+	cd $(TARGET_DIR) && nfpm package --packager $@
+
+
+# The `package` command needs pg_config from the target version
+# https://github.com/pgcentralfoundation/pgrx/issues/288
+
+package:
+	$(PGRX) package --pg-config $(PG_CONFIG)
+
+##
+## D O C K E R
+##
+
+DOCKER_TAG?=latest
+DOCKER_IMAGE?=ghcr.io/pmpetit/postgresql_pglinter:$(DOCKER_TAG)
+
+ifneq ($(DOCKER_PG_MAJOR_VERSION),)
+DOCKER_BUILD_ARG := --build-arg DOCKER_PG_MAJOR_VERSION=$(DOCKER_PG_MAJOR_VERSION)
+endif
+
+PGRX_IMAGE?=$(DOCKER_IMAGE):pgrx
+PGRX_BUILD_ARGS?=
+
+docker_image: docker/Dockerfile #: build the docker image
+	docker build --tag $(DOCKER_IMAGE) . --file $^  $(DOCKER_BUILD_ARG)
+
+pgrx_image: docker/pgrx/Dockerfile
+	docker build --tag $(PGRX_IMAGE) . --file $^ $(PGRX_BUILD_ARGS)
+
+docker_push: #: push the docker image to the registry
+	docker push $(DOCKER_IMAGE)
+
+pgrx_push:
+	docker push $(PGRX_IMAGE)
+
+docker_bash: #: enter the docker image (useful for testing)
+	docker exec -it docker-PostgreSQL-1 bash
+
+pgrx_bash:
+	docker run --rm --interactive --tty --volume  `pwd`:/pgrx $(PGRX_IMAGE)
+
+##
+## L I N T
 ##
 
 lint:
-	cargo clippy --no-default-features --features pg13 --release
+	cargo clippy --release
 
-# Format Rust code
-fmt:
-	cargo fmt
+##
+## P R E - C O M M I T
+##
 
-# Check if code is formatted
-fmt-check:
-	cargo fmt --check
+# Fast pre-commit checks (used by git hooks)
+precommit-fast: lint
+	@echo "✅ Fast pre-commit checks completed"
 
-# Lint markdown files
-lint-docs:
-	@if command -v rumdl > /dev/null; then \
-		echo "Linting markdown files..."; \
-		rumdl check --config .rumdl.toml docs/**/*.md *.md || true; \
-		echo ""; \
-		echo "💡 Tip: Run 'make lint-docs-fix' to automatically fix many issues"; \
-	else \
-		echo "rumdl not found, skipping markdown lint"; \
-	fi
+# Full pre-commit checks (more comprehensive)
+precommit: lint test
+	@echo "✅ Full pre-commit checks completed"
 
-# Lint and automatically fix markdown files
-lint-docs-fix:
-	@if command -v rumdl > /dev/null; then \
-		echo "Linting and fixing markdown files..."; \
-		rumdl check --config .rumdl.toml --fix docs/**/*.md *.md; \
-		echo "✅ Auto-fixable markdown issues have been resolved!"; \
-	else \
-		echo "rumdl not found, skipping markdown lint and fix"; \
-	fi
+# Check formatting without fixing
+format-check:
+	cargo fmt --all -- --check
 
-# Spell check documentation
-spell-check:
-	@if command -v aspell > /dev/null; then \
-		echo "Checking spelling in documentation..."; \
-		find docs/ -name "*.md" -exec aspell --mode=markdown --personal=./.aspell.en.pws list < {} \; | sort -u | head -20; \
-	else \
-		echo "aspell not found, skipping spell check"; \
-	fi
-
-# Install git pre-commit hook
-install-precommit-hook:
-	@echo "Installing pre-commit hook..."
-	@cp pre-commit-hook.sh .git/hooks/pre-commit
-	@chmod +x .git/hooks/pre-commit
-	@echo "✅ Pre-commit hook installed successfully!"
-	@echo "   Now 'git commit' will automatically run pre-commit checks."
-
-# Pre-commit hook that runs all checks
-precommit: fmt-check lint lint-docs test
-	@echo ""
-	@echo "🎉 Pre-commit checks completed successfully!"
-	@echo ""
-	@echo "Summary of checks performed:"
-	@echo "  ✅ Rust code formatting (cargo fmt --check)"
-	@echo "  ✅ Rust code linting (cargo clippy)"
-	@echo "  ✅ Markdown documentation linting"
-	@echo "  ✅ Unit tests (cargo pgrx test)"
-	@echo ""
-	@echo "Ready to commit! 🚀"
-
-# Fast pre-commit that skips tests
-precommit-fast: fmt-check lint lint-docs
-	@echo ""
-	@echo "⚡ Fast pre-commit checks completed!"
-	@echo ""
-	@echo "Summary of checks performed:"
-	@echo "  ✅ Rust code formatting (cargo fmt --check)"
-	@echo "  ✅ Rust code linting (cargo clippy)"
-	@echo "  ✅ Markdown documentation linting"
-	@echo ""
-	@echo "Note: Skipped tests for speed. Run 'make test' before pushing."
+# Fix formatting
+format:
+	cargo fmt --all
