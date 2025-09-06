@@ -56,22 +56,22 @@ jobs:
       - name: Lint (only for default PG version)
         if: inputs.always != ''
         run: make lint
-        working-directory: /github/workspace
+        working-directory: $GITHUB_WORKSPACE
 
       - name: Build the extension package
         run: make
-        working-directory: /github/workspace
+        working-directory: $GITHUB_WORKSPACE
 
       - name: Launch postgres instance and run unit tests
         run: make test
-        working-directory: /github/workspace
+        working-directory: $GITHUB_WORKSPACE
         # The functional tests will be launched later with pg_regress
 
       - name: Build packages
         run: |
           make deb
           make rpm
-        working-directory: /github/workspace
+        working-directory: $GITHUB_WORKSPACE
 
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4
@@ -112,11 +112,11 @@ jobs:
 
       - name: Install binaries
         run: make install
-        working-directory: /github/workspace
+        working-directory: $GITHUB_WORKSPACE
 
       - name: Run functional tests with pg_regress
         run: make installcheck
-        working-directory: /github/workspace
+        working-directory: $GITHUB_WORKSPACE
 
       - name: Upload test artifacts
         uses: actions/upload-artifact@v4
