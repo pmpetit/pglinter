@@ -57,7 +57,7 @@ jobs:
       - name: pwd
         run: pwd
       - name: change permissions
-        run: sudo chmod -R 777 /home/runner/_temp
+        run: sudo chmod -R 777 /__w
       - name: Checkout code
         uses: actions/checkout@v4
 
