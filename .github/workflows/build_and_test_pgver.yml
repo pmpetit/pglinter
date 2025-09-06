@@ -60,7 +60,7 @@ jobs:
       - name: change permissions
         run: sudo chmod -R 777 /__w
       - name: show $GITHUB_WORKSPACE
-        run: echo GITHUB_WORKSPACE=<$GITHUB_WORKSPACE>
+        run: echo $GITHUB_WORKSPACE
       - name: Checkout code
         uses: actions/checkout@v4
 
