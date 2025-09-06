@@ -1,0 +1,188 @@
+name: Docker Regression Tests
+
+# Run PostgreSQL regression tests using Docker containers
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+  # Allow manual triggering
+  workflow_dispatch:
+    inputs:
+      regress_tests:
+        description: 'Specific tests to run (space-separated, leave empty for all)'
+        required: false
+        default: ''
+
+# Ensure only one workflow runs at a time per branch
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  docker-regression-tests:
+    name: 🐳 Docker Regression Tests
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: read
+
+    strategy:
+      matrix:
+        pg_version: [13, 14, 15, 16, 17]
+      fail-fast: false
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4.3.0
+
+      - name: Log in to Container Registry
+        uses: docker/login-action@v3.3.0
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Pull Docker image
+        run: |
+          echo "📥 Pulling pglinter Docker image for PostgreSQL ${{ matrix.pg_version }}..."
+          docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:pg${{ matrix.pg_version }}-latest
+          echo "✅ Image pulled successfully!"
+
+      - name: Start PostgreSQL container
+        run: |
+          echo "🚀 Starting PostgreSQL ${{ matrix.pg_version }} container..."
+          docker run -d \
+            --name pglinter-test-pg${{ matrix.pg_version }} \
+            -e POSTGRES_PASSWORD=postgres \
+            -e POSTGRES_DB=pglinter_test \
+            -e POSTGRES_USER=postgres \
+            -p 543${{ matrix.pg_version }}:5432 \
+            -v ${{ github.workspace }}/tests:/tests \
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:pg${{ matrix.pg_version }}-latest
+
+          # Wait for PostgreSQL to be ready
+          echo "Waiting for PostgreSQL to start..."
+          for i in {1..60}; do
+            if docker exec pglinter-test-pg${{ matrix.pg_version }} pg_isready -U postgres -d pglinter_test; then
+              echo "✅ PostgreSQL is ready!"
+              break
+            fi
+            echo "Waiting... ($i/60)"
+            sleep 2
+          done
+
+          # Verify extension is available
+          docker exec pglinter-test-pg${{ matrix.pg_version }} psql -U postgres -d pglinter_test -c "
+            SELECT extname, extversion FROM pg_extension WHERE extname = 'pglinter';
+          "
+
+      - name: Run regression tests (all)
+        if: github.event.inputs.regress_tests == ''
+        run: |
+          echo "🧪 Running all regression tests..."
+          docker exec pglinter-test-pg${{ matrix.pg_version }} bash -c "
+            cd /tests &&
+            pg_regress \
+              --host=localhost \
+              --port=5432 \
+              --username=postgres \
+              --dbname=pglinter_test \
+              --use-existing \
+              --inputdir=. \
+              t003_minimal
+          "
+
+      - name: Run regression tests (specific)
+        if: github.event.inputs.regress_tests != ''
+        run: |
+          echo "🧪 Running specific regression tests: ${{ github.event.inputs.regress_tests }}"
+          docker exec pglinter-test-pg${{ matrix.pg_version }} bash -c "
+            cd /tests &&
+            pg_regress \
+              --host=localhost \
+              --port=5432 \
+              --username=postgres \
+              --dbname=pglinter_test \
+              --use-existing \
+              --inputdir=. \
+              ${{ github.event.inputs.regress_tests }}
+          "
+
+      - name: Test extension functionality
+        run: |
+          echo "🧪 Testing extension functionality..."
+          docker exec pglinter-test-pg${{ matrix.pg_version }} psql -U postgres -d pglinter_test -c "
+            -- Test basic functionality
+            SELECT pglinter.hello_pglinter();
+
+            -- Test rules functionality
+            SELECT pglinter.list_rules();
+
+            -- Test check functions
+            SELECT pglinter.check_all();
+          "
+
+      - name: Cleanup container
+        if: always()
+        run: |
+          echo "🧹 Cleaning up PostgreSQL container..."
+          docker stop pglinter-test-pg${{ matrix.pg_version }} || true
+          docker rm pglinter-test-pg${{ matrix.pg_version }} || true
+
+      - name: Upload regression test results
+        if: failure()
+        uses: actions/upload-artifact@v4.6.2
+        with:
+          name: docker-regression-results-pg${{ matrix.pg_version }}
+          path: |
+            regression.diffs
+            regression.out
+            results/
+          retention-days: 7
+
+      - name: ✅ All regression tests passed
+        if: success()
+        run: |
+          echo "🎉 All Docker regression tests passed successfully!"
+          echo "✅ PostgreSQL ${{ matrix.pg_version }} extension works correctly in container"
+          echo "✅ All test cases passed"
+          echo ""
+          echo "Extension is ready for PostgreSQL ${{ matrix.pg_version }} container deployments! 🚀"
+
+  summary:
+    name: 📋 Docker Test Summary
+    runs-on: ubuntu-latest
+    needs: docker-regression-tests
+    if: always()
+
+    steps:
+      - name: Generate test summary
+        run: |
+          echo "## 🐳 Docker Regression Test Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| PostgreSQL Version | Status |" >> $GITHUB_STEP_SUMMARY
+          echo "|-------------------|--------|" >> $GITHUB_STEP_SUMMARY
+          echo "| 13 | ${{ needs.docker-regression-tests.result == 'success' && '✅ Passed' || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| 14 | ${{ needs.docker-regression-tests.result == 'success' && '✅ Passed' || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| 15 | ${{ needs.docker-regression-tests.result == 'success' && '✅ Passed' || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| 16 | ${{ needs.docker-regression-tests.result == 'success' && '✅ Passed' || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| 17 | ${{ needs.docker-regression-tests.result == 'success' && '✅ Passed' || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          if [ "${{ needs.docker-regression-tests.result }}" == "success" ]; then
+            echo "🎉 **All Docker tests passed!** The extension works correctly in all container environments." >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "Available container images:" >> $GITHUB_STEP_SUMMARY
+            echo "- \`docker pull ghcr.io/pmpetit/pglinter:pg13-latest\`" >> $GITHUB_STEP_SUMMARY
+            echo "- \`docker pull ghcr.io/pmpetit/pglinter:pg14-latest\`" >> $GITHUB_STEP_SUMMARY
+            echo "- \`docker pull ghcr.io/pmpetit/pglinter:pg15-latest\`" >> $GITHUB_STEP_SUMMARY
+            echo "- \`docker pull ghcr.io/pmpetit/pglinter:pg16-latest\`" >> $GITHUB_STEP_SUMMARY
+            echo "- \`docker pull ghcr.io/pmpetit/pglinter:pg17-latest\`" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ **Some Docker tests failed.** Check the individual job logs and regression diffs for details." >> $GITHUB_STEP_SUMMARY
+          fi

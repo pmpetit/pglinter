@@ -17,11 +17,6 @@ on:
         required: true
   workflow_dispatch:
     inputs:
-      always:
-        description: 'If defined, all jobs are launched in any case. Usually you want at least 1 major version to be built/tested on all pipelines.'
-        type: string
-        default: ''
-        required: false
       pgver:
         description: 'PostgreSQL version with pg prefix (e.g., pg13, pg16)'
         required: true
@@ -45,6 +40,7 @@ jobs:
       credentials:
         username: ${{ github.actor }}
         password: ${{ secrets.GH_TOKEN }}
+      options: --user root
 
     # Convert GitLab rules to GitHub Actions conditions
     if: |
@@ -58,19 +54,42 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Setup Rust environment (running as root)
+        run: |
+          # Set up Rust environment variables for root user
+          export CARGO_HOME=/home/postgres/.cargo
+          export RUSTUP_HOME=/home/postgres/.rustup
+          export PATH="/home/postgres/.cargo/bin:$PATH"
+          # Ensure cargo and rust are accessible
+          source /home/postgres/.cargo/env || true
+          # Verify rust installation
+          which rustc || echo "Rust not found in PATH"
+          which cargo || echo "Cargo not found in PATH"
+
       - name: Lint (only for default PG version)
         if: inputs.always != ''
-        run: make lint
+        run: |
+          export CARGO_HOME=/home/postgres/.cargo
+          export PATH="/home/postgres/.cargo/bin:$PATH"
+          make lint
 
       - name: Build the extension package
-        run: make
+        run: |
+          export CARGO_HOME=/home/postgres/.cargo
+          export PATH="/home/postgres/.cargo/bin:$PATH"
+          make
 
       - name: Launch postgres instance and run unit tests
-        run: make test
+        run: |
+          export CARGO_HOME=/home/postgres/.cargo
+          export PATH="/home/postgres/.cargo/bin:$PATH"
+          make test
         # The functional tests will be launched later with pg_regress
 
       - name: Build packages
         run: |
+          export CARGO_HOME=/home/postgres/.cargo
+          export PATH="/home/postgres/.cargo/bin:$PATH"
           make deb
           make rpm
 
@@ -93,6 +112,7 @@ jobs:
       credentials:
         username: ${{ github.actor }}
         password: ${{ secrets.GH_TOKEN }}
+      options: --user root
 
     if: |
       inputs.always != '' ||
@@ -105,6 +125,15 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Setup Rust environment (running as root)
+        run: |
+          # Set up Rust environment variables for root user
+          export CARGO_HOME=/home/postgres/.cargo
+          export RUSTUP_HOME=/home/postgres/.rustup
+          export PATH="/home/postgres/.cargo/bin:$PATH"
+          # Ensure cargo and rust are accessible
+          source /home/postgres/.cargo/env || true
+
       - name: Download build artifacts
         uses: actions/download-artifact@v4
         with:
@@ -112,10 +141,16 @@ jobs:
           path: 'target/release/pglinter-${{ inputs.pgver }}'
 
       - name: Install binaries
-        run: make install
+        run: |
+          export CARGO_HOME=/home/postgres/.cargo
+          export PATH="/home/postgres/.cargo/bin:$PATH"
+          make install
 
       - name: Run functional tests with pg_regress
-        run: make installcheck
+        run: |
+          export CARGO_HOME=/home/postgres/.cargo
+          export PATH="/home/postgres/.cargo/bin:$PATH"
+          make installcheck
 
       - name: Upload test artifacts
         uses: actions/upload-artifact@v4

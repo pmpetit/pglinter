@@ -49,6 +49,9 @@ ARG GID=1000
 RUN groupadd -g "${GID}" postgres \
  && useradd --create-home --no-log-init -u "${UID}" -g "${GID}" postgres
 
+# For GitHub Actions compatibility, we'll switch user context in the workflow
+# but keep the container setup flexible
+
 USER postgres
 ENV USER=postgres
 
