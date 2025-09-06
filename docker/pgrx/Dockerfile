@@ -52,7 +52,7 @@ RUN groupadd -g "${GID}" postgres \
 # GitHub Actions compatibility: install sudo and setup directories
 RUN dnf install -y sudo \
  && echo "postgres ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers \
- && mkdir -p /__w/_temp/_runner_file_commands /__w/_actions /github/workspace \
+ && mkdir -p /__w/_temp/_runner_file_commands /__w/_actions /github/workspacem \
  && chown -R postgres:postgres /__w /github \
  && chmod -R 777 /__w \
  && chmod -R 755 /github

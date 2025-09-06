@@ -52,6 +52,8 @@ jobs:
     steps:
       - name: Who am I?
         run: whoami
+      - name: What are my ids?
+        run: id
       - name: Checkout code
         uses: actions/checkout@v4
 
