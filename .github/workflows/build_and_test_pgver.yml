@@ -37,6 +37,7 @@ jobs:
     # Use GitHub Container Registry for pmpetit
     container:
       image: ghcr.io/pmpetit/postgresql_pglinter:pgrx
+      options: --user root
       credentials:
         username: ${{ github.actor }}
         password: ${{ secrets.GH_TOKEN }}
