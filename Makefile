@@ -131,7 +131,7 @@ ifeq ($(TARGET),release)
 endif
 
 test:
-	$(PGRX) test $(PGVER) $(RELEASE_OPT) --verbose
+	$(PGRX) test $(PGVER) $(RELEASE_OPT)
 
 start:
 	$(PGRX) start $(PGVER)
