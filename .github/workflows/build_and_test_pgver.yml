@@ -44,7 +44,7 @@ jobs:
       image: ghcr.io/pmpetit/postgresql_pglinter:pgrx
       credentials:
         username: ${{ github.actor }}
-        password: ${{ secrets.GITHUB_TOKEN }}
+        password: ${{ secrets.GH_TOKEN }}
 
     # Convert GitLab rules to GitHub Actions conditions
     if: |
@@ -92,7 +92,7 @@ jobs:
       image: ghcr.io/pmpetit/postgresql_pglinter:pgrx
       credentials:
         username: ${{ github.actor }}
-        password: ${{ secrets.GITHUB_TOKEN }}
+        password: ${{ secrets.GH_TOKEN }}
 
     if: |
       inputs.always != '' ||
@@ -153,7 +153,7 @@ jobs:
           files: 'target/release/pglinter-${{ inputs.pgver }}/*.deb'
           name: 'pglinter_${{ inputs.pgver }}-${{ github.ref_name }}.amd64.deb'
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
 
       - name: Upload RPM package to GitHub Releases
         if: startsWith(github.ref, 'refs/tags/')
@@ -162,7 +162,7 @@ jobs:
           files: 'target/release/pglinter-${{ inputs.pgver }}/*.rpm'
           name: 'pglinter_${{ inputs.pgver }}-${{ github.ref_name }}.x86_64.rpm'
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
 
   ##
   ## R E L E A S E
