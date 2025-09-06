@@ -36,10 +36,10 @@ RUN dnf install -y 'dnf-command(config-manager)' \
 FROM rhel8_devtools AS rhel8_rust
 
 # Create the postgres user with the given uid/gid
-# If you're not using Docker Desktop and your UID / GID is not 1000 then
-# you'll get permission errors with volumes.
-#
+# If you're not using Docker
 # You can fix that by rebuilding the image locally with:
+#Desktop and your UID / GID is not 1000 then
+# you'll get permission errors with volumes.
 #
 # docker compose build --build-arg UID=`id -u` --build-arg GID=`id- g`
 #
@@ -48,9 +48,6 @@ ARG UID=1000
 ARG GID=1000
 RUN groupadd -g "${GID}" postgres \
  && useradd --create-home --no-log-init -u "${UID}" -g "${GID}" postgres
-
-# For GitHub Actions compatibility, we'll switch user context in the workflow
-# but keep the container setup flexible
 
 USER postgres
 ENV USER=postgres
