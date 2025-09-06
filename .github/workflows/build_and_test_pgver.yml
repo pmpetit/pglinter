@@ -50,6 +50,8 @@ jobs:
       startsWith(github.ref, 'refs/tags/')
 
     steps:
+      - name: Who am I?
+        run: whoami
       - name: Checkout code
         uses: actions/checkout@v4
 
