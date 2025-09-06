@@ -54,41 +54,29 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Setup Rust environment (running as root)
+      - name: Setup workspace permissions
         run: |
-          # Set up Rust environment variables for root user
-          export CARGO_HOME=/home/postgres/.cargo
-          export RUSTUP_HOME=/home/postgres/.rustup
-          export PATH="/home/postgres/.cargo/bin:$PATH"
-          # Ensure cargo and rust are accessible
-          source /home/postgres/.cargo/env || true
-          # Verify rust installation
-          which rustc || echo "Rust not found in PATH"
-          which cargo || echo "Cargo not found in PATH"
+          # Change ownership of workspace to postgres user for builds
+          chown -R postgres:postgres /github/workspace
 
       - name: Lint (only for default PG version)
         if: inputs.always != ''
         run: |
-          export CARGO_HOME=/home/postgres/.cargo
-          export PATH="/home/postgres/.cargo/bin:$PATH"
-          make lint
+          su - postgres -c "cd /github/workspace && make lint"
 
       - name: Build the extension package
         run: |
-          export CARGO_HOME=/home/postgres/.cargo
-          export PATH="/home/postgres/.cargo/bin:$PATH"
-          make
+          su - postgres -c "cd /github/workspace && make"
 
       - name: Launch postgres instance and run unit tests
         run: |
-          export CARGO_HOME=/home/postgres/.cargo
-          export PATH="/home/postgres/.cargo/bin:$PATH"
-          make test
+          su - postgres -c "cd /github/workspace && make test"
         # The functional tests will be launched later with pg_regress
 
       - name: Build packages
         run: |
-          export CARGO_HOME=/home/postgres/.cargo
+          su - postgres -c "cd /github/workspace && make deb"
+          su - postgres -c "cd /github/workspace && make rpm"
           export PATH="/home/postgres/.cargo/bin:$PATH"
           make deb
           make rpm
@@ -125,14 +113,10 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Setup Rust environment (running as root)
+      - name: Setup workspace permissions
         run: |
-          # Set up Rust environment variables for root user
-          export CARGO_HOME=/home/postgres/.cargo
-          export RUSTUP_HOME=/home/postgres/.rustup
-          export PATH="/home/postgres/.cargo/bin:$PATH"
-          # Ensure cargo and rust are accessible
-          source /home/postgres/.cargo/env || true
+          # Change ownership of workspace to postgres user for builds
+          chown -R postgres:postgres /github/workspace
 
       - name: Download build artifacts
         uses: actions/download-artifact@v4
@@ -142,15 +126,11 @@ jobs:
 
       - name: Install binaries
         run: |
-          export CARGO_HOME=/home/postgres/.cargo
-          export PATH="/home/postgres/.cargo/bin:$PATH"
-          make install
+          su - postgres -c "cd /github/workspace && make install"
 
       - name: Run functional tests with pg_regress
         run: |
-          export CARGO_HOME=/home/postgres/.cargo
-          export PATH="/home/postgres/.cargo/bin:$PATH"
-          make installcheck
+          su - postgres -c "cd /github/workspace && make installcheck"
 
       - name: Upload test artifacts
         uses: actions/upload-artifact@v4
