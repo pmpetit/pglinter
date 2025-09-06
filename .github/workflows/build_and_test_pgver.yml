@@ -85,6 +85,13 @@ jobs:
           su - postgres -c "cd $GITHUB_WORKSPACE && make deb"
           su - postgres -c "cd $GITHUB_WORKSPACE && make rpm"
 
+
+      - name: List artifacts without $GITHUB_WORKSPACE
+        run: ls -lrt /target/release/pglinter-${{ inputs.pgver }}
+
+      - name: List artifacts without $GITHUB_WORKSPACE
+        run: ls -lrt $GITHUB_WORKSPACE/target/release/pglinter-${{ inputs.pgver }}
+
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4
         with:
