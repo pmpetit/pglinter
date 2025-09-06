@@ -54,6 +54,10 @@ jobs:
         run: whoami
       - name: What are my ids?
         run: id
+      - name: pwd
+        run: pwd
+      - name: change permissions
+        run: sudo chmod -R 777 /home/runner/_temp
       - name: Checkout code
         uses: actions/checkout@v4
 
