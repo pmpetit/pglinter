@@ -62,21 +62,28 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Setup workspace for postgres user
+        run: |
+          # Change ownership of the checked out code to postgres user
+          chown -R postgres:postgres $GITHUB_WORKSPACE
+          # Ensure postgres user can access the workspace
+          chmod -R 755 $GITHUB_WORKSPACE
+
       - name: Lint (only for default PG version)
         if: inputs.always != ''
-        run: make lint
+        run: su - postgres -c "cd $GITHUB_WORKSPACE && make lint"
 
       - name: Build the extension package
-        run: make
+        run: su - postgres -c "cd $GITHUB_WORKSPACE && make"
 
       - name: Launch postgres instance and run unit tests
-        run: make test
+        run: su - postgres -c "cd $GITHUB_WORKSPACE && make test"
         # The functional tests will be launched later with pg_regress
 
       - name: Build packages
         run: |
-          make deb
-          make rpm
+          su - postgres -c "cd $GITHUB_WORKSPACE && make deb"
+          su - postgres -c "cd $GITHUB_WORKSPACE && make rpm"
 
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4
@@ -94,6 +101,7 @@ jobs:
     needs: build
     container:
       image: ghcr.io/pmpetit/postgresql_pglinter:pgrx
+      options: --user root
       credentials:
         username: ${{ github.actor }}
         password: ${{ secrets.GH_TOKEN }}
@@ -109,6 +117,13 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Setup workspace for postgres user
+        run: |
+          # Change ownership of the checked out code to postgres user
+          chown -R postgres:postgres $GITHUB_WORKSPACE
+          # Ensure postgres user can access the workspace
+          chmod -R 755 $GITHUB_WORKSPACE
+
       - name: Download build artifacts
         uses: actions/download-artifact@v4
         with:
@@ -116,12 +131,10 @@ jobs:
           path: 'target/release/pglinter-${{ inputs.pgver }}'
 
       - name: Install binaries
-        run: make install
-        working-directory: $GITHUB_WORKSPACE
+        run: su - postgres -c "cd $GITHUB_WORKSPACE && make install"
 
       - name: Run functional tests with pg_regress
-        run: make installcheck
-        working-directory: $GITHUB_WORKSPACE
+        run: su - postgres -c "cd $GITHUB_WORKSPACE && make installcheck"
 
       - name: Upload test artifacts
         uses: actions/upload-artifact@v4
