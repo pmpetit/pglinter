@@ -40,7 +40,6 @@ jobs:
       credentials:
         username: ${{ github.actor }}
         password: ${{ secrets.GH_TOKEN }}
-      options: --user root
 
     # Convert GitLab rules to GitHub Actions conditions
     if: |
@@ -54,32 +53,25 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Setup workspace permissions
-        run: |
-          # Change ownership of workspace to postgres user for builds
-          chown -R postgres:postgres /github/workspace
-
       - name: Lint (only for default PG version)
         if: inputs.always != ''
-        run: |
-          su - postgres -c "cd /github/workspace && make lint"
+        run: make lint
+        working-directory: /github/workspace
 
       - name: Build the extension package
-        run: |
-          su - postgres -c "cd /github/workspace && make"
+        run: make
+        working-directory: /github/workspace
 
       - name: Launch postgres instance and run unit tests
-        run: |
-          su - postgres -c "cd /github/workspace && make test"
+        run: make test
+        working-directory: /github/workspace
         # The functional tests will be launched later with pg_regress
 
       - name: Build packages
         run: |
-          su - postgres -c "cd /github/workspace && make deb"
-          su - postgres -c "cd /github/workspace && make rpm"
-          export PATH="/home/postgres/.cargo/bin:$PATH"
           make deb
           make rpm
+        working-directory: /github/workspace
 
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4
@@ -100,7 +92,6 @@ jobs:
       credentials:
         username: ${{ github.actor }}
         password: ${{ secrets.GH_TOKEN }}
-      options: --user root
 
     if: |
       inputs.always != '' ||
@@ -113,11 +104,6 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Setup workspace permissions
-        run: |
-          # Change ownership of workspace to postgres user for builds
-          chown -R postgres:postgres /github/workspace
-
       - name: Download build artifacts
         uses: actions/download-artifact@v4
         with:
@@ -125,12 +111,12 @@ jobs:
           path: 'target/release/pglinter-${{ inputs.pgver }}'
 
       - name: Install binaries
-        run: |
-          su - postgres -c "cd /github/workspace && make install"
+        run: make install
+        working-directory: /github/workspace
 
       - name: Run functional tests with pg_regress
-        run: |
-          su - postgres -c "cd /github/workspace && make installcheck"
+        run: make installcheck
+        working-directory: /github/workspace
 
       - name: Upload test artifacts
         uses: actions/upload-artifact@v4

@@ -49,6 +49,13 @@ ARG GID=1000
 RUN groupadd -g "${GID}" postgres \
  && useradd --create-home --no-log-init -u "${UID}" -g "${GID}" postgres
 
+# GitHub Actions compatibility: install sudo and setup directories
+RUN dnf install -y sudo \
+ && echo "postgres ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers \
+ && mkdir -p /__w/_temp /github/workspace \
+ && chown -R postgres:postgres /__w /github \
+ && chmod -R 755 /__w /github
+
 USER postgres
 ENV USER=postgres
 
