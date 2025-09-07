@@ -1,5 +1,5 @@
 
-name: 'Package and deploy package.'
+name: 'Package and deploy pglinter.'
 
 on:
   push:
