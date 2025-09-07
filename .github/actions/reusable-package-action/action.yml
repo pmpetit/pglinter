@@ -48,7 +48,7 @@ runs:
       uses: actions/upload-artifact@v4
       with:
         name: pglinter deb
-        path: $GITHUB_WORKSPACE/target/release/pglinter-${{ inputs.pgver }}/*.deb
+        path: target/release/pglinter-${{ inputs.pgver }}/*.deb
 
     - name: List artifacts
       run: |
