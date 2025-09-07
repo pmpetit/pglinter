@@ -7,7 +7,7 @@ inputs:
   pgver:
     description: 'The PostgreSQL major version with the "pg" prefix (e.g. `pg13`, `pg16`, etc.)'
     required: true
-    
+
 runs:
   using: "composite"
   steps:
@@ -18,6 +18,11 @@ runs:
       run: |
         chown -R postgres:postgres $GITHUB_WORKSPACE
         chmod -R 755 $GITHUB_WORKSPACE
+      shell: bash
+
+    - name: List artifacts
+      run: |
+        ls -lrt $GITHUB_WORKSPACE/target/release/pglinter-${{ inputs.pgver }}
       shell: bash
 
     - name: Build packages
