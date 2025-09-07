@@ -1,0 +1,37 @@
+# .github/actions/reusable-package-action/action.yml
+name: 'Build package and upload'
+
+description: 'Builds rpm/deb package and upload.'
+
+inputs:
+  pgver:
+    description: 'The PostgreSQL major version with the "pg" prefix (e.g. `pg13`, `pg16`, etc.)'
+    required: true
+
+runs:
+  using: "composite"
+  steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup workspace for postgres user
+      run: |
+        chown -R postgres:postgres $GITHUB_WORKSPACE
+        chmod -R 755 $GITHUB_WORKSPACE
+      shell: bash
+
+    - name: Build packages
+      run: |
+        su - postgres -c "cd $GITHUB_WORKSPACE && make deb"
+        su - postgres -c "cd $GITHUB_WORKSPACE && make rpm"
+      shell: bash
+
+    - name: Upload build artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: 'pglinter-${{ inputs.pgver }}'
+        path: |
+          '$GITHUB_WORKSPACE/target/release/pglinter-${{ inputs.pgver }}/*.rpm'
+          '$GITHUB_WORKSPACE/target/release/pglinter-${{ inputs.pgver }}/*.deb'
+        retention-days: 1
+

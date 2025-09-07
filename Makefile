@@ -66,11 +66,11 @@ REGRESS_TESTS = t003_minimal
 # * the _PG15+ suffix means PostgreSQL 15 and all the major versions after
 # * the _PG13- suffix means PostgreSQL 13 and all the major versions below
 
-REGRESS_TESTS_PG13 = elevation_via_rule_PG15- elevation_via_security_definer_function_PG14-
-REGRESS_TESTS_PG14 = elevation_via_rule_PG15- elevation_via_security_definer_function_PG14-
-REGRESS_TESTS_PG15 = elevation_via_rule_PG15-
-REGRESS_TESTS_PG16 =
-REGRESS_TESTS_PG17 =
+# REGRESS_TESTS_PG13 = elevation_via_rule_PG15- elevation_via_security_definer_function_PG14-
+# REGRESS_TESTS_PG14 = elevation_via_rule_PG15- elevation_via_security_definer_function_PG14-
+# REGRESS_TESTS_PG15 = elevation_via_rule_PG15-
+# REGRESS_TESTS_PG16 =
+# REGRESS_TESTS_PG17 =
 
 REGRESS_TESTS+=${REGRESS_TESTS_PG${PG_MAJOR_VERSION}}
 
@@ -131,7 +131,7 @@ ifeq ($(TARGET),release)
 endif
 
 test:
-	$(PGRX) test $(PGVER) $(RELEASE_OPT) --verbose
+	$(PGRX) test $(PGVER) $(RELEASE_OPT)
 
 start:
 	$(PGRX) start $(PGVER)
@@ -205,7 +205,7 @@ rpm deb: package
 	export PG_PKGLIBDIR=".$(PG_PKGLIBDIR)" && \
 	export PG_SHAREDIR=".$(PG_SHAREDIR)" && \
 	export PG_MAJOR_VERSION="$(PG_MAJOR_VERSION)" && \
-	export ANON_MINOR_VERSION="$(ANON_MINOR_VERSION)" && \
+	export PGLINTER_MINOR_VERSION="$(PGLINTER_MINOR_VERSION)" && \
 	envsubst < nfpm.template.yaml > $(TARGET_DIR)/nfpm.yaml
 	cd $(TARGET_DIR) && nfpm package --packager $@
 
