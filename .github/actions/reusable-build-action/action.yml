@@ -1,0 +1,45 @@
+# .github/actions/reusable-build-action/action.yml
+name: 'Build and Test PostgreSQL Version'
+
+description: 'Builds and tests the pglinter extension for a given PostgreSQL version.'
+
+inputs:
+  pgver:
+    description: 'The PostgreSQL major version with the "pg" prefix (e.g. `pg13`, `pg16`, etc.)'
+    type: string
+    required: true
+  always:
+    description: 'If defined, all jobs are launched in any case.'
+    type: string
+    required: false
+
+runs:
+  using: "composite"
+  steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup workspace for postgres user
+      run: |
+        chown -R postgres:postgres $GITHUB_WORKSPACE
+        chmod -R 755 $GITHUB_WORKSPACE
+      shell: bash
+
+    - name: Lint (only for default PG version)
+      if: inputs.always != ''
+      run: su - postgres -c "cd $GITHUB_WORKSPACE && make lint"
+      shell: bash
+
+    - name: Build the extension package
+      run: su - postgres -c "cd $GITHUB_WORKSPACE && make"
+      shell: bash
+
+    - name: Launch postgres instance and run unit tests
+      run: su - postgres -c "cd $GITHUB_WORKSPACE && make test"
+      shell: bash
+
+    - name: Run regressions tests
+      run: |
+        su - postgres -c "cd $GITHUB_WORKSPACE && make install"
+        su - postgres -c "cd $GITHUB_WORKSPACE && make installcheck"
+      shell: bash
