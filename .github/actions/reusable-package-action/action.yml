@@ -30,7 +30,7 @@ runs:
         su - postgres -c "cd $GITHUB_WORKSPACE && make rpm"
       shell: bash
       env:
-        PGLINTER_MAJOR_VERSION: ${{ input.tag }}
+        PGLINTER_MINOR_VERSION: ${{ input.tag }}
     - name: 'RPM package for $[[ inputs.pgver ]] (x64_64)'
       uses: actions/upload-artifact@v4
       with:
