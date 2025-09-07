@@ -1,5 +1,3 @@
-# GitHub Actions workflow converted from GitLab CI template
-# Original: .gitlab/job_templates/build_and_test_pgver.yml
 
 name: 'Build and Test PostgreSQL Version'
 
@@ -22,14 +20,14 @@ concurrency:
 
 jobs:
   ##
-  ## B U I L D / T E S T / P A C K A G E & D E P L O Y
+  ## B U I L D / T E S T
   ##
   build:
     strategy:
       matrix:
         pgver: [13]
       fail-fast: false
-    name: 'build-test-deploy-pg${{ matrix.pgver }}'
+    name: 'build-test-pg${{ matrix.pgver }}'
     runs-on: ubuntu-latest
     # Use GitHub Container Registry for pmpetit
     container:
@@ -47,7 +45,3 @@ jobs:
         with:
           pgver: ${{ matrix.pgver }}
           always: ${{ matrix.pgver == 'pg13' && 'yes' || '' }}
-      - name: Call reusable package action
-        uses: ./.github/actions/reusable-package-action
-        with:
-          pgver: ${{ matrix.pgver }}
