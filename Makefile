@@ -205,7 +205,7 @@ rpm deb: package
 	export PG_PKGLIBDIR=".$(PG_PKGLIBDIR)" && \
 	export PG_SHAREDIR=".$(PG_SHAREDIR)" && \
 	export PG_MAJOR_VERSION="$(PG_MAJOR_VERSION)" && \
-	export ANON_MINOR_VERSION="$(ANON_MINOR_VERSION)" && \
+	export PGLINTER_MINOR_VERSION="$(PGLINTER_MINOR_VERSION)" && \
 	envsubst < nfpm.template.yaml > $(TARGET_DIR)/nfpm.yaml
 	cd $(TARGET_DIR) && nfpm package --packager $@
 

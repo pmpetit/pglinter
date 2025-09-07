@@ -51,16 +51,6 @@ jobs:
       startsWith(github.ref, 'refs/tags/')
 
     steps:
-      - name: Who am I?
-        run: whoami
-      - name: What are my ids?
-        run: id
-      - name: pwd
-        run: pwd
-      - name: change permissions
-        run: sudo chmod -R 777 /__w
-      - name: show $GITHUB_WORKSPACE
-        run: echo $GITHUB_WORKSPACE
       - name: Checkout code
         uses: actions/checkout@v4
 
@@ -80,6 +70,12 @@ jobs:
 
       - name: Launch postgres instance and run unit tests
         run: su - postgres -c "cd $GITHUB_WORKSPACE && make test"
+
+      - name: Run regressions tests
+        run: |
+          su - postgres -c "cd $GITHUB_WORKSPACE && make install"
+          su - postgres -c "cd $GITHUB_WORKSPACE && make installcheck"
+
         # The functional tests will be launched later with pg_regress
 
       - name: Build packages
@@ -91,113 +87,115 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: 'pglinter-${{ inputs.pgver }}'
-          path: '$GITHUB_WORKSPACE/target/release/pglinter-${{ inputs.pgver }}'
-          retention-days: 1
-
-  ##
-  ## T E S T
-  ##
-  installcheck:
-    name: 'installcheck-${{ inputs.pgver }}'
-    runs-on: ubuntu-latest
-    needs: build
-    container:
-      image: ghcr.io/pmpetit/postgresql_pglinter:pgrx
-      options: --user root
-      credentials:
-        username: ${{ github.actor }}
-        password: ${{ secrets.GH_TOKEN }}
-
-    if: |
-      inputs.always != '' ||
-      github.event_name == 'schedule' ||
-      github.event_name == 'workflow_dispatch' ||
-      github.ref == github.event.repository.default_branch ||
-      startsWith(github.ref, 'refs/tags/')
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Setup workspace for postgres user
-        run: |
-          # Change ownership of the checked out code to postgres user
-          chown -R postgres:postgres $GITHUB_WORKSPACE
-          # Ensure postgres user can access the workspace
-          chmod -R 755 $GITHUB_WORKSPACE
-
-      - name: Download build artifacts
-        uses: actions/download-artifact@v4
-        with:
-          name: 'pglinter-${{ inputs.pgver }}'
-          path: 'target/release/pglinter-${{ inputs.pgver }}'
-
-      - name: Install binaries
-        run: su - postgres -c "cd $GITHUB_WORKSPACE && make install"
-
-      - name: Run functional tests with pg_regress
-        run: su - postgres -c "cd $GITHUB_WORKSPACE && make installcheck"
-
-      - name: Upload test artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: 'test-results-${{ inputs.pgver }}'
           path: |
-            target/release/pglinter-${{ inputs.pgver }}
-            results
+            '$GITHUB_WORKSPACE/target/release/pglinter-*/*.rpm'
+            '$GITHUB_WORKSPACE/target/release/pglinter-*/*.deb'
           retention-days: 1
 
-  ##
-  ## D E P L O Y
-  ##
-  upload-packages:
-    name: 'upload-packages-${{ inputs.pgver }}'
-    runs-on: ubuntu-latest
-    needs: build
+  # ##
+  # ## T E S T
+  # ##
+  # installcheck:
+  #   name: 'installcheck-${{ inputs.pgver }}'
+  #   runs-on: ubuntu-latest
+  #   needs: build
+  #   container:
+  #     image: ghcr.io/pmpetit/postgresql_pglinter:pgrx
+  #     options: --user root
+  #     credentials:
+  #       username: ${{ github.actor }}
+  #       password: ${{ secrets.GH_TOKEN }}
 
-    # Convert GitLab rules: run on tags always, otherwise manual
-    if: |
-      startsWith(github.ref, 'refs/tags/') ||
-      github.event_name == 'workflow_dispatch'
+  #   if: |
+  #     inputs.always != '' ||
+  #     github.event_name == 'schedule' ||
+  #     github.event_name == 'workflow_dispatch' ||
+  #     github.ref == github.event.repository.default_branch ||
+  #     startsWith(github.ref, 'refs/tags/')
 
-    steps:
-      - name: Download build artifacts
-        uses: actions/download-artifact@v4
-        with:
-          name: 'pglinter-${{ inputs.pgver }}'
-          path: 'target/release/pglinter-${{ inputs.pgver }}'
+  #   steps:
+  #     - name: Checkout code
+  #       uses: actions/checkout@v4
 
-      - name: Upload DEB package to GitHub Releases
-        if: startsWith(github.ref, 'refs/tags/')
-        uses: softprops/action-gh-release@v1
-        with:
-          files: 'target/release/pglinter-${{ inputs.pgver }}/*.deb'
-          name: 'pglinter_${{ inputs.pgver }}-${{ github.ref_name }}.amd64.deb'
-        env:
-          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
+  #     - name: Setup workspace for postgres user
+  #       run: |
+  #         # Change ownership of the checked out code to postgres user
+  #         chown -R postgres:postgres $GITHUB_WORKSPACE
+  #         # Ensure postgres user can access the workspace
+  #         chmod -R 755 $GITHUB_WORKSPACE
 
-      - name: Upload RPM package to GitHub Releases
-        if: startsWith(github.ref, 'refs/tags/')
-        uses: softprops/action-gh-release@v1
-        with:
-          files: 'target/release/pglinter-${{ inputs.pgver }}/*.rpm'
-          name: 'pglinter_${{ inputs.pgver }}-${{ github.ref_name }}.x86_64.rpm'
-        env:
-          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
+  #     - name: Download build artifacts
+  #       uses: actions/download-artifact@v4
+  #       with:
+  #         name: 'pglinter-${{ inputs.pgver }}'
+  #         path: 'target/release/pglinter-${{ inputs.pgver }}'
 
-  ##
-  ## R E L E A S E
-  ##
-  release-packages:
-    name: 'release-packages-${{ inputs.pgver }}'
-    runs-on: ubuntu-latest
-    needs: [build, upload-packages]
+  #     - name: Install binaries
+  #       run: su - postgres -c "cd $GITHUB_WORKSPACE && make install"
 
-    # Only run on tags
-    if: startsWith(github.ref, 'refs/tags/')
+  #     - name: Run functional tests with pg_regress
+  #       run: su - postgres -c "cd $GITHUB_WORKSPACE && make installcheck"
 
-    steps:
-      - name: Create Release Entry
-        run: echo "Release ${{ github.ref_name }} created for ${{ inputs.pgver }}"
-        # Note: GitHub Releases are automatically created when using softprops/action-gh-release
-        # The actual release creation is handled by the upload-packages job
+  #     - name: Upload test artifacts
+  #       uses: actions/upload-artifact@v4
+  #       with:
+  #         name: 'test-results-${{ inputs.pgver }}'
+  #         path: |
+  #           target/release/pglinter-${{ inputs.pgver }}
+  #           results
+  #         retention-days: 1
+
+  # ##
+  # ## D E P L O Y
+  # ##
+  # upload-packages:
+  #   name: 'upload-packages-${{ inputs.pgver }}'
+  #   runs-on: ubuntu-latest
+  #   needs: build
+
+  #   # Convert GitLab rules: run on tags always, otherwise manual
+  #   if: |
+  #     startsWith(github.ref, 'refs/tags/') ||
+  #     github.event_name == 'workflow_dispatch'
+
+  #   steps:
+  #     - name: Download build artifacts
+  #       uses: actions/download-artifact@v4
+  #       with:
+  #         name: 'pglinter-${{ inputs.pgver }}'
+  #         path: 'target/release/pglinter-${{ inputs.pgver }}'
+
+  #     - name: Upload DEB package to GitHub Releases
+  #       if: startsWith(github.ref, 'refs/tags/')
+  #       uses: softprops/action-gh-release@v1
+  #       with:
+  #         files: 'target/release/pglinter-${{ inputs.pgver }}/*.deb'
+  #         name: 'pglinter_${{ inputs.pgver }}-${{ github.ref_name }}.amd64.deb'
+  #       env:
+  #         GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
+
+  #     - name: Upload RPM package to GitHub Releases
+  #       if: startsWith(github.ref, 'refs/tags/')
+  #       uses: softprops/action-gh-release@v1
+  #       with:
+  #         files: 'target/release/pglinter-${{ inputs.pgver }}/*.rpm'
+  #         name: 'pglinter_${{ inputs.pgver }}-${{ github.ref_name }}.x86_64.rpm'
+  #       env:
+  #         GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
+
+  # ##
+  # ## R E L E A S E
+  # ##
+  # release-packages:
+  #   name: 'release-packages-${{ inputs.pgver }}'
+  #   runs-on: ubuntu-latest
+  #   needs: [build, upload-packages]
+
+  #   # Only run on tags
+  #   if: startsWith(github.ref, 'refs/tags/')
+
+  #   steps:
+  #     - name: Create Release Entry
+  #       run: echo "Release ${{ github.ref_name }} created for ${{ inputs.pgver }}"
+  #       # Note: GitHub Releases are automatically created when using softprops/action-gh-release
+  #       # The actual release creation is handled by the upload-packages job
