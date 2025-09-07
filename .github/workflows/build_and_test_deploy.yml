@@ -4,12 +4,9 @@
 name: 'Build and Test PostgreSQL Version'
 
 on:
-  workflow_call:
-    inputs:
-      pgver:
-        description: 'The PostgreSQL major version with the "pg" prefix (e.g. `pg13`, `pg16`, etc.)'
-        type: string
-        required: true
+  pull_request:
+    branches:
+      - main  # Optional: specify branches for the pull request to merge into
   workflow_dispatch:
     #inputs:
       # pgver:
@@ -40,14 +37,6 @@ jobs:
       credentials:
         username: ${{ github.actor }}
         password: ${{ secrets.GH_TOKEN }}
-
-    # Convert GitLab rules to GitHub Actions conditions
-    if: |
-      inputs.always != '' ||
-      github.event_name == 'schedule' ||
-      github.event_name == 'workflow_dispatch' ||
-      github.ref == github.event.repository.default_branch ||
-      startsWith(github.ref, 'refs/tags/')
 
     steps:
       - name: Checkout repository
