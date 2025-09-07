@@ -55,30 +55,11 @@ jobs:
       startsWith(github.ref, 'refs/tags/')
 
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Setup workspace for postgres user
-        run: |
-          # Change ownership of the checked out code to postgres user
-          chown -R postgres:postgres $GITHUB_WORKSPACE
-          # Ensure postgres user can access the workspace
-          chmod -R 755 $GITHUB_WORKSPACE
-
-      - name: Lint (only for default PG version)
-        if: inputs.always != ''
-        run: su - postgres -c "cd $GITHUB_WORKSPACE && make lint"
-
-      - name: Build the extension package
-        run: su - postgres -c "cd $GITHUB_WORKSPACE && make"
-
-      - name: Launch postgres instance and run unit tests
-        run: su - postgres -c "cd $GITHUB_WORKSPACE && make test"
-
-      - name: Run regressions tests
-        run: |
-          su - postgres -c "cd $GITHUB_WORKSPACE && make install"
-          su - postgres -c "cd $GITHUB_WORKSPACE && make installcheck"
+      - name: 'Call reusable build action'
+        uses: ./.github/actions/reusable-build-action
+        with:
+          pgver: ${{ inputs.pgver }}
+          always: ${{ inputs.always }}
 
         # The functional tests will be launched later with pg_regress
 
