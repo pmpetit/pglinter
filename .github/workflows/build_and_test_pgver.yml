@@ -55,6 +55,8 @@ jobs:
       startsWith(github.ref, 'refs/tags/')
 
     steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
       - name: 'Call reusable build action'
         uses: ./.github/actions/reusable-build-action
         with:
