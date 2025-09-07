@@ -34,9 +34,9 @@ jobs:
   build:
     strategy:
       matrix:
-        pgver: [13, 14, 15, 16, 17]
+        pgver: [13, 14, 15, 16, 17, 18]
       fail-fast: false
-    name: 'build-${{ matrix.pgver }}'
+    name: 'build-pg${{ matrix.pgver }}'
     runs-on: ubuntu-latest
     # Use GitHub Container Registry for pmpetit
     container:
