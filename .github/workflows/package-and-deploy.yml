@@ -1,5 +1,5 @@
 
-name: 'Build / Test and deploy package.'
+name: 'Package and deploy package.'
 
 on:
   push:

@@ -1,5 +1,5 @@
 
-name: 'Build and Test PostgreSQL Version'
+name: 'Build and Test pglinter'
 
 on:
   pull_request:
