@@ -7,6 +7,10 @@ inputs:
   pgver:
     description: 'The PostgreSQL major version with the "pg" prefix (e.g. `pg13`, `pg16`, etc.)'
     required: true
+  tag:
+    description: 'The Git tag associated with the release.'
+    required: true
+    default: 'v0.0.0' # Set a default to handle cases where no tag is provided
 
 runs:
   using: "composite"
@@ -26,12 +30,16 @@ runs:
         su - postgres -c "cd $GITHUB_WORKSPACE && make rpm"
       shell: bash
 
-    - name: Upload build artifacts
+    - name: Upload rpm build artifacts
       uses: actions/upload-artifact@v4
       with:
-        name: 'pglinter-${{ inputs.pgver }}'
+        name: 'pglinter-${{ inputs.pgver }}--${{ inputs.tag }}.rpm'
         path: |
           '$GITHUB_WORKSPACE/target/release/pglinter-${{ inputs.pgver }}/*.rpm'
-          '$GITHUB_WORKSPACE/target/release/pglinter-${{ inputs.pgver }}/*.deb'
-        retention-days: 1
 
+    - name: Upload debian build artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: 'pglinter-${{ inputs.pgver }}--${{ inputs.tag }}.deb'
+        path: |
+          '$GITHUB_WORKSPACE/target/release/pglinter-${{ inputs.pgver }}/*.deb'
