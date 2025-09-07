@@ -20,11 +20,6 @@ runs:
         chmod -R 755 $GITHUB_WORKSPACE
       shell: bash
 
-    - name: List artifacts
-      run: |
-        ls -lrt $GITHUB_WORKSPACE/target/release/pglinter-${{ inputs.pgver }}
-      shell: bash
-
     - name: Build packages
       run: |
         su - postgres -c "cd $GITHUB_WORKSPACE && make deb"
@@ -36,6 +31,11 @@ runs:
         name: 'pglinter_${{ inputs.pgver }}-${{ inputs.tag }}.rpm'
         path: |
           '$GITHUB_WORKSPACE/target/release/pglinter-${{ inputs.pgver }}/*.rpm'
+
+    - name: List artifacts
+      run: |
+        ls -lrt $GITHUB_WORKSPACE/target/release/pglinter-${{ inputs.pgver }}
+      shell: bash
 
     - name: 'DEB package for $[[ inputs.pgver ]] (x64_64)'
       uses: actions/upload-artifact@v4
