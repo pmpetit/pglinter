@@ -16,12 +16,12 @@ on:
         type: string
         required: true
   workflow_dispatch:
-    inputs:
-      pgver:
-        description: 'PostgreSQL version with pg prefix (e.g., pg13, pg16)'
-        required: true
-        default: 'pg16'
-        type: string
+    #inputs:
+      # pgver:
+      #   description: 'PostgreSQL version with pg prefix (e.g., pg13, pg16)'
+      #   required: true
+      #   default: 'pg16'
+      #   type: string
 
 env:
   PGVER: ${{ inputs.pgver }}
@@ -32,7 +32,11 @@ jobs:
   ## B U I L D
   ##
   build:
-    name: 'build-${{ inputs.pgver }}'
+    strategy:
+      matrix:
+        pgver: [13, 14, 15, 16, 17]
+      fail-fast: false
+    name: 'build-${{ matrix.pgver }}'
     runs-on: ubuntu-latest
     # Use GitHub Container Registry for pmpetit
     container:
@@ -41,11 +45,6 @@ jobs:
       credentials:
         username: ${{ github.actor }}
         password: ${{ secrets.GH_TOKEN }}
-
-    strategy:
-      matrix:
-        pg_version: [13, 14, 15, 16, 17]
-      fail-fast: false
 
     # Convert GitLab rules to GitHub Actions conditions
     if: |
@@ -91,7 +90,7 @@ jobs:
       # - name: Upload build artifacts
       #   uses: actions/upload-artifact@v4
       #   with:
-      #     name: 'pglinter-${{ inputs.pgver }}'
+      #     name: 'pglinter-${{ matrix.pgver }}'
       #     path: |
       #       '$GITHUB_WORKSPACE/target/release/pglinter-*/*.rpm'
       #       '$GITHUB_WORKSPACE/target/release/pglinter-*/*.deb'
