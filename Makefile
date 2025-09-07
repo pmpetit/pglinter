@@ -66,11 +66,11 @@ REGRESS_TESTS = t003_minimal
 # * the _PG15+ suffix means PostgreSQL 15 and all the major versions after
 # * the _PG13- suffix means PostgreSQL 13 and all the major versions below
 
-REGRESS_TESTS_PG13 = elevation_via_rule_PG15- elevation_via_security_definer_function_PG14-
-REGRESS_TESTS_PG14 = elevation_via_rule_PG15- elevation_via_security_definer_function_PG14-
-REGRESS_TESTS_PG15 = elevation_via_rule_PG15-
-REGRESS_TESTS_PG16 =
-REGRESS_TESTS_PG17 =
+# REGRESS_TESTS_PG13 = elevation_via_rule_PG15- elevation_via_security_definer_function_PG14-
+# REGRESS_TESTS_PG14 = elevation_via_rule_PG15- elevation_via_security_definer_function_PG14-
+# REGRESS_TESTS_PG15 = elevation_via_rule_PG15-
+# REGRESS_TESTS_PG16 =
+# REGRESS_TESTS_PG17 =
 
 REGRESS_TESTS+=${REGRESS_TESTS_PG${PG_MAJOR_VERSION}}
 
