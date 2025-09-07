@@ -29,17 +29,10 @@ runs:
       uses: actions/upload-artifact@v4
       with:
         name: 'pglinter_${{ inputs.pgver }}-${{ inputs.tag }}.rpm'
-        path: |
-          '$GITHUB_WORKSPACE/target/release/pglinter-${{ inputs.pgver }}/*.rpm'
-
-    - name: List artifacts
-      run: |
-        ls -lrt $GITHUB_WORKSPACE/target/release/pglinter-${{ inputs.pgver }}
-      shell: bash
+        path: $GITHUB_WORKSPACE/target/release/pglinter-${{ inputs.pgver }}/*.rpm
 
     - name: 'DEB package for $[[ inputs.pgver ]] (x64_64)'
       uses: actions/upload-artifact@v4
       with:
         name: 'pglinter_${{ inputs.pgver }}-${{ inputs.tag }}.deb'
-        path: |
-          '$GITHUB_WORKSPACE/target/release/pglinter-${{ inputs.pgver }}/*.deb'
+        path: $GITHUB_WORKSPACE/target/release/pglinter-${{ inputs.pgver }}/*.deb
