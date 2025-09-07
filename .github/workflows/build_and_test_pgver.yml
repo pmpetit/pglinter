@@ -6,11 +6,6 @@ name: 'Build and Test PostgreSQL Version'
 on:
   workflow_call:
     inputs:
-      always:
-        description: 'If defined, all jobs are launched in any case. Usually you want at least 1 major version to be built/tested on all pipelines.'
-        type: string
-        default: ''
-        required: false
       pgver:
         description: 'The PostgreSQL major version with the "pg" prefix (e.g. `pg13`, `pg16`, etc.)'
         type: string
@@ -57,11 +52,16 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-      - name: 'Call reusable build action'
+      - name: Call reusable build action
         uses: ./.github/actions/reusable-build-action
         with:
-          pgver: ${{ inputs.pgver }}
-          always: ${{ inputs.always }}
+          pgver: ${{ matrix.pgver }}
+          always: ${{ matrix.pgver == 'pg13' && 'yes' || '' }}
+      - name: Call reusable package action
+        uses: ./.github/actions/reusable-package-action
+        with:
+          pgver: ${{ matrix.pgver }}
+
 
         # The functional tests will be launched later with pg_regress
 
