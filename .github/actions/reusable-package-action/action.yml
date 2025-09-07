@@ -10,7 +10,7 @@ inputs:
   tag:
     description: 'The pglinter version associated with the release.'
     required: true
-    default: 'v0.0.0' # Set a default to handle cases where no tag is provided
+    default: '0.0.0' # Set a default to handle cases where no tag is provided
 
 runs:
   using: "composite"
