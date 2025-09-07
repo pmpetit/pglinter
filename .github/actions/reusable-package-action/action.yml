@@ -7,6 +7,9 @@ inputs:
   pgver:
     description: 'The PostgreSQL major version with the "pg" prefix (e.g. `pg13`, `pg16`, etc.)'
     required: true
+  tag:
+    description: "The tag version"
+    required: true
 
 runs:
   using: "composite"
@@ -30,6 +33,13 @@ runs:
       with:
         name: pglinter_${{ inputs.pgver }}-${{ inputs.tag }}.rpm
         path: $GITHUB_WORKSPACE/target/release/pglinter-${{ inputs.pgver }}/postgresql_pglinter_*.rpm
+
+    - name: 'RPM package for ${{ inputs.pgver }} (x64_64)'
+      uses: actions/upload-artifact@v4
+      with:
+        name: 'pglinter_${{ inputs.pgver }}-${{ inputs.tag }}.rpm'
+        path: '$GITHUB_WORKSPACE/target/release/pglinter-${{ inputs.pgver }}/postgresql_pglinter*.rpm'
+
 
     - name: 'DEB package for $[[ inputs.pgver ]] (x64_64)'
       uses: actions/upload-artifact@v4

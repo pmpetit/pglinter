@@ -43,3 +43,4 @@ jobs:
         uses: ./.github/actions/reusable-package-action
         with:
           pgver: ${{ matrix.pgver }}
+          tag: ${{ github.ref_name }}
