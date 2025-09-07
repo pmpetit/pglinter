@@ -5,7 +5,7 @@ description: 'Builds rpm/deb package and upload.'
 
 inputs:
   pgver:
-    description: 'The PostgreSQL major version with the "pg" prefix (e.g. `pg13`, `pg16`, etc.)'
+    description: 'The PostgreSQL major version without the "pg" prefix (e.g. `13`, `16`, etc.)'
     required: true
   tag:
     description: 'The Git tag associated with the release.'
@@ -33,13 +33,13 @@ runs:
     - name: Upload rpm build artifacts
       uses: actions/upload-artifact@v4
       with:
-        name: 'pglinter-${{ inputs.pgver }}--${{ inputs.tag }}.rpm'
+        name: 'pglinter-${{ inputs.pgver }}--pg${{ inputs.tag }}.rpm'
         path: |
-          '$GITHUB_WORKSPACE/target/release/pglinter-${{ inputs.pgver }}/*.rpm'
+          '$GITHUB_WORKSPACE/target/release/pglinter-pg${{ inputs.pgver }}/*.rpm'
 
     - name: Upload debian build artifacts
       uses: actions/upload-artifact@v4
       with:
-        name: 'pglinter-${{ inputs.pgver }}--${{ inputs.tag }}.deb'
+        name: 'pglinter-${{ inputs.pgver }}--pg${{ inputs.tag }}.deb'
         path: |
-          '$GITHUB_WORKSPACE/target/release/pglinter-${{ inputs.pgver }}/*.deb'
+          '$GITHUB_WORKSPACE/target/release/pglinter-pg${{ inputs.pgver }}/*.deb'
