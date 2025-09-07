@@ -39,17 +39,22 @@ runs:
       env:
         PGLINTER_MINOR_VERSION: ${{ inputs.tag }}
 
+    - name: Remove 'pg' prefix
+      run: |
+        PG_VERSION_NO_PREFIX="${{ replace(inputs.pgver, 'pg', '') }}"
+        echo "The version is $PG_VERSION_NO_PREFIX"
+      shell: bash
+
     - name: 'RPM package for $[[ inputs.pgver ]] (x64_64)'
       uses: actions/upload-artifact@v4
       with:
-        name: pglinter_${{ replace(inputs.pgver, 'pg', '') }}-1-$VERSION.rpm
-        path: $GITHUB_WORKSPACE/target/release/pglinter-${{ inputs.pgver }}/
-
+        name: pglinter_${PG_VERSION_NO_PREFIX}-1-$VERSION.rpm
+        path: $GITHUB_WORKSPACE/target/release/pglinter-${{ inputs.pgver }}/*.rpm
     - name: 'DEB package for $[[ inputs.pgver ]] (x64_64)'
       uses: actions/upload-artifact@v4
       with:
-        name: pglinter_${{ replace(inputs.pgver, 'pg', '') }}-$VERSION.deb
-        path: $GITHUB_WORKSPACE/target/release/pglinter-${{ inputs.pgver }}/
+        name: pglinter_${PG_VERSION_NO_PREFIX}-$VERSION.deb
+        path: $GITHUB_WORKSPACE/target/release/pglinter-${{ inputs.pgver }}/*.deb
 
     - name: List artifacts
       run: |
