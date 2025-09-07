@@ -5,7 +5,7 @@ description: 'Builds rpm/deb package and upload.'
 
 inputs:
   pgver:
-    description: 'The PostgreSQL major version without the "pg" prefix (e.g. `13`, `16`, etc.)'
+    description: 'The PostgreSQL major version with the "pg" prefix (e.g. `pg13`, `pg16`, etc.)'
     required: true
   tag:
     description: 'The pglinter version associated with the release.'
@@ -30,17 +30,17 @@ runs:
         su - postgres -c "cd $GITHUB_WORKSPACE && make rpm"
       shell: bash
       env:
-        PGLINTER_MINOR_VERSION: ${{ input.tag }}
+        PGLINTER_MINOR_VERSION: ${{ inputs.tag }}
     - name: 'RPM package for $[[ inputs.pgver ]] (x64_64)'
       uses: actions/upload-artifact@v4
       with:
-        name: 'pglinter-${{ inputs.pgver }}-pg${{ inputs.tag }}-${{ inputs.tag }}.rpm'
+        name: 'pglinter_${{ inputs.pgver }}-${{ inputs.tag }}.rpm'
         path: |
-          '$GITHUB_WORKSPACE/target/release/pglinter-pg${{ inputs.pgver }}/*.rpm'
+          '$GITHUB_WORKSPACE/target/release/pglinter-${{ inputs.pgver }}/*.rpm'
 
     - name: 'DEB package for $[[ inputs.pgver ]] (x64_64)'
       uses: actions/upload-artifact@v4
       with:
-        name: 'pglinter-${{ inputs.pgver }}-pg${{ inputs.tag }}-${{ inputs.tag }}.deb'
+        name: 'pglinter_${{ inputs.pgver }}-${{ inputs.tag }}.deb'
         path: |
-          '$GITHUB_WORKSPACE/target/release/pglinter-pg${{ inputs.pgver }}/*.deb'
+          '$GITHUB_WORKSPACE/target/release/pglinter-${{ inputs.pgver }}/*.deb'

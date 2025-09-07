@@ -6,11 +6,9 @@ description: 'Builds and tests the pglinter extension for a given PostgreSQL ver
 inputs:
   pgver:
     description: 'The PostgreSQL major version with the "pg" prefix (e.g. `pg13`, `pg16`, etc.)'
-    type: string
     required: true
   always:
     description: 'If defined, all jobs are launched in any case.'
-    type: string
     required: false
 
 runs:

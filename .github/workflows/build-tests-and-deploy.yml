@@ -18,9 +18,9 @@ jobs:
   build:
     strategy:
       matrix:
-        pgver: [13]
+        pgver: [pg13]
       fail-fast: false
-    name: 'build-test-deploy-pglinter-for-pg${{ matrix.pgver }}'
+    name: 'build-test-deploy-pglinter-for-${{ matrix.pgver }}'
     runs-on: ubuntu-latest
     # Use GitHub Container Registry for pmpetit
     container:
