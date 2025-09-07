@@ -34,7 +34,7 @@ jobs:
   build:
     strategy:
       matrix:
-        pgver: [13, 14, 15, 16, 17, 18]
+        pgver: [13]
       fail-fast: false
     name: 'build-pg${{ matrix.pgver }}'
     runs-on: ubuntu-latest
