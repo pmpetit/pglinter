@@ -27,7 +27,7 @@ jobs:
       matrix:
         pgver: [13]
       fail-fast: false
-    name: 'build-test-pg${{ matrix.pgver }}'
+    name: 'build-and-tests-pglinter-for-pg${{ matrix.pgver }}'
     runs-on: ubuntu-latest
     # Use GitHub Container Registry for pmpetit
     container:
