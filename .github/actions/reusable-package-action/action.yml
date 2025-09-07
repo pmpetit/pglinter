@@ -43,7 +43,8 @@ runs:
       uses: actions/upload-artifact@v4
       with:
         name: pglinter rpm
-        path: $GITHUB_WORKSPACE/target/release/pglinter-${{ inputs.pgver }}/*.rpm
+        path: target/release/pglinter-${{ inputs.pgver }}/*.rpm
+        
     - name: 'DEB package for $[[ inputs.pgver ]] (x64_64)'
       uses: actions/upload-artifact@v4
       with:
