@@ -7,7 +7,9 @@
 PGRX?=cargo pgrx
 PGVER?=$(shell grep 'default = \[".*\"]' Cargo.toml | sed -e 's/.*\["//' | sed -e 's/"].*//')
 PG_MAJOR_VERSION=$(PGVER:pg%=%)
-PGLINTER_MINOR_VERSION?=$(shell grep '^version *= *' Cargo.toml | sed 's/^version *= *//' | tr -d '\"' | tr -d ' ' )
+# Use environment variable if set (from GitHub Actions), otherwise extract from Cargo.toml
+CARGO_VERSION := $(shell grep '^version *= *' Cargo.toml | sed 's/^version *= *//' | tr -d '\"' | tr -d ' ' )
+PGLINTER_MINOR_VERSION ?= $(CARGO_VERSION)
 
 # use `TARGET=debug make run` for more detailed errors
 TARGET?=release

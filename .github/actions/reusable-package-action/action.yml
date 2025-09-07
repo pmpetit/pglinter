@@ -7,11 +7,7 @@ inputs:
   pgver:
     description: 'The PostgreSQL major version with the "pg" prefix (e.g. `pg13`, `pg16`, etc.)'
     required: true
-  tag:
-    description: 'The pglinter version associated with the release.'
-    required: true
-    default: '0.0.0' # Set a default to handle cases where no tag is provided
-
+    
 runs:
   using: "composite"
   steps:
@@ -29,8 +25,6 @@ runs:
         su - postgres -c "cd $GITHUB_WORKSPACE && make deb"
         su - postgres -c "cd $GITHUB_WORKSPACE && make rpm"
       shell: bash
-      env:
-        PGLINTER_MINOR_VERSION: ${{ inputs.tag }}
     - name: 'RPM package for $[[ inputs.pgver ]] (x64_64)'
       uses: actions/upload-artifact@v4
       with:

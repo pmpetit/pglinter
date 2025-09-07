@@ -1,3 +1,7 @@
+# as main is protected, you can't commit into without a PR.
+# So in main only validated PR are accepted.
+# So build and test were run during the merge request process.
+# So don't need to run twice the build and test workflow when releasing...
 
 name: 'Package and deploy pglinter.'
 
@@ -10,6 +14,8 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+env:
+  PGLINTER_MINOR_VERSION: ${{ github.ref_name }}
 
 jobs:
   ##
@@ -37,4 +43,3 @@ jobs:
         uses: ./.github/actions/reusable-package-action
         with:
           pgver: ${{ matrix.pgver }}
-          tag: ${{ github.ref_name }}
