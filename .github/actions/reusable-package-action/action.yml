@@ -30,16 +30,16 @@ runs:
         su - postgres -c "cd $GITHUB_WORKSPACE && make rpm"
       shell: bash
 
-    - name: Upload rpm build artifacts
+    - name: 'RPM package for $[[ inputs.pgver ]] (x64_64)'
       uses: actions/upload-artifact@v4
       with:
-        name: 'pglinter-${{ inputs.pgver }}--pg${{ inputs.tag }}.rpm'
+        name: 'pglinter-${{ inputs.pgver }}-pg${{ inputs.tag }}-${{ inputs.tag }}.rpm'
         path: |
           '$GITHUB_WORKSPACE/target/release/pglinter-pg${{ inputs.pgver }}/*.rpm'
 
-    - name: Upload debian build artifacts
+    - name: 'DEB package for $[[ inputs.pgver ]] (x64_64)'
       uses: actions/upload-artifact@v4
       with:
-        name: 'pglinter-${{ inputs.pgver }}--pg${{ inputs.tag }}.deb'
+        name: 'pglinter-${{ inputs.pgver }}-pg${{ inputs.tag }}-${{ inputs.tag }}.deb'
         path: |
           '$GITHUB_WORKSPACE/target/release/pglinter-pg${{ inputs.pgver }}/*.deb'
