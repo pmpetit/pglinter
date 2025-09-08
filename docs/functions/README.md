@@ -711,5 +711,3 @@ if grep -q '"level": "error"' $OUTPUT_DIR/*_$DATE.sarif; then
     # Send alert
 fi
 ```
-
-For more usage examples, see the [How-To Guides](../how-to/) and [Tutorials](../tutorials/).

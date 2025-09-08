@@ -103,9 +103,9 @@ Schema-level checks:
 
 * **[Configuration](configure.md)**: How to configure rules and thresholds
 * **[Functions Reference](functions/README.md)**: Complete function reference
-* **[Rule Reference](rules/)**: Detailed description of all rules
-* **[How-To Guides](how-to/)**: Practical guides for common scenarios
-* **[Development](dev/)**: Contributing and development guides
+* **[Rule Reference](rules/README.md)**: Detailed description of all rules
+* **[How-To Guides](how-to/README.md)**: Practical guides for common scenarios
+* **[Development](dev/README.md)**: Contributing and development guides
 
 ## Integration
 
@@ -121,7 +121,3 @@ pglinter is designed to integrate seamlessly into your development workflow:
 * **Issues**: [GitHub Issues](https://github.com/yourorg/pglinter/issues)
 * **Discussions**: [GitHub Discussions](https://github.com/yourorg/pglinter/discussions)
 * **Documentation**: This documentation site
-
-## License
-
-pglinter is released under the [LICENSE](../LICENSE) license.
