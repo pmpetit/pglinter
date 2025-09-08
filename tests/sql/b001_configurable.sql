@@ -7,6 +7,7 @@ CREATE TABLE test_no_pk (
     name TEXT
 );
 
+-- Create a table with a primary key
 CREATE TABLE test_with_pk (
     id INTEGER PRIMARY KEY,
     name TEXT
@@ -41,7 +42,5 @@ SELECT pglinter.perform_base_check();
 -- Update B001 thresholds to very low values (1%, 2%) not to trigger on any table without PK
 SELECT pglinter.update_rule_levels('B001', 60, 80);
 
--- Clean up
-DROP TABLE test_no_pk;
 
 ROLLBACK;

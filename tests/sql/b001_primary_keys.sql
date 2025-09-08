@@ -3,18 +3,6 @@
 
 BEGIN;
 
--- Clean up any existing test tables
-DROP TABLE IF EXISTS orders_no_pk CASCADE;
-DROP TABLE IF EXISTS customers_no_pk CASCADE;
-DROP TABLE IF EXISTS products_no_pk CASCADE;
-DROP TABLE IF EXISTS reviews_no_pk CASCADE;
-DROP TABLE IF EXISTS inventory_no_pk CASCADE;
-DROP TABLE IF EXISTS shipments_no_pk CASCADE;
-DROP TABLE IF EXISTS payments_no_pk CASCADE;
-DROP TABLE IF EXISTS categories_with_pk CASCADE;
-DROP TABLE IF EXISTS users_with_pk CASCADE;
-DROP TABLE IF EXISTS settings_with_pk CASCADE;
-
 -- Create tables WITHOUT primary keys to trigger B001 rule (need enough to exceed 20% threshold)
 -- These tables will contribute to the "tables without primary key" count
 
@@ -173,9 +161,6 @@ SELECT pglinter.is_rule_enabled('B001') AS b001_status;
 SELECT 'Running base check to detect B001 violations...' as status;
 SELECT pglinter.perform_base_check();
 
--- Show rule explanation
-SELECT pglinter.explain_rule('B001');
-
 -- Test rule management for B001
 SELECT 'Testing B001 rule management...' as test_section;
 
@@ -223,59 +208,5 @@ SELECT pglinter.perform_base_check();
 
 SELECT 'T001 (table check) - Shows individual tables without primary keys:' as t001_demo;
 SELECT pglinter.perform_table_check();
-
--- Test with a comprehensive check to see all rules
-SELECT 'Testing comprehensive check to see both B001 and T001:' as comprehensive_test;
-SELECT pglinter.enable_all_rules() AS all_rules_enabled;
-SELECT pglinter.check_all();
-
--- Educational summary
-SELECT 'Summary and Key Differences:' as info;
-SELECT '
-This example demonstrates the B001 rule which detects database-wide primary key issues.
-
-Key Points about B001:
-1. B001 is a BASE-level rule (database-wide analysis)
-2. Uses percentage threshold (default: 20%)
-3. Triggers when >20% of tables lack primary keys
-4. Part of perform_base_check() function
-5. Focuses on overall database health metrics
-
-Key Differences B001 vs T001:
-- B001: "X tables without primary key exceed the warning threshold: 20%"
-- T001: "Found X tables without primary key: schema.table1, schema.table2..."
-
-- B001: Database-wide percentage analysis
-- T001: Individual table identification
-
-- B001: Part of base checks (perform_base_check)
-- T001: Part of table checks (perform_table_check)
-
-- B001: Useful for monitoring overall database design quality
-- T001: Useful for identifying specific tables that need primary keys
-
-Why Both Rules Matter:
-- B001 helps DBAs understand overall database design quality
-- T001 helps developers know exactly which tables to fix
-- Together they provide comprehensive primary key analysis
-
-The B001 rule is particularly useful for:
-- Database health monitoring
-- Migration planning
-- Design quality assessments
-- Setting up alerts for design degradation
-' as explanation;
-
--- Clean up test tables
-DROP TABLE IF EXISTS orders_no_pk CASCADE;
-DROP TABLE IF EXISTS customers_no_pk CASCADE;
-DROP TABLE IF EXISTS products_no_pk CASCADE;
-DROP TABLE IF EXISTS reviews_no_pk CASCADE;
-DROP TABLE IF EXISTS inventory_no_pk CASCADE;
-DROP TABLE IF EXISTS shipments_no_pk CASCADE;
-DROP TABLE IF EXISTS payments_no_pk CASCADE;
-DROP TABLE IF EXISTS categories_with_pk CASCADE;
-DROP TABLE IF EXISTS users_with_pk CASCADE;
-DROP TABLE IF EXISTS settings_with_pk CASCADE;
 
 ROLLBACK;

@@ -22,8 +22,7 @@ SELECT pglinter.perform_table_check();
 
 -- Test rule management for B001
 SELECT pglinter.explain_rule('B001');
-SELECT pglinter.is_rule_enabled('B001') AS b001_enabled;
-
+SELECT pglinter.is_rule_enabled('B001') AS is_b001_enabled;
 
 -- Test with file output
 SELECT pglinter.perform_base_check('/tmp/pglinter_base_results.sarif');
@@ -33,5 +32,17 @@ SELECT pglinter.perform_base_check('/tmp/pglinter_base_results.sarif');
 
 -- Test with no output file (should output to prompt)
 SELECT pglinter.perform_base_check();
+
+-- Re-enable B001 rule
+SELECT pglinter.enable_rule('B001') AS enable_b001;
+
+-- Test again with B001 enabled
+SELECT pglinter.perform_base_check();
+
+-- Test with file output
+SELECT pglinter.perform_base_check('/tmp/pglinter_base_results.sarif');
+
+-- Test if file exists
+\! md5sum /tmp/pglinter_base_results.sarif
 
 ROLLBACK;

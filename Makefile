@@ -45,7 +45,10 @@ PGDATABASE?=contrib_regression
 ##
 
 # List of test files (without .sql extension)
-REGRESS_TESTS = t003_minimal
+REGRESS_TESTS = b001
+REGRESS_TESTS+= b001_configurable
+REGRESS_TESTS+= b001_primary_keys
+
 # REGRESS_TESTS+= b001
 # REGRESS_TESTS+= cluster_rules
 # REGRESS_TESTS+= integration_test

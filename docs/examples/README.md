@@ -162,3 +162,42 @@ echo "Generating summary report..."
 
 echo "📊 Summary report created: $REPORT_DIR/summary.md"
 ```
+
+## Example base on rule B001 and T001 (primary key missing), why using a base and table approach
+
+This example explain the point of view about the B001 rule which detects database-wide primary key issues vs T001 rule.
+
+Key Points about B001:
+
+1. B001 is a BASE-level rule (database-wide analysis)
+2. Uses percentage threshold (default: 20%)
+3. Triggers when >20% of tables lack primary keys
+4. Part of perform_base_check() function
+5. Focuses on overall database health metrics
+
+Key Differences B001 vs T001:
+
+- B001: "X tables without primary key exceed the warning threshold: 20%"
+- T001: "Found X tables without primary key: schema.table1, schema.table2..."
+
+- B001: Database-wide percentage analysis
+- T001: Individual table identification
+
+- B001: Part of base checks (perform_base_check)
+- T001: Part of table checks (perform_table_check)
+
+- B001: Useful for monitoring overall database design quality
+- T001: Useful for identifying specific tables that need primary keys
+
+Why Both Rules Matter:
+
+- B001 helps DBAs understand overall database design quality
+- T001 helps developers know exactly which tables to fix
+- Together they provide comprehensive primary key analysis
+
+The B001 rule is particularly useful for:
+
+- Database health monitoring
+- Migration planning
+- Design quality assessments
+- Setting up alerts for design degradation
