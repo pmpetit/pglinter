@@ -1,27 +1,6 @@
 -- Simple example to demonstrate database-wide primary key analysis and B001 rule detection
 -- This script creates multiple tables with and without primary keys to test the B001 percentage-based rule
 BEGIN;
--- Clean up any existing test tables
-DROP TABLE IF EXISTS orders_no_pk CASCADE;
-NOTICE:  table "orders_no_pk" does not exist, skipping
-DROP TABLE IF EXISTS customers_no_pk CASCADE;
-NOTICE:  table "customers_no_pk" does not exist, skipping
-DROP TABLE IF EXISTS products_no_pk CASCADE;
-NOTICE:  table "products_no_pk" does not exist, skipping
-DROP TABLE IF EXISTS reviews_no_pk CASCADE;
-NOTICE:  table "reviews_no_pk" does not exist, skipping
-DROP TABLE IF EXISTS inventory_no_pk CASCADE;
-NOTICE:  table "inventory_no_pk" does not exist, skipping
-DROP TABLE IF EXISTS shipments_no_pk CASCADE;
-NOTICE:  table "shipments_no_pk" does not exist, skipping
-DROP TABLE IF EXISTS payments_no_pk CASCADE;
-NOTICE:  table "payments_no_pk" does not exist, skipping
-DROP TABLE IF EXISTS categories_with_pk CASCADE;
-NOTICE:  table "categories_with_pk" does not exist, skipping
-DROP TABLE IF EXISTS users_with_pk CASCADE;
-NOTICE:  table "users_with_pk" does not exist, skipping
-DROP TABLE IF EXISTS settings_with_pk CASCADE;
-NOTICE:  table "settings_with_pk" does not exist, skipping
 -- Create tables WITHOUT primary keys to trigger B001 rule (need enough to exceed 20% threshold)
 -- These tables will contribute to the "tables without primary key" count
 CREATE TABLE orders_no_pk (
@@ -148,48 +127,6 @@ ANALYZE settings_with_pk;
 DROP EXTENSION IF EXISTS pglinter CASCADE;
 NOTICE:  extension "pglinter" does not exist, skipping
 CREATE EXTENSION IF NOT EXISTS pglinter;
--- Show current table count and primary key analysis
-SELECT 'Database-wide primary key analysis:' as info;
-                info                 
--------------------------------------
- Database-wide primary key analysis:
-(1 row)
-
-SELECT
-    COUNT(*) as total_tables,
-    COUNT(*) FILTER (WHERE EXISTS (
-        SELECT 1 FROM information_schema.table_constraints tc
-        WHERE tc.table_schema = t.table_schema
-        AND tc.table_name = t.table_name
-        AND tc.constraint_type = 'PRIMARY KEY'
-    )) as tables_with_pk,
-    COUNT(*) FILTER (WHERE NOT EXISTS (
-        SELECT 1 FROM information_schema.table_constraints tc
-        WHERE tc.table_schema = t.table_schema
-        AND tc.table_name = t.table_name
-        AND tc.constraint_type = 'PRIMARY KEY'
-    )) as tables_without_pk,
-    ROUND(
-        COUNT(*) FILTER (WHERE NOT EXISTS (
-            SELECT 1 FROM information_schema.table_constraints tc
-            WHERE tc.table_schema = t.table_schema
-            AND tc.table_name = t.table_name
-            AND tc.constraint_type = 'PRIMARY KEY'
-        )) * 100.0 / COUNT(*), 1
-    ) as percentage_without_pk
-FROM information_schema.tables t
-WHERE t.table_schema = 'public'
-AND t.table_type = 'BASE TABLE'
-AND t.table_name IN (
-    'orders_no_pk', 'customers_no_pk', 'products_no_pk', 'reviews_no_pk',
-    'inventory_no_pk', 'shipments_no_pk', 'payments_no_pk',
-    'categories_with_pk', 'users_with_pk', 'settings_with_pk'
-);
- total_tables | tables_with_pk | tables_without_pk | percentage_without_pk 
---------------+----------------+-------------------+-----------------------
-           10 |              3 |                 7 |                  70.0
-(1 row)
-
 SELECT 'Testing B001 rule - Database-wide primary key percentage analysis...' as test_info;
                               test_info                               
 ----------------------------------------------------------------------
@@ -229,34 +166,12 @@ SELECT 'Running base check to detect B001 violations...' as status;
 SELECT pglinter.perform_base_check();
 NOTICE:  🔍 pglinter found 1 issue(s):
 NOTICE:  ==================================================
-NOTICE:  ⚠️  [B001] WARNING: 7 tables without primary key exceed the warning threshold: 20%
+NOTICE:  ⚠️  [B001] WARNING: 70% tables without primary key exceed the warning threshold: 20%
 NOTICE:  ==================================================
 NOTICE:  📊 Summary: 0 error(s), 1 warning(s), 0 info
 NOTICE:  🟡 Some warnings found - consider reviewing for optimization
  perform_base_check 
 --------------------
- t
-(1 row)
-
--- Show rule explanation
-SELECT pglinter.explain_rule('B001');
-NOTICE:  📖 Rule Explanation for B001
-============================================================
-
-🎯 Rule Name: HowManyTableWithoutPrimaryKey
-📋 Scope: BASE
-
-📝 Description:
-Count number of tables without primary key.
-
-⚠️  Message Template:
-{0} table without primary key exceed the warning threshold: {1}%.
-
-🔧 How to Fix:
-   1. create a primary key or change warning/error threshold
-============================================================
- explain_rule 
---------------
  t
 (1 row)
 
@@ -319,7 +234,7 @@ SELECT 'Running base check with B001 re-enabled...' as status;
 SELECT pglinter.perform_base_check();
 NOTICE:  🔍 pglinter found 1 issue(s):
 NOTICE:  ==================================================
-NOTICE:  ⚠️  [B001] WARNING: 7 tables without primary key exceed the warning threshold: 20%
+NOTICE:  ⚠️  [B001] WARNING: 70% tables without primary key exceed the warning threshold: 20%
 NOTICE:  ==================================================
 NOTICE:  📊 Summary: 0 error(s), 1 warning(s), 0 info
 NOTICE:  🟡 Some warnings found - consider reviewing for optimization
@@ -343,48 +258,6 @@ ALTER TABLE reviews_no_pk ADD CONSTRAINT pk_reviews PRIMARY KEY (review_id);
 ALTER TABLE inventory_no_pk ADD CONSTRAINT pk_inventory PRIMARY KEY (inventory_id);
 -- Keep 2 tables without primary keys to maintain some violations but below threshold
 -- shipments_no_pk and payments_no_pk will remain without primary keys
--- Verify new primary key status
-SELECT 'Database-wide primary key analysis after improvements:' as info;
-                          info                          
---------------------------------------------------------
- Database-wide primary key analysis after improvements:
-(1 row)
-
-SELECT
-    COUNT(*) as total_tables,
-    COUNT(*) FILTER (WHERE EXISTS (
-        SELECT 1 FROM information_schema.table_constraints tc
-        WHERE tc.table_schema = t.table_schema
-        AND tc.table_name = t.table_name
-        AND tc.constraint_type = 'PRIMARY KEY'
-    )) as tables_with_pk,
-    COUNT(*) FILTER (WHERE NOT EXISTS (
-        SELECT 1 FROM information_schema.table_constraints tc
-        WHERE tc.table_schema = t.table_schema
-        AND tc.table_name = t.table_name
-        AND tc.constraint_type = 'PRIMARY KEY'
-    )) as tables_without_pk,
-    ROUND(
-        COUNT(*) FILTER (WHERE NOT EXISTS (
-            SELECT 1 FROM information_schema.table_constraints tc
-            WHERE tc.table_schema = t.table_schema
-            AND tc.table_name = t.table_name
-            AND tc.constraint_type = 'PRIMARY KEY'
-        )) * 100.0 / COUNT(*), 1
-    ) as percentage_without_pk
-FROM information_schema.tables t
-WHERE t.table_schema = 'public'
-AND t.table_type = 'BASE TABLE'
-AND t.table_name IN (
-    'orders_no_pk', 'customers_no_pk', 'products_no_pk', 'reviews_no_pk',
-    'inventory_no_pk', 'shipments_no_pk', 'payments_no_pk',
-    'categories_with_pk', 'users_with_pk', 'settings_with_pk'
-);
- total_tables | tables_with_pk | tables_without_pk | percentage_without_pk 
---------------+----------------+-------------------+-----------------------
-           10 |              8 |                 2 |                  20.0
-(1 row)
-
 -- Run B001 check again (should show reduced violations or no violations)
 SELECT 'Running B001 check after adding primary keys (should show improved percentage):' as test_info;
                                     test_info                                    
@@ -445,154 +318,4 @@ NOTICE:  🟡 Some warnings found - consider reviewing for optimization
  t
 (1 row)
 
--- Test with a comprehensive check to see all rules
-SELECT 'Testing comprehensive check to see both B001 and T001:' as comprehensive_test;
-                   comprehensive_test                   
---------------------------------------------------------
- Testing comprehensive check to see both B001 and T001:
-(1 row)
-
-SELECT pglinter.enable_all_rules() AS all_rules_enabled;
-NOTICE:  ✅ Enabled 20 rule(s)
- all_rules_enabled 
--------------------
-                20
-(1 row)
-
-SELECT pglinter.check_all();
-NOTICE:  🔍 Running comprehensive pglinter check...
-NOTICE:  
-NOTICE:  📋 BASE CHECKS:
-NOTICE:  🔍 pglinter found 2 issue(s):
-NOTICE:  ==================================================
-NOTICE:  ⚠️  [B004] WARNING: Found 12 potentially unused indexes
-NOTICE:  ❌ [B005] ERROR: Public schema allows CREATE privilege for all users - security risk
-NOTICE:  ==================================================
-NOTICE:  📊 Summary: 1 error(s), 1 warning(s), 0 info
-NOTICE:  🔴 Critical issues found - please review and fix errors
-NOTICE:  
-NOTICE:  🖥️  CLUSTER CHECKS:
-NOTICE:  🔍 pglinter found 1 issue(s):
-NOTICE:  ==================================================
-NOTICE:  ℹ️  [C002] INFO: Please manually check pg_hba.conf for insecure trust/password methods
-NOTICE:  ==================================================
-NOTICE:  📊 Summary: 0 error(s), 0 warning(s), 1 info
-NOTICE:  🟢 Only informational messages - good job!
-NOTICE:  
-NOTICE:  📊 TABLE CHECKS:
-NOTICE:  🔍 pglinter found 4 issue(s):
-NOTICE:  ==================================================
-NOTICE:  ⚠️  [T001] WARNING: Found 2 tables without primary key: public.shipments_no_pk, public.payments_no_pk
-NOTICE:  ⚠️  [T002] WARNING: Found 2 tables without any index: public.shipments_no_pk, public.payments_no_pk
-NOTICE:  ⚠️  [T009] WARNING: Found 1 tables without role grants: pglinter.rules
-NOTICE:  ℹ️  [T012] INFO: Anon extension not found. Install postgresql-anonymizer to detect sensitive columns
-NOTICE:  ==================================================
-NOTICE:  📊 Summary: 0 error(s), 3 warning(s), 1 info
-NOTICE:  🟡 Some warnings found - consider reviewing for optimization
-NOTICE:  
-NOTICE:  🗂️  SCHEMA CHECKS:
-NOTICE:  🔍 pglinter found 2 issue(s):
-NOTICE:  ==================================================
-NOTICE:  ⚠️  [S001] WARNING: Found 1 schemas without default role grants: tests
-NOTICE:  ⚠️  [S002] WARNING: Found 1 schemas with environment prefixes/suffixes: tests
-NOTICE:  ==================================================
-NOTICE:  📊 Summary: 0 error(s), 2 warning(s), 0 info
-NOTICE:  🟡 Some warnings found - consider reviewing for optimization
-NOTICE:  
-NOTICE:  🎉 All pglinter checks completed successfully!
- check_all 
------------
- t
-(1 row)
-
--- Educational summary
-SELECT 'Summary and Key Differences:' as info;
-             info             
-------------------------------
- Summary and Key Differences:
-(1 row)
-
-SELECT '
-This example demonstrates the B001 rule which detects database-wide primary key issues.
-
-Key Points about B001:
-1. B001 is a BASE-level rule (database-wide analysis)
-2. Uses percentage threshold (default: 20%)
-3. Triggers when >20% of tables lack primary keys
-4. Part of perform_base_check() function
-5. Focuses on overall database health metrics
-
-Key Differences B001 vs T001:
-- B001: "X tables without primary key exceed the warning threshold: 20%"
-- T001: "Found X tables without primary key: schema.table1, schema.table2..."
-
-- B001: Database-wide percentage analysis
-- T001: Individual table identification
-
-- B001: Part of base checks (perform_base_check)
-- T001: Part of table checks (perform_table_check)
-
-- B001: Useful for monitoring overall database design quality
-- T001: Useful for identifying specific tables that need primary keys
-
-Why Both Rules Matter:
-- B001 helps DBAs understand overall database design quality
-- T001 helps developers know exactly which tables to fix
-- Together they provide comprehensive primary key analysis
-
-The B001 rule is particularly useful for:
-- Database health monitoring
-- Migration planning
-- Design quality assessments
-- Setting up alerts for design degradation
-' as explanation;
-                                       explanation                                       
------------------------------------------------------------------------------------------
-                                                                                        +
- This example demonstrates the B001 rule which detects database-wide primary key issues.+
-                                                                                        +
- Key Points about B001:                                                                 +
- 1. B001 is a BASE-level rule (database-wide analysis)                                  +
- 2. Uses percentage threshold (default: 20%)                                            +
- 3. Triggers when >20% of tables lack primary keys                                      +
- 4. Part of perform_base_check() function                                               +
- 5. Focuses on overall database health metrics                                          +
-                                                                                        +
- Key Differences B001 vs T001:                                                          +
- - B001: "X tables without primary key exceed the warning threshold: 20%"               +
- - T001: "Found X tables without primary key: schema.table1, schema.table2..."          +
-                                                                                        +
- - B001: Database-wide percentage analysis                                              +
- - T001: Individual table identification                                                +
-                                                                                        +
- - B001: Part of base checks (perform_base_check)                                       +
- - T001: Part of table checks (perform_table_check)                                     +
-                                                                                        +
- - B001: Useful for monitoring overall database design quality                          +
- - T001: Useful for identifying specific tables that need primary keys                  +
-                                                                                        +
- Why Both Rules Matter:                                                                 +
- - B001 helps DBAs understand overall database design quality                           +
- - T001 helps developers know exactly which tables to fix                               +
- - Together they provide comprehensive primary key analysis                             +
-                                                                                        +
- The B001 rule is particularly useful for:                                              +
- - Database health monitoring                                                           +
- - Migration planning                                                                   +
- - Design quality assessments                                                           +
- - Setting up alerts for design degradation                                             +
- 
-(1 row)
-
--- Clean up test tables
-DROP TABLE IF EXISTS orders_no_pk CASCADE;
-DROP TABLE IF EXISTS customers_no_pk CASCADE;
-DROP TABLE IF EXISTS products_no_pk CASCADE;
-DROP TABLE IF EXISTS reviews_no_pk CASCADE;
-DROP TABLE IF EXISTS inventory_no_pk CASCADE;
-DROP TABLE IF EXISTS shipments_no_pk CASCADE;
-DROP TABLE IF EXISTS payments_no_pk CASCADE;
-DROP TABLE IF EXISTS categories_with_pk CASCADE;
-DROP TABLE IF EXISTS users_with_pk CASCADE;
-DROP TABLE IF EXISTS settings_with_pk CASCADE;
 ROLLBACK;

@@ -5,6 +5,7 @@ CREATE TABLE test_no_pk (
     id INTEGER,
     name TEXT
 );
+-- Create a table with a primary key
 CREATE TABLE test_with_pk (
     id INTEGER PRIMARY KEY,
     name TEXT
@@ -81,6 +82,4 @@ NOTICE:  ✅ Updated rule B001 levels: warning=60, error=80
  t
 (1 row)
 
--- Clean up
-DROP TABLE test_no_pk;
 ROLLBACK;
