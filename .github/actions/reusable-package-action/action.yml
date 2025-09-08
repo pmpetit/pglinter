@@ -44,9 +44,9 @@ runs:
       with:
         name: pglinter-${{ inputs.pgver }}-${{ env.PGLINTER_MINOR_VERSION }}.rpm
         path: target/release/pglinter-${{ inputs.pgver }}/*.rpm
-        
+
     - name: 'DEB package for $[[ inputs.pgver ]] (amd-64)'
       uses: actions/upload-artifact@v4
       with:
-        name: pglinter-${{ inputs.pgver }}-$PGLINTER_MINOR_VERSION.deb
+        name: pglinter-${{ inputs.pgver }}-${{ env.PGLINTER_MINOR_VERSION }}.deb
         path: target/release/pglinter-${{ inputs.pgver }}/*.deb
