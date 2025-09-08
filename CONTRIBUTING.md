@@ -117,62 +117,40 @@ make installcheck
 Adding new linting rules
 -------------------------------------------------------------------------------
 
-pglinter implements various database linting rules to help identify potential issues. Rules are categorized by scope:
+To add a new linting rule to pglinter, follow these steps:
 
-- **B (Base)**: Fundamental database issues
-- **C (Cluster)**: PostgreSQL cluster configuration issues
-- **T (Table)**: Table-specific issues
-- **S (Schema)**: Schema-level issues
+- find the level of the rule (Base, Table, Schema, Cluster), and if level are required.
+- give a code to the rule.
+- add the rule definition to the table pglinter.rules in sql/rules.sql
+- create the SQL code in sql/ folder
 
-### Rule Structure
+1. **Create the Rule Logic:**
+   - In `src/execute_rules.rs`, add a new function for your rule. For example see [b001](https://github.com/pmpetit/pglinter/blob/9a10fb02639937bd3e187b486ea54303afc28abe/src/execute_rules.rs) rule
 
-Each rule should follow this pattern in `src/rules_engine.rs`:
+2. **Register the Rule for Execution:**
+   - Add your rule to the appropriate execution function (e.g., `execute_table_rules`, `execute_base_rules`, etc.):
 
-```rust
-fn execute_new_rule() -> Result<Option<RuleResult>, String> {
-    let query = "
-        SELECT count(*) as issue_count
-        FROM your_check_query
-        WHERE your_conditions";
+     ```rust
+     if is_rule_enabled("B003").unwrap_or(true) {
+         match execute_my_rule() {
+             Ok(Some(result)) => results.push(result),
+             Ok(None) => {},
+             Err(e) => return Err(format!("T013 failed: {}", e)),
+         }
+     }
+     ```
 
-    let result: Result<Option<RuleResult>, spi::SpiError> = Spi::connect(|client| {
-        let count: i64 = client
-            .select(query, None, &[])?
-            .first()
-            .get::<i64>(1)?
-            .unwrap_or(0);
+3. **Add SQL for the Rule:**
+   - The SQL code for your rule must be placed in the `sql/` directory, in a file named with the rule ID (e.g., `sql/t013.sql`).
+   - Embed the SQL in your Rust code using `include_str!` if needed.
 
-        if count > 0 {
-            return Ok(Some(RuleResult {
-                ruleid: "T013".to_string(),
-                level: "warning".to_string(), // "error", "warning", or "info"
-                message: format!("Found {} issues", count),
-                count: Some(count),
-            }));
-        }
+4. **Update the Rules Table:**
+   - Add your rule to the `pglinter.rules` table with its code, description, and configuration.
 
-        Ok(None)
-    });
+5. **Test Your Rule:**
+   - Add a test SQL file in `tests/sql/`, run `make installcheck`, and verify the output.
 
-    match result {
-        Ok(res) => Ok(res),
-        Err(e) => Err(format!("Database error: {}", e))
-    }
-}
-```
-
-### Adding Rules to Execution
-
-Don't forget to add your new rule to the appropriate execution function:
-
-```rust
-// In execute_table_rules() for table rules
-match execute_new_rule() {
-    Ok(Some(result)) => results.push(result),
-    Ok(None) => {},
-    Err(e) => return Err(format!("NEW_RULE failed: {}", e))
-}
-```
+This process ensures your new rule is properly integrated and testable within the pglinter extension.
 
 Adding new tests
 -------------------------------------------------------------------------------

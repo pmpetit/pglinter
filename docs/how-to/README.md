@@ -8,6 +8,8 @@ Practical guides for common pglinter scenarios and use cases.
 
 For very large databases, analyze in chunks:
 
+not implemented yet. Should use a schema_name as input, or a database name.
+
 ```sql
 -- analyze_by_schema.sql
 DO $$

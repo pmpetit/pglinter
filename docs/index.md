@@ -20,7 +20,7 @@ The main goal of this extension is to offer **database quality by design**. We b
 
 ## Key Features
 
-* **Performance Analysis**: Detect unused indexes, missing indexes, and performance bottlenecks
+* **Performance Analysis**: Detect unused indexes, missing indexes.
 * **Schema Validation**: Check for proper primary keys, foreign key indexing, and schema design
 * **Security Auditing**: Identify potential security risks and configuration issues
 * **SARIF Output**: Industry-standard reporting format compatible with modern CI/CD tools
@@ -32,7 +32,8 @@ PG Linter organizes its analysis rules into four main categories:
 
 ### Base Rules (B-series)
 
-Database-wide checks that analyze overall database health and structure:
+Database-wide checks that analyze overall database health and structure. This type of overview is intended more for non-developers and provides a comprehensive perspective on the database as a whole.
+Individual object names are not important in this context.
 
 * **B001**: Tables without primary keys
 * **B002**: Redundant indexes
@@ -74,25 +75,25 @@ Schema-level checks:
 
 ## Quick Start
 
-1. **Installation**
+### **Installation**
 
-   ```sql
-   CREATE EXTENSION pglinter;
-   ```
+```sql
+  CREATE EXTENSION pglinter;
+```
 
-2. **Run Analysis**
+### **Run Analysis**
 
-   ```sql
+```sql
    -- Analyze entire database
    SELECT pglinter.perform_base_check();
 
    -- Save results to file
    SELECT pglinter.perform_base_check('/path/to/results.sarif');
-   ```
+```
 
-3. **Manage Rules**
+### **Manage Rules**
 
-   ```sql
+```sql
    -- Show all rules
    SELECT pglinter.show_rules();
 
@@ -101,7 +102,7 @@ Schema-level checks:
 
    -- Get rule explanation
    SELECT pglinter.explain_rule('B002');
-   ```
+```
 
 ## Documentation Structure
 
@@ -122,6 +123,5 @@ pglinter is designed to integrate seamlessly into your development workflow:
 
 ## Support
 
-* **Issues**: [GitHub Issues](https://github.com/yourorg/pglinter/issues)
-* **Discussions**: [GitHub Discussions](https://github.com/yourorg/pglinter/discussions)
-* **Documentation**: This documentation site
+* **Issues**: [GitHub Issues](https://github.com/pmpetit/pglinter/issues)
+* **Discussions**: [GitHub Discussions](https://github.com/pmpetit/pglinter/discussions)

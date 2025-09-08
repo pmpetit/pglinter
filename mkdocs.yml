@@ -18,8 +18,6 @@ nav:
   - 'Home': index.md
   - 'Configuration': configure.md
   - 'Security': SECURITY.md
-  - Dev:
-    - 'precommit': dev/precommit.md
   - How-To Guides:
     - 'Overview': how-to/README.md
   - Functions Reference:
