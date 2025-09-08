@@ -42,7 +42,7 @@ runs:
     - name: 'RPM package for $[[ inputs.pgver ]] (x64_64)'
       uses: actions/upload-artifact@v4
       with:
-        name: pglinter-${{ inputs.pgver }}-$PGLINTER_MINOR_VERSION.rpm
+        name: pglinter-${{ inputs.pgver }}-${{ env.PGLINTER_MINOR_VERSION }}.rpm
         path: target/release/pglinter-${{ inputs.pgver }}/*.rpm
         
     - name: 'DEB package for $[[ inputs.pgver ]] (amd-64)'
