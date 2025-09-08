@@ -1,16 +1,13 @@
--- Test for pglinter B002 rule: Redundant indexes
+-- Test for pglinter B002 rule: No Redundant indexes exists, no warning should be raised.
 BEGIN;
-
 -- Create test tables with redundant indexes
-CREATE TABLE IF NOT EXISTS test_table_with_redundant_indexes (
+CREATE TABLE IF NOT EXISTS test_table_without_redundant_indexes (
     id INT PRIMARY KEY,
     name TEXT,
     email VARCHAR(255),
     status VARCHAR(50),
     created_at TIMESTAMP DEFAULT NOW()
 );
-
-
 -- Create table with one index and a unique constrainte on the same column
 CREATE TABLE IF NOT EXISTS orders_table_with_constraint (
     order_id SERIAL PRIMARY KEY,
@@ -19,10 +16,6 @@ CREATE TABLE IF NOT EXISTS orders_table_with_constraint (
     order_date DATE,
     amount DECIMAL(10, 2)
 );
-
--- Create an index that is redundant with the unique constraint
-CREATE INDEX my_idx_customer ON orders_table_with_constraint (customer_id);
-
 -- Create another table for more redundant index scenarios
 CREATE TABLE IF NOT EXISTS orders_table (
     order_id SERIAL PRIMARY KEY,
@@ -31,58 +24,83 @@ CREATE TABLE IF NOT EXISTS orders_table (
     order_date DATE,
     amount DECIMAL(10, 2)
 );
-
--- Create redundant indexes to trigger B002 rule
--- Case 1: Exact duplicate indexes on same columns
-CREATE INDEX idx_name_1 ON test_table_with_redundant_indexes (name);
-CREATE INDEX idx_name_2 ON test_table_with_redundant_indexes (name, created_at);
-CREATE INDEX idx_name_3 ON test_table_with_redundant_indexes (
-    name, created_at, email
-);
-
--- Case 2: Multiple indexes on same composite key
-CREATE INDEX idx_email_status_1 ON test_table_with_redundant_indexes (
-    email, status
-);
-CREATE INDEX idx_email_status_2 ON test_table_with_redundant_indexes (
-    email, status, created_at
-);
-
--- Case 3: Redundant indexes on the orders table
-CREATE INDEX idx_customer_1 ON orders_table (order_id);
-
--- Case 3-bis: Non Redundant indexes on the orders table
-CREATE INDEX idx_customer_2 ON orders_table (customer_id, order_id);
-
--- Case 4: Composite index redundancy
-CREATE INDEX idx_customer_date_1 ON orders_table (product_name, order_date);
-CREATE INDEX idx_customer_date_2 ON orders_table (product_name, order_date);
-
 CREATE EXTENSION IF NOT EXISTS pglinter;
-
 -- First, disable all rules to isolate B001 testing
 SELECT pglinter.disable_all_rules() AS all_rules_disabled;
+NOTICE:  🔴 Disabled 22 rule(s)
+ all_rules_disabled 
+--------------------
+                 22
+(1 row)
 
 -- Enable only B002 for focused testing
 SELECT pglinter.enable_rule('B002') AS b001_enabled;
+NOTICE:  ✅ Rule B002 has been enabled
+ b001_enabled 
+--------------
+ t
+(1 row)
 
 -- Test with file output
 SELECT pglinter.perform_base_check('/tmp/pglinter_b002_results.sarif');
+ perform_base_check 
+--------------------
+ t
+(1 row)
 
 -- Test if file exists and show checksum
 \! md5sum /tmp/pglinter_b002_results.sarif
-
+7cd6073b52ee9a1173c05c016e2458f4  /tmp/pglinter_b002_results.sarif
 -- Test with no output file (should output to prompt)
 SELECT pglinter.perform_base_check();
+NOTICE:  ✅ No issues found - database schema looks good!
+ perform_base_check 
+--------------------
+ t
+(1 row)
 
 -- Test rule management for B002
 SELECT pglinter.explain_rule('B002');
+NOTICE:  📖 Rule Explanation for B002
+============================================================
+
+🎯 Rule Name: HowManyRedudantIndex
+📋 Scope: BASE
+
+📝 Description:
+Count number of redundant index vs nb index.
+
+⚠️  Message Template:
+{0} redundant(s) index exceed the warning threshold: {1}%.
+
+🔧 How to Fix:
+   1. remove duplicated index or check if a constraint does not create a redundant index, or change warning/error threshold
+============================================================
+ explain_rule 
+--------------
+ t
+(1 row)
 
 -- Show that B002 is enabled
 SELECT pglinter.is_rule_enabled('B002') AS b002_enabled;
+ b002_enabled 
+--------------
+ t
+(1 row)
 
 -- Disable B002 temporarily and test
 SELECT pglinter.disable_rule('B002') AS b002_disabled;
+NOTICE:  🔴 Rule B002 has been disabled
+ b002_disabled 
+---------------
+ t
+(1 row)
+
 SELECT pglinter.perform_base_check();
+NOTICE:  ✅ No issues found - database schema looks good!
+ perform_base_check 
+--------------------
+ t
+(1 row)
 
 ROLLBACK;

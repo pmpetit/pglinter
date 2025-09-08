@@ -24,7 +24,7 @@ INSERT INTO pglinter.rules (id,name,code,warning_level,error_level,scope,descrip
 (2, 'HowManyRedudantIndex', 'B002', 20, 80, 'BASE',
     'Count number of redundant index vs nb index.',
     '{0} redundant(s) index exceed the warning threshold: {1}%.',
-    ARRAY['remove duplicated index or change warning/error threshold']),
+    ARRAY['remove duplicated index or check if a constraint does not create a redundant index, or change warning/error threshold']),
 
 (3, 'HowManyTableWithoutIndexOnFk', 'B003', 20, 80, 'BASE',
     'Count number of tables without index on foreign key.',
