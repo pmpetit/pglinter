@@ -1,8 +1,8 @@
--- Test for pglinter B002 rule: Redundant indexes
+-- Test for pglinter B002 rule: No Redundant indexes exists, no warning should be raised.
 BEGIN;
 
 -- Create test tables with redundant indexes
-CREATE TABLE IF NOT EXISTS test_table_with_redundant_indexes (
+CREATE TABLE IF NOT EXISTS test_table_without_redundant_indexes (
     id INT PRIMARY KEY,
     name TEXT,
     email VARCHAR(255),
@@ -20,9 +20,6 @@ CREATE TABLE IF NOT EXISTS orders_table_with_constraint (
     amount DECIMAL(10, 2)
 );
 
--- Create an index that is redundant with the unique constraint
-CREATE INDEX my_idx_customer ON orders_table_with_constraint (customer_id);
-
 -- Create another table for more redundant index scenarios
 CREATE TABLE IF NOT EXISTS orders_table (
     order_id SERIAL PRIMARY KEY,
@@ -31,32 +28,6 @@ CREATE TABLE IF NOT EXISTS orders_table (
     order_date DATE,
     amount DECIMAL(10, 2)
 );
-
--- Create redundant indexes to trigger B002 rule
--- Case 1: Exact duplicate indexes on same columns
-CREATE INDEX idx_name_1 ON test_table_with_redundant_indexes (name);
-CREATE INDEX idx_name_2 ON test_table_with_redundant_indexes (name, created_at);
-CREATE INDEX idx_name_3 ON test_table_with_redundant_indexes (
-    name, created_at, email
-);
-
--- Case 2: Multiple indexes on same composite key
-CREATE INDEX idx_email_status_1 ON test_table_with_redundant_indexes (
-    email, status
-);
-CREATE INDEX idx_email_status_2 ON test_table_with_redundant_indexes (
-    email, status, created_at
-);
-
--- Case 3: Redundant indexes on the orders table
-CREATE INDEX idx_customer_1 ON orders_table (order_id);
-
--- Case 3-bis: Non Redundant indexes on the orders table
-CREATE INDEX idx_customer_2 ON orders_table (customer_id, order_id);
-
--- Case 4: Composite index redundancy
-CREATE INDEX idx_customer_date_1 ON orders_table (product_name, order_date);
-CREATE INDEX idx_customer_date_2 ON orders_table (product_name, order_date);
 
 CREATE EXTENSION IF NOT EXISTS pglinter;
 
