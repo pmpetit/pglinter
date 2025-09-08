@@ -1,3 +1,7 @@
+<p aling="center">
+<img src="images/pglinter_logo.png" alt="PGLinter Logo" width="300">
+</p>
+
 # PG Linter Documentation
 
 In recent years, DBAs were more involved with the database engine itself: creating instances, configuring backups, and monitoring systems and also, overseeing developers' activities.

@@ -7,9 +7,9 @@ echo "🚀 Starting PG Linter Documentation Server"
 echo "========================================="
 
 # Check if site directory exists
-if [ ! -d "/home/pmp/github/pglinter/site" ]; then
+if [ ! -d "${HOME}/github/pmpetit/pglinter/site" ]; then
     echo "❌ Site directory not found. Building documentation..."
-    cd /home/pmp/github/pglinter
+    cd ${HOME}/github/pmpetit/pglinter
     mkdocs build
 fi
 
@@ -29,7 +29,7 @@ if netstat -tuln | grep -q ":8080 "; then
     echo ""
 else
     echo "🌐 Starting HTTP server on port 8080..."
-    cd /home/pmp/github/pglinter/site
+    cd ${HOME}/github/pmpetit/pglinter/site
 
     # Start server in background
     nohup python3 -m http.server 8080 > /dev/null 2>&1 &
