@@ -18,7 +18,7 @@ INSERT INTO pglinter.rules (id,name,code,warning_level,error_level,scope,descrip
 -- Base Database Rules (B series)
 (1, 'HowManyTableWithoutPrimaryKey', 'B001', 20, 80, 'BASE',
     'Count number of tables without primary key.',
-    '{0} table without primary key exceed the warning threshold: {1}%.',
+    '{0} table(s) without primary key exceed the warning threshold: {1}%.',
     ARRAY['create a primary key or change warning/error threshold']),
 
 (2, 'HowManyRedudantIndex', 'B002', 20, 80, 'BASE',
@@ -28,7 +28,7 @@ INSERT INTO pglinter.rules (id,name,code,warning_level,error_level,scope,descrip
 
 (3, 'HowManyTableWithoutIndexOnFk', 'B003', 20, 80, 'BASE',
     'Count number of tables without index on foreign key.',
-    '{0} table without index on foreign key exceed the warning threshold: {1}%.',
+    '{0} table(s) without index on foreign key exceed the warning threshold: {1}%.',
     ARRAY['create a index on foreign key or change warning/error threshold']),
 
 (4, 'HowManyUnusedIndex', 'B004', 20, 80, 'BASE',
@@ -43,7 +43,7 @@ INSERT INTO pglinter.rules (id,name,code,warning_level,error_level,scope,descrip
 
 (6, 'HowManyTablesWithUppercase', 'B006', 20, 80, 'BASE',
     'Count number of tables with uppercase in name or in columns.',
-    '{0} tables using uppercase for name or columns exceed the warning threshold: {1}%.',
+    '{0} table(s) using uppercase for name or columns exceed the warning threshold: {1}%.',
     ARRAY['Do not use uppercase for any database objects']),
 
 -- Cluster Rules (C series)

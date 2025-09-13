@@ -50,6 +50,7 @@ REGRESS_TESTS+= b001_configurable
 REGRESS_TESTS+= b001_primary_keys
 REGRESS_TESTS+= b002_redundant_idx
 REGRESS_TESTS+= b002_non_redundant_idx
+REGRESS_TESTS+= b003_fk_not_indexed
 
 # REGRESS_TESTS+= b001
 # REGRESS_TESTS+= cluster_rules

@@ -9,7 +9,8 @@ const B001_TOTAL_TABLES_SQL: &str = include_str!("../sql/b001_total_tables.sql")
 const B001_TABLES_WITH_PK_SQL: &str = include_str!("../sql/b001_tables_with_pk.sql");
 const B002_TOTAL_INDEXES_SQL: &str = include_str!("../sql/b002_total_indexes.sql");
 const B002_REDUNDANT_INDEXES_SQL: &str = include_str!("../sql/b002_redundant_indexes.sql");
-const B003_SQL: &str = include_str!("../sql/b003.sql");
+const B003_TABLE_WITH_FK: &str = include_str!("../sql/b003_table_with_fk.sql");
+const B003_TABLE_WITHOUT_FK: &str = include_str!("../sql/b003_table_without_fk.sql");
 const B004_SQL: &str = include_str!("../sql/b004.sql");
 const B005_SQL: &str = include_str!("../sql/b005.sql");
 const B006_SQL: &str = include_str!("../sql/b006.sql");
@@ -115,7 +116,7 @@ pub fn execute_base_rules() -> Result<Vec<RuleResult>, String> {
 
     // B003: Tables without indexes on foreign keys
     if is_rule_enabled("B003").unwrap_or(true) {
-        match execute_b003_rule() {
+        match execute_base_rule("B003", B003_TABLE_WITH_FK, B003_TABLE_WITHOUT_FK) {
             Ok(Some(result)) => results.push(result),
             Ok(None) => {}
             Err(e) => return Err(format!("B003 failed: {e}")),
@@ -433,30 +434,108 @@ fn execute_b002_rule() -> Result<Option<RuleResult>, String> {
     }
 }
 
-fn execute_b003_rule() -> Result<Option<RuleResult>, String> {
-    // B003: Tables without indexes on foreign keys
+fn execute_base_rule(ruleid: &str, query_with_sql: &str, query_without_sql: &str) -> Result<Option<RuleResult>, String> {
+    // Debug: Log function entry
+    pgrx::debug1!("execute_base_rule: Starting execution for rule {}", ruleid);
+
+    let (warning_threshold, error_threshold, rule_message) = match get_rule_config(ruleid) {
+        Ok(config) => {
+            pgrx::debug1!("execute_base_rule: Retrieved thresholds for {} - warning: {}, error: {}",
+                        ruleid, config.0, config.1);
+            config
+        },
+        Err(e) => {
+            pgrx::debug1!("execute_base_rule: Failed to get configuration for {}: {}", ruleid, e);
+            return Err(format!("Failed to get {} configuration: {e}", ruleid));
+        }
+    };
+
     let result: Result<Option<RuleResult>, spi::SpiError> = Spi::connect(|client| {
-        let count: i64 = client
-            .select(B003_SQL, None, &[])?
+        pgrx::debug1!("execute_base_rule: Executing query_with_sql for {}", ruleid);
+        let query_with_sql: i64 = client
+            .select(query_with_sql, None, &[])?
             .first()
             .get::<i64>(1)?
             .unwrap_or(0);
 
-        if count > 0 {
-            return Ok(Some(RuleResult {
-                ruleid: "B003".to_string(),
-                level: "warning".to_string(),
-                message: format!("Found {count} foreign key columns without indexes"),
-                count: Some(count),
-            }));
+        pgrx::debug1!("execute_base_rule: query_with_sql result for {}: {}", ruleid, query_with_sql);
+
+        pgrx::debug1!("execute_base_rule: Executing query_without_sql for {}", ruleid);
+        let query_without_sql: i64 = client
+            .select(query_without_sql, None, &[])?
+            .first()
+            .get::<i64>(1)?
+            .unwrap_or(0);
+
+        pgrx::debug1!("execute_base_rule: query_without_sql result for {}: {}", ruleid, query_without_sql);
+
+        if query_with_sql > 0 {
+            let percentage = (query_without_sql * 100) / query_with_sql;
+
+            pgrx::debug1!("execute_base_rule: Calculated percentage for {}: {}% (with: {}, without: {})",
+                        ruleid, percentage, query_with_sql, query_without_sql);
+
+            // Check error threshold first (higher severity)
+            if percentage >= error_threshold {
+                pgrx::debug1!("execute_base_rule: {} triggered ERROR threshold ({}% >= {}%)",
+                            ruleid, percentage, error_threshold);
+
+                // Replace placeholders in rule message
+                let formatted_message = rule_message
+                    .replace("{0}", &query_without_sql.to_string())
+                    .replace("{1}", &error_threshold.to_string())
+                    .replace("{percentage}", &percentage.to_string());
+
+                pgrx::debug1!("execute_base_rule: {} message template '{}' -> '{}'",
+                            ruleid, rule_message, formatted_message);
+
+                return Ok(Some(RuleResult {
+                    ruleid: ruleid.to_string(),
+                    level: "error".to_string(),
+                    message: formatted_message,
+                    count: Some(query_without_sql),
+                }));
+            }
+            // Check warning threshold
+            else if percentage >= warning_threshold {
+                pgrx::debug1!("execute_base_rule: {} triggered WARNING threshold ({}% >= {}%)",
+                            ruleid, percentage, warning_threshold);
+
+                // Replace placeholders in rule message
+                let formatted_message = rule_message
+                    .replace("{0}", &query_without_sql.to_string())
+                    .replace("{1}", &warning_threshold.to_string())
+                    .replace("{percentage}", &percentage.to_string());
+
+                pgrx::debug1!("execute_base_rule: {} message template '{}' -> '{}'",
+                            ruleid, rule_message, formatted_message);
+
+                return Ok(Some(RuleResult {
+                    ruleid: ruleid.to_string(),
+                    level: "warning".to_string(),
+                    message: formatted_message,
+                    count: Some(query_without_sql),
+                }));
+            } else {
+                pgrx::debug1!("execute_base_rule: {} passed all thresholds ({}% < warning {}%)",
+                            ruleid, percentage, warning_threshold);
+            }
+        } else {
+            pgrx::debug1!("execute_base_rule: {} skipped - no data found (query_with_sql = 0)", ruleid);
         }
 
         Ok(None)
     });
 
     match result {
-        Ok(res) => Ok(res),
-        Err(e) => Err(format!("Database error: {e}")),
+        Ok(res) => {
+            pgrx::debug1!("execute_base_rule: {} completed successfully", ruleid);
+            Ok(res)
+        },
+        Err(e) => {
+            pgrx::debug1!("execute_base_rule: {} failed with database error: {}", ruleid, e);
+            Err(format!("Database error: {e}"))
+        },
     }
 }
 

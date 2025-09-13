@@ -1,0 +1,193 @@
+-- Test for pglinter B003 rule: Foreign keys without indexes
+-- This script creates tables with foreign keys where only some have proper indexes
+-- to demonstrate the B003 rule detection of foreign keys lacking supporting indexes
+
+BEGIN;
+
+-- Create parent tables with primary keys
+CREATE TABLE customers (
+    id SERIAL PRIMARY KEY,
+    first_name VARCHAR(50) NOT NULL,
+    last_name VARCHAR(50) NOT NULL,
+    email VARCHAR(100) UNIQUE NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE products (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(100) NOT NULL,
+    price DECIMAL(10,2) NOT NULL,
+    category VARCHAR(50),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE categories (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(50) NOT NULL UNIQUE,
+    description TEXT
+);
+
+-- Create child tables with foreign keys
+-- Table 1: orders_with_index (HAS proper foreign key index - should NOT trigger B003)
+CREATE TABLE orders_with_index (
+    id SERIAL PRIMARY KEY,
+    customer_id INTEGER NOT NULL,
+    product_id INTEGER NOT NULL,
+    order_date DATE DEFAULT CURRENT_DATE,
+    quantity INTEGER DEFAULT 1,
+    total_amount DECIMAL(10,2),
+    status VARCHAR(20) DEFAULT 'pending'
+);
+
+-- Add foreign keys
+ALTER TABLE orders_with_index ADD CONSTRAINT fk_orders_customer
+    FOREIGN KEY (customer_id) REFERENCES customers(id);
+ALTER TABLE orders_with_index ADD CONSTRAINT fk_orders_product
+    FOREIGN KEY (product_id) REFERENCES products(id);
+
+-- Create INDEXES for foreign keys (this table should NOT trigger B003)
+CREATE INDEX idx_orders_customer_id ON orders_with_index (customer_id);
+CREATE INDEX idx_orders_product_id ON orders_with_index (product_id);
+
+-- Table 2: reviews_no_index (NO foreign key index - should trigger B003)
+CREATE TABLE reviews_no_index (
+    id SERIAL PRIMARY KEY,
+    customer_id INTEGER NOT NULL,
+    product_id INTEGER NOT NULL,
+    rating INTEGER CHECK (rating >= 1 AND rating <= 5),
+    review_text TEXT,
+    review_date DATE DEFAULT CURRENT_DATE
+);
+
+-- Add foreign keys WITHOUT creating indexes
+ALTER TABLE reviews_no_index ADD CONSTRAINT fk_reviews_customer
+    FOREIGN KEY (customer_id) REFERENCES customers(id);
+ALTER TABLE reviews_no_index ADD CONSTRAINT fk_reviews_product
+    FOREIGN KEY (product_id) REFERENCES products(id);
+
+-- Table 3: inventory_no_index (NO foreign key index - should trigger B003)
+CREATE TABLE inventory_no_index (
+    id SERIAL PRIMARY KEY,
+    product_id INTEGER NOT NULL,
+    category_id INTEGER NOT NULL,
+    quantity_on_hand INTEGER DEFAULT 0,
+    warehouse_location VARCHAR(50),
+    last_updated TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Add foreign keys WITHOUT creating indexes
+ALTER TABLE inventory_no_index ADD CONSTRAINT fk_inventory_product
+    FOREIGN KEY (product_id) REFERENCES products(id);
+ALTER TABLE inventory_no_index ADD CONSTRAINT fk_inventory_category
+    FOREIGN KEY (category_id) REFERENCES categories(id);
+
+-- Insert some test data to make tables more realistic
+INSERT INTO customers (first_name, last_name, email) VALUES
+    ('John', 'Doe', 'john.doe@example.com'),
+    ('Jane', 'Smith', 'jane.smith@example.com'),
+    ('Bob', 'Johnson', 'bob.johnson@example.com');
+
+INSERT INTO categories (name, description) VALUES
+    ('Electronics', 'Electronic devices and gadgets'),
+    ('Books', 'Books and literature'),
+    ('Clothing', 'Apparel and accessories');
+
+INSERT INTO products (name, price, category) VALUES
+    ('Laptop Computer', 899.99, 'Electronics'),
+    ('Programming Book', 49.99, 'Books'),
+    ('T-Shirt', 19.99, 'Clothing');
+
+INSERT INTO orders_with_index (customer_id, product_id, quantity, total_amount, status) VALUES
+    (1, 1, 1, 899.99, 'completed'),
+    (2, 2, 2, 99.98, 'pending'),
+    (3, 3, 1, 19.99, 'shipped');
+
+INSERT INTO reviews_no_index (customer_id, product_id, rating, review_text) VALUES
+    (1, 1, 5, 'Excellent laptop, highly recommended!'),
+    (2, 2, 4, 'Good programming book'),
+    (3, 3, 3, 'Average t-shirt quality');
+
+INSERT INTO inventory_no_index (product_id, category_id, quantity_on_hand, warehouse_location) VALUES
+    (1, 1, 50, 'Warehouse A'),
+    (2, 2, 100, 'Warehouse B'),
+    (3, 3, 200, 'Warehouse C');
+
+-- Update table statistics
+ANALYZE customers;
+ANALYZE products;
+ANALYZE categories;
+ANALYZE orders_with_index;
+ANALYZE reviews_no_index;
+ANALYZE inventory_no_index;
+
+-- Create the extension and test B003 rule
+DROP EXTENSION IF EXISTS pglinter CASCADE;
+CREATE EXTENSION IF NOT EXISTS pglinter;
+
+SELECT 'Testing B003 rule - Foreign keys without indexes detection...' as test_info;
+
+-- First, disable all rules to isolate B003 testing
+SELECT pglinter.disable_all_rules() AS all_rules_disabled;
+
+-- Enable only B003 for focused testing
+SELECT pglinter.enable_rule('B003') AS b003_enabled;
+
+-- Verify B003 is enabled
+SELECT pglinter.is_rule_enabled('B003') AS b003_status;
+
+-- Run base check to detect B003 violations
+-- Expected result: Should detect foreign keys without indexes in reviews_no_index and inventory_no_index tables
+SELECT 'Running base check to detect B003 violations...' as status;
+SELECT pglinter.perform_base_check();
+
+-- Test rule management for B003
+SELECT 'Testing B003 rule management...' as test_section;
+SELECT pglinter.explain_rule('B003');
+
+-- Now demonstrate fixing the issue by adding indexes
+SELECT 'Adding indexes to foreign keys to resolve B003 violations...' as improvement_info;
+
+-- Add indexes to fix the foreign key issues
+CREATE INDEX idx_reviews_customer_id ON reviews_no_index (customer_id);
+CREATE INDEX idx_reviews_product_id ON reviews_no_index (product_id);
+CREATE INDEX idx_inventory_product_id ON inventory_no_index (product_id);
+CREATE INDEX idx_inventory_category_id ON inventory_no_index (category_id);
+
+-- Run B003 check again (should show no violations or reduced violations)
+SELECT 'Running B003 check after adding foreign key indexes (should show no violations):' as test_info;
+SELECT pglinter.perform_base_check();
+
+-- Update B003 thresholds to produce message
+SELECT pglinter.update_rule_levels('B003', 60, 90);
+
+-- Temporarily remove one index to show the difference
+DROP INDEX idx_reviews_customer_id;
+DROP INDEX idx_reviews_product_id;
+DROP INDEX idx_inventory_product_id;
+
+SELECT
+    count(DISTINCT tc.table_name) as total_table_with_fk
+FROM
+    information_schema.table_constraints AS tc
+WHERE
+    tc.constraint_type = 'FOREIGN KEY'
+    AND tc.table_schema NOT IN ('pg_toast', 'pg_catalog', 'information_schema', 'pglinter');
+
+SELECT
+  COUNT(DISTINCT c.relname) AS tables_with_unindexed_foreign_keys
+FROM pg_constraint con
+JOIN pg_class c ON c.oid = con.conrelid
+JOIN pg_namespace n ON n.oid = c.relnamespace
+LEFT JOIN pg_index i ON i.indrelid = c.oid AND con.conkey::smallint[] <@ i.indkey::smallint[]
+WHERE
+  con.contype = 'f'
+  AND c.relkind = 'r'
+  AND i.indexrelid IS NULL
+  AND n.nspname NOT IN ('pg_catalog', 'pg_toast', 'information_schema', 'pglinter');
+
+
+SELECT 'B003 (base check) - Shows percentage-based foreign key index analysis:' as b003_demo;
+SELECT pglinter.perform_base_check();
+
+
+ROLLBACK;
