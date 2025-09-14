@@ -158,7 +158,7 @@ NOTICE:  📖 Rule Explanation for B005
 Only authorized users should be allowed to create objects.
 
 ⚠️  Message Template:
-{0}/{1} schemas are unsecured, schemas where all users can create objects in, exceed the warning threshold: {2}%.
+{0}/{1} schemas are unsecured, schemas where all users can create objects in, exceed the {2} threshold: {3}%.
 
 🔧 How to Fix:
    1. REVOKE CREATE ON SCHEMA <schema_name> FROM PUBLIC

@@ -101,7 +101,7 @@ pub fn execute_base_rules() -> Result<Vec<RuleResult>, String> {
 
     // B001: Tables without primary key
     if is_rule_enabled("B001").unwrap_or(true) {
-        match execute_b001_rule() {
+        match execute_base_rule("B001", B001_TOTAL_TABLES_SQL, B001_TABLES_WITH_PK_SQL) {
             Ok(Some(result)) => results.push(result),
             Ok(None) => {}
             Err(e) => return Err(format!("B001 failed: {e}")),
@@ -110,10 +110,10 @@ pub fn execute_base_rules() -> Result<Vec<RuleResult>, String> {
 
     // B002: Redundant indexes
     if is_rule_enabled("B002").unwrap_or(true) {
-        match execute_b002_rule() {
+        match execute_base_rule("B002", B002_TOTAL_INDEXES_SQL, B002_REDUNDANT_INDEXES_SQL) {
             Ok(Some(result)) => results.push(result),
             Ok(None) => {}
-            Err(e) => return Err(format!("B002 failed: {e}")),
+            Err(e) => return Err(format!("B001 failed: {e}")),
         }
     }
 
@@ -318,125 +318,6 @@ pub fn execute_schema_rules() -> Result<Vec<RuleResult>, String> {
     Ok(results)
 }
 
-// Individual rule implementations
-fn execute_b001_rule() -> Result<Option<RuleResult>, String> {
-    // Get thresholds from rules table
-    let (warning_threshold, error_threshold, _rule_message) = match get_rule_config("B001") {
-        Ok(config) => config,
-        Err(e) => {
-            return Err(format!("Failed to get B001 configuration: {e}"));
-        }
-    };
-
-    let result: Result<Option<RuleResult>, spi::SpiError> = Spi::connect(|client| {
-        let total_tables: i64 = client
-            .select(B001_TOTAL_TABLES_SQL, None, &[])?
-            .first()
-            .get::<i64>(1)?
-            .unwrap_or(0);
-
-        let tables_with_pk: i64 = client
-            .select(B001_TABLES_WITH_PK_SQL, None, &[])?
-            .first()
-            .get::<i64>(1)?
-            .unwrap_or(0);
-
-        let tables_without_pk = total_tables - tables_with_pk;
-
-        if total_tables > 0 {
-            let percentage = (tables_without_pk * 100) / total_tables;
-
-            // Check error threshold first (higher severity)
-            if percentage > error_threshold {
-                return Ok(Some(RuleResult {
-                    ruleid: "B001".to_string(),
-                    level: "error".to_string(),
-                    message: format!(
-                        "{percentage}% tables without primary key exceed the error threshold: {error_threshold}%"
-                    ),
-                    count: Some(total_tables),
-                }));
-            }
-            // Check warning threshold
-            else if percentage > warning_threshold {
-                return Ok(Some(RuleResult {
-                    ruleid: "B001".to_string(),
-                    level: "warning".to_string(),
-                    message: format!(
-                        "{percentage}% tables without primary key exceed the warning threshold: {warning_threshold}%"
-                    ),
-                    count: Some(total_tables),
-                }));
-            }
-        }
-
-        Ok(None)
-    });
-
-    match result {
-        Ok(res) => Ok(res),
-        Err(e) => Err(format!("Database error: {e}")),
-    }
-}
-
-fn execute_b002_rule() -> Result<Option<RuleResult>, String> {
-    // Get thresholds from rules table
-    let (warning_threshold, error_threshold, _rule_message) = match get_rule_config("B002") {
-        Ok(config) => config,
-        Err(e) => {
-            return Err(format!("Failed to get B002 configuration: {e}"));
-        }
-    };
-
-    let result: Result<Option<RuleResult>, spi::SpiError> = Spi::connect(|client| {
-        let total_indexes: i64 = client
-            .select(B002_TOTAL_INDEXES_SQL, None, &[])?
-            .first()
-            .get::<i64>(1)?
-            .unwrap_or(0);
-
-        let redundant_indexes: i64 = client
-            .select(B002_REDUNDANT_INDEXES_SQL, None, &[])?
-            .first()
-            .get::<i64>(1)?
-            .unwrap_or(0);
-
-        if total_indexes > 0 {
-            let percentage = (redundant_indexes * 100) / total_indexes;
-
-            // Check error threshold first (higher severity)
-            if percentage >= error_threshold {
-                return Ok(Some(RuleResult {
-                    ruleid: "B002".to_string(),
-                    level: "error".to_string(),
-                    message: format!(
-                        "{percentage}% redundant indexes exceed the error threshold: {error_threshold}%"
-                    ),
-                    count: Some(total_indexes),
-                }));
-            }
-            // Check warning threshold
-            else if percentage >= warning_threshold {
-                return Ok(Some(RuleResult {
-                    ruleid: "B002".to_string(),
-                    level: "warning".to_string(),
-                    message: format!(
-                        "{percentage}% redundant indexes exceed the warning threshold: {warning_threshold}%"
-                    ),
-                    count: Some(total_indexes),
-                }));
-            }
-        }
-
-        Ok(None)
-    });
-
-    match result {
-        Ok(res) => Ok(res),
-        Err(e) => Err(format!("Database error: {e}")),
-    }
-}
-
 fn execute_base_rule(ruleid: &str, all_sql: &str, wrong_sql: &str) -> Result<Option<RuleResult>, String> {
     // Debug: Log function entry
     pgrx::debug1!("execute_base_rule: Starting execution for rule {}", ruleid);
@@ -487,7 +368,8 @@ fn execute_base_rule(ruleid: &str, all_sql: &str, wrong_sql: &str) -> Result<Opt
                 let formatted_message = rule_message
                     .replace("{0}", &wrong_sql.to_string())
                     .replace("{1}", &all_sql.to_string())
-                    .replace("{2}", &percentage.to_string());
+                    .replace("{2}", "error")
+                    .replace("{3}", &percentage.to_string());
 
                 pgrx::debug1!("execute_base_rule: {} message template '{}' -> '{}'",
                             ruleid, rule_message, formatted_message);
@@ -508,7 +390,8 @@ fn execute_base_rule(ruleid: &str, all_sql: &str, wrong_sql: &str) -> Result<Opt
                 let formatted_message = rule_message
                     .replace("{0}", &wrong_sql.to_string())
                     .replace("{1}", &all_sql.to_string())
-                    .replace("{2}", &percentage.to_string());
+                    .replace("{2}", "warning")
+                    .replace("{3}", &percentage.to_string());
 
                 pgrx::debug1!("execute_base_rule: {} message template '{}' -> '{}'",
                             ruleid, rule_message, formatted_message);

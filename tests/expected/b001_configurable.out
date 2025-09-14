@@ -42,7 +42,7 @@ SELECT warning_level, error_level FROM pglinter.rules WHERE code = 'B001';
 SELECT pglinter.perform_base_check();
 NOTICE:  🔍 pglinter found 1 issue(s):
 NOTICE:  ==================================================
-NOTICE:  ⚠️  [B001] WARNING: 50% tables without primary key exceed the warning threshold: 20%
+NOTICE:  ⚠️  [B001] WARNING: 1/2 table(s) without primary key exceed the warning threshold: 50%.
 NOTICE:  ==================================================
 NOTICE:  📊 Summary: 0 error(s), 1 warning(s), 0 info
 NOTICE:  🟡 Some warnings found - consider reviewing for optimization

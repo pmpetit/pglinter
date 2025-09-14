@@ -18,32 +18,32 @@ INSERT INTO pglinter.rules (id,name,code,warning_level,error_level,scope,descrip
 -- Base Database Rules (B series)
 (1, 'HowManyTableWithoutPrimaryKey', 'B001', 20, 80, 'BASE',
     'Count number of tables without primary key.',
-    '{0} table(s) without primary key exceed the warning threshold: {1}%.',
+    '{0}/{1} table(s) without primary key exceed the {2} threshold: {3}%.',
     ARRAY['create a primary key or change warning/error threshold']),
 
 (2, 'HowManyRedudantIndex', 'B002', 20, 80, 'BASE',
     'Count number of redundant index vs nb index.',
-    '{0} redundant(s) index exceed the warning threshold: {1}%.',
+    '{0}/{1} redundant(s) index exceed the {2} threshold: {3}%.',
     ARRAY['remove duplicated index or check if a constraint does not create a redundant index, or change warning/error threshold']),
 
 (3, 'HowManyTableWithoutIndexOnFk', 'B003', 20, 80, 'BASE',
     'Count number of tables without index on foreign key.',
-    '{0}/{1} table(s) without index on foreign key exceed the warning threshold: {2}%.',
+    '{0}/{1} table(s) without index on foreign key exceed the {2} threshold: {3}%.',
     ARRAY['create a index on foreign key or change warning/error threshold']),
 
 (4, 'HowManyUnusedIndex', 'B004', 20, 80, 'BASE',
     'Count number of unused index vs nb index (base on pg_stat_user_indexes, indexes associated to unique constraints are discard.)',
-    '{0}/{1} unused index exceed the warning threshold: {2}%.',
+    '{0}/{1} unused index exceed the {2} threshold: {3}%',
     ARRAY['remove unused index or change warning/error threshold']),
 
 (5, 'UnsecuredPublicSchema', 'B005', 20, 80, 'BASE',
     'Only authorized users should be allowed to create objects.',
-    '{0}/{1} schemas are unsecured, schemas where all users can create objects in, exceed the warning threshold: {2}%.',
+    '{0}/{1} schemas are unsecured, schemas where all users can create objects in, exceed the {2} threshold: {3}%.',
     ARRAY['REVOKE CREATE ON SCHEMA <schema_name> FROM PUBLIC']),
 
 (6, 'HowManyObjectsWithUppercase', 'B006', 20, 80, 'BASE',
     'Count number of objects with uppercase in name or in columns.',
-    '{0}/{1} object(s) using uppercase for name or columns exceed the warning threshold: {2}%.',
+    '{0}/{1} object(s) using uppercase for name or columns exceed the {2} threshold: {3}%.',
     ARRAY['Do not use uppercase for any database objects']),
 
 -- Cluster Rules (C series)

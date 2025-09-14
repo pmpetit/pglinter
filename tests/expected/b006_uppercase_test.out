@@ -136,7 +136,7 @@ NOTICE:  📖 Rule Explanation for B006
 Count number of objects with uppercase in name or in columns.
 
 ⚠️  Message Template:
-{0}/{1} object(s) using uppercase for name or columns exceed the warning threshold: {2}%.
+{0}/{1} object(s) using uppercase for name or columns exceed the {2} threshold: {3}%.
 
 🔧 How to Fix:
    1. Do not use uppercase for any database objects

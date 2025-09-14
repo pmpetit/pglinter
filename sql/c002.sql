@@ -1,4 +1,1 @@
-SELECT COUNT(*) as potential_insecure
-FROM pg_stat_activity
-WHERE state = 'active'
-AND application_name != 'psql'
+SELECT count(*) FROM pg_catalog.pg_hba_file_rules WHERE auth_method in ('trust','password')
