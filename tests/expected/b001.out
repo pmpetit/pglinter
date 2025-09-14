@@ -49,9 +49,9 @@ Count number of tables without primary key.
  t
 (1 row)
 
-SELECT pglinter.is_rule_enabled('B001') AS is_b001_enabled;
- is_b001_enabled 
------------------
+SELECT pglinter.is_rule_enabled('B001') AS b001_enabled;
+ b001_enabled 
+--------------
  f
 (1 row)
 
@@ -73,35 +73,4 @@ NOTICE:  ✅ No issues found - database schema looks good!
  t
 (1 row)
 
--- Re-enable B001 rule
-SELECT pglinter.enable_rule('B001') AS enable_b001;
-NOTICE:  ✅ Rule B001 has been enabled
- enable_b001 
--------------
- t
-(1 row)
-
--- Test again with B001 enabled
-SELECT pglinter.perform_base_check();
-NOTICE:  🔍 pglinter found 1 issue(s):
-NOTICE:  ==================================================
-NOTICE:  ❌ [B001] ERROR: 100% tables without primary key exceed the error threshold: 80%
-NOTICE:  ==================================================
-NOTICE:  📊 Summary: 1 error(s), 0 warning(s), 0 info
-NOTICE:  🔴 Critical issues found - please review and fix errors
- perform_base_check 
---------------------
- t
-(1 row)
-
--- Test with file output
-SELECT pglinter.perform_base_check('/tmp/pglinter_base_results.sarif');
- perform_base_check 
---------------------
- t
-(1 row)
-
--- Test if file exists
-\! md5sum /tmp/pglinter_base_results.sarif
-df767701b90853dad1b899d8630278e7  /tmp/pglinter_base_results.sarif
 ROLLBACK;

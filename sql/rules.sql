@@ -33,7 +33,7 @@ INSERT INTO pglinter.rules (id,name,code,warning_level,error_level,scope,descrip
 
 (4, 'HowManyUnusedIndex', 'B004', 20, 80, 'BASE',
     'Count number of unused index vs nb index (base on pg_stat_user_indexes, indexes associated to unique constraints are discard.)',
-    '{0} table(s) with unused index exceed the warning threshold: {1}%.',
+    '{0} unused index exceed the warning threshold: {1}%.',
     ARRAY['remove unused index or change warning/error threshold']),
 
 (5, 'UnsecuredPublicSchema', 'B005', 1, 0, 'BASE',

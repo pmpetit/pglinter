@@ -11,7 +11,8 @@ const B002_TOTAL_INDEXES_SQL: &str = include_str!("../sql/b002_total_indexes.sql
 const B002_REDUNDANT_INDEXES_SQL: &str = include_str!("../sql/b002_redundant_indexes.sql");
 const B003_TABLE_WITH_FK: &str = include_str!("../sql/b003_table_with_fk.sql");
 const B003_TABLE_WITHOUT_FK: &str = include_str!("../sql/b003_table_without_fk.sql");
-const B004_SQL: &str = include_str!("../sql/b004.sql");
+const B004_TOTAL_MANUAL_IDX_SQL: &str = include_str!("../sql/b004_total_manual_idx.sql");
+const B004_TOTAL_MANUAL_UNUSED_IDX_SQL: &str = include_str!("../sql/b004_total_manual_unused_idx.sql");
 const B005_SQL: &str = include_str!("../sql/b005.sql");
 const B006_SQL: &str = include_str!("../sql/b006.sql");
 const C001_SQL: &str = include_str!("../sql/c001.sql");
@@ -125,10 +126,10 @@ pub fn execute_base_rules() -> Result<Vec<RuleResult>, String> {
 
     // B004: Unused indexes
     if is_rule_enabled("B004").unwrap_or(true) {
-        match execute_b004_rule() {
+        match execute_base_rule("B004", B004_TOTAL_MANUAL_IDX_SQL, B004_TOTAL_MANUAL_UNUSED_IDX_SQL) {
             Ok(Some(result)) => results.push(result),
             Ok(None) => {}
-            Err(e) => return Err(format!("B004 failed: {e}")),
+            Err(e) => return Err(format!("B003 failed: {e}")),
         }
     }
 
@@ -539,32 +540,32 @@ fn execute_base_rule(ruleid: &str, query_with_sql: &str, query_without_sql: &str
     }
 }
 
-fn execute_b004_rule() -> Result<Option<RuleResult>, String> {
-    // B004: Unused indexes (simplified check using pg_stat_user_indexes)
-    let result: Result<Option<RuleResult>, spi::SpiError> = Spi::connect(|client| {
-        let count: i64 = client
-            .select(B004_SQL, None, &[])?
-            .first()
-            .get::<i64>(1)?
-            .unwrap_or(0);
+// fn execute_b004_rule() -> Result<Option<RuleResult>, String> {
+//     // B004: Unused indexes (simplified check using pg_stat_user_indexes)
+//     let result: Result<Option<RuleResult>, spi::SpiError> = Spi::connect(|client| {
+//         let count: i64 = client
+//             .select(B004_SQL, None, &[])?
+//             .first()
+//             .get::<i64>(1)?
+//             .unwrap_or(0);
 
-        if count > 0 {
-            return Ok(Some(RuleResult {
-                ruleid: "B004".to_string(),
-                level: "warning".to_string(),
-                message: format!("Found {count} potentially unused indexes"),
-                count: Some(count),
-            }));
-        }
+//         if count > 0 {
+//             return Ok(Some(RuleResult {
+//                 ruleid: "B004".to_string(),
+//                 level: "warning".to_string(),
+//                 message: format!("Found {count} potentially unused indexes"),
+//                 count: Some(count),
+//             }));
+//         }
 
-        Ok(None)
-    });
+//         Ok(None)
+//     });
 
-    match result {
-        Ok(res) => Ok(res),
-        Err(e) => Err(format!("Database error: {e}")),
-    }
-}
+//     match result {
+//         Ok(res) => Ok(res),
+//         Err(e) => Err(format!("Database error: {e}")),
+//     }
+// }
 
 fn execute_b005_rule() -> Result<Option<RuleResult>, String> {
     // B005: Unsecured public schema
