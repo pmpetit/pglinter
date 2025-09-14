@@ -128,6 +128,3 @@ INSERT INTO pglinter.rules (id,name,code,warning_level,error_level,scope,descrip
     'The schema is prefixed with one of staging,stg,preprod,prod,sandbox,sbox string. Means that when you refresh your preprod, staging environments from production, you have to rename the target schema from prod_ to stg_ or something like. It is possible, but it is never easy.',
     'You should not prefix or suffix the schema name with {0}. You may have difficulties when refreshing environments. Prefer prefix or suffix the database name.',
     ARRAY['Keep the same schema name across environments. Prefer prefix or suffix the database name']);
-
-
-GRANT USAGE ON SCHEMA PGLINTER TO PUBLIC;

@@ -55,6 +55,7 @@ REGRESS_TESTS+= b004_idx_not_used
 REGRESS_TESTS+= b005_public_schema
 REGRESS_TESTS+= b006_uppercase_test
 REGRESS_TESTS+= c001_comprehensive_test
+REGRESS_TESTS+= c002_hba_security_test
 
 # REGRESS_TESTS+= b001
 # REGRESS_TESTS+= cluster_rules
