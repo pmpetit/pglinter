@@ -15,7 +15,8 @@ const B004_TOTAL_MANUAL_IDX_SQL: &str = include_str!("../sql/b004_total_manual_i
 const B004_TOTAL_MANUAL_UNUSED_IDX_SQL: &str = include_str!("../sql/b004_total_manual_unused_idx.sql");
 const B005_SCHEMA_WITH_PUBLIC_CREATE: &str = include_str!("../sql/b005_schema_with_public_create.sql");
 const B005_ALL_SCHEMA: &str = include_str!("../sql/b005_all_schema.sql");
-const B006_SQL: &str = include_str!("../sql/b006.sql");
+const B006_ALL_OBJECTS_SQL: &str = include_str!("../sql/b006_all_objects.sql");
+const B006_UPPERCASE_SQL: &str = include_str!("../sql/b006_uppercase.sql");
 const C001_SQL: &str = include_str!("../sql/c001.sql");
 const C002_SQL: &str = include_str!("../sql/c002.sql");
 const T001_SQL: &str = include_str!("../sql/t001.sql");
@@ -145,7 +146,7 @@ pub fn execute_base_rules() -> Result<Vec<RuleResult>, String> {
 
     // B006: Tables with uppercase names/columns
     if is_rule_enabled("B006").unwrap_or(true) {
-        match execute_b006_rule() {
+        match execute_base_rule("B006", B006_ALL_OBJECTS_SQL, B006_UPPERCASE_SQL) {
             Ok(Some(result)) => results.push(result),
             Ok(None) => {}
             Err(e) => return Err(format!("B006 failed: {e}")),
@@ -436,7 +437,7 @@ fn execute_b002_rule() -> Result<Option<RuleResult>, String> {
     }
 }
 
-fn execute_base_rule(ruleid: &str, query_with_sql: &str, query_without_sql: &str) -> Result<Option<RuleResult>, String> {
+fn execute_base_rule(ruleid: &str, all_sql: &str, wrong_sql: &str) -> Result<Option<RuleResult>, String> {
     // Debug: Log function entry
     pgrx::debug1!("execute_base_rule: Starting execution for rule {}", ruleid);
 
@@ -453,29 +454,29 @@ fn execute_base_rule(ruleid: &str, query_with_sql: &str, query_without_sql: &str
     };
 
     let result: Result<Option<RuleResult>, spi::SpiError> = Spi::connect(|client| {
-        pgrx::debug1!("execute_base_rule: Executing query_with_sql for {}", ruleid);
-        let query_with_sql: i64 = client
-            .select(query_with_sql, None, &[])?
+        pgrx::debug1!("execute_base_rule: Executing all items for {}", ruleid);
+        let all_sql: i64 = client
+            .select(all_sql, None, &[])?
             .first()
             .get::<i64>(1)?
             .unwrap_or(0);
 
-        pgrx::debug1!("execute_base_rule: query_with_sql result for {}: {}", ruleid, query_with_sql);
+        pgrx::debug1!("execute_base_rule: all items result for {}: {}", ruleid, all_sql);
 
-        pgrx::debug1!("execute_base_rule: Executing query_without_sql for {}", ruleid);
-        let query_without_sql: i64 = client
-            .select(query_without_sql, None, &[])?
+        pgrx::debug1!("execute_base_rule: Executing wrong for {}", ruleid);
+        let wrong_sql: i64 = client
+            .select(wrong_sql, None, &[])?
             .first()
             .get::<i64>(1)?
             .unwrap_or(0);
 
-        pgrx::debug1!("execute_base_rule: query_without_sql result for {}: {}", ruleid, query_without_sql);
+        pgrx::debug1!("execute_base_rule: wrong items result for {}: {}", ruleid, wrong_sql);
 
-        if query_with_sql > 0 {
-            let percentage = (query_without_sql * 100) / query_with_sql;
+        if all_sql > 0 {
+            let percentage = (wrong_sql * 100) / all_sql;
 
-            pgrx::debug1!("execute_base_rule: Calculated percentage for {}: {}% (with: {}, without: {})",
-                        ruleid, percentage, query_with_sql, query_without_sql);
+            pgrx::debug1!("execute_base_rule: Calculated percentage for {}: {}% (all: {}, wrong: {})",
+                        ruleid, percentage, all_sql, wrong_sql);
 
             // Check error threshold first (higher severity)
             if percentage >= error_threshold {
@@ -484,8 +485,8 @@ fn execute_base_rule(ruleid: &str, query_with_sql: &str, query_without_sql: &str
 
                 // Replace placeholders in rule message
                 let formatted_message = rule_message
-                    .replace("{0}", &query_without_sql.to_string())
-                    .replace("{1}", &query_with_sql.to_string())
+                    .replace("{0}", &wrong_sql.to_string())
+                    .replace("{1}", &all_sql.to_string())
                     .replace("{2}", &percentage.to_string());
 
                 pgrx::debug1!("execute_base_rule: {} message template '{}' -> '{}'",
@@ -495,7 +496,7 @@ fn execute_base_rule(ruleid: &str, query_with_sql: &str, query_without_sql: &str
                     ruleid: ruleid.to_string(),
                     level: "error".to_string(),
                     message: formatted_message,
-                    count: Some(query_without_sql),
+                    count: Some(wrong_sql),
                 }));
             }
             // Check warning threshold
@@ -505,8 +506,8 @@ fn execute_base_rule(ruleid: &str, query_with_sql: &str, query_without_sql: &str
 
                 // Replace placeholders in rule message
                 let formatted_message = rule_message
-                    .replace("{0}", &query_without_sql.to_string())
-                    .replace("{1}", &query_with_sql.to_string())
+                    .replace("{0}", &wrong_sql.to_string())
+                    .replace("{1}", &all_sql.to_string())
                     .replace("{2}", &percentage.to_string());
 
                 pgrx::debug1!("execute_base_rule: {} message template '{}' -> '{}'",
@@ -516,14 +517,14 @@ fn execute_base_rule(ruleid: &str, query_with_sql: &str, query_without_sql: &str
                     ruleid: ruleid.to_string(),
                     level: "warning".to_string(),
                     message: formatted_message,
-                    count: Some(query_without_sql),
+                    count: Some(wrong_sql),
                 }));
             } else {
                 pgrx::debug1!("execute_base_rule: {} passed all thresholds ({}% < warning {}%)",
                             ruleid, percentage, warning_threshold);
             }
         } else {
-            pgrx::debug1!("execute_base_rule: {} skipped - no data found (query_with_sql = 0)", ruleid);
+            pgrx::debug1!("execute_base_rule: {} skipped - no data found (wrong = 0)", ruleid);
         }
 
         Ok(None)
@@ -538,88 +539,6 @@ fn execute_base_rule(ruleid: &str, query_with_sql: &str, query_without_sql: &str
             pgrx::debug1!("execute_base_rule: {} failed with database error: {}", ruleid, e);
             Err(format!("Database error: {e}"))
         },
-    }
-}
-
-// fn execute_b004_rule() -> Result<Option<RuleResult>, String> {
-//     // B004: Unused indexes (simplified check using pg_stat_user_indexes)
-//     let result: Result<Option<RuleResult>, spi::SpiError> = Spi::connect(|client| {
-//         let count: i64 = client
-//             .select(B004_SQL, None, &[])?
-//             .first()
-//             .get::<i64>(1)?
-//             .unwrap_or(0);
-
-//         if count > 0 {
-//             return Ok(Some(RuleResult {
-//                 ruleid: "B004".to_string(),
-//                 level: "warning".to_string(),
-//                 message: format!("Found {count} potentially unused indexes"),
-//                 count: Some(count),
-//             }));
-//         }
-
-//         Ok(None)
-//     });
-
-//     match result {
-//         Ok(res) => Ok(res),
-//         Err(e) => Err(format!("Database error: {e}")),
-//     }
-// }
-
-// fn execute_b005_rule() -> Result<Option<RuleResult>, String> {
-//     // B005: Unsecured public schema
-//     let result: Result<Option<RuleResult>, spi::SpiError> = Spi::connect(|client| {
-//         let has_public_create: bool = client
-//             .select(B005_SQL, None, &[])?
-//             .first()
-//             .get::<bool>(1)?
-//             .unwrap_or(false);
-
-//         if has_public_create {
-//             return Ok(Some(RuleResult {
-//                 ruleid: "B005".to_string(),
-//                 level: "error".to_string(),
-//                 message: "Public schema allows CREATE privilege for all users - security risk"
-//                     .to_string(),
-//                 count: Some(1),
-//             }));
-//         }
-
-//         Ok(None)
-//     });
-
-//     match result {
-//         Ok(res) => Ok(res),
-//         Err(e) => Err(format!("Database error: {e}")),
-//     }
-// }
-
-fn execute_b006_rule() -> Result<Option<RuleResult>, String> {
-    // B006: Tables with uppercase names/columns
-    let result: Result<Option<RuleResult>, spi::SpiError> = Spi::connect(|client| {
-        let count: i64 = client
-            .select(B006_SQL, None, &[])?
-            .first()
-            .get::<i64>(1)?
-            .unwrap_or(0);
-
-        if count > 0 {
-            return Ok(Some(RuleResult {
-                ruleid: "B006".to_string(),
-                level: "warning".to_string(),
-                message: format!("Found {count} database objects with uppercase letters"),
-                count: Some(count),
-            }));
-        }
-
-        Ok(None)
-    });
-
-    match result {
-        Ok(res) => Ok(res),
-        Err(e) => Err(format!("Database error: {e}")),
     }
 }
 

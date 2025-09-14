@@ -41,9 +41,9 @@ INSERT INTO pglinter.rules (id,name,code,warning_level,error_level,scope,descrip
     '{0}/{1} schemas are unsecured, schemas where all users can create objects in, exceed the warning threshold: {2}%.',
     ARRAY['REVOKE CREATE ON SCHEMA <schema_name> FROM PUBLIC']),
 
-(6, 'HowManyTablesWithUppercase', 'B006', 20, 80, 'BASE',
-    'Count number of tables with uppercase in name or in columns.',
-    '{0} table(s) using uppercase for name or columns exceed the warning threshold: {1}%.',
+(6, 'HowManyObjectsWithUppercase', 'B006', 20, 80, 'BASE',
+    'Count number of objects with uppercase in name or in columns.',
+    '{0}/{1} object(s) using uppercase for name or columns exceed the warning threshold: {2}%.',
     ARRAY['Do not use uppercase for any database objects']),
 
 -- Cluster Rules (C series)

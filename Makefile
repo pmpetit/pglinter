@@ -53,6 +53,7 @@ REGRESS_TESTS+= b002_non_redundant_idx
 REGRESS_TESTS+= b003_fk_not_indexed
 REGRESS_TESTS+= b004_idx_not_used
 REGRESS_TESTS+= b005_public_schema
+REGRESS_TESTS+= b006_uppercase_test
 
 # REGRESS_TESTS+= b001
 # REGRESS_TESTS+= cluster_rules
