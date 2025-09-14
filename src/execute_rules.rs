@@ -13,7 +13,8 @@ const B003_TABLE_WITH_FK: &str = include_str!("../sql/b003_table_with_fk.sql");
 const B003_TABLE_WITHOUT_FK: &str = include_str!("../sql/b003_table_without_fk.sql");
 const B004_TOTAL_MANUAL_IDX_SQL: &str = include_str!("../sql/b004_total_manual_idx.sql");
 const B004_TOTAL_MANUAL_UNUSED_IDX_SQL: &str = include_str!("../sql/b004_total_manual_unused_idx.sql");
-const B005_SQL: &str = include_str!("../sql/b005.sql");
+const B005_SCHEMA_WITH_PUBLIC_CREATE: &str = include_str!("../sql/b005_schema_with_public_create.sql");
+const B005_ALL_SCHEMA: &str = include_str!("../sql/b005_all_schema.sql");
 const B006_SQL: &str = include_str!("../sql/b006.sql");
 const C001_SQL: &str = include_str!("../sql/c001.sql");
 const C002_SQL: &str = include_str!("../sql/c002.sql");
@@ -135,7 +136,7 @@ pub fn execute_base_rules() -> Result<Vec<RuleResult>, String> {
 
     // B005: Unsecured public schema
     if is_rule_enabled("B005").unwrap_or(true) {
-        match execute_b005_rule() {
+        match execute_base_rule("B005", B005_ALL_SCHEMA, B005_SCHEMA_WITH_PUBLIC_CREATE) {
             Ok(Some(result)) => results.push(result),
             Ok(None) => {}
             Err(e) => return Err(format!("B005 failed: {e}")),
@@ -484,8 +485,8 @@ fn execute_base_rule(ruleid: &str, query_with_sql: &str, query_without_sql: &str
                 // Replace placeholders in rule message
                 let formatted_message = rule_message
                     .replace("{0}", &query_without_sql.to_string())
-                    .replace("{1}", &error_threshold.to_string())
-                    .replace("{percentage}", &percentage.to_string());
+                    .replace("{1}", &query_with_sql.to_string())
+                    .replace("{2}", &percentage.to_string());
 
                 pgrx::debug1!("execute_base_rule: {} message template '{}' -> '{}'",
                             ruleid, rule_message, formatted_message);
@@ -505,8 +506,8 @@ fn execute_base_rule(ruleid: &str, query_with_sql: &str, query_without_sql: &str
                 // Replace placeholders in rule message
                 let formatted_message = rule_message
                     .replace("{0}", &query_without_sql.to_string())
-                    .replace("{1}", &warning_threshold.to_string())
-                    .replace("{percentage}", &percentage.to_string());
+                    .replace("{1}", &query_with_sql.to_string())
+                    .replace("{2}", &percentage.to_string());
 
                 pgrx::debug1!("execute_base_rule: {} message template '{}' -> '{}'",
                             ruleid, rule_message, formatted_message);
@@ -567,33 +568,33 @@ fn execute_base_rule(ruleid: &str, query_with_sql: &str, query_without_sql: &str
 //     }
 // }
 
-fn execute_b005_rule() -> Result<Option<RuleResult>, String> {
-    // B005: Unsecured public schema
-    let result: Result<Option<RuleResult>, spi::SpiError> = Spi::connect(|client| {
-        let has_public_create: bool = client
-            .select(B005_SQL, None, &[])?
-            .first()
-            .get::<bool>(1)?
-            .unwrap_or(false);
+// fn execute_b005_rule() -> Result<Option<RuleResult>, String> {
+//     // B005: Unsecured public schema
+//     let result: Result<Option<RuleResult>, spi::SpiError> = Spi::connect(|client| {
+//         let has_public_create: bool = client
+//             .select(B005_SQL, None, &[])?
+//             .first()
+//             .get::<bool>(1)?
+//             .unwrap_or(false);
 
-        if has_public_create {
-            return Ok(Some(RuleResult {
-                ruleid: "B005".to_string(),
-                level: "error".to_string(),
-                message: "Public schema allows CREATE privilege for all users - security risk"
-                    .to_string(),
-                count: Some(1),
-            }));
-        }
+//         if has_public_create {
+//             return Ok(Some(RuleResult {
+//                 ruleid: "B005".to_string(),
+//                 level: "error".to_string(),
+//                 message: "Public schema allows CREATE privilege for all users - security risk"
+//                     .to_string(),
+//                 count: Some(1),
+//             }));
+//         }
 
-        Ok(None)
-    });
+//         Ok(None)
+//     });
 
-    match result {
-        Ok(res) => Ok(res),
-        Err(e) => Err(format!("Database error: {e}")),
-    }
-}
+//     match result {
+//         Ok(res) => Ok(res),
+//         Err(e) => Err(format!("Database error: {e}")),
+//     }
+// }
 
 fn execute_b006_rule() -> Result<Option<RuleResult>, String> {
     // B006: Tables with uppercase names/columns

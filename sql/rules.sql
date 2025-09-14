@@ -28,18 +28,18 @@ INSERT INTO pglinter.rules (id,name,code,warning_level,error_level,scope,descrip
 
 (3, 'HowManyTableWithoutIndexOnFk', 'B003', 20, 80, 'BASE',
     'Count number of tables without index on foreign key.',
-    '{0} table(s) without index on foreign key exceed the warning threshold: {1}%.',
+    '{0}/{1} table(s) without index on foreign key exceed the warning threshold: {2}%.',
     ARRAY['create a index on foreign key or change warning/error threshold']),
 
 (4, 'HowManyUnusedIndex', 'B004', 20, 80, 'BASE',
     'Count number of unused index vs nb index (base on pg_stat_user_indexes, indexes associated to unique constraints are discard.)',
-    '{0} unused index exceed the warning threshold: {1}%.',
+    '{0}/{1} unused index exceed the warning threshold: {2}%.',
     ARRAY['remove unused index or change warning/error threshold']),
 
-(5, 'UnsecuredPublicSchema', 'B005', 1, 0, 'BASE',
-    'Only authorized users should be allowed to create new objects.',
-    'All schemas on search_path are unsecured, all users can create objects.',
-    ARRAY['REVOKE CREATE ON SCHEMA public FROM PUBLIC']),
+(5, 'UnsecuredPublicSchema', 'B005', 20, 80, 'BASE',
+    'Only authorized users should be allowed to create objects.',
+    '{0}/{1} schemas are unsecured, schemas where all users can create objects in, exceed the warning threshold: {2}%.',
+    ARRAY['REVOKE CREATE ON SCHEMA <schema_name> FROM PUBLIC']),
 
 (6, 'HowManyTablesWithUppercase', 'B006', 20, 80, 'BASE',
     'Count number of tables with uppercase in name or in columns.',
