@@ -3,6 +3,8 @@
 
 BEGIN;
 
+\pset pager off
+
 -- Create tables without primary keys (should trigger T001)
 CREATE TABLE customer_orders (
     order_id INTEGER NOT NULL,

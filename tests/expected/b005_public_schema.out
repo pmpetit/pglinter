@@ -13,10 +13,10 @@ SELECT 'B005 Regression Test: Schemas with public CREATE privileges' as test_hea
 
 -- Setup B005 rule for testing
 SELECT pglinter.disable_all_rules();
-NOTICE:  🔴 Disabled 22 rule(s)
+NOTICE:  🔴 Disabled 23 rule(s)
  disable_all_rules 
 -------------------
-                22
+                23
 (1 row)
 
 SELECT pglinter.enable_rule('B005');

@@ -17,6 +17,8 @@ const B005_SCHEMA_WITH_PUBLIC_CREATE: &str = include_str!("../sql/b005_schema_wi
 const B005_ALL_SCHEMA: &str = include_str!("../sql/b005_all_schema.sql");
 const B006_ALL_OBJECTS_SQL: &str = include_str!("../sql/b006_all_objects.sql");
 const B006_UPPERCASE_SQL: &str = include_str!("../sql/b006_uppercase.sql");
+const B007_ALL_TABLES_SQL: &str = include_str!("../sql/b007_total_tables.sql");
+const B007_NOT_SELECTED_SQL: &str = include_str!("../sql/b007_tables_not_selected.sql");
 const C001_SQL: &str = include_str!("../sql/c001.sql");
 const C002_PG_HBA_ALL: &str = include_str!("../sql/c002_pg_hba_all.sql");
 const C002_PG_HBA_TRUST: &str = include_str!("../sql/c002_pg_hba_trust.sql");
@@ -154,6 +156,14 @@ pub fn execute_base_rules() -> Result<Vec<RuleResult>, String> {
         }
     }
 
+    // B007: Tables not selected
+    if is_rule_enabled("B007").unwrap_or(true) {
+        match execute_rule("B007", B007_ALL_TABLES_SQL,B007_NOT_SELECTED_SQL) {
+            Ok(Some(result)) => results.push(result),
+            Ok(None) => {}
+            Err(e) => return Err(format!("B007 failed: {e}")),
+        }
+    }
     Ok(results)
 }
 

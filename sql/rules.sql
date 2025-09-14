@@ -46,6 +46,11 @@ INSERT INTO pglinter.rules (id,name,code,warning_level,error_level,scope,descrip
     '{0}/{1} object(s) using uppercase for name or columns exceed the {2} threshold: {3}%.',
     ARRAY['Do not use uppercase for any database objects']),
 
+(7, 'HowManyTablesNeverSelected', 'B007', 20, 80, 'BASE',
+    'Count number of table(s) that has never been selected.',
+    '{0}/{1} table(s) are never selected the {2} threshold: {3}%.',
+    ARRAY['Is it necessary to update/delete/insert rows in table(s) that are never selected ?']),
+
 -- Cluster Rules (C series)
 (10, 'MaxConnectionsByWorkMemIsNotLargerThanMemory', 'C001', 1, 1, 'CLUSTER',
     'Number of cx (max_connections * work_mem) is not greater than memory.',

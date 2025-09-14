@@ -13,10 +13,10 @@ CREATE TABLE IF NOT EXISTS my_table_without_pk (
 CREATE EXTENSION IF NOT EXISTS pglinter;
 -- Disable all rules first
 SELECT pglinter.disable_all_rules() AS all_rules_disabled;
-NOTICE:  🔴 Disabled 22 rule(s)
+NOTICE:  🔴 Disabled 23 rule(s)
  all_rules_disabled 
 --------------------
-                 22
+                 23
 (1 row)
 
 -- Run table check to detect tables without PK

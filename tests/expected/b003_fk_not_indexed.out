@@ -113,10 +113,10 @@ SELECT 'Testing B003 rule - Foreign keys without indexes detection...' as test_i
 
 -- First, disable all rules to isolate B003 testing
 SELECT pglinter.disable_all_rules() AS all_rules_disabled;
-NOTICE:  🔴 Disabled 22 rule(s)
+NOTICE:  🔴 Disabled 23 rule(s)
  all_rules_disabled 
 --------------------
-                 22
+                 23
 (1 row)
 
 -- Enable only B003 for focused testing
