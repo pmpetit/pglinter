@@ -68,19 +68,19 @@ SELECT COUNT(*) FROM customer_analytics WHERE customer_id IN (1,2,3);
  13200
 (1 row)
 
-SELECT * FROM customer_analytics WHERE customer_id = 1 ORDER BY id LIMIT 10;
- id | customer_id | page_views | session_duration |        last_login        | device_type | browser | ip_address |           created_at            
-----+-------------+------------+------------------+--------------------------+-------------+---------+------------+---------------------------------
-  5 |           1 |         15 |              305 | Mon Jan 01 00:00:05 2024 | mobile      | safari  |            | Sun Sep 14 00:32:37.563266 2025
- 10 |           1 |         20 |              310 | Mon Jan 01 00:00:10 2024 | tablet      | firefox |            | Sun Sep 14 00:32:37.563266 2025
- 15 |           1 |         25 |              315 | Mon Jan 01 00:00:15 2024 | laptop      | chrome  |            | Sun Sep 14 00:32:37.563266 2025
- 20 |           1 |         30 |              320 | Mon Jan 01 00:00:20 2024 | desktop     | safari  |            | Sun Sep 14 00:32:37.563266 2025
- 25 |           1 |         35 |              325 | Mon Jan 01 00:00:25 2024 | mobile      | firefox |            | Sun Sep 14 00:32:37.563266 2025
- 30 |           1 |         40 |              330 | Mon Jan 01 00:00:30 2024 | tablet      | chrome  |            | Sun Sep 14 00:32:37.563266 2025
- 35 |           1 |         45 |              335 | Mon Jan 01 00:00:35 2024 | laptop      | safari  |            | Sun Sep 14 00:32:37.563266 2025
- 40 |           1 |         50 |              340 | Mon Jan 01 00:00:40 2024 | desktop     | firefox |            | Sun Sep 14 00:32:37.563266 2025
- 45 |           1 |         55 |              345 | Mon Jan 01 00:00:45 2024 | mobile      | chrome  |            | Sun Sep 14 00:32:37.563266 2025
- 50 |           1 |         60 |              350 | Mon Jan 01 00:00:50 2024 | tablet      | safari  |            | Sun Sep 14 00:32:37.563266 2025
+SELECT id,customer_id,page_views,session_duration  FROM customer_analytics WHERE customer_id = 1 ORDER BY id LIMIT 10;
+ id | customer_id | page_views | session_duration 
+----+-------------+------------+------------------
+  5 |           1 |         15 |              305
+ 10 |           1 |         20 |              310
+ 15 |           1 |         25 |              315
+ 20 |           1 |         30 |              320
+ 25 |           1 |         35 |              325
+ 30 |           1 |         40 |              330
+ 35 |           1 |         45 |              335
+ 40 |           1 |         50 |              340
+ 45 |           1 |         55 |              345
+ 50 |           1 |         60 |              350
 (10 rows)
 
 -- Do not use indexes
@@ -102,26 +102,26 @@ SELECT COUNT(*) FROM customer_analytics WHERE last_login BETWEEN '2024-01-01' AN
  22000
 (1 row)
 
-SELECT * FROM customer_analytics WHERE last_login > '2024-01-01' ORDER BY last_login LIMIT 10;
- id | customer_id | page_views | session_duration |        last_login        | device_type | browser | ip_address |           created_at            
-----+-------------+------------+------------------+--------------------------+-------------+---------+------------+---------------------------------
-  1 |           2 |         11 |              301 | Mon Jan 01 00:00:01 2024 | mobile      | firefox |            | Sun Sep 14 00:32:37.563266 2025
-  2 |           3 |         12 |              302 | Mon Jan 01 00:00:02 2024 | tablet      | safari  |            | Sun Sep 14 00:32:37.563266 2025
-  3 |           4 |         13 |              303 | Mon Jan 01 00:00:03 2024 | laptop      | chrome  |            | Sun Sep 14 00:32:37.563266 2025
-  4 |           5 |         14 |              304 | Mon Jan 01 00:00:04 2024 | desktop     | firefox |            | Sun Sep 14 00:32:37.563266 2025
-  5 |           1 |         15 |              305 | Mon Jan 01 00:00:05 2024 | mobile      | safari  |            | Sun Sep 14 00:32:37.563266 2025
-  6 |           2 |         16 |              306 | Mon Jan 01 00:00:06 2024 | tablet      | chrome  |            | Sun Sep 14 00:32:37.563266 2025
-  7 |           3 |         17 |              307 | Mon Jan 01 00:00:07 2024 | laptop      | firefox |            | Sun Sep 14 00:32:37.563266 2025
-  8 |           4 |         18 |              308 | Mon Jan 01 00:00:08 2024 | desktop     | safari  |            | Sun Sep 14 00:32:37.563266 2025
-  9 |           5 |         19 |              309 | Mon Jan 01 00:00:09 2024 | mobile      | chrome  |            | Sun Sep 14 00:32:37.563266 2025
- 10 |           1 |         20 |              310 | Mon Jan 01 00:00:10 2024 | tablet      | firefox |            | Sun Sep 14 00:32:37.563266 2025
+SELECT id,customer_id,page_views,session_duration FROM customer_analytics WHERE last_login > '2024-01-01' ORDER BY last_login LIMIT 10;
+ id | customer_id | page_views | session_duration 
+----+-------------+------------+------------------
+  1 |           2 |         11 |              301
+  2 |           3 |         12 |              302
+  3 |           4 |         13 |              303
+  4 |           5 |         14 |              304
+  5 |           1 |         15 |              305
+  6 |           2 |         16 |              306
+  7 |           3 |         17 |              307
+  8 |           4 |         18 |              308
+  9 |           5 |         19 |              309
+ 10 |           1 |         20 |              310
 (10 rows)
 
 -- Update statistics after usage
 -- Update table statistics
 ANALYZE customer_analytics;
 -- Give some time....
-SELECT pg_sleep(5);
+SELECT pg_sleep(2);
  pg_sleep 
 ----------
  
@@ -171,7 +171,7 @@ SELECT 'Running base check to detect B004 violations...' as status;
 SELECT pglinter.perform_base_check();
 NOTICE:  🔍 pglinter found 1 issue(s):
 NOTICE:  ==================================================
-NOTICE:  ⚠️  [B004] WARNING: 3 unused index exceed the warning threshold: 20%.
+NOTICE:  ⚠️  [B004] WARNING: 3/5 unused index exceed the warning threshold: 60%.
 NOTICE:  ==================================================
 NOTICE:  📊 Summary: 0 error(s), 1 warning(s), 0 info
 NOTICE:  🟡 Some warnings found - consider reviewing for optimization
@@ -198,7 +198,7 @@ NOTICE:  📖 Rule Explanation for B004
 Count number of unused index vs nb index (base on pg_stat_user_indexes, indexes associated to unique constraints are discard.)
 
 ⚠️  Message Template:
-{0} unused index exceed the warning threshold: {1}%.
+{0}/{1} unused index exceed the warning threshold: {2}%.
 
 🔧 How to Fix:
    1. remove unused index or change warning/error threshold
@@ -213,7 +213,7 @@ DROP INDEX idx_analytics_device_type;
 -- Update table statistics
 ANALYZE customer_analytics;
 -- Give some time....
-SELECT pg_sleep(5);
+SELECT pg_sleep(2);
  pg_sleep 
 ----------
  
@@ -229,7 +229,7 @@ SELECT 'Running B004 check after dropping some unused indexes (should show fewer
 SELECT pglinter.perform_base_check();
 NOTICE:  🔍 pglinter found 1 issue(s):
 NOTICE:  ==================================================
-NOTICE:  ⚠️  [B004] WARNING: 2 unused index exceed the warning threshold: 20%.
+NOTICE:  ⚠️  [B004] WARNING: 2/4 unused index exceed the warning threshold: 50%.
 NOTICE:  ==================================================
 NOTICE:  📊 Summary: 0 error(s), 1 warning(s), 0 info
 NOTICE:  🟡 Some warnings found - consider reviewing for optimization

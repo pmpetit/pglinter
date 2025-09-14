@@ -4,7 +4,6 @@
 BEGIN;
 -- Create the extension
 DROP EXTENSION IF EXISTS pglinter CASCADE;
-NOTICE:  extension "pglinter" does not exist, skipping
 CREATE EXTENSION IF NOT EXISTS pglinter;
 SELECT 'B005 Regression Test: Schemas with public CREATE privileges' as test_header;
                          test_header                         

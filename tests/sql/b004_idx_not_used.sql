@@ -55,13 +55,13 @@ ANALYZE customer_analytics;
 SELECT COUNT(*) FROM customer_analytics WHERE customer_id = 1;
 SELECT COUNT(*) FROM customer_analytics WHERE customer_id = 2;
 SELECT COUNT(*) FROM customer_analytics WHERE customer_id IN (1,2,3);
-SELECT * FROM customer_analytics WHERE customer_id = 1 ORDER BY id LIMIT 10;
+SELECT id,customer_id,page_views,session_duration  FROM customer_analytics WHERE customer_id = 1 ORDER BY id LIMIT 10;
 
 -- Do not use indexes
 SELECT COUNT(*) FROM customer_analytics WHERE last_login > '2024-01-01';
 SELECT COUNT(*) FROM customer_analytics WHERE last_login > '2024-01-15';
 SELECT COUNT(*) FROM customer_analytics WHERE last_login BETWEEN '2024-01-01' AND '2024-01-20';
-SELECT * FROM customer_analytics WHERE last_login > '2024-01-01' ORDER BY last_login LIMIT 10;
+SELECT id,customer_id,page_views,session_duration FROM customer_analytics WHERE last_login > '2024-01-01' ORDER BY last_login LIMIT 10;
 
 -- Update statistics after usage
 -- Update table statistics
