@@ -3,4 +3,4 @@ default_version = '@CARGO_VERSION@'
 module_pathname = '$libdir/pglinter'
 relocatable = false
 superuser = true
-trusted = false
+trusted = true

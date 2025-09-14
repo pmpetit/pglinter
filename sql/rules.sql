@@ -52,7 +52,7 @@ INSERT INTO pglinter.rules (id,name,code,warning_level,error_level,scope,descrip
     'work_mem * max_connections is bigger than ram.',
     ARRAY['downsize max_connections or upsize memory']),
 
-(11, 'PgHbaEntriesWithMethodTrustOrPasswordShouldNotExists', 'C002', 1, 1, 'CLUSTER',
+(11, 'PgHbaEntriesWithMethodTrustOrPasswordShouldNotExists', 'C002', 20, 80, 'CLUSTER',
     'This configuration is extremely insecure and should only be used in a controlled, non-production environment for testing purposes. In a production environment, you should use more secure authentication methods such as md5, scram-sha-256, or cert, and restrict access to trusted IP addresses only.',
     '{0} entries in pg_hba.conf with trust or password authentication method exceed the warning threshold: {1}.',
     ARRAY['change trust or password method in pg_hba.conf']),
@@ -130,3 +130,4 @@ INSERT INTO pglinter.rules (id,name,code,warning_level,error_level,scope,descrip
     ARRAY['Keep the same schema name across environments. Prefer prefix or suffix the database name']);
 
 
+GRANT USAGE ON SCHEMA PGLINTER TO PUBLIC;

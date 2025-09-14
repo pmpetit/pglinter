@@ -27,7 +27,8 @@ mod pglinter {
         CREATE FUNCTION pglinter.perform_base_check(output_file TEXT DEFAULT NULL)
         RETURNS BOOLEAN
         AS 'MODULE_PATHNAME', 'perform_base_check_wrapper'
-        LANGUAGE C;
+        LANGUAGE C
+        SECURITY DEFINER;
     ")]
     fn perform_base_check(output_file: Option<&str>) -> Option<bool> {
         match execute_base_rules()
@@ -45,7 +46,8 @@ mod pglinter {
         CREATE FUNCTION pglinter.perform_cluster_check(output_file TEXT DEFAULT NULL)
         RETURNS BOOLEAN
         AS 'MODULE_PATHNAME', 'perform_cluster_check_wrapper'
-        LANGUAGE C;
+        LANGUAGE C
+        SECURITY DEFINER;
     ")]
     fn perform_cluster_check(output_file: Option<&str>) -> Option<bool> {
         match execute_cluster_rules()
@@ -63,7 +65,8 @@ mod pglinter {
         CREATE FUNCTION pglinter.perform_table_check(output_file TEXT DEFAULT NULL)
         RETURNS BOOLEAN
         AS 'MODULE_PATHNAME', 'perform_table_check_wrapper'
-        LANGUAGE C;
+        LANGUAGE C
+        SECURITY DEFINER;
     ")]
     fn perform_table_check(output_file: Option<&str>) -> Option<bool> {
         match execute_table_rules()
@@ -81,7 +84,8 @@ mod pglinter {
         CREATE FUNCTION pglinter.perform_schema_check(output_file TEXT DEFAULT NULL)
         RETURNS BOOLEAN
         AS 'MODULE_PATHNAME', 'perform_schema_check_wrapper'
-        LANGUAGE C;
+        LANGUAGE C
+        SECURITY DEFINER;
     ")]
     fn perform_schema_check(output_file: Option<&str>) -> Option<bool> {
         match execute_schema_rules()
@@ -96,27 +100,27 @@ mod pglinter {
     }
 
     // Convenience functions that always output to prompt
-    #[pg_extern]
+    #[pg_extern(security_definer)]
     fn check_base() -> Option<bool> {
         perform_base_check(None)
     }
 
-    #[pg_extern]
+    #[pg_extern(security_definer)]
     fn check_cluster() -> Option<bool> {
         perform_cluster_check(None)
     }
 
-    #[pg_extern]
+    #[pg_extern(security_definer)]
     fn check_table() -> Option<bool> {
         perform_table_check(None)
     }
 
-    #[pg_extern]
+    #[pg_extern(security_definer)]
     fn check_schema() -> Option<bool> {
         perform_schema_check(None)
     }
 
-    #[pg_extern]
+    #[pg_extern(security_definer)]
     fn check_all() -> Option<bool> {
         pgrx::notice!("🔍 Running comprehensive pglinter check...");
         pgrx::notice!("");
@@ -157,7 +161,7 @@ mod pglinter {
     }
 
     // Rule management functions
-    #[pg_extern]
+    #[pg_extern(security_definer)]
     fn enable_rule(rule_code: &str) -> Option<bool> {
         match manage_rules::enable_rule(rule_code) {
             Ok(success) => Some(success),
@@ -168,7 +172,7 @@ mod pglinter {
         }
     }
 
-    #[pg_extern]
+    #[pg_extern(security_definer)]
     fn disable_rule(rule_code: &str) -> Option<bool> {
         match manage_rules::disable_rule(rule_code) {
             Ok(success) => Some(success),
@@ -179,7 +183,7 @@ mod pglinter {
         }
     }
 
-    #[pg_extern]
+    #[pg_extern(security_definer)]
     fn show_rules() -> Option<bool> {
         match manage_rules::show_rule_status() {
             Ok(success) => Some(success),
@@ -190,7 +194,7 @@ mod pglinter {
         }
     }
 
-    #[pg_extern]
+    #[pg_extern(security_definer)]
     fn is_rule_enabled(rule_code: &str) -> Option<bool> {
         match manage_rules::is_rule_enabled(rule_code) {
             Ok(enabled) => Some(enabled),
@@ -201,7 +205,7 @@ mod pglinter {
         }
     }
 
-    #[pg_extern]
+    #[pg_extern(security_definer)]
     fn explain_rule(rule_code: &str) -> Option<bool> {
         match manage_rules::explain_rule(rule_code) {
             Ok(explanation) => {
@@ -215,7 +219,7 @@ mod pglinter {
         }
     }
 
-    #[pg_extern]
+    #[pg_extern(security_definer)]
     fn enable_all_rules() -> Option<i32> {
         match manage_rules::enable_all_rules() {
             Ok(count) => Some(count as i32),
@@ -226,7 +230,7 @@ mod pglinter {
         }
     }
 
-    #[pg_extern]
+    #[pg_extern(security_definer)]
     fn disable_all_rules() -> Option<i32> {
         match manage_rules::disable_all_rules() {
             Ok(count) => Some(count as i32),
@@ -237,7 +241,7 @@ mod pglinter {
         }
     }
 
-    #[pg_extern]
+    #[pg_extern(security_definer)]
     fn update_rule_levels(
         rule_code: &str,
         warning_level: Option<i32>,
@@ -252,7 +256,7 @@ mod pglinter {
         }
     }
 
-    #[pg_extern]
+    #[pg_extern(security_definer)]
     fn get_rule_levels(rule_code: &str) -> Option<String> {
         match manage_rules::get_rule_levels(rule_code) {
             Ok((warning, error)) => Some(format!("warning_level={warning}, error_level={error}")),

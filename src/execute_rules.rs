@@ -18,7 +18,8 @@ const B005_ALL_SCHEMA: &str = include_str!("../sql/b005_all_schema.sql");
 const B006_ALL_OBJECTS_SQL: &str = include_str!("../sql/b006_all_objects.sql");
 const B006_UPPERCASE_SQL: &str = include_str!("../sql/b006_uppercase.sql");
 const C001_SQL: &str = include_str!("../sql/c001.sql");
-const C002_SQL: &str = include_str!("../sql/c002.sql");
+const C002_PG_HBA_ALL: &str = include_str!("../sql/c002_pg_hba_all.sql");
+const C002_PG_HBA_TRUST: &str = include_str!("../sql/c002_pg_hba_trust.sql");
 const T001_SQL: &str = include_str!("../sql/t001.sql");
 const T002_SQL: &str = include_str!("../sql/t002.sql");
 const T003_SQL: &str = include_str!("../sql/t003.sql");
@@ -101,7 +102,7 @@ pub fn execute_base_rules() -> Result<Vec<RuleResult>, String> {
 
     // B001: Tables without primary key
     if is_rule_enabled("B001").unwrap_or(true) {
-        match execute_base_rule("B001", B001_TOTAL_TABLES_SQL, B001_TABLES_WITH_PK_SQL) {
+        match execute_rule("B001", B001_TOTAL_TABLES_SQL, B001_TABLES_WITH_PK_SQL) {
             Ok(Some(result)) => results.push(result),
             Ok(None) => {}
             Err(e) => return Err(format!("B001 failed: {e}")),
@@ -110,7 +111,7 @@ pub fn execute_base_rules() -> Result<Vec<RuleResult>, String> {
 
     // B002: Redundant indexes
     if is_rule_enabled("B002").unwrap_or(true) {
-        match execute_base_rule("B002", B002_TOTAL_INDEXES_SQL, B002_REDUNDANT_INDEXES_SQL) {
+        match execute_rule("B002", B002_TOTAL_INDEXES_SQL, B002_REDUNDANT_INDEXES_SQL) {
             Ok(Some(result)) => results.push(result),
             Ok(None) => {}
             Err(e) => return Err(format!("B001 failed: {e}")),
@@ -119,7 +120,7 @@ pub fn execute_base_rules() -> Result<Vec<RuleResult>, String> {
 
     // B003: Tables without indexes on foreign keys
     if is_rule_enabled("B003").unwrap_or(true) {
-        match execute_base_rule("B003", B003_TABLE_WITH_FK, B003_TABLE_WITHOUT_FK) {
+        match execute_rule("B003", B003_TABLE_WITH_FK, B003_TABLE_WITHOUT_FK) {
             Ok(Some(result)) => results.push(result),
             Ok(None) => {}
             Err(e) => return Err(format!("B003 failed: {e}")),
@@ -128,7 +129,7 @@ pub fn execute_base_rules() -> Result<Vec<RuleResult>, String> {
 
     // B004: Unused indexes
     if is_rule_enabled("B004").unwrap_or(true) {
-        match execute_base_rule("B004", B004_TOTAL_MANUAL_IDX_SQL, B004_TOTAL_MANUAL_UNUSED_IDX_SQL) {
+        match execute_rule("B004", B004_TOTAL_MANUAL_IDX_SQL, B004_TOTAL_MANUAL_UNUSED_IDX_SQL) {
             Ok(Some(result)) => results.push(result),
             Ok(None) => {}
             Err(e) => return Err(format!("B003 failed: {e}")),
@@ -137,7 +138,7 @@ pub fn execute_base_rules() -> Result<Vec<RuleResult>, String> {
 
     // B005: Unsecured public schema
     if is_rule_enabled("B005").unwrap_or(true) {
-        match execute_base_rule("B005", B005_ALL_SCHEMA, B005_SCHEMA_WITH_PUBLIC_CREATE) {
+        match execute_rule("B005", B005_ALL_SCHEMA, B005_SCHEMA_WITH_PUBLIC_CREATE) {
             Ok(Some(result)) => results.push(result),
             Ok(None) => {}
             Err(e) => return Err(format!("B005 failed: {e}")),
@@ -146,7 +147,7 @@ pub fn execute_base_rules() -> Result<Vec<RuleResult>, String> {
 
     // B006: Tables with uppercase names/columns
     if is_rule_enabled("B006").unwrap_or(true) {
-        match execute_base_rule("B006", B006_ALL_OBJECTS_SQL, B006_UPPERCASE_SQL) {
+        match execute_rule("B006", B006_ALL_OBJECTS_SQL, B006_UPPERCASE_SQL) {
             Ok(Some(result)) => results.push(result),
             Ok(None) => {}
             Err(e) => return Err(format!("B006 failed: {e}")),
@@ -170,7 +171,7 @@ pub fn execute_cluster_rules() -> Result<Vec<RuleResult>, String> {
 
     // C002: Insecure pg_hba.conf entries
     if is_rule_enabled("C002").unwrap_or(true) {
-        match execute_c002_rule() {
+        match execute_rule("C002", C002_PG_HBA_ALL, C002_PG_HBA_TRUST) {
             Ok(Some(result)) => results.push(result),
             Ok(None) => {}
             Err(e) => return Err(format!("C002 failed: {e}")),
@@ -318,50 +319,50 @@ pub fn execute_schema_rules() -> Result<Vec<RuleResult>, String> {
     Ok(results)
 }
 
-fn execute_base_rule(ruleid: &str, all_sql: &str, wrong_sql: &str) -> Result<Option<RuleResult>, String> {
+fn execute_rule(ruleid: &str, all_sql: &str, wrong_sql: &str) -> Result<Option<RuleResult>, String> {
     // Debug: Log function entry
-    pgrx::debug1!("execute_base_rule: Starting execution for rule {}", ruleid);
+    pgrx::debug1!("execute_rule; Starting execution for rule {}", ruleid);
 
     let (warning_threshold, error_threshold, rule_message) = match get_rule_config(ruleid) {
         Ok(config) => {
-            pgrx::debug1!("execute_base_rule: Retrieved thresholds for {} - warning: {}, error: {}",
+            pgrx::debug1!("execute_rule; Retrieved thresholds for {} - warning: {}, error: {}",
                         ruleid, config.0, config.1);
             config
         },
         Err(e) => {
-            pgrx::debug1!("execute_base_rule: Failed to get configuration for {}: {}", ruleid, e);
+            pgrx::debug1!("execute_rule; Failed to get configuration for {}: {}", ruleid, e);
             return Err(format!("Failed to get {} configuration: {e}", ruleid));
         }
     };
 
     let result: Result<Option<RuleResult>, spi::SpiError> = Spi::connect(|client| {
-        pgrx::debug1!("execute_base_rule: Executing all items for {}", ruleid);
+        pgrx::debug1!("execute_rule; Executing all items for {}", ruleid);
         let all_sql: i64 = client
             .select(all_sql, None, &[])?
             .first()
             .get::<i64>(1)?
             .unwrap_or(0);
 
-        pgrx::debug1!("execute_base_rule: all items result for {}: {}", ruleid, all_sql);
+        pgrx::debug1!("execute_rule; all items result for {}: {}", ruleid, all_sql);
 
-        pgrx::debug1!("execute_base_rule: Executing wrong for {}", ruleid);
+        pgrx::debug1!("execute_rule; Executing wrong for {}", ruleid);
         let wrong_sql: i64 = client
             .select(wrong_sql, None, &[])?
             .first()
             .get::<i64>(1)?
             .unwrap_or(0);
 
-        pgrx::debug1!("execute_base_rule: wrong items result for {}: {}", ruleid, wrong_sql);
+        pgrx::debug1!("execute_rule; wrong items result for {}: {}", ruleid, wrong_sql);
 
         if all_sql > 0 {
             let percentage = (wrong_sql * 100) / all_sql;
 
-            pgrx::debug1!("execute_base_rule: Calculated percentage for {}: {}% (all: {}, wrong: {})",
+            pgrx::debug1!("execute_rule; Calculated percentage for {}: {}% (all: {}, wrong: {})",
                         ruleid, percentage, all_sql, wrong_sql);
 
             // Check error threshold first (higher severity)
             if percentage >= error_threshold {
-                pgrx::debug1!("execute_base_rule: {} triggered ERROR threshold ({}% >= {}%)",
+                pgrx::debug1!("execute_rule; {} triggered ERROR threshold ({}% >= {}%)",
                             ruleid, percentage, error_threshold);
 
                 // Replace placeholders in rule message
@@ -371,7 +372,7 @@ fn execute_base_rule(ruleid: &str, all_sql: &str, wrong_sql: &str) -> Result<Opt
                     .replace("{2}", "error")
                     .replace("{3}", &percentage.to_string());
 
-                pgrx::debug1!("execute_base_rule: {} message template '{}' -> '{}'",
+                pgrx::debug1!("execute_rule; {} message template '{}' -> '{}'",
                             ruleid, rule_message, formatted_message);
 
                 return Ok(Some(RuleResult {
@@ -383,7 +384,7 @@ fn execute_base_rule(ruleid: &str, all_sql: &str, wrong_sql: &str) -> Result<Opt
             }
             // Check warning threshold
             else if percentage >= warning_threshold {
-                pgrx::debug1!("execute_base_rule: {} triggered WARNING threshold ({}% >= {}%)",
+                pgrx::debug1!("execute_rule; {} triggered WARNING threshold ({}% >= {}%)",
                             ruleid, percentage, warning_threshold);
 
                 // Replace placeholders in rule message
@@ -393,7 +394,7 @@ fn execute_base_rule(ruleid: &str, all_sql: &str, wrong_sql: &str) -> Result<Opt
                     .replace("{2}", "warning")
                     .replace("{3}", &percentage.to_string());
 
-                pgrx::debug1!("execute_base_rule: {} message template '{}' -> '{}'",
+                pgrx::debug1!("execute_rule; {} message template '{}' -> '{}'",
                             ruleid, rule_message, formatted_message);
 
                 return Ok(Some(RuleResult {
@@ -403,11 +404,11 @@ fn execute_base_rule(ruleid: &str, all_sql: &str, wrong_sql: &str) -> Result<Opt
                     count: Some(wrong_sql),
                 }));
             } else {
-                pgrx::debug1!("execute_base_rule: {} passed all thresholds ({}% < warning {}%)",
+                pgrx::debug1!("execute_rule; {} passed all thresholds ({}% < warning {}%)",
                             ruleid, percentage, warning_threshold);
             }
         } else {
-            pgrx::debug1!("execute_base_rule: {} skipped - no data found (wrong = 0)", ruleid);
+            pgrx::debug1!("execute_rule; {} skipped - no data found (wrong = 0)", ruleid);
         }
 
         Ok(None)
@@ -415,11 +416,11 @@ fn execute_base_rule(ruleid: &str, all_sql: &str, wrong_sql: &str) -> Result<Opt
 
     match result {
         Ok(res) => {
-            pgrx::debug1!("execute_base_rule: {} completed successfully", ruleid);
+            pgrx::debug1!("execute_rule; {} completed successfully", ruleid);
             Ok(res)
         },
         Err(e) => {
-            pgrx::debug1!("execute_base_rule: {} failed with database error: {}", ruleid, e);
+            pgrx::debug1!("execute_rule; {} failed with database error: {}", ruleid, e);
             Err(format!("Database error: {e}"))
         },
     }
@@ -517,32 +518,6 @@ fn parse_work_mem_to_mb(work_mem_str: &str) -> f64 {
         work_mem_str
             .parse::<f64>()
             .unwrap_or(4194304.0) / 1024.0 / 1024.0
-    }
-}
-
-fn execute_c002_rule() -> Result<Option<RuleResult>, String> {
-    // C002: Insecure pg_hba.conf entries (simplified check)
-    // Note: This is a simplified version as we can't directly read pg_hba.conf from SQL
-    let result: Result<Option<RuleResult>, spi::SpiError> = Spi::connect(|client| {
-        let _count: i64 = client
-            .select(C002_SQL, None, &[])?
-            .first()
-            .get::<i64>(1)?
-            .unwrap_or(0);
-
-        // For now, just return a warning about checking pg_hba.conf manually
-        Ok(Some(RuleResult {
-            ruleid: "C002".to_string(),
-            level: "info".to_string(),
-            message: "Please manually check pg_hba.conf for insecure trust/password methods"
-                .to_string(),
-            count: Some(1),
-        }))
-    });
-
-    match result {
-        Ok(res) => Ok(res),
-        Err(e) => Err(format!("Database error: {e}")),
     }
 }
 
