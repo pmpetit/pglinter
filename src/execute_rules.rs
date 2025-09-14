@@ -429,14 +429,57 @@ fn execute_c001_rule() -> Result<Option<RuleResult>, String> {
     let result: Result<Option<RuleResult>, spi::SpiError> = Spi::connect(|client| {
         for row in client.select(C001_SQL, None, &[])? {
             let max_connections: i32 = row.get(1)?.unwrap_or(100);
-            let _work_mem_str: String = row.get(2)?.unwrap_or("4MB".to_string());
+            let work_mem_str: String = row.get(2)?.unwrap_or("4MB".to_string());
 
-            // Simple check: if max_connections > 1000, flag as potential issue
-            if max_connections > 1000 {
+            // Convert work_mem to MB for calculations
+            let work_mem_mb = parse_work_mem_to_mb(&work_mem_str);
+
+            // Calculate potential memory usage: max_connections * work_mem * 4 operations
+            let potential_memory_mb = max_connections as f64 * work_mem_mb * 4.0;
+
+            // Check for dangerous memory configurations
+            if potential_memory_mb > 8192.0 {
+                // > 8GB potential usage - CRITICAL
+                return Ok(Some(RuleResult {
+                    ruleid: "C001".to_string(),
+                    level: "error".to_string(),
+                    message: format!(
+                        "CRITICAL: Potential memory usage > 8GB ({:.0}MB). max_connections({}) * work_mem({}) * 4 operations = {:.0}MB. Risk of out-of-memory errors.",
+                        potential_memory_mb, max_connections, work_mem_str, potential_memory_mb
+                    ),
+                    count: Some(potential_memory_mb as i64),
+                }));
+            } else if potential_memory_mb > 4096.0 {
+                // > 4GB potential usage - WARNING
                 return Ok(Some(RuleResult {
                     ruleid: "C001".to_string(),
                     level: "warning".to_string(),
-                    message: format!("High max_connections setting: {max_connections}"),
+                    message: format!(
+                        "HIGH: Potential memory usage > 4GB ({:.0}MB). max_connections({}) * work_mem({}) * 4 operations = {:.0}MB. Monitor memory usage closely.",
+                        potential_memory_mb, max_connections, work_mem_str, potential_memory_mb
+                    ),
+                    count: Some(potential_memory_mb as i64),
+                }));
+            } else if potential_memory_mb > 2048.0 {
+                // > 2GB potential usage - CAUTION
+                return Ok(Some(RuleResult {
+                    ruleid: "C001".to_string(),
+                    level: "warning".to_string(),
+                    message: format!(
+                        "MODERATE: Potential memory usage > 2GB ({:.0}MB). max_connections({}) * work_mem({}) * 4 operations = {:.0}MB. Consider connection pooling.",
+                        potential_memory_mb, max_connections, work_mem_str, potential_memory_mb
+                    ),
+                    count: Some(potential_memory_mb as i64),
+                }));
+            } else if max_connections > 500 {
+                // High connection count without excessive memory usage
+                return Ok(Some(RuleResult {
+                    ruleid: "C001".to_string(),
+                    level: "info".to_string(),
+                    message: format!(
+                        "HIGH CONNECTION COUNT: {} connections configured. Memory usage appears safe ({:.0}MB potential), but consider connection pooling for better performance.",
+                        max_connections, potential_memory_mb
+                    ),
                     count: Some(max_connections as i64),
                 }));
             }
@@ -447,6 +490,33 @@ fn execute_c001_rule() -> Result<Option<RuleResult>, String> {
     match result {
         Ok(res) => Ok(res),
         Err(e) => Err(format!("Database error: {e}")),
+    }
+}
+
+// Helper function to parse work_mem string to MB
+fn parse_work_mem_to_mb(work_mem_str: &str) -> f64 {
+    let work_mem_upper = work_mem_str.to_uppercase();
+
+    if work_mem_upper.ends_with("GB") {
+        work_mem_upper
+            .trim_end_matches("GB")
+            .parse::<f64>()
+            .unwrap_or(4.0) * 1024.0
+    } else if work_mem_upper.ends_with("MB") {
+        work_mem_upper
+            .trim_end_matches("MB")
+            .parse::<f64>()
+            .unwrap_or(4.0)
+    } else if work_mem_upper.ends_with("KB") {
+        work_mem_upper
+            .trim_end_matches("KB")
+            .parse::<f64>()
+            .unwrap_or(4096.0) / 1024.0
+    } else {
+        // Assume bytes if no unit
+        work_mem_str
+            .parse::<f64>()
+            .unwrap_or(4194304.0) / 1024.0 / 1024.0
     }
 }
 
