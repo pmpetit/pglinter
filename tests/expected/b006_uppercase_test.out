@@ -109,7 +109,7 @@ SELECT 'Running B006 check to detect comprehensive uppercase violations...' as s
 SELECT pglinter.perform_base_check();
 NOTICE:  🔍 pglinter found 1 issue(s):
 NOTICE:  ==================================================
-NOTICE:  ⚠️  [B006] WARNING: Found 4 database objects with uppercase letters
+NOTICE:  ⚠️  [B006] WARNING: 16/28 object(s) using uppercase for name or columns exceed the warning threshold: 57%.
 NOTICE:  ==================================================
 NOTICE:  📊 Summary: 0 error(s), 1 warning(s), 0 info
 NOTICE:  🟡 Some warnings found - consider reviewing for optimization
@@ -129,14 +129,14 @@ SELECT pglinter.explain_rule('B006');
 NOTICE:  📖 Rule Explanation for B006
 ============================================================
 
-🎯 Rule Name: HowManyTablesWithUppercase
+🎯 Rule Name: HowManyObjectsWithUppercase
 📋 Scope: BASE
 
 📝 Description:
-Count number of tables with uppercase in name or in columns.
+Count number of objects with uppercase in name or in columns.
 
 ⚠️  Message Template:
-{0} tables using uppercase for name or columns exceed the warning threshold: {1}%.
+{0}/{1} object(s) using uppercase for name or columns exceed the {2} threshold: {3}%.
 
 🔧 How to Fix:
    1. Do not use uppercase for any database objects

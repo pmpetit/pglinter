@@ -58,6 +58,8 @@ REGRESS_TESTS+= b007_tables_not_selected
 REGRESS_TESTS+= c001_comprehensive_test
 REGRESS_TESTS+= c002_hba_security_test
 REGRESS_TESTS+= t001_primary_keys
+REGRESS_TESTS+= t002_minimal
+REGRESS_TESTS+= t002_redundant_idx
 
 # REGRESS_TESTS+= b001
 # REGRESS_TESTS+= cluster_rules

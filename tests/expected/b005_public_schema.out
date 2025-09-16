@@ -71,12 +71,7 @@ SELECT 'Running B005 check with LOW percentage of insecure schemas (should not t
 (1 row)
 
 SELECT pglinter.perform_base_check();
-NOTICE:  🔍 pglinter found 1 issue(s):
-NOTICE:  ==================================================
-NOTICE:  ❌ [B005] ERROR: Public schema allows CREATE privilege for all users - security risk
-NOTICE:  ==================================================
-NOTICE:  📊 Summary: 1 error(s), 0 warning(s), 0 info
-NOTICE:  🔴 Critical issues found - please review and fix errors
+NOTICE:  ✅ No issues found - database schema looks good!
  perform_base_check 
 --------------------
  t
@@ -94,10 +89,10 @@ SELECT 'Running B005 check with HIGH percentage of insecure schemas (should trig
 SELECT pglinter.perform_base_check();
 NOTICE:  🔍 pglinter found 1 issue(s):
 NOTICE:  ==================================================
-NOTICE:  ❌ [B005] ERROR: Public schema allows CREATE privilege for all users - security risk
+NOTICE:  ⚠️  [B005] WARNING: 3/12 schemas are unsecured, schemas where all users can create objects in, exceed the warning threshold: 25%.
 NOTICE:  ==================================================
-NOTICE:  📊 Summary: 1 error(s), 0 warning(s), 0 info
-NOTICE:  🔴 Critical issues found - please review and fix errors
+NOTICE:  📊 Summary: 0 error(s), 1 warning(s), 0 info
+NOTICE:  🟡 Some warnings found - consider reviewing for optimization
  perform_base_check 
 --------------------
  t
@@ -132,12 +127,7 @@ SELECT 'Running B005 check with adjusted thresholds (warning=50%):' as test_3;
 (1 row)
 
 SELECT pglinter.perform_base_check();
-NOTICE:  🔍 pglinter found 1 issue(s):
-NOTICE:  ==================================================
-NOTICE:  ❌ [B005] ERROR: Public schema allows CREATE privilege for all users - security risk
-NOTICE:  ==================================================
-NOTICE:  📊 Summary: 1 error(s), 0 warning(s), 0 info
-NOTICE:  🔴 Critical issues found - please review and fix errors
+NOTICE:  ✅ No issues found - database schema looks good!
  perform_base_check 
 --------------------
  t
@@ -165,13 +155,13 @@ NOTICE:  📖 Rule Explanation for B005
 📋 Scope: BASE
 
 📝 Description:
-Only authorized users should be allowed to create new objects.
+Only authorized users should be allowed to create objects.
 
 ⚠️  Message Template:
-All schemas on search_path are unsecured, all users can create objects.
+{0}/{1} schemas are unsecured, schemas where all users can create objects in, exceed the {2} threshold: {3}%.
 
 🔧 How to Fix:
-   1. REVOKE CREATE ON SCHEMA public FROM PUBLIC
+   1. REVOKE CREATE ON SCHEMA <schema_name> FROM PUBLIC
 ============================================================
  explain_rule 
 --------------

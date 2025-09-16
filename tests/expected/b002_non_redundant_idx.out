@@ -71,7 +71,7 @@ NOTICE:  📖 Rule Explanation for B002
 Count number of redundant index vs nb index.
 
 ⚠️  Message Template:
-{0} redundant(s) index exceed the warning threshold: {1}%.
+{0}/{1} redundant(s) index exceed the {2} threshold: {3}%.
 
 🔧 How to Fix:
    1. remove duplicated index or check if a constraint does not create a redundant index, or change warning/error threshold

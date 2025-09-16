@@ -1,5 +1,6 @@
 -- Test for pglinter T002 rule: Tables with redundant indexes
-BEGIN;
+
+\pset pager off
 
 -- Create test tables with redundant indexes for T002 testing
 CREATE TABLE IF NOT EXISTS customers_with_redundant_idx (
@@ -99,4 +100,3 @@ DROP TABLE IF EXISTS customers_with_redundant_idx CASCADE;
 DROP TABLE IF EXISTS products_with_redundant_idx CASCADE;
 DROP TABLE IF EXISTS orders_with_redundant_idx CASCADE;
 
-ROLLBACK;

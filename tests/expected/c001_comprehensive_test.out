@@ -90,7 +90,12 @@ SELECT current_setting('max_connections')::int as test_max_connections,
 (1 row)
 
 SELECT pglinter.perform_cluster_check();
-NOTICE:  ✅ No issues found - database schema looks good!
+NOTICE:  🔍 pglinter found 1 issue(s):
+NOTICE:  ==================================================
+NOTICE:  ❌ [C001] ERROR: CRITICAL: Potential memory usage > 8GB (204800MB). max_connections(100) * work_mem(512MB) * 4 operations = 204800MB. Risk of out-of-memory errors.
+NOTICE:  ==================================================
+NOTICE:  📊 Summary: 1 error(s), 0 warning(s), 0 info
+NOTICE:  🔴 Critical issues found - please review and fix errors
  perform_cluster_check 
 -----------------------
  t
@@ -120,7 +125,12 @@ SELECT current_setting('max_connections')::int as test_max_connections,
 (1 row)
 
 SELECT pglinter.perform_cluster_check();
-NOTICE:  ✅ No issues found - database schema looks good!
+NOTICE:  🔍 pglinter found 1 issue(s):
+NOTICE:  ==================================================
+NOTICE:  ❌ [C001] ERROR: CRITICAL: Potential memory usage > 8GB (51200MB). max_connections(100) * work_mem(128MB) * 4 operations = 51200MB. Risk of out-of-memory errors.
+NOTICE:  ==================================================
+NOTICE:  📊 Summary: 1 error(s), 0 warning(s), 0 info
+NOTICE:  🔴 Critical issues found - please review and fix errors
  perform_cluster_check 
 -----------------------
  t
@@ -150,7 +160,12 @@ SELECT current_setting('max_connections')::int as test_max_connections,
 (1 row)
 
 SELECT pglinter.perform_cluster_check();
-NOTICE:  ✅ No issues found - database schema looks good!
+NOTICE:  🔍 pglinter found 1 issue(s):
+NOTICE:  ==================================================
+NOTICE:  ❌ [C001] ERROR: CRITICAL: Potential memory usage > 8GB (25600MB). max_connections(100) * work_mem(64MB) * 4 operations = 25600MB. Risk of out-of-memory errors.
+NOTICE:  ==================================================
+NOTICE:  📊 Summary: 1 error(s), 0 warning(s), 0 info
+NOTICE:  🔴 Critical issues found - please review and fix errors
  perform_cluster_check 
 -----------------------
  t
@@ -180,7 +195,12 @@ SELECT current_setting('max_connections')::int as test_max_connections,
 (1 row)
 
 SELECT pglinter.perform_cluster_check();
-NOTICE:  ✅ No issues found - database schema looks good!
+NOTICE:  🔍 pglinter found 1 issue(s):
+NOTICE:  ==================================================
+NOTICE:  ⚠️  [C001] WARNING: HIGH: Potential memory usage > 4GB (6400MB). max_connections(100) * work_mem(16MB) * 4 operations = 6400MB. Monitor memory usage closely.
+NOTICE:  ==================================================
+NOTICE:  📊 Summary: 0 error(s), 1 warning(s), 0 info
+NOTICE:  🟡 Some warnings found - consider reviewing for optimization
  perform_cluster_check 
 -----------------------
  t
@@ -264,7 +284,12 @@ SELECT 'Configuration: ' || current_setting('max_connections') || ' connections 
 (1 row)
 
 SELECT pglinter.perform_cluster_check();
-NOTICE:  ✅ No issues found - database schema looks good!
+NOTICE:  🔍 pglinter found 1 issue(s):
+NOTICE:  ==================================================
+NOTICE:  ⚠️  [C001] WARNING: MODERATE: Potential memory usage > 2GB (3200MB). max_connections(100) * work_mem(8MB) * 4 operations = 3200MB. Consider connection pooling.
+NOTICE:  ==================================================
+NOTICE:  📊 Summary: 0 error(s), 1 warning(s), 0 info
+NOTICE:  🟡 Some warnings found - consider reviewing for optimization
  perform_cluster_check 
 -----------------------
  t
@@ -287,7 +312,12 @@ SELECT 'Configuration: ' || current_setting('max_connections') || ' connections 
 (1 row)
 
 SELECT pglinter.perform_cluster_check();
-NOTICE:  ✅ No issues found - database schema looks good!
+NOTICE:  🔍 pglinter found 1 issue(s):
+NOTICE:  ==================================================
+NOTICE:  ⚠️  [C001] WARNING: MODERATE: Potential memory usage > 2GB (3200MB). max_connections(100) * work_mem(8MB) * 4 operations = 3200MB. Consider connection pooling.
+NOTICE:  ==================================================
+NOTICE:  📊 Summary: 0 error(s), 1 warning(s), 0 info
+NOTICE:  🟡 Some warnings found - consider reviewing for optimization
  perform_cluster_check 
 -----------------------
  t
@@ -304,7 +334,12 @@ SELECT 'Configuration: ' || current_setting('max_connections') || ' connections 
 (1 row)
 
 SELECT pglinter.perform_cluster_check();
-NOTICE:  ✅ No issues found - database schema looks good!
+NOTICE:  🔍 pglinter found 1 issue(s):
+NOTICE:  ==================================================
+NOTICE:  ❌ [C001] ERROR: CRITICAL: Potential memory usage > 8GB (409600MB). max_connections(100) * work_mem(1GB) * 4 operations = 409600MB. Risk of out-of-memory errors.
+NOTICE:  ==================================================
+NOTICE:  📊 Summary: 1 error(s), 0 warning(s), 0 info
+NOTICE:  🔴 Critical issues found - please review and fix errors
  perform_cluster_check 
 -----------------------
  t
@@ -320,7 +355,12 @@ SELECT 'Configuration: ' || current_setting('max_connections') || ' connections 
 (1 row)
 
 SELECT pglinter.perform_cluster_check();
-NOTICE:  ✅ No issues found - database schema looks good!
+NOTICE:  🔍 pglinter found 1 issue(s):
+NOTICE:  ==================================================
+NOTICE:  ❌ [C001] ERROR: CRITICAL: Potential memory usage > 8GB (6553600MB). max_connections(100) * work_mem(16GB) * 4 operations = 6553600MB. Risk of out-of-memory errors.
+NOTICE:  ==================================================
+NOTICE:  📊 Summary: 1 error(s), 0 warning(s), 0 info
+NOTICE:  🔴 Critical issues found - please review and fix errors
  perform_cluster_check 
 -----------------------
  t
@@ -405,7 +445,12 @@ SELECT 'Testing with re-enabled C001 and work_mem=1GB (should show C001 issues a
 (1 row)
 
 SELECT pglinter.perform_cluster_check();
-NOTICE:  ✅ No issues found - database schema looks good!
+NOTICE:  🔍 pglinter found 1 issue(s):
+NOTICE:  ==================================================
+NOTICE:  ❌ [C001] ERROR: CRITICAL: Potential memory usage > 8GB (409600MB). max_connections(100) * work_mem(1GB) * 4 operations = 409600MB. Risk of out-of-memory errors.
+NOTICE:  ==================================================
+NOTICE:  📊 Summary: 1 error(s), 0 warning(s), 0 info
+NOTICE:  🔴 Critical issues found - please review and fix errors
  perform_cluster_check 
 -----------------------
  t

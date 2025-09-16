@@ -171,7 +171,7 @@ SELECT 'Running base check to detect B004 violations...' as status;
 SELECT pglinter.perform_base_check();
 NOTICE:  🔍 pglinter found 1 issue(s):
 NOTICE:  ==================================================
-NOTICE:  ⚠️  [B004] WARNING: Found 3 potentially unused indexes
+NOTICE:  ⚠️  [B004] WARNING: 3/5 unused index exceed the warning threshold: 60%
 NOTICE:  ==================================================
 NOTICE:  📊 Summary: 0 error(s), 1 warning(s), 0 info
 NOTICE:  🟡 Some warnings found - consider reviewing for optimization
@@ -198,7 +198,7 @@ NOTICE:  📖 Rule Explanation for B004
 Count number of unused index vs nb index (base on pg_stat_user_indexes, indexes associated to unique constraints are discard.)
 
 ⚠️  Message Template:
-{0} table(s) with unused index exceed the warning threshold: {1}%.
+{0}/{1} unused index exceed the {2} threshold: {3}%
 
 🔧 How to Fix:
    1. remove unused index or change warning/error threshold
@@ -229,7 +229,7 @@ SELECT 'Running B004 check after dropping some unused indexes (should show fewer
 SELECT pglinter.perform_base_check();
 NOTICE:  🔍 pglinter found 1 issue(s):
 NOTICE:  ==================================================
-NOTICE:  ⚠️  [B004] WARNING: Found 2 potentially unused indexes
+NOTICE:  ⚠️  [B004] WARNING: 2/4 unused index exceed the warning threshold: 50%
 NOTICE:  ==================================================
 NOTICE:  📊 Summary: 0 error(s), 1 warning(s), 0 info
 NOTICE:  🟡 Some warnings found - consider reviewing for optimization
@@ -254,12 +254,7 @@ SELECT 'Final B004 (base check) - Shows percentage-based unused index analysis:'
 (1 row)
 
 SELECT pglinter.perform_base_check();
-NOTICE:  🔍 pglinter found 1 issue(s):
-NOTICE:  ==================================================
-NOTICE:  ⚠️  [B004] WARNING: Found 2 potentially unused indexes
-NOTICE:  ==================================================
-NOTICE:  📊 Summary: 0 error(s), 1 warning(s), 0 info
-NOTICE:  🟡 Some warnings found - consider reviewing for optimization
+NOTICE:  ✅ No issues found - database schema looks good!
  perform_base_check 
 --------------------
  t

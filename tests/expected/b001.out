@@ -39,7 +39,7 @@ NOTICE:  📖 Rule Explanation for B001
 Count number of tables without primary key.
 
 ⚠️  Message Template:
-{0} table without primary key exceed the warning threshold: {1}%.
+{0}/{1} table(s) without primary key exceed the {2} threshold: {3}%.
 
 🔧 How to Fix:
    1. create a primary key or change warning/error threshold
@@ -83,12 +83,7 @@ NOTICE:  ✅ Rule B001 has been enabled
 
 -- Test again with B001 enabled
 SELECT pglinter.perform_base_check();
-NOTICE:  🔍 pglinter found 1 issue(s):
-NOTICE:  ==================================================
-NOTICE:  ❌ [B001] ERROR: 100% tables without primary key exceed the error threshold: 80%
-NOTICE:  ==================================================
-NOTICE:  📊 Summary: 1 error(s), 0 warning(s), 0 info
-NOTICE:  🔴 Critical issues found - please review and fix errors
+NOTICE:  ✅ No issues found - database schema looks good!
  perform_base_check 
 --------------------
  t
@@ -103,5 +98,5 @@ SELECT pglinter.perform_base_check('/tmp/pglinter_base_results.sarif');
 
 -- Test if file exists
 \! md5sum /tmp/pglinter_base_results.sarif
-df767701b90853dad1b899d8630278e7  /tmp/pglinter_base_results.sarif
+7cd6073b52ee9a1173c05c016e2458f4  /tmp/pglinter_base_results.sarif
 ROLLBACK;

@@ -1,6 +1,6 @@
 -- Test for pglinter T002 rule: Tables with redundant indexes (minimal test)
 
---BEGIN;
+\pset pager off
 
 DROP TABLE IF EXISTS test_redundant;
 
@@ -29,6 +29,6 @@ SELECT pglinter.enable_rule('T002');
 SELECT pglinter.perform_table_check();
 
 -- Cleanup
---DROP TABLE test_redundant CASCADE;
+DROP TABLE test_redundant CASCADE;
 
 --ROLLBACK;

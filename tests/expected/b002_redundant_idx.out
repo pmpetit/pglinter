@@ -73,12 +73,12 @@ SELECT pglinter.perform_base_check('/tmp/pglinter_b002_results.sarif');
 
 -- Test if file exists and show checksum
 \! md5sum /tmp/pglinter_b002_results.sarif
-641dd9ebe66c963bc674a6a08323f2e6  /tmp/pglinter_b002_results.sarif
+7d3b35d5659fa55a84d9986d4f7665d6  /tmp/pglinter_b002_results.sarif
 -- Test with no output file (should output to prompt)
 SELECT pglinter.perform_base_check();
 NOTICE:  🔍 pglinter found 1 issue(s):
 NOTICE:  ==================================================
-NOTICE:  ⚠️  [B002] WARNING: 42% redundant indexes exceed the warning threshold: 20%
+NOTICE:  ⚠️  [B002] WARNING: 6/14 redundant(s) index exceed the warning threshold: 42%.
 NOTICE:  ==================================================
 NOTICE:  📊 Summary: 0 error(s), 1 warning(s), 0 info
 NOTICE:  🟡 Some warnings found - consider reviewing for optimization
@@ -99,7 +99,7 @@ NOTICE:  📖 Rule Explanation for B002
 Count number of redundant index vs nb index.
 
 ⚠️  Message Template:
-{0} redundant(s) index exceed the warning threshold: {1}%.
+{0}/{1} redundant(s) index exceed the {2} threshold: {3}%.
 
 🔧 How to Fix:
    1. remove duplicated index or check if a constraint does not create a redundant index, or change warning/error threshold

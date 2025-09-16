@@ -678,9 +678,9 @@ fn execute_t002_rule() -> Result<Option<RuleResult>, String> {
                 ruleid: rule_id.to_string(),
                 level: "warning".to_string(),
                 message: format!(
-                    "Found {} redundant idx in table: {}",
+                    "Found {} redundant idx in table: \n{} \n",
                     count,
-                    details.join(", ")
+                    details.join("\n")
                 ),
                 count: Some(count),
             }));
