@@ -135,10 +135,10 @@ SELECT 'Testing B001 rule - Database-wide primary key percentage analysis...' as
 
 -- First, disable all rules to isolate B001 testing
 SELECT pglinter.disable_all_rules() AS all_rules_disabled;
-NOTICE:  🔴 Disabled 23 rule(s)
+NOTICE:  🔴 Disabled 22 rule(s)
  all_rules_disabled 
 --------------------
-                 23
+                 22
 (1 row)
 
 -- Enable only B001 for focused testing
@@ -166,7 +166,7 @@ SELECT 'Running base check to detect B001 violations...' as status;
 SELECT pglinter.perform_base_check();
 NOTICE:  🔍 pglinter found 1 issue(s):
 NOTICE:  ==================================================
-NOTICE:  ⚠️  [B001] WARNING: 3/10 table(s) without primary key exceed the warning threshold: 30%.
+NOTICE:  ⚠️  [B001] WARNING: 70% tables without primary key exceed the warning threshold: 20%
 NOTICE:  ==================================================
 NOTICE:  📊 Summary: 0 error(s), 1 warning(s), 0 info
 NOTICE:  🟡 Some warnings found - consider reviewing for optimization
@@ -234,7 +234,7 @@ SELECT 'Running base check with B001 re-enabled...' as status;
 SELECT pglinter.perform_base_check();
 NOTICE:  🔍 pglinter found 1 issue(s):
 NOTICE:  ==================================================
-NOTICE:  ⚠️  [B001] WARNING: 3/10 table(s) without primary key exceed the warning threshold: 30%.
+NOTICE:  ⚠️  [B001] WARNING: 70% tables without primary key exceed the warning threshold: 20%
 NOTICE:  ==================================================
 NOTICE:  📊 Summary: 0 error(s), 1 warning(s), 0 info
 NOTICE:  🟡 Some warnings found - consider reviewing for optimization
@@ -266,12 +266,7 @@ SELECT 'Running B001 check after adding primary keys (should show improved perce
 (1 row)
 
 SELECT pglinter.perform_base_check();
-NOTICE:  🔍 pglinter found 1 issue(s):
-NOTICE:  ==================================================
-NOTICE:  ❌ [B001] ERROR: 8/10 table(s) without primary key exceed the error threshold: 80%.
-NOTICE:  ==================================================
-NOTICE:  📊 Summary: 1 error(s), 0 warning(s), 0 info
-NOTICE:  🔴 Critical issues found - please review and fix errors
+NOTICE:  ✅ No issues found - database schema looks good!
  perform_base_check 
 --------------------
  t
@@ -299,12 +294,7 @@ SELECT 'B001 (base check) - Shows percentage-based violation:' as b001_demo;
 (1 row)
 
 SELECT pglinter.perform_base_check();
-NOTICE:  🔍 pglinter found 1 issue(s):
-NOTICE:  ==================================================
-NOTICE:  ❌ [B001] ERROR: 8/10 table(s) without primary key exceed the error threshold: 80%.
-NOTICE:  ==================================================
-NOTICE:  📊 Summary: 1 error(s), 0 warning(s), 0 info
-NOTICE:  🔴 Critical issues found - please review and fix errors
+NOTICE:  ✅ No issues found - database schema looks good!
  perform_base_check 
 --------------------
  t

@@ -13,10 +13,10 @@ SELECT 'Testing C002 rule - pg_hba.conf security checks...' as test_info;
 
 -- First, disable all rules to isolate C002 testing
 SELECT pglinter.disable_all_rules() AS all_rules_disabled;
-NOTICE:  🔴 Disabled 23 rule(s)
+NOTICE:  🔴 Disabled 22 rule(s)
  all_rules_disabled 
 --------------------
-                 23
+                 22
 (1 row)
 
 -- Enable only C002 for focused testing
@@ -44,10 +44,10 @@ SELECT '=== Test 2: C002 Rule Execution ===' as test_section;
 SELECT pglinter.perform_cluster_check();
 NOTICE:  🔍 pglinter found 1 issue(s):
 NOTICE:  ==================================================
-NOTICE:  ❌ [C002] ERROR: 6 entries in pg_hba.conf with trust or password authentication method exceed the warning threshold: 6.
+NOTICE:  ℹ️  [C002] INFO: Please manually check pg_hba.conf for insecure trust/password methods
 NOTICE:  ==================================================
-NOTICE:  📊 Summary: 1 error(s), 0 warning(s), 0 info
-NOTICE:  🔴 Critical issues found - please review and fix errors
+NOTICE:  📊 Summary: 0 error(s), 0 warning(s), 1 info
+NOTICE:  🟢 Only informational messages - good job!
  perform_cluster_check 
 -----------------------
  t

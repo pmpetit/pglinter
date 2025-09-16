@@ -24,7 +24,7 @@ const C002_PG_HBA_ALL: &str = include_str!("../sql/c002_pg_hba_all.sql");
 const C002_PG_HBA_TRUST: &str = include_str!("../sql/c002_pg_hba_trust.sql");
 const T001_SQL: &str = include_str!("../sql/t001.sql");
 const T002_SQL: &str = include_str!("../sql/t002.sql");
-const T003_SQL: &str = include_str!("../sql/t003.sql");
+// const T003_SQL: &str = include_str!("../sql/t003.sql");
 const T004_SQL: &str = include_str!("../sql/t004.sql");
 const T005_SQL: &str = include_str!("../sql/t005.sql");
 const T006_SQL: &str = include_str!("../sql/t006.sql");
@@ -69,6 +69,40 @@ fn get_rule_config(rule_code: &str) -> Result<(i64, i64, String), String> {
                 ))
             } else {
                 Ok((warning_level, error_level, message))
+            }
+        }
+        Err(e) => Err(format!(
+            "Database error while fetching rule '{rule_code}': {e}"
+        )),
+    }
+}
+
+fn get_rule_message(rule_code: &str) -> Result<String,String> {
+    let config_query = "
+        SELECT message
+        FROM pglinter.rules
+        WHERE code = $1";
+
+    let result: Result<String, spi::SpiError> = Spi::connect(|client| {
+        let mut rows = client.select(config_query, None, &[rule_code.into()])?;
+        if let Some(row) = rows.next() {
+            let message: String = row.get(1)?.unwrap_or_default();
+            Ok(message)
+        } else {
+            // Rule not found - this will be handled in the match below
+            Ok(String::new()) // Placeholder values
+        }
+    });
+
+    match result {
+        Ok(message) => {
+            if message.is_empty() {
+                // This indicates rule not found
+                Err(format!(
+                    "Rule '{rule_code}' not found in pglinter.rules table"
+                ))
+            } else {
+                Ok(message)
             }
         }
         Err(e) => Err(format!(
@@ -203,7 +237,7 @@ pub fn execute_table_rules() -> Result<Vec<RuleResult>, String> {
         }
     }
 
-    // T002: Tables without any index
+    // T002: Tables with redundant indexes
     if is_rule_enabled("T002").unwrap_or(true) {
         match execute_t002_rule() {
             Ok(Some(result)) => results.push(result),
@@ -213,13 +247,13 @@ pub fn execute_table_rules() -> Result<Vec<RuleResult>, String> {
     }
 
     // T003: Tables with redundant indexes
-    if is_rule_enabled("T003").unwrap_or(true) {
-        match execute_t003_rule() {
-            Ok(Some(result)) => results.push(result),
-            Ok(None) => {}
-            Err(e) => return Err(format!("T003 failed: {e}")),
-        }
-    }
+    // if is_rule_enabled("T003").unwrap_or(true) {
+    //     match execute_t003_rule() {
+    //         Ok(Some(result)) => results.push(result),
+    //         Ok(None) => {}
+    //         Err(e) => return Err(format!("T003 failed: {e}")),
+    //     }
+    // }
 
     // T004: Tables with foreign keys not indexed
     if is_rule_enabled("T004").unwrap_or(true) {
@@ -564,60 +598,84 @@ fn execute_t001_rule() -> Result<Option<RuleResult>, String> {
     }
 }
 
+// fn execute_t002_rule() -> Result<Option<RuleResult>, String> {
+//     // T002: Tables without any index
+//     let result: Result<Option<RuleResult>, spi::SpiError> = Spi::connect(|client| {
+//         let mut count = 0i64;
+//         let mut tables = Vec::new();
+
+//         for row in client.select(T002_SQL, None, &[])? {
+//             let schema: String = row.get(1)?.unwrap_or_default();
+//             let table: String = row.get(2)?.unwrap_or_default();
+//             tables.push(format!("{schema}.{table}"));
+//             count += 1;
+//         }
+
+//         if count > 0 {
+//             return Ok(Some(RuleResult {
+//                 ruleid: "T002".to_string(),
+//                 level: "warning".to_string(),
+//                 message: format!(
+//                     "Found {count} tables without any index: {}",
+//                     tables.join(", ")
+//                 ),
+//                 count: Some(count),
+//             }));
+//         }
+
+//         Ok(None)
+//     });
+
+//     match result {
+//         Ok(res) => Ok(res),
+//         Err(e) => Err(format!("Database error: {e}")),
+//     }
+// }
+
 fn execute_t002_rule() -> Result<Option<RuleResult>, String> {
-    // T002: Tables without any index
-    let result: Result<Option<RuleResult>, spi::SpiError> = Spi::connect(|client| {
-        let mut count = 0i64;
-        let mut tables = Vec::new();
+    // T002: Tables with redundant indexes
 
-        for row in client.select(T002_SQL, None, &[])? {
-            let schema: String = row.get(1)?.unwrap_or_default();
-            let table: String = row.get(2)?.unwrap_or_default();
-            tables.push(format!("{schema}.{table}"));
-            count += 1;
+    let rule_id = "T002";
+
+    let rule_message = match get_rule_message(rule_id) {
+        Ok(config) => {
+            pgrx::debug1!("execute_rule; Retrieved message for {} - message: {}",
+                        rule_id, config);
+            config
+        },
+        Err(e) => {
+            pgrx::debug1!("execute_rule; Failed to get configuration for {}: {}", rule_id, e);
+            return Err(format!("Failed to get {rule_id} configuration: {e}"));
         }
+    };
 
-        if count > 0 {
-            return Ok(Some(RuleResult {
-                ruleid: "T002".to_string(),
-                level: "warning".to_string(),
-                message: format!(
-                    "Found {count} tables without any index: {}",
-                    tables.join(", ")
-                ),
-                count: Some(count),
-            }));
-        }
-
-        Ok(None)
-    });
-
-    match result {
-        Ok(res) => Ok(res),
-        Err(e) => Err(format!("Database error: {e}")),
-    }
-}
-
-fn execute_t003_rule() -> Result<Option<RuleResult>, String> {
-    // T003: Tables with redundant indexes
     let result: Result<Option<RuleResult>, spi::SpiError> = Spi::connect(|client| {
         let mut count = 0i64;
         let mut details = Vec::new();
 
-        for row in client.select(T003_SQL, None, &[])? {
-            let redundant_index: String = row.get(1)?.unwrap_or_default();
-            let superset_index: String = row.get(2)?.unwrap_or_default();
-            let schema: String = row.get(3)?.unwrap_or_default();
-            let table: String = row.get(4)?.unwrap_or_default();
-            details.push(format!(
-                "{schema}.{table} (redundant index: {redundant_index}, superset: {superset_index})"
-            ));
+        for row in client.select(T002_SQL, None, &[])? {
+            let schema: String = row.get(1)?.unwrap_or_default();
+            let table: String = row.get(2)?.unwrap_or_default();
+            let redundant_index: String = row.get(3)?.unwrap_or_default();
+            let superset_index: String = row.get(4)?.unwrap_or_default();
+            let redundant_index_def: String = row.get(5)?.unwrap_or_default();
+            let superset_index_def: String = row.get(6)?.unwrap_or_default();
+
+            details.push(
+                rule_message
+                    .replace("{schema}", &schema)
+                    .replace("{table}", &table)
+                    .replace("{redundant_index}", &redundant_index)
+                    .replace("{superset_index}", &superset_index)
+                    .replace("{redundant_index_def}", &redundant_index_def)
+                    .replace("{superset_index_def}", &superset_index_def)
+            );
             count += 1;
         }
 
         if count > 0 {
             return Ok(Some(RuleResult {
-                ruleid: "T003".to_string(),
+                ruleid: rule_id.to_string(),
                 level: "warning".to_string(),
                 message: format!(
                     "Found {} redundant idx in table: {}",

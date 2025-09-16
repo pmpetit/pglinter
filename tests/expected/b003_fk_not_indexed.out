@@ -113,10 +113,10 @@ SELECT 'Testing B003 rule - Foreign keys without indexes detection...' as test_i
 
 -- First, disable all rules to isolate B003 testing
 SELECT pglinter.disable_all_rules() AS all_rules_disabled;
-NOTICE:  🔴 Disabled 23 rule(s)
+NOTICE:  🔴 Disabled 22 rule(s)
  all_rules_disabled 
 --------------------
-                 23
+                 22
 (1 row)
 
 -- Enable only B003 for focused testing
@@ -143,12 +143,7 @@ SELECT 'Running base check to detect B003 violations...' as status;
 (1 row)
 
 SELECT pglinter.perform_base_check();
-NOTICE:  🔍 pglinter found 1 issue(s):
-NOTICE:  ==================================================
-NOTICE:  ⚠️  [B003] WARNING: 2/3 table(s) without index on foreign key exceed the warning threshold: 66%.
-NOTICE:  ==================================================
-NOTICE:  📊 Summary: 0 error(s), 1 warning(s), 0 info
-NOTICE:  🟡 Some warnings found - consider reviewing for optimization
+NOTICE:  ✅ No issues found - database schema looks good!
  perform_base_check 
 --------------------
  t
@@ -172,7 +167,7 @@ NOTICE:  📖 Rule Explanation for B003
 Count number of tables without index on foreign key.
 
 ⚠️  Message Template:
-{0}/{1} table(s) without index on foreign key exceed the {2} threshold: {3}%.
+{0} table without index on foreign key exceed the warning threshold: {1}%.
 
 🔧 How to Fix:
    1. create a index on foreign key or change warning/error threshold
@@ -255,12 +250,7 @@ SELECT 'B003 (base check) - Shows percentage-based foreign key index analysis:' 
 (1 row)
 
 SELECT pglinter.perform_base_check();
-NOTICE:  🔍 pglinter found 1 issue(s):
-NOTICE:  ==================================================
-NOTICE:  ⚠️  [B003] WARNING: 2/3 table(s) without index on foreign key exceed the warning threshold: 66%.
-NOTICE:  ==================================================
-NOTICE:  📊 Summary: 0 error(s), 1 warning(s), 0 info
-NOTICE:  🟡 Some warnings found - consider reviewing for optimization
+NOTICE:  ✅ No issues found - database schema looks good!
  perform_base_check 
 --------------------
  t

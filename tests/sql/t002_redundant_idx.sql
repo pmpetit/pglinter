@@ -1,7 +1,7 @@
--- Test for pglinter T003 rule: Tables with redundant indexes
+-- Test for pglinter T002 rule: Tables with redundant indexes
 BEGIN;
 
--- Create test tables with redundant indexes for T003 testing
+-- Create test tables with redundant indexes for T002 testing
 CREATE TABLE IF NOT EXISTS customers_with_redundant_idx (
     customer_id INT PRIMARY KEY,
     first_name VARCHAR(100),
@@ -65,33 +65,33 @@ CREATE INDEX idx_orders_total ON orders_with_redundant_idx (total_amount);
 
 CREATE EXTENSION IF NOT EXISTS pglinter;
 
--- First, disable all rules to isolate T003 testing
+-- First, disable all rules to isolate T002 testing
 SELECT pglinter.disable_all_rules() AS all_rules_disabled;
 
--- Enable only T003 for focused testing
-SELECT pglinter.enable_rule('T003') AS t003_enabled;
+-- Enable only T002 for focused testing
+SELECT pglinter.enable_rule('T002') AS T002_enabled;
 
 -- Test with file output
-SELECT pglinter.perform_table_check('/tmp/pglinter_t003_results.sarif');
+SELECT pglinter.perform_table_check('/tmp/pglinter_T002_results.sarif');
 
 -- Test if file exists and show checksum
-\! md5sum /tmp/pglinter_t003_results.sarif
+\! md5sum /tmp/pglinter_T002_results.sarif
 
 -- Test with no output file (should output to prompt)
 SELECT pglinter.perform_table_check();
 
--- Test rule management for T003
-SELECT pglinter.explain_rule('T003');
+-- Test rule management for T002
+SELECT pglinter.explain_rule('T002');
 
--- Show that T003 is enabled
-SELECT pglinter.is_rule_enabled('T003') AS t003_enabled;
+-- Show that T002 is enabled
+SELECT pglinter.is_rule_enabled('T002') AS T002_enabled;
 
--- Disable T003 temporarily and test
-SELECT pglinter.disable_rule('T003') AS t003_disabled;
+-- Disable T002 temporarily and test
+SELECT pglinter.disable_rule('T002') AS T002_disabled;
 SELECT pglinter.perform_table_check();
 
--- Re-enable T003 and test again
-SELECT pglinter.enable_rule('T003') AS t003_re_enabled;
+-- Re-enable T002 and test again
+SELECT pglinter.enable_rule('T002') AS T002_re_enabled;
 SELECT pglinter.perform_table_check();
 
 -- Clean up test tables

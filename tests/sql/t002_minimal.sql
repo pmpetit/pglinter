@@ -1,5 +1,8 @@
--- Test for pglinter T003 rule: Tables with redundant indexes (minimal test)
-BEGIN;
+-- Test for pglinter T002 rule: Tables with redundant indexes (minimal test)
+
+--BEGIN;
+
+DROP TABLE IF EXISTS test_redundant;
 
 -- Create one simple test table
 CREATE TABLE test_redundant (
@@ -15,16 +18,17 @@ CREATE INDEX idx_name_2 ON test_redundant (first_name,last_name);
 CREATE INDEX idx_name_3 ON test_redundant (first_name,last_name,tel);
 CREATE INDEX idx_name_4 ON test_redundant (tel,last_name);
 
+DROP EXTENSION IF EXISTS pglinter CASCADE;
 CREATE EXTENSION IF NOT EXISTS pglinter;
 
--- Enable only T003
+-- Enable only T002
 SELECT pglinter.disable_all_rules();
-SELECT pglinter.enable_rule('T003');
+SELECT pglinter.enable_rule('T002');
 
--- Test T003
+-- Test T002
 SELECT pglinter.perform_table_check();
 
 -- Cleanup
-DROP TABLE test_redundant CASCADE;
+--DROP TABLE test_redundant CASCADE;
 
-ROLLBACK;
+--ROLLBACK;

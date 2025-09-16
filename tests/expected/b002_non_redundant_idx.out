@@ -27,10 +27,10 @@ CREATE TABLE IF NOT EXISTS orders_table (
 CREATE EXTENSION IF NOT EXISTS pglinter;
 -- First, disable all rules to isolate B001 testing
 SELECT pglinter.disable_all_rules() AS all_rules_disabled;
-NOTICE:  🔴 Disabled 23 rule(s)
+NOTICE:  🔴 Disabled 22 rule(s)
  all_rules_disabled 
 --------------------
-                 23
+                 22
 (1 row)
 
 -- Enable only B002 for focused testing
@@ -71,7 +71,7 @@ NOTICE:  📖 Rule Explanation for B002
 Count number of redundant index vs nb index.
 
 ⚠️  Message Template:
-{0}/{1} redundant(s) index exceed the {2} threshold: {3}%.
+{0} redundant(s) index exceed the warning threshold: {1}%.
 
 🔧 How to Fix:
    1. remove duplicated index or check if a constraint does not create a redundant index, or change warning/error threshold
