@@ -384,11 +384,11 @@ SELECT pglinter.perform_table_check();
 NOTICE:  🔍 pglinter found 1 issue(s):
 NOTICE:  ==================================================
 NOTICE:  ❌ [T006] ERROR: Found 5 unused index(es) (size >= 1MB threshold): 
-Index idx_products_unused_description on public.test_products size 101.24 Mo seems to be unused (idx_scan=0), reach the error threshold: 5.
-Index idx_products_unused_price on public.test_products size 2.33 Mo seems to be unused (idx_scan=0), reach the warning threshold: 1.
-Index idx_orders_unused_notes on public.test_orders size 98.14 Mo seems to be unused (idx_scan=0), reach the error threshold: 5.
-Index idx_customers_unused_zip on public.test_customers size 1.09 Mo seems to be unused (idx_scan=0), reach the warning threshold: 1.
-Index idx_orders_unused_quantity on public.test_orders size 1.27 Mo seems to be unused (idx_scan=0), reach the warning threshold: 1. 
+Index idx_products_unused_description on public.test_products size 101.24 Mo seems to be unused (idx_scan=0), reach the error threshold: 5 Mo.
+Index idx_products_unused_price on public.test_products size 2.33 Mo seems to be unused (idx_scan=0), reach the warning threshold: 1 Mo.
+Index idx_orders_unused_notes on public.test_orders size 98.14 Mo seems to be unused (idx_scan=0), reach the error threshold: 5 Mo.
+Index idx_customers_unused_zip on public.test_customers size 1.09 Mo seems to be unused (idx_scan=0), reach the warning threshold: 1 Mo.
+Index idx_orders_unused_quantity on public.test_orders size 1.27 Mo seems to be unused (idx_scan=0), reach the warning threshold: 1 Mo. 
 
 NOTICE:  ==================================================
 NOTICE:  📊 Summary: 1 error(s), 0 warning(s), 0 info
