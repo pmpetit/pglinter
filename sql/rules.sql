@@ -95,7 +95,7 @@ INSERT INTO pglinter.rules (id,name,code,warning_level,error_level,scope,descrip
 
 (27, 'TableWithFkMismatch', 'T007', 1, 1, 'TABLE',
     'table with fk mismatch, ex smallint refer to a bigint.',
-    'Type constraint mismatch: {0} on {1} column {2} (type {3}/{4}) ref {5} column {6} type ({7}/{8}).',
+    'Table {schema}.{table} constraint: {constraint_name} on {column_name} column {col1_datatype} ref {ref_table} column {ref_column} type ({ref_type}).',
     ARRAY['consider rewrite your model', 'ask a dba']),
 
 (28, 'TableWithRoleNotGranted', 'T008', 1, 1, 'TABLE',

@@ -28,7 +28,7 @@ const T003_SQL: &str = include_str!("../sql/t003.sql");
 const T004_SQL: &str = include_str!("../sql/t004.sql");
 const T005_SQL: &str = include_str!("../sql/t005.sql");
 const T006_SQL: &str = include_str!("../sql/t006.sql");
-// const T007_SQL: &str = include_str!("../sql/t007.sql");
+const T007_SQL: &str = include_str!("../sql/t007.sql");
 // const T008_SQL: &str = include_str!("../sql/t008.sql");
 // const T009_SQL: &str = include_str!("../sql/t009.sql");
 // const T010_SQL: &str = include_str!("../sql/t010.sql");
@@ -282,6 +282,14 @@ pub fn execute_table_rules() -> Result<Vec<RuleResult>, String> {
         }
     }
 
+    // T007: Tables with unused indexes.
+    if is_rule_enabled("T007").unwrap_or(true) {
+        match execute_t007_rule() {
+            Ok(Some(result)) => results.push(result),
+            Ok(None) => {}
+            Err(e) => return Err(format!("T007 failed: {e}")),
+        }
+    }
 
     Ok(results)
 }
@@ -943,6 +951,75 @@ fn execute_t006_rule() -> Result<Option<RuleResult>, String> {
         Err(e) => Err(format!("Database error: {e}")),
     }
 }
+
+
+fn execute_t007_rule() -> Result<Option<RuleResult>, String> {
+    // T007: Tables with fk mismatch
+
+    let ruleid = "T007";
+
+    let rule_message = match get_rule_message(ruleid) {
+        Ok(config) => {
+            pgrx::debug1!("execute_rule; Retrieved message for {} - message: {}",
+                        ruleid, config);
+            config
+        },
+        Err(e) => {
+            pgrx::debug1!("execute_rule; Failed to get configuration for {}: {}", ruleid, e);
+            return Err(format!("Failed to get {ruleid} configuration: {e}"));
+        }
+    };
+
+    let result: Result<Option<RuleResult>, spi::SpiError> = Spi::connect(|client| {
+        let mut count = 0i64;
+        let mut details = Vec::new();
+
+        for row in client.select(T007_SQL, None, &[])? {
+            let schema: String = row.get(1)?.unwrap_or_default();
+            let table: String = row.get(2)?.unwrap_or_default();
+            let constraint_name: String = row.get(3)?.unwrap_or_default();
+            let column_name: String = row.get(4)?.unwrap_or_default();
+            let col1_datatype: String = row.get(5)?.unwrap_or_default();
+            let ref_table: String = row.get(6)?.unwrap_or_default();
+            let ref_column: String = row.get(7)?.unwrap_or_default();
+            let ref_type: String = row.get(8)?.unwrap_or_default();
+            details.push(
+                rule_message
+                    .replace("{schema}", &schema)
+                    .replace("{table}", &table)
+                    .replace("{constraint_name}", &constraint_name)
+                    .replace("{column_name}", &column_name)
+                    .replace("{col1_datatype}", &col1_datatype)
+                    .replace("{ref_table}", &ref_table)
+                    .replace("{ref_column}", &ref_column)
+                    .replace("{ref_type}", &ref_type)
+            );
+            count += 1;
+        }
+
+        if count > 0 {
+            return Ok(Some(RuleResult {
+                ruleid: ruleid.to_string(),
+                level: "warning".to_string(),
+                message: format!(
+                    "Found {} redundant idx in table: \n{} \n",
+                    count,
+                    details.join("\n")
+                ),
+                count: Some(count),
+            }));
+        }
+
+        Ok(None)
+    });
+
+    match result {
+        Ok(res) => Ok(res),
+        Err(e) => Err(format!("Database error: {e}")),
+    }
+}
+
+
 
 // fn execute_t010_rule() -> Result<Option<RuleResult>, String> {
 //     // T010: Tables using reserved keywords
