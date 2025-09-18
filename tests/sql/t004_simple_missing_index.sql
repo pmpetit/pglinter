@@ -16,6 +16,8 @@ CREATE TABLE user_activities (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+SELECT SETSEED(0.42);
+
 -- Insert a significant amount of test data
 INSERT INTO user_activities (
     user_id, activity_type, description, ip_address
@@ -45,7 +47,8 @@ BEGIN
 END$$;
 
 -- Query 2: Find activities by activity_type (no index on activity_type)
-SELECT 'Query 2: Finding activities for activity_type = ''login''' AS query_info;
+SELECT
+    'Query 2: Finding activities for activity_type = ''login''' AS query_info;
 DO $$
 DECLARE
     activity_types TEXT[] := ARRAY['login','logout','view_page','purchase'];
@@ -80,7 +83,7 @@ WHERE description LIKE '%Activity description 50%';
 -- Update statistics after the queries
 ANALYZE user_activities;
 
-SELECT pg_sleep(5);
+SELECT PG_SLEEP(5);
 
 DROP EXTENSION IF EXISTS pglinter CASCADE;
 CREATE EXTENSION IF NOT EXISTS pglinter;
@@ -146,7 +149,8 @@ BEGIN
 END$$;
 
 -- Query 2: Find activities by activity_type (no index on activity_type)
-SELECT 'Query 2: Finding activities for activity_type = ''login''' AS query_info;
+SELECT
+    'Query 2: Finding activities for activity_type = ''login''' AS query_info;
 DO $$
 DECLARE
     activity_types TEXT[] := ARRAY['login','logout','view_page','purchase'];
@@ -180,7 +184,7 @@ WHERE
 -- Update statistics after the queries
 ANALYZE indexed_user_activities;
 
-SELECT pg_sleep(5);
+SELECT PG_SLEEP(5);
 
 -- Disable all rules first
 SELECT pglinter.disable_all_rules() AS all_rules_disabled;

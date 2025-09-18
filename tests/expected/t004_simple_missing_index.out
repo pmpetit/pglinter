@@ -14,6 +14,12 @@ CREATE TABLE user_activities (
     user_agent TEXT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+SELECT setseed(0.42);
+ setseed 
+---------
+ 
+(1 row)
+
 -- Insert a significant amount of test data
 INSERT INTO user_activities (
     user_id, activity_type, description, ip_address
@@ -67,7 +73,7 @@ SELECT COUNT(*) FROM user_activities
 WHERE user_id = 500;
  count 
 -------
-    84
+    95
 (1 row)
 
 -- Query 2: Find activities by activity_type (no index on activity_type)
@@ -81,7 +87,7 @@ SELECT COUNT(*) FROM user_activities
 WHERE activity_type = 'login';
  count 
 -------
- 12594
+ 12566
 (1 row)
 
 -- Query 4: Complex query combining multiple unindexed columns
@@ -97,7 +103,7 @@ WHERE
     AND activity_type = 'login';
  count 
 -------
-  1304
+  1231
 (1 row)
 
 -- Query 5: Pattern matching on description (no index, will be very slow)
@@ -235,7 +241,7 @@ SELECT COUNT(*) FROM indexed_user_activities
 WHERE user_id = 500;
  count 
 -------
-    88
+    99
 (1 row)
 
 -- Query 2: Find activities by activity_type (no index on activity_type)
@@ -249,7 +255,7 @@ SELECT COUNT(*) FROM indexed_user_activities
 WHERE activity_type = 'login';
  count 
 -------
- 12562
+ 12506
 (1 row)
 
 -- Query 3: Find activities by date range (no index on activity_date)
@@ -264,7 +270,7 @@ FROM indexed_user_activities
 WHERE activity_type = 'login';
  count 
 -------
- 12562
+ 12506
 (1 row)
 
 -- Query 4: Complex query combining multiple unindexed columns
@@ -280,7 +286,7 @@ WHERE
     AND activity_type = 'login';
  count 
 -------
-  1335
+  1314
 (1 row)
 
 -- Update statistics after the queries
