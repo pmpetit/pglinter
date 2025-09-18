@@ -1,0 +1,210 @@
+-- Simple example to demonstrate foreign keys referencing tables in other schemas (T005 rule)
+-- This script creates tables with foreign keys that reference tables outside their schema
+-- and shows how the T005 rule detects this cross-schema dependency issue.
+
+BEGIN;
+
+\pset pager off
+
+-- Create the main/public schema tables (referenced tables)
+CREATE TABLE public.customers (
+    customer_id SERIAL PRIMARY KEY,
+    customer_name VARCHAR(100) NOT NULL,
+    email VARCHAR(150) UNIQUE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE public.products (
+    product_id SERIAL PRIMARY KEY,
+    product_name VARCHAR(100) NOT NULL,
+    price DECIMAL(10,2) NOT NULL,
+    category VARCHAR(50),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE public.users (
+    user_id SERIAL PRIMARY KEY,
+    username VARCHAR(50) UNIQUE NOT NULL,
+    email VARCHAR(150) UNIQUE,
+    is_active BOOLEAN DEFAULT TRUE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Create separate schemas for testing cross-schema foreign keys
+DROP SCHEMA IF EXISTS sales_schema CASCADE;
+CREATE SCHEMA sales_schema;
+
+DROP SCHEMA IF EXISTS inventory_schema CASCADE;
+CREATE SCHEMA inventory_schema;
+
+DROP SCHEMA IF EXISTS audit_schema CASCADE;
+CREATE SCHEMA audit_schema;
+
+-- Create tables in other schemas with foreign keys to public schema tables (should trigger T005)
+CREATE TABLE sales_schema.orders (
+    order_id SERIAL PRIMARY KEY,
+    customer_id INTEGER NOT NULL REFERENCES public.customers(customer_id), -- Cross-schema FK
+    order_date DATE NOT NULL DEFAULT CURRENT_DATE,
+    total_amount DECIMAL(10,2),
+    status VARCHAR(20) DEFAULT 'pending',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE sales_schema.order_items (
+    item_id SERIAL PRIMARY KEY,
+    order_id INTEGER NOT NULL REFERENCES sales_schema.orders(order_id), -- Same schema FK (OK)
+    product_id INTEGER NOT NULL REFERENCES public.products(product_id), -- Cross-schema FK
+    quantity INTEGER DEFAULT 1,
+    unit_price DECIMAL(10,2),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE inventory_schema.product_stock (
+    stock_id SERIAL PRIMARY KEY,
+    product_id INTEGER NOT NULL REFERENCES public.products(product_id), -- Cross-schema FK
+    warehouse_location VARCHAR(50),
+    quantity_available INTEGER DEFAULT 0,
+    reorder_level INTEGER DEFAULT 10,
+    last_updated TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE inventory_schema.stock_movements (
+    movement_id SERIAL PRIMARY KEY,
+    stock_id INTEGER NOT NULL REFERENCES inventory_schema.product_stock(stock_id), -- Same schema FK (OK)
+    movement_type VARCHAR(20) NOT NULL, -- 'in', 'out', 'adjustment'
+    quantity_change INTEGER NOT NULL,
+    reason TEXT,
+    created_by INTEGER REFERENCES public.users(user_id), -- Cross-schema FK
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE audit_schema.user_activity_log (
+    log_id SERIAL PRIMARY KEY,
+    user_id INTEGER NOT NULL REFERENCES public.users(user_id), -- Cross-schema FK
+    activity_type VARCHAR(50) NOT NULL,
+    table_name VARCHAR(100),
+    record_id INTEGER,
+    old_values JSONB,
+    new_values JSONB,
+    ip_address INET,
+    user_agent TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Create one table within the same schema (should NOT trigger T005)
+CREATE TABLE sales_schema.sales_reports (
+    report_id SERIAL PRIMARY KEY,
+    report_name VARCHAR(100) NOT NULL,
+    created_by VARCHAR(50),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Insert test data to make the tables more realistic
+INSERT INTO public.customers (customer_name, email)
+VALUES
+    ('John Doe', 'john.doe@email.com'),
+    ('Jane Smith', 'jane.smith@email.com'),
+    ('Bob Johnson', 'bob.johnson@email.com');
+
+INSERT INTO public.products (product_name, price, category)
+VALUES
+    ('Laptop Computer', 999.99, 'Electronics'),
+    ('Office Chair', 199.50, 'Furniture'),
+    ('Wireless Mouse', 29.99, 'Electronics'),
+    ('Desk Lamp', 49.99, 'Furniture');
+
+INSERT INTO public.users (username, email)
+VALUES
+    ('admin', 'admin@company.com'),
+    ('manager', 'manager@company.com'),
+    ('clerk', 'clerk@company.com');
+
+INSERT INTO sales_schema.orders (customer_id, total_amount, status)
+VALUES
+    (1, 1029.98, 'completed'),
+    (2, 199.50, 'pending'),
+    (3, 79.98, 'shipped'),
+    (1, 49.99, 'completed');
+
+INSERT INTO sales_schema.order_items (order_id, product_id, quantity, unit_price)
+VALUES
+    (1, 1, 1, 999.99),
+    (1, 3, 1, 29.99),
+    (2, 2, 1, 199.50),
+    (3, 3, 2, 29.99),
+    (3, 4, 1, 49.99),
+    (4, 4, 1, 49.99);
+
+INSERT INTO inventory_schema.product_stock (product_id, warehouse_location, quantity_available, reorder_level)
+VALUES
+    (1, 'Warehouse A', 25, 5),
+    (2, 'Warehouse B', 50, 10),
+    (3, 'Warehouse A', 100, 20),
+    (4, 'Warehouse B', 30, 8);
+
+INSERT INTO inventory_schema.stock_movements (stock_id, movement_type, quantity_change, reason, created_by)
+VALUES
+    (1, 'out', -1, 'Customer order fulfillment', 3),
+    (2, 'in', 20, 'New stock delivery', 2),
+    (3, 'out', -2, 'Customer order fulfillment', 3),
+    (4, 'adjustment', -1, 'Damaged item removal', 1);
+
+INSERT INTO audit_schema.user_activity_log (user_id, activity_type, table_name, record_id, ip_address)
+VALUES
+    (1, 'INSERT', 'customers', 1, '192.168.1.100'),
+    (2, 'UPDATE', 'products', 1, '192.168.1.101'),
+    (3, 'DELETE', 'orders', 1, '192.168.1.102'),
+    (1, 'SELECT', 'inventory', NULL, '192.168.1.100');
+
+INSERT INTO sales_schema.sales_reports (report_name, created_by)
+VALUES
+    ('Monthly Sales Report', 'manager'),
+    ('Product Performance Report', 'admin'),
+    ('Customer Analysis Report', 'manager');
+
+-- Update table statistics
+ANALYZE public.customers;
+ANALYZE public.products;
+ANALYZE public.users;
+ANALYZE sales_schema.orders;
+ANALYZE sales_schema.order_items;
+ANALYZE sales_schema.sales_reports;
+ANALYZE inventory_schema.product_stock;
+ANALYZE inventory_schema.stock_movements;
+ANALYZE audit_schema.user_activity_log;
+
+DROP EXTENSION IF EXISTS pglinter CASCADE;
+CREATE EXTENSION IF NOT EXISTS pglinter;
+
+-- Disable all rules first to isolate T005 testing
+SELECT 'Disabling all rules to test T005 specifically...' as status;
+SELECT pglinter.disable_all_rules() AS all_rules_disabled;
+
+-- Run table check (should show no results since all rules are disabled)
+SELECT 'Running table check with all rules disabled (should show no T005 results):' as test_info;
+SELECT pglinter.perform_table_check();
+
+-- Test rule management for T005
+SELECT 'Testing T005 rule management:' as test_info;
+SELECT pglinter.explain_rule('T005');
+SELECT pglinter.is_rule_enabled('T005') AS t005_enabled;
+
+-- Enable T005 specifically
+SELECT 'Enabling T005 rule...' as status;
+SELECT pglinter.enable_rule('T005') AS t005_reenabled;
+SELECT pglinter.is_rule_enabled('T005') AS t005_enabled_after;
+
+-- Run table check to detect tables with cross-schema foreign keys
+SELECT 'Running table check with T005 enabled - should detect cross-schema foreign keys:' as test_info;
+SELECT pglinter.perform_table_check(); -- Should include T005 results
+
+-- Test disabling T005 temporarily
+SELECT 'Testing T005 disable/enable cycle:' as test_info;
+SELECT pglinter.disable_rule('T005') AS t005_disabled;
+SELECT pglinter.perform_table_check(); -- Should skip T005
+
+-- Re-enable T005 and test again
+SELECT pglinter.enable_rule('T005') AS t005_re_enabled;
+SELECT pglinter.perform_table_check(); -- Should include T005 again
+
+ROLLBACK;

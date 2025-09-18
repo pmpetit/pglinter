@@ -26,7 +26,7 @@ const T001_SQL: &str = include_str!("../sql/t001.sql");
 const T002_SQL: &str = include_str!("../sql/t002.sql");
 const T003_SQL: &str = include_str!("../sql/t003.sql");
 const T004_SQL: &str = include_str!("../sql/t004.sql");
-// const T005_SQL: &str = include_str!("../sql/t005.sql");
+const T005_SQL: &str = include_str!("../sql/t005.sql");
 // const T006_SQL: &str = include_str!("../sql/t006.sql");
 // const T007_SQL: &str = include_str!("../sql/t007.sql");
 // const T008_SQL: &str = include_str!("../sql/t008.sql");
@@ -263,6 +263,16 @@ pub fn execute_table_rules() -> Result<Vec<RuleResult>, String> {
             Err(e) => return Err(format!("T004 failed: {e}")),
         }
     }
+
+    // T005: Tables with fk outside its schema.
+    if is_rule_enabled("T005").unwrap_or(true) {
+        match execute_t005_rule() {
+            Ok(Some(result)) => results.push(result),
+            Ok(None) => {}
+            Err(e) => return Err(format!("T005 failed: {e}")),
+        }
+    }
+
 
     Ok(results)
 }
@@ -529,17 +539,17 @@ fn execute_t001_rule() -> Result<Option<RuleResult>, String> {
 fn execute_t002_rule() -> Result<Option<RuleResult>, String> {
     // T002: Tables with redundant indexes
 
-    let rule_id = "T002";
+    let ruleid = "T002";
 
-    let rule_message = match get_rule_message(rule_id) {
+    let rule_message = match get_rule_message(ruleid) {
         Ok(config) => {
             pgrx::debug1!("execute_rule; Retrieved message for {} - message: {}",
-                        rule_id, config);
+                        ruleid, config);
             config
         },
         Err(e) => {
-            pgrx::debug1!("execute_rule; Failed to get configuration for {}: {}", rule_id, e);
-            return Err(format!("Failed to get {rule_id} configuration: {e}"));
+            pgrx::debug1!("execute_rule; Failed to get configuration for {}: {}", ruleid, e);
+            return Err(format!("Failed to get {ruleid} configuration: {e}"));
         }
     };
 
@@ -569,7 +579,7 @@ fn execute_t002_rule() -> Result<Option<RuleResult>, String> {
 
         if count > 0 {
             return Ok(Some(RuleResult {
-                ruleid: rule_id.to_string(),
+                ruleid: ruleid.to_string(),
                 level: "warning".to_string(),
                 message: format!(
                     "Found {} redundant idx in table: \n{} \n",
@@ -743,6 +753,80 @@ fn execute_t004_rule() -> Result<Option<RuleResult>, String> {
         Err(e) => Err(format!("Database error: {e}")),
     }
 }
+
+
+fn execute_t005_rule() -> Result<Option<RuleResult>, String> {
+    // T005: Tables with fk outside its schema.
+
+    let ruleid = "T005";
+
+    let rule_message = match get_rule_message(ruleid) {
+        Ok(config) => {
+            pgrx::debug1!("execute_rule; Retrieved message for {} - message: {}",
+                        ruleid, config);
+            config
+        },
+        Err(e) => {
+            pgrx::debug1!("execute_rule; Failed to get configuration for {}: {}", ruleid, e);
+            return Err(format!("Failed to get {} configuration: {e}", ruleid));
+        }
+    };
+
+
+    pgrx::debug1!("execute_t005_rule; Starting execution for rule {}", ruleid);
+    let result: Result<Option<RuleResult>, spi::SpiError> = Spi::connect(|client| {
+        let mut count = 0i64;
+        let mut details = Vec::new();
+        pgrx::debug1!("execute_t005_rule; Executing SQL: {}", T005_SQL);
+        for row in client.select(T005_SQL, None, &[])? {
+            let schema: String = row.get(1)?.unwrap_or_default();
+            let table: String = row.get(2)?.unwrap_or_default();
+            let constraint_name: String = row.get(3)?.unwrap_or_default();
+            let referenced_schema: String = row.get(4)?.unwrap_or_default();
+            let referenced_table: String = row.get(5)?.unwrap_or_default();
+
+            pgrx::debug1!(
+                "execute_t005_rule; Row: schema={}, table={}, referenced_schema={}, referenced_table={}",
+                schema, table, referenced_schema, referenced_table
+            );
+            details.push(
+                rule_message
+                    .replace("{schema}", &schema)
+                    .replace("{table_name}", &table)
+                    .replace("{constraint_name}", &constraint_name)
+                    .replace("{referenced_schema}", &referenced_schema)
+                    .replace("{referenced_table}", &referenced_table)
+            );
+            count += 1;
+        }
+
+
+        if count > 0 {
+            pgrx::debug1!(
+                "execute_t005_rule; Found {} table(s) with foreign keys outside their schema.", count
+            );
+            return Ok(Some(RuleResult {
+                ruleid: ruleid.to_string(),
+                level: "warning".to_string(),
+                message: format!(
+                    "Found {} table(s) with fk outside its schema : \n{} \n",
+                    count,
+                    details.join("\n")
+                ),
+                count: Some(count),
+            }));
+        }
+
+        pgrx::debug1!("execute_t005_rule; No tables found with foreign keys outside their schema.");
+        Ok(None)
+    });
+
+    match result {
+        Ok(res) => Ok(res),
+        Err(e) => Err(format!("Database error: {e}")),
+    }
+}
+
 
 // fn execute_t010_rule() -> Result<Option<RuleResult>, String> {
 //     // T010: Tables using reserved keywords

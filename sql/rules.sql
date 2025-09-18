@@ -84,8 +84,8 @@ INSERT INTO pglinter.rules (id,name,code,warning_level,error_level,scope,descrip
     ARRAY['ask a dba']),
 
 (25, 'TableWithFkOutsideSchema', 'T005', 1, 1, 'TABLE',
-    'table with fk outside its schema.',
-    'fk {0} on {1} is in schema {2}.',
+    'table with fk outside its schema. This can be problematic for  maintenance and scalability of the database, refreshing staging/preprod from prod, as well as for understanding the data model.  Migration challenges: Moving or restructuring schemas becomes difficult.',
+    'foreign key {constraint_name} on {schema}.{table_name} is in schema {referenced_schema}.{referenced_table}.',
     ARRAY['consider rewrite your model', 'ask a dba']),
 
 (26, 'TableWithUnusedIndex', 'T006', 1, 1, 'TABLE',
