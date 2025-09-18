@@ -1,0 +1,68 @@
+-- Example to demonstrate missing index on foreign key and T003 rule detection
+BEGIN;
+\pset pager off
+-- Create tables: parent with PK, child with FK but no index on FK
+CREATE TABLE parent (
+    id INTEGER PRIMARY KEY,
+    name TEXT
+);
+CREATE TABLE child (
+    child_id INTEGER PRIMARY KEY,
+    parent_id INTEGER NOT NULL,
+    value TEXT,
+    CONSTRAINT fk_parent FOREIGN KEY (parent_id) REFERENCES parent(id)
+);
+-- No index on child.parent_id (foreign key column)
+-- Insert some test data
+INSERT INTO parent (id, name) VALUES (1, 'A'), (2, 'B');
+INSERT INTO child (child_id, parent_id, value) VALUES (10, 1, 'foo'), (11, 2, 'bar');
+-- Update table statistics
+ANALYZE parent;
+ANALYZE child;
+DROP EXTENSION IF EXISTS pglinter CASCADE;
+NOTICE:  extension "pglinter" does not exist, skipping
+CREATE EXTENSION IF NOT EXISTS pglinter;
+-- Disable all rules first to isolate T004 testing
+SELECT pglinter.disable_all_rules() AS all_rules_disabled;
+NOTICE:  🔴 Disabled 22 rule(s)
+ all_rules_disabled 
+--------------------
+                 22
+(1 row)
+
+-- Enable T003 specifically
+SELECT pglinter.enable_rule('T003') AS t003_enabled;
+NOTICE:  ✅ Rule T003 has been enabled
+ t003_enabled 
+--------------
+ t
+(1 row)
+
+-- Run table check to detect FKs without index
+SELECT pglinter.perform_table_check(); -- Should include T004 results
+NOTICE:  🔍 pglinter found 1 issue(s):
+NOTICE:  ==================================================
+NOTICE:  ⚠️  [T003] WARNING: Found 1 foreign key(s) without index in table: 
+public.child unindexed constraint fk_parent 
+
+NOTICE:  ==================================================
+NOTICE:  📊 Summary: 0 error(s), 1 warning(s), 0 info
+NOTICE:  🟡 Some warnings found - consider reviewing for optimization
+ perform_table_check 
+---------------------
+ t
+(1 row)
+
+-- Now let's fix the missing index issue
+CREATE INDEX idx_child_parent_id ON child(parent_id);
+-- Update statistics after schema changes
+ANALYZE child;
+-- Run T004 check again (should show no issues now)
+SELECT pglinter.perform_table_check();
+NOTICE:  ✅ No issues found - database schema looks good!
+ perform_table_check 
+---------------------
+ t
+(1 row)
+
+ROLLBACK;

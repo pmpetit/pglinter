@@ -37,4 +37,4 @@ WHERE
     AND
     i.indkey::TEXT LIKE useful_i.indkey::TEXT || '%'
 ORDER BY
-    c.relname, pg_class.relname;
+    c.relname, pg_class.relname

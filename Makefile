@@ -60,6 +60,8 @@ REGRESS_TESTS+= c002_hba_security_test
 REGRESS_TESTS+= t001_primary_keys
 REGRESS_TESTS+= t002_minimal
 REGRESS_TESTS+= t002_redundant_idx
+REGRESS_TESTS+= t003_table_with_fk_not_indexed
+REGRESS_TESTS+= t004_simple_missing_index
 
 # REGRESS_TESTS+= b001
 # REGRESS_TESTS+= cluster_rules

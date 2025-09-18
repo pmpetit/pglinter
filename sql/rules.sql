@@ -74,13 +74,13 @@ INSERT INTO pglinter.rules (id,name,code,warning_level,error_level,scope,descrip
     ARRAY['remove duplicated index','check for constraints that can create indexes.']),
 
 (23, 'TableWithFkNotIndexed', 'T003', 1, 1, 'TABLE',
-    'table without index on fk.',
-    'unindexed fk {0}.{1}.{2}.',
-    ARRAY['{3}']),
+    'When you delete or update a row in the parent table, the database must check the child table to ensure there are no orphaned records. An index on the foreign key allows for a rapid lookup, ensuring that these checks don''t negatively impact performance.',
+    '{schema}.{table} unindexed constraint {constraint_name}',
+    ARRAY['create an index on the child table fk.']),
 
 (24, 'TableWithPotentialMissingIdx', 'T004', 50, 90, 'TABLE',
     ' with high level of seq scan, base on pg_stat_user_tables.',
-    '{0} table with seq scan exceed the threshold: {1}.',
+    '{schema}.{table} table with potential missing index, seq scan exceed the {log_level} threshold: {seq_scan_percentage}.',
     ARRAY['ask a dba']),
 
 (25, 'TableWithFkOutsideSchema', 'T005', 1, 1, 'TABLE',
