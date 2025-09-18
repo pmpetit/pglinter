@@ -100,7 +100,7 @@ INSERT INTO pglinter.rules (id,name,code,warning_level,error_level,scope,descrip
 
 (28, 'TableWithRoleNotGranted', 'T008', 1, 1, 'TABLE',
     'Table has no roles grantee. Meaning that users will need direct access on it (not through a role).',
-    'No role grantee on table {0}.{1}.{2}. It means that except owner. Others will need a direct grant on this table, not through a role (unusual at dkt).',
+    'No role grantee on table {schema}.{table}. it means that except owner, users will need a direct grant on this table, not through a role. Prefer RBAC access if possible.',
     ARRAY['create roles (myschema_ro & myschema_rw) and grant it on table with appropriate privileges']),
 
 (29, 'ReservedKeyWord', 'T009', 10, 20, 'TABLE',

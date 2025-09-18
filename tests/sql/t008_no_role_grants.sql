@@ -1,0 +1,170 @@
+-- Simple example to demonstrate tables without role grants detection (T008 rule)
+-- This script creates tables in custom schemas and shows how the T008 rule
+-- detects tables that don't have role permissions granted to non-login roles.
+
+BEGIN;
+
+\pset pager off
+
+-- Create custom schemas (tables in these schemas should be checked by T008)
+CREATE SCHEMA test_app_schema;
+CREATE SCHEMA test_reports_schema;
+CREATE SCHEMA test_data_schema;
+
+-- Create non-login roles for testing
+CREATE ROLE test_app_role NOLOGIN;
+CREATE ROLE test_reports_role NOLOGIN;
+CREATE ROLE test_readonly_role NOLOGIN;
+
+-- Create tables in custom schemas WITHOUT role grants (should trigger T008)
+CREATE TABLE test_app_schema.users_no_grants (
+    user_id SERIAL PRIMARY KEY,
+    username VARCHAR(50) UNIQUE NOT NULL,
+    email VARCHAR(150) UNIQUE,
+    password_hash VARCHAR(255),
+    created_at TIMESTAMP DEFAULT '2024-01-01 10:00:00',
+    updated_at TIMESTAMP DEFAULT '2024-01-01 10:00:00'
+);
+
+CREATE TABLE test_app_schema.products_no_grants (
+    product_id SERIAL PRIMARY KEY,
+    product_name VARCHAR(100) NOT NULL,
+    description TEXT,
+    price DECIMAL(10, 2),
+    category VARCHAR(50),
+    created_at TIMESTAMP DEFAULT '2024-01-01 10:00:00'
+);
+
+CREATE TABLE test_reports_schema.sales_data_no_grants (
+    sale_id SERIAL PRIMARY KEY,
+    product_id INTEGER,
+    user_id INTEGER,
+    sale_amount DECIMAL(10, 2),
+    sale_date DATE DEFAULT '2024-01-15',
+    commission DECIMAL(5, 2),
+    created_at TIMESTAMP DEFAULT '2024-01-15 09:00:00'
+);
+
+CREATE TABLE test_data_schema.analytics_no_grants (
+    analytics_id SERIAL PRIMARY KEY,
+    event_name VARCHAR(100),
+    event_data JSONB,
+    user_id INTEGER,
+    timestamp_event TIMESTAMP DEFAULT '2024-01-15 12:00:00',
+    processed BOOLEAN DEFAULT FALSE
+);
+
+-- Create tables in custom schemas WITH role grants (should NOT trigger T008)
+CREATE TABLE test_app_schema.orders_with_grants (
+    order_id SERIAL PRIMARY KEY,
+    user_id INTEGER,
+    product_id INTEGER,
+    quantity INTEGER DEFAULT 1,
+    order_status VARCHAR(20) DEFAULT 'pending',
+    total_amount DECIMAL(10, 2),
+    created_at TIMESTAMP DEFAULT '2024-01-15 11:00:00'
+);
+
+CREATE TABLE test_reports_schema.monthly_reports_with_grants (
+    report_id SERIAL PRIMARY KEY,
+    report_month DATE,
+    total_sales DECIMAL(12, 2),
+    total_orders INTEGER,
+    avg_order_value DECIMAL(10, 2),
+    created_at TIMESTAMP DEFAULT '2024-01-15 16:00:00'
+);
+
+CREATE TABLE test_data_schema.processed_events_with_grants (
+    processed_id SERIAL PRIMARY KEY,
+    original_event_id INTEGER,
+    processing_status VARCHAR(20),
+    result_data JSONB,
+    processed_at TIMESTAMP DEFAULT '2024-01-15 18:00:00'
+);
+
+-- Grant permissions to non-login roles for tables that should NOT trigger T008
+GRANT SELECT, INSERT, UPDATE, DELETE ON test_app_schema.orders_with_grants TO test_app_role;
+GRANT SELECT ON test_reports_schema.monthly_reports_with_grants TO test_reports_role;
+GRANT SELECT ON test_reports_schema.monthly_reports_with_grants TO test_readonly_role;
+GRANT SELECT, INSERT, UPDATE ON test_data_schema.processed_events_with_grants TO test_app_role;
+
+-- Create a table in public schema (should NOT be checked by T008)
+CREATE TABLE public.public_table_test (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(100),
+    description TEXT,
+    created_at TIMESTAMP DEFAULT '2024-01-01 10:00:00'
+);
+
+-- Insert some test data
+INSERT INTO test_app_schema.users_no_grants (username, email, password_hash) VALUES
+('alice', 'alice@test.com', 'hash1'),
+('bob', 'bob@test.com', 'hash2'),
+('charlie', 'charlie@test.com', 'hash3');
+
+INSERT INTO test_app_schema.products_no_grants (product_name, description, price, category) VALUES
+('Widget A', 'A useful widget', 19.99, 'widgets'),
+('Gadget B', 'An amazing gadget', 49.99, 'gadgets'),
+('Tool C', 'A professional tool', 99.99, 'tools');
+
+INSERT INTO test_reports_schema.sales_data_no_grants (product_id, user_id, sale_amount, sale_date, commission) VALUES
+(1, 1, 19.99, '2024-01-10', 2.00),
+(2, 2, 49.99, '2024-01-11', 5.00),
+(3, 1, 99.99, '2024-01-12', 10.00),
+(1, 3, 19.99, '2024-01-13', 2.00);
+
+INSERT INTO test_data_schema.analytics_no_grants (event_name, event_data, user_id, timestamp_event) VALUES
+('page_view', '{"page": "/home"}', 1, '2024-01-10 14:30:00'),
+('button_click', '{"button": "buy_now", "product_id": 1}', 1, '2024-01-10 14:31:00'),
+('page_view', '{"page": "/products"}', 2, '2024-01-11 09:15:00'),
+('purchase', '{"product_id": 2, "amount": 49.99}', 2, '2024-01-11 09:45:00');
+
+INSERT INTO test_app_schema.orders_with_grants (user_id, product_id, quantity, order_status, total_amount) VALUES
+(1, 1, 2, 'completed', 39.98),
+(2, 2, 1, 'completed', 49.99),
+(3, 3, 1, 'pending', 99.99);
+
+INSERT INTO test_reports_schema.monthly_reports_with_grants (report_month, total_sales, total_orders, avg_order_value) VALUES
+('2024-01-01', 189.96, 3, 63.32);
+
+INSERT INTO test_data_schema.processed_events_with_grants (original_event_id, processing_status, result_data) VALUES
+(1, 'completed', '{"processed": true, "category": "navigation"}'),
+(2, 'completed', '{"processed": true, "category": "interaction"}'),
+(4, 'completed', '{"processed": true, "category": "transaction"}');
+
+INSERT INTO public.public_table_test (name, description) VALUES
+('Public Item 1', 'This is a public table item'),
+('Public Item 2', 'Another public table item');
+
+-- Update statistics for better query planning
+ANALYZE test_app_schema.users_no_grants;
+ANALYZE test_app_schema.products_no_grants;
+ANALYZE test_reports_schema.sales_data_no_grants;
+ANALYZE test_data_schema.analytics_no_grants;
+ANALYZE test_app_schema.orders_with_grants;
+ANALYZE test_reports_schema.monthly_reports_with_grants;
+ANALYZE test_data_schema.processed_events_with_grants;
+ANALYZE public.public_table_test;
+
+DROP EXTENSION IF EXISTS pglinter CASCADE;
+CREATE EXTENSION IF NOT EXISTS pglinter;
+
+-- Disable all rules first to isolate T008 testing
+SELECT 'Disabling all rules to test T008 specifically...' AS status;
+SELECT pglinter.disable_all_rules() AS all_rules_disabled;
+SELECT pglinter.enable_rule('T008') AS t008_enabled;
+
+-- Run table check (should detect tables without role grants)
+SELECT 'Running table check with only T008 enabled:' AS test_info;
+SELECT pglinter.perform_table_check();
+
+-- Test disabling T008 temporarily
+SELECT 'Testing T008 disable/enable cycle:' AS test_info;
+SELECT pglinter.disable_rule('T008') AS t008_disabled;
+SELECT pglinter.perform_table_check(); -- Should skip T008
+
+-- Re-enable T008 and test again
+SELECT pglinter.enable_rule('T008') AS t008_re_enabled;
+SELECT pglinter.perform_table_check(); -- Should include T008 again
+
+ROLLBACK;

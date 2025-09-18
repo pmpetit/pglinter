@@ -29,7 +29,7 @@ const T004_SQL: &str = include_str!("../sql/t004.sql");
 const T005_SQL: &str = include_str!("../sql/t005.sql");
 const T006_SQL: &str = include_str!("../sql/t006.sql");
 const T007_SQL: &str = include_str!("../sql/t007.sql");
-// const T008_SQL: &str = include_str!("../sql/t008.sql");
+const T008_SQL: &str = include_str!("../sql/t008.sql");
 // const T009_SQL: &str = include_str!("../sql/t009.sql");
 // const T010_SQL: &str = include_str!("../sql/t010.sql");
 // const T011_SQL: &str = include_str!("../sql/t011.sql");
@@ -288,6 +288,15 @@ pub fn execute_table_rules() -> Result<Vec<RuleResult>, String> {
             Ok(Some(result)) => results.push(result),
             Ok(None) => {}
             Err(e) => return Err(format!("T007 failed: {e}")),
+        }
+    }
+
+    // T008: Tables with role not granted.
+    if is_rule_enabled("T008").unwrap_or(true) {
+        match execute_t008_rule() {
+            Ok(Some(result)) => results.push(result),
+            Ok(None) => {}
+            Err(e) => return Err(format!("T008 failed: {e}")),
         }
     }
 
@@ -983,6 +992,10 @@ fn execute_t007_rule() -> Result<Option<RuleResult>, String> {
             let ref_table: String = row.get(6)?.unwrap_or_default();
             let ref_column: String = row.get(7)?.unwrap_or_default();
             let ref_type: String = row.get(8)?.unwrap_or_default();
+            pgrx::debug1!(
+                "execute_t007_rule; Row: schema={}, table={}, constraint_name={}, column_name={}, col1_datatype={}, ref_table={}, ref_column={}, ref_type={}",
+                schema, table, constraint_name, column_name, col1_datatype, ref_table, ref_column, ref_type
+            );
             details.push(
                 rule_message
                     .replace("{schema}", &schema)
@@ -1019,6 +1032,71 @@ fn execute_t007_rule() -> Result<Option<RuleResult>, String> {
     }
 }
 
+fn execute_t008_rule() -> Result<Option<RuleResult>, String> {
+    // T008: Tables with role not granted.
+
+    let ruleid = "T008";
+
+    let rule_message = match get_rule_message(ruleid) {
+        Ok(config) => {
+            pgrx::debug1!("execute_rule; Retrieved message for {} - message: {}",
+                        ruleid, config);
+            config
+        },
+        Err(e) => {
+            pgrx::debug1!("execute_rule; Failed to get configuration for {}: {}", ruleid, e);
+            return Err(format!("Failed to get {ruleid} configuration: {e}"));
+        }
+    };
+
+    pgrx::debug1!("execute_t008_rule; Starting execution for rule {}", ruleid);
+    let result: Result<Option<RuleResult>, spi::SpiError> = Spi::connect(|client| {
+        let mut count = 0i64;
+        let mut details = Vec::new();
+        pgrx::debug1!("execute_t008_rule; Executing SQL: {}", T008_SQL);
+        for row in client.select(T008_SQL, None, &[])? {
+            let schema: String = row.get(1)?.unwrap_or_default();
+            let table: String = row.get(2)?.unwrap_or_default();
+            pgrx::debug1!(
+                "execute_t008_rule; Row: schema={}, table={}",
+                schema, table
+            );
+
+            details.push(
+                rule_message
+                    .replace("{schema}", &schema)
+                    .replace("{table}", &table)
+            );
+            count += 1;
+        }
+
+        if count > 0 {
+            return Ok(Some(RuleResult {
+                ruleid: ruleid.to_string(),
+                level: "warning".to_string(),
+                message: format!(
+                    "Found {} table without role associated: \n{} \n",
+                    count,
+                    details.join("\n")
+                ),
+                count: Some(count),
+            }));
+        }
+
+        Ok(None)
+    });
+
+    match result {
+        Ok(res) => {
+            pgrx::debug1!("execute_t008_rule; Rule {} completed successfully with result: {:?}", ruleid, res);
+            Ok(res)
+        },
+        Err(e) => {
+            pgrx::debug1!("execute_t008_rule; Rule {} failed with database error: {}", ruleid, e);
+            Err(format!("Database error: {e}"))
+        },
+    }
+}
 
 
 // fn execute_t010_rule() -> Result<Option<RuleResult>, String> {
