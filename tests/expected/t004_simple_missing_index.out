@@ -14,7 +14,7 @@ CREATE TABLE user_activities (
     user_agent TEXT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
-SELECT setseed(0.42);
+SELECT SETSEED(0.42);
  setseed 
 ---------
  
@@ -55,7 +55,8 @@ BEGIN
     END LOOP;
 END$$;
 -- Query 2: Find activities by activity_type (no index on activity_type)
-SELECT 'Query 2: Finding activities for activity_type = ''login''' AS query_info;
+SELECT
+    'Query 2: Finding activities for activity_type = ''login''' AS query_info;
                        query_info                        
 ---------------------------------------------------------
  Query 2: Finding activities for activity_type = 'login'
@@ -123,14 +124,13 @@ WHERE description LIKE '%Activity description 50%';
 
 -- Update statistics after the queries
 ANALYZE user_activities;
-SELECT pg_sleep(5);
+SELECT PG_SLEEP(5);
  pg_sleep 
 ----------
  
 (1 row)
 
 DROP EXTENSION IF EXISTS pglinter CASCADE;
-NOTICE:  extension "pglinter" does not exist, skipping
 CREATE EXTENSION IF NOT EXISTS pglinter;
 -- Disable all rules first
 SELECT pglinter.disable_all_rules() AS all_rules_disabled;
@@ -223,7 +223,8 @@ BEGIN
     END LOOP;
 END$$;
 -- Query 2: Find activities by activity_type (no index on activity_type)
-SELECT 'Query 2: Finding activities for activity_type = ''login''' AS query_info;
+SELECT
+    'Query 2: Finding activities for activity_type = ''login''' AS query_info;
                        query_info                        
 ---------------------------------------------------------
  Query 2: Finding activities for activity_type = 'login'
@@ -291,7 +292,7 @@ WHERE
 
 -- Update statistics after the queries
 ANALYZE indexed_user_activities;
-SELECT pg_sleep(5);
+SELECT PG_SLEEP(5);
  pg_sleep 
 ----------
  

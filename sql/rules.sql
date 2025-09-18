@@ -88,9 +88,9 @@ INSERT INTO pglinter.rules (id,name,code,warning_level,error_level,scope,descrip
     'foreign key {constraint_name} on {schema}.{table_name} is in schema {referenced_schema}.{referenced_table}.',
     ARRAY['consider rewrite your model', 'ask a dba']),
 
-(26, 'TableWithUnusedIndex', 'T006', 1, 1, 'TABLE',
-    'Table unused index, base on pg_stat_user_indexes, indexes associated to unique constraints are discard.',
-    'Index {0} on {1} size {2} Mo seems to be unused (idx_scan=0).',
+(26, 'TableWithUnusedIndex', 'T006', 200, 500, 'TABLE',
+    'Table unused index, base on pg_stat_user_indexes, indexes associated to constraints are discard. Warning and error level are in Mo (the table size to consider).',
+    'Index {index_name} on {schema}.{table} size {index_size_mb} Mo seems to be unused (idx_scan=0), reach the {log_level} threshold: {level_size} Mo.',
     ARRAY['remove unused index or change warning/error threshold']),
 
 (27, 'TableWithFkMismatch', 'T007', 1, 1, 'TABLE',

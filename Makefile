@@ -63,6 +63,7 @@ REGRESS_TESTS+= t002_redundant_idx
 REGRESS_TESTS+= t003_table_with_fk_not_indexed
 REGRESS_TESTS+= t004_simple_missing_index
 REGRESS_TESTS+= t005_fk_outside
+REGRESS_TESTS+= t006_unused_indexes
 
 # REGRESS_TESTS+= b001
 # REGRESS_TESTS+= cluster_rules

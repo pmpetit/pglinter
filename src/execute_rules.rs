@@ -27,7 +27,7 @@ const T002_SQL: &str = include_str!("../sql/t002.sql");
 const T003_SQL: &str = include_str!("../sql/t003.sql");
 const T004_SQL: &str = include_str!("../sql/t004.sql");
 const T005_SQL: &str = include_str!("../sql/t005.sql");
-// const T006_SQL: &str = include_str!("../sql/t006.sql");
+const T006_SQL: &str = include_str!("../sql/t006.sql");
 // const T007_SQL: &str = include_str!("../sql/t007.sql");
 // const T008_SQL: &str = include_str!("../sql/t008.sql");
 // const T009_SQL: &str = include_str!("../sql/t009.sql");
@@ -270,6 +270,15 @@ pub fn execute_table_rules() -> Result<Vec<RuleResult>, String> {
             Ok(Some(result)) => results.push(result),
             Ok(None) => {}
             Err(e) => return Err(format!("T005 failed: {e}")),
+        }
+    }
+
+    // T006: Tables with unused indexes.
+    if is_rule_enabled("T006").unwrap_or(true) {
+        match execute_t006_rule() {
+            Ok(Some(result)) => results.push(result),
+            Ok(None) => {}
+            Err(e) => return Err(format!("T006 failed: {e}")),
         }
     }
 
@@ -827,6 +836,113 @@ fn execute_t005_rule() -> Result<Option<RuleResult>, String> {
     }
 }
 
+fn execute_t006_rule() -> Result<Option<RuleResult>, String> {
+    // T006: Tables with unused indexes.
+
+    let ruleid = "T006";
+
+    let (warning_threshold, error_threshold, rule_message) = match get_rule_config(ruleid) {
+        Ok(config) => {
+            pgrx::debug1!("execute_rule; Retrieved thresholds for {} - warning: {}, error: {}",
+                        ruleid, config.0, config.1);
+            config
+        },
+        Err(e) => {
+            pgrx::debug1!("execute_rule; Failed to get configuration for {}: {}", ruleid, e);
+            return Err(format!("Failed to get {} configuration: {e}", ruleid));
+        }
+    };
+
+    // Use warning_threshold as minimum index size in bytes (e.g., warning_threshold * 1024 * 1024 for MB)
+    let min_index_size_bytes = warning_threshold * 1024 * 1024; // Convert threshold to bytes (assuming threshold is in MB)
+
+    pgrx::debug1!("execute_t006_rule; Starting execution for rule {} with min_index_size: {} bytes", ruleid, min_index_size_bytes);
+    let result: Result<Option<RuleResult>, spi::SpiError> = Spi::connect(|client| {
+        let mut count = 0i64;
+        let mut details = Vec::new();
+        let mut max_level = "info".to_string();
+        for row in client.select(T006_SQL, None, &[min_index_size_bytes.into()])? {
+            let schema: String = row.get(1)?.unwrap_or_default();
+            let table: String = row.get(2)?.unwrap_or_default();
+            let index_name: String = row.get(3)?.unwrap_or_default();
+            let index_size: i64 = row.get(4)?.unwrap_or_default();
+
+            pgrx::debug1!(
+                "execute_t006_rule; Row: schema={}, table={}, index_name={}, index_size={}",
+                schema, table, index_name, index_size
+            );
+
+            // Convert index size to MB for threshold comparison
+            let index_size_mb = index_size as f64 / (1024.0 * 1024.0);
+
+            if index_size_mb >= error_threshold as f64 {
+                pgrx::debug1!(
+                    "execute_t006_rule; {}.{}.{} triggered ERROR threshold ({}MB >= {}MB)",
+                    schema, table, index_name, index_size_mb, error_threshold
+                );
+                details.push(
+                    rule_message
+                        .replace("{schema}", &schema)
+                        .replace("{table}", &table)
+                        .replace("{index_name}", &index_name)
+                        .replace("{index_size_mb}", &format!("{:.2}", index_size_mb))
+                        .replace("{log_level}", "error")
+                        .replace("{level_size}", &format!("{}", error_threshold))
+                );
+                count += 1;
+                max_level = "error".to_string();
+            } else if index_size_mb >= warning_threshold as f64 {
+                pgrx::debug1!(
+                    "execute_t006_rule; {}.{}.{} triggered WARNING threshold ({}MB >= {}MB)",
+                    schema, table, index_name, index_size_mb, warning_threshold
+                );
+                details.push(
+                    rule_message
+                        .replace("{schema}", &schema)
+                        .replace("{table}", &table)
+                        .replace("{index_name}", &index_name)
+                        .replace("{index_size_mb}", &format!("{:.2}", index_size_mb))
+                        .replace("{log_level}", "warning")
+                        .replace("{level_size}", &format!("{}", warning_threshold))
+                );
+                count += 1;
+                if max_level != "error" {
+                    max_level = "warning".to_string();
+                }
+            } else {
+                pgrx::debug1!(
+                    "execute_t006_rule; {}.{}.{} passed all thresholds ({}MB < warning {}MB)",
+                    schema, table, index_name, index_size_mb, warning_threshold
+                );
+            }
+        }
+
+        if count > 0 {
+            pgrx::debug1!(
+                "execute_t006_rule; Found {} unused index(es).", count
+            );
+            return Ok(Some(RuleResult {
+                ruleid: ruleid.to_string(),
+                level: max_level,
+                message: format!(
+                    "Found {} unused index(es) (size >= {}MB threshold): \n{} \n",
+                    count,
+                    warning_threshold,
+                    details.join("\n")
+                ),
+                count: Some(count),
+            }));
+        }
+
+        pgrx::debug1!("execute_t006_rule; No unused indexes found.");
+        Ok(None)
+    });
+
+    match result {
+        Ok(res) => Ok(res),
+        Err(e) => Err(format!("Database error: {e}")),
+    }
+}
 
 // fn execute_t010_rule() -> Result<Option<RuleResult>, String> {
 //     // T010: Tables using reserved keywords

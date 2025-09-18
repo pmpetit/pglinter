@@ -152,7 +152,6 @@ ANALYZE inventory_schema.product_stock;
 ANALYZE inventory_schema.stock_movements;
 ANALYZE audit_schema.user_activity_log;
 DROP EXTENSION IF EXISTS pglinter CASCADE;
-NOTICE:  extension "pglinter" does not exist, skipping
 CREATE EXTENSION IF NOT EXISTS pglinter;
 -- Disable all rules first to isolate T005 testing
 SELECT 'Disabling all rules to test T005 specifically...' as status;
