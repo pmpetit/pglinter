@@ -108,7 +108,7 @@ INSERT INTO pglinter.rules (id,name,code,warning_level,error_level,scope,descrip
     '{table_schema}.{table_name} {object_type} violate retricted keyword rule.',
     ARRAY['Rename the object to use a non reserved keyword']),
 
-(31, 'TableWithSensibleColumn', 'T011', 50, 80, 'TABLE',
+(31, 'TableWithSensibleColumn', 'T010', 50, 80, 'TABLE',
     'Base on the extension anon (https://postgresql-anonymizer.readthedocs.io/en/stable/detection), show sensitive column.',
     '{0} have column {1} (category {2}) that can be consider has sensitive. It should be masked for non data-operator users.',
     ARRAY['Install extension anon, and create some masking rules on']),

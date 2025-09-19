@@ -1176,6 +1176,105 @@ fn execute_t009_rule() -> Result<Option<RuleResult>, String> {
 }
 
 
+// fn execute_t010_rule() -> Result<Option<RuleResult>, String> {
+//     // T010: Tables with sensitive columns.
+
+//     let ruleid = "T010";
+
+//     // Check if anon extension exists
+//     pgrx::debug1!("execute_t010_rule; Checking if anon extension exists");
+//     let extension_exists: Result<bool, spi::SpiError> = Spi::connect(|client| {
+//         let mut exists = false;
+//         for row in client.select(
+//             "SELECT EXISTS (SELECT 1 FROM pg_extension WHERE extname = 'anon')",
+//             None,
+//             &[]
+//         )? {
+//             exists = row.get(1)?.unwrap_or(false);
+//             break;
+//         }
+//         Ok(exists)
+//     });
+
+//     match extension_exists {
+//         Ok(exists) => {
+//             if !exists {
+//                 pgrx::debug1!("execute_t010_rule; anon extension not found, skipping rule {}", ruleid);
+//                 return Ok(None);
+//             }
+//             pgrx::debug1!("execute_t010_rule; anon extension found, proceeding with rule {}", ruleid);
+//         },
+//         Err(e) => {
+//             pgrx::debug1!("execute_t010_rule; Error checking for anon extension: {}", e);
+//             return Err(format!("Failed to check for anon extension: {e}"));
+//         }
+//     }
+
+//     let rule_message = match get_rule_message(ruleid) {
+//         Ok(config) => {
+//             pgrx::debug1!("execute_rule; Retrieved message for {} - message: {}",
+//                         ruleid, config);
+//             config
+//         },
+//         Err(e) => {
+//             pgrx::debug1!("execute_rule; Failed to get configuration for {}: {}", ruleid, e);
+//             return Err(format!("Failed to get {ruleid} configuration: {e}"));
+//         }
+//     };
+
+//     pgrx::debug1!("execute_t010_rule; Starting execution for rule {}", ruleid);
+//     let result: Result<Option<RuleResult>, spi::SpiError> = Spi::connect(|client| {
+//         let mut count = 0i64;
+//         let mut details = Vec::new();
+//         pgrx::debug1!("execute_t010_rule; Executing SQL: {}", T010_SQL);
+//         for row in client.select(T010_SQL, None, &[])? {
+//             let table_schema: String = row.get(1)?.unwrap_or_default();
+//             let table_name: String = row.get(2)?.unwrap_or_default();
+//             let object_type: String = row.get(3)?.unwrap_or_default();
+//             pgrx::debug1!(
+//                 "execute_t010_rule; Row: schema={}, table={}, object_type={}",
+//                 table_schema, table_name, object_type
+//             );
+
+//             details.push(
+//                 rule_message
+//                     .replace("{table_schema}", &table_schema)
+//                     .replace("{table_name}", &table_name)
+//                     .replace("{object_type}", &object_type)
+//             );
+//             count += 1;
+//         }
+
+//         if count > 0 {
+//             return Ok(Some(RuleResult {
+//                 ruleid: ruleid.to_string(),
+//                 level: "warning".to_string(),
+//                 message: format!(
+//                     "Found {} objects using reserved keywords: \n{} \n",
+//                     count,
+//                     details.join("\n")
+//                 ),
+//                 count: Some(count),
+//             }));
+//         }
+
+//         Ok(None)
+//     });
+
+//     match result {
+//         Ok(res) => {
+//             pgrx::debug1!("execute_t009_rule; Rule {} completed successfully with result: {:?}", ruleid, res);
+//             Ok(res)
+//         },
+//         Err(e) => {
+//             pgrx::debug1!("execute_t009_rule; Rule {} failed with database error: {}", ruleid, e);
+//             Err(format!("Database error: {e}"))
+//         },
+//     }
+// }
+
+
+
 fn execute_s001_rule() -> Result<Option<RuleResult>, String> {
     // S001: Schemas without default role grants
     let result: Result<Option<RuleResult>, spi::SpiError> = Spi::connect(|client| {
