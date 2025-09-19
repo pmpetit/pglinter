@@ -23,10 +23,10 @@ DROP EXTENSION IF EXISTS pglinter CASCADE;
 CREATE EXTENSION IF NOT EXISTS pglinter;
 -- Disable all rules first to isolate T004 testing
 SELECT pglinter.disable_all_rules() AS all_rules_disabled;
-NOTICE:  🔴 Disabled 22 rule(s)
+NOTICE:  🔴 Disabled 21 rule(s)
  all_rules_disabled 
 --------------------
-                 22
+                 21
 (1 row)
 
 -- Enable T003 specifically

@@ -12,10 +12,10 @@ SELECT 'Testing C001 rule - Memory configuration safety checks with session chan
 
 -- First, disable all rules to isolate C001 testing
 SELECT pglinter.disable_all_rules() AS all_rules_disabled;
-NOTICE:  🔴 Disabled 22 rule(s)
+NOTICE:  🔴 Disabled 21 rule(s)
  all_rules_disabled 
 --------------------
-                 22
+                 21
 (1 row)
 
 -- Enable only C001 for focused testing

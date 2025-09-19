@@ -66,6 +66,7 @@ REGRESS_TESTS+= t005_fk_outside
 REGRESS_TESTS+= t006_unused_indexes
 REGRESS_TESTS+= t007_fk_type_mismatch
 REGRESS_TESTS+= t008_no_role_grants
+REGRESS_TESTS+= t009_reserved_keywords
 
 # REGRESS_TESTS+= b001
 # REGRESS_TESTS+= cluster_rules

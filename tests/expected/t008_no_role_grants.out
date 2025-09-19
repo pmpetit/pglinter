@@ -133,10 +133,10 @@ SELECT 'Disabling all rules to test T008 specifically...' AS status;
 (1 row)
 
 SELECT pglinter.disable_all_rules() AS all_rules_disabled;
-NOTICE:  🔴 Disabled 22 rule(s)
+NOTICE:  🔴 Disabled 21 rule(s)
  all_rules_disabled 
 --------------------
-                 22
+                 21
 (1 row)
 
 SELECT pglinter.enable_rule('T008') AS t008_enabled;
@@ -157,11 +157,11 @@ SELECT pglinter.perform_table_check();
 NOTICE:  🔍 pglinter found 1 issue(s):
 NOTICE:  ==================================================
 NOTICE:  ⚠️  [T008] WARNING: Found 5 table without role associated: 
-No role grantee on table test_app_schema.users_no_grants It means that except owner. Users will need a direct grant on this table, not through a role.
-No role grantee on table test_app_schema.products_no_grants It means that except owner. Users will need a direct grant on this table, not through a role.
-No role grantee on table test_reports_schema.sales_data_no_grants It means that except owner. Users will need a direct grant on this table, not through a role.
-No role grantee on table test_data_schema.analytics_no_grants It means that except owner. Users will need a direct grant on this table, not through a role.
-No role grantee on table pglinter.rules It means that except owner. Users will need a direct grant on this table, not through a role. 
+No role grantee on table test_app_schema.users_no_grants. it means that except owner, users will need a direct grant on this table, not through a role. Prefer RBAC access if possible.
+No role grantee on table test_app_schema.products_no_grants. it means that except owner, users will need a direct grant on this table, not through a role. Prefer RBAC access if possible.
+No role grantee on table test_reports_schema.sales_data_no_grants. it means that except owner, users will need a direct grant on this table, not through a role. Prefer RBAC access if possible.
+No role grantee on table test_data_schema.analytics_no_grants. it means that except owner, users will need a direct grant on this table, not through a role. Prefer RBAC access if possible.
+No role grantee on table pglinter.rules. it means that except owner, users will need a direct grant on this table, not through a role. Prefer RBAC access if possible. 
 
 NOTICE:  ==================================================
 NOTICE:  📊 Summary: 0 error(s), 1 warning(s), 0 info
@@ -204,11 +204,11 @@ SELECT pglinter.perform_table_check(); -- Should include T008 again
 NOTICE:  🔍 pglinter found 1 issue(s):
 NOTICE:  ==================================================
 NOTICE:  ⚠️  [T008] WARNING: Found 5 table without role associated: 
-No role grantee on table test_app_schema.users_no_grants It means that except owner. Users will need a direct grant on this table, not through a role.
-No role grantee on table test_app_schema.products_no_grants It means that except owner. Users will need a direct grant on this table, not through a role.
-No role grantee on table test_reports_schema.sales_data_no_grants It means that except owner. Users will need a direct grant on this table, not through a role.
-No role grantee on table test_data_schema.analytics_no_grants It means that except owner. Users will need a direct grant on this table, not through a role.
-No role grantee on table pglinter.rules It means that except owner. Users will need a direct grant on this table, not through a role. 
+No role grantee on table test_app_schema.users_no_grants. it means that except owner, users will need a direct grant on this table, not through a role. Prefer RBAC access if possible.
+No role grantee on table test_app_schema.products_no_grants. it means that except owner, users will need a direct grant on this table, not through a role. Prefer RBAC access if possible.
+No role grantee on table test_reports_schema.sales_data_no_grants. it means that except owner, users will need a direct grant on this table, not through a role. Prefer RBAC access if possible.
+No role grantee on table test_data_schema.analytics_no_grants. it means that except owner, users will need a direct grant on this table, not through a role. Prefer RBAC access if possible.
+No role grantee on table pglinter.rules. it means that except owner, users will need a direct grant on this table, not through a role. Prefer RBAC access if possible. 
 
 NOTICE:  ==================================================
 NOTICE:  📊 Summary: 0 error(s), 1 warning(s), 0 info

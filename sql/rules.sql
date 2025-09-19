@@ -104,14 +104,9 @@ INSERT INTO pglinter.rules (id,name,code,warning_level,error_level,scope,descrip
     ARRAY['create roles (myschema_ro & myschema_rw) and grant it on table with appropriate privileges']),
 
 (29, 'ReservedKeyWord', 'T009', 10, 20, 'TABLE',
-    'A table, his column or indexes use reserved keywords.',
-    '{0} {1}.{2}.{3}.{4} violate retricted keyword rule.',
+    'An object use reserved keywords.',
+    '{table_schema}.{table_name} {object_type} violate retricted keyword rule.',
     ARRAY['Rename the object to use a non reserved keyword']),
-
-(30, 'TableWithUppercase', 'T010', 1, 1, 'TABLE',
-    'Table with uppercase in name or in columns.',
-    'Uppercase used on table {0}.{1}.{2}.',
-    ARRAY['Do not use uppercase for any database objects']),
 
 (31, 'TableWithSensibleColumn', 'T011', 50, 80, 'TABLE',
     'Base on the extension anon (https://postgresql-anonymizer.readthedocs.io/en/stable/detection), show sensitive column.',

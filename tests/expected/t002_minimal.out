@@ -18,10 +18,10 @@ DROP EXTENSION IF EXISTS pglinter CASCADE;
 CREATE EXTENSION IF NOT EXISTS pglinter;
 -- Enable only T002
 SELECT pglinter.disable_all_rules();
-NOTICE:  🔴 Disabled 22 rule(s)
+NOTICE:  🔴 Disabled 21 rule(s)
  disable_all_rules 
 -------------------
-                22
+                21
 (1 row)
 
 SELECT pglinter.enable_rule('T002');

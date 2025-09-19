@@ -30,7 +30,7 @@ const T005_SQL: &str = include_str!("../sql/t005.sql");
 const T006_SQL: &str = include_str!("../sql/t006.sql");
 const T007_SQL: &str = include_str!("../sql/t007.sql");
 const T008_SQL: &str = include_str!("../sql/t008.sql");
-// const T009_SQL: &str = include_str!("../sql/t009.sql");
+const T009_SQL: &str = include_str!("../sql/t009.sql");
 // const T010_SQL: &str = include_str!("../sql/t010.sql");
 // const T011_SQL: &str = include_str!("../sql/t011.sql");
 // const T012_SQL: &str = include_str!("../sql/t012.sql");
@@ -297,6 +297,15 @@ pub fn execute_table_rules() -> Result<Vec<RuleResult>, String> {
             Ok(Some(result)) => results.push(result),
             Ok(None) => {}
             Err(e) => return Err(format!("T008 failed: {e}")),
+        }
+    }
+
+    // T009: Tables with role not granted.
+    if is_rule_enabled("T009").unwrap_or(true) {
+        match execute_t009_rule() {
+            Ok(Some(result)) => results.push(result),
+            Ok(None) => {}
+            Err(e) => return Err(format!("T009 failed: {e}")),
         }
     }
 
@@ -1098,232 +1107,74 @@ fn execute_t008_rule() -> Result<Option<RuleResult>, String> {
     }
 }
 
+fn execute_t009_rule() -> Result<Option<RuleResult>, String> {
+    // T009: Objects using reserved keywords.
 
-// fn execute_t010_rule() -> Result<Option<RuleResult>, String> {
-//     // T010: Tables using reserved keywords
-//     let reserved_keywords = vec![
-//         "ALL",
-//         "ANALYSE",
-//         "ANALYZE",
-//         "AND",
-//         "ANY",
-//         "ARRAY",
-//         "AS",
-//         "ASC",
-//         "ASYMMETRIC",
-//         "AUTHORIZATION",
-//         "BINARY",
-//         "BOTH",
-//         "CASE",
-//         "CAST",
-//         "CHECK",
-//         "COLLATE",
-//         "COLLATION",
-//         "COLUMN",
-//         "CONCURRENTLY",
-//         "CONSTRAINT",
-//         "CREATE",
-//         "CROSS",
-//         "CURRENT_CATALOG",
-//         "CURRENT_DATE",
-//         "CURRENT_ROLE",
-//         "CURRENT_SCHEMA",
-//         "CURRENT_TIME",
-//         "CURRENT_TIMESTAMP",
-//         "CURRENT_USER",
-//         "DEFAULT",
-//         "DEFERRABLE",
-//         "DESC",
-//         "DISTINCT",
-//         "DO",
-//         "ELSE",
-//         "END",
-//         "EXCEPT",
-//         "FALSE",
-//         "FETCH",
-//         "FOR",
-//         "FOREIGN",
-//         "FREEZE",
-//         "FROM",
-//         "FULL",
-//         "GRANT",
-//         "GROUP",
-//         "HAVING",
-//         "ILIKE",
-//         "IN",
-//         "INITIALLY",
-//         "INNER",
-//         "INTERSECT",
-//         "INTO",
-//         "IS",
-//         "ISNULL",
-//         "JOIN",
-//         "LATERAL",
-//         "LEADING",
-//         "LEFT",
-//         "LIKE",
-//         "LIMIT",
-//         "LOCALTIME",
-//         "LOCALTIMESTAMP",
-//         "NATURAL",
-//         "NOT",
-//         "NOTNULL",
-//         "NULL",
-//         "OFFSET",
-//         "ON",
-//         "ONLY",
-//         "OR",
-//         "ORDER",
-//         "OUTER",
-//         "OVERLAPS",
-//         "PLACING",
-//         "PRIMARY",
-//         "REFERENCES",
-//         "RETURNING",
-//         "RIGHT",
-//         "SELECT",
-//         "SESSION_USER",
-//         "SIMILAR",
-//         "SOME",
-//         "SYMMETRIC",
-//         "TABLE",
-//         "TABLESAMPLE",
-//         "THEN",
-//         "TO",
-//         "TRAILING",
-//         "TRUE",
-//         "UNION",
-//         "UNIQUE",
-//         "USER",
-//         "USING",
-//         "VARIADIC",
-//         "VERBOSE",
-//         "WHEN",
-//         "WHERE",
-//         "WINDOW",
-//         "WITH",
-//     ];
+    let ruleid = "T009";
 
-//     // Read SQL template from file
-//     let sql_template = T010_SQL;
+    let rule_message = match get_rule_message(ruleid) {
+        Ok(config) => {
+            pgrx::debug1!("execute_rule; Retrieved message for {} - message: {}",
+                        ruleid, config);
+            config
+        },
+        Err(e) => {
+            pgrx::debug1!("execute_rule; Failed to get configuration for {}: {}", ruleid, e);
+            return Err(format!("Failed to get {ruleid} configuration: {e}"));
+        }
+    };
 
-//     // Create keyword check conditions
-//     let keyword_conditions_tables: Vec<String> = reserved_keywords
-//         .iter()
-//         .map(|kw| format!("UPPER(table_name) = '{kw}'"))
-//         .collect();
-//     let keyword_conditions_columns: Vec<String> = reserved_keywords
-//         .iter()
-//         .map(|kw| format!("UPPER(column_name) = '{kw}'"))
-//         .collect();
+    pgrx::debug1!("execute_t009_rule; Starting execution for rule {}", ruleid);
+    let result: Result<Option<RuleResult>, spi::SpiError> = Spi::connect(|client| {
+        let mut count = 0i64;
+        let mut details = Vec::new();
+        pgrx::debug1!("execute_t009_rule; Executing SQL: {}", T009_SQL);
+        for row in client.select(T009_SQL, None, &[])? {
+            let table_schema: String = row.get(1)?.unwrap_or_default();
+            let table_name: String = row.get(2)?.unwrap_or_default();
+            let object_type: String = row.get(3)?.unwrap_or_default();
+            pgrx::debug1!(
+                "execute_t009_rule; Row: schema={}, table={}, object_type={}",
+                table_schema, table_name, object_type
+            );
 
-//     let keyword_clause_tables = keyword_conditions_tables.join(" OR ");
-//     let keyword_clause_columns = keyword_conditions_columns.join(" OR ");
+            details.push(
+                rule_message
+                    .replace("{table_schema}", &table_schema)
+                    .replace("{table_name}", &table_name)
+                    .replace("{object_type}", &object_type)
+            );
+            count += 1;
+        }
 
-//     let reserved_keyword_query = sql_template
-//         .replace("{KEYWORD_CONDITIONS_TABLES}", &keyword_clause_tables)
-//         .replace("{KEYWORD_CONDITIONS_COLUMNS}", &keyword_clause_columns);
+        if count > 0 {
+            return Ok(Some(RuleResult {
+                ruleid: ruleid.to_string(),
+                level: "warning".to_string(),
+                message: format!(
+                    "Found {} objects using reserved keywords: \n{} \n",
+                    count,
+                    details.join("\n")
+                ),
+                count: Some(count),
+            }));
+        }
 
-//     let result: Result<Option<RuleResult>, spi::SpiError> = Spi::connect(|client| {
-//         let mut count = 0i64;
-//         let mut violations = Vec::new();
+        Ok(None)
+    });
 
-//         for row in client.select(&reserved_keyword_query, None, &[])? {
-//             let schema: String = row.get(1)?.unwrap_or_default();
-//             let table: String = row.get(2)?.unwrap_or_default();
-//             let object_type: String = row.get(3)?.unwrap_or_default();
-//             violations.push(format!("{schema}.{table} ({object_type})"));
-//             count += 1;
-//         }
+    match result {
+        Ok(res) => {
+            pgrx::debug1!("execute_t009_rule; Rule {} completed successfully with result: {:?}", ruleid, res);
+            Ok(res)
+        },
+        Err(e) => {
+            pgrx::debug1!("execute_t009_rule; Rule {} failed with database error: {}", ruleid, e);
+            Err(format!("Database error: {e}"))
+        },
+    }
+}
 
-//         if count > 0 {
-//             return Ok(Some(RuleResult {
-//                 ruleid: "T010".to_string(),
-//                 level: "error".to_string(),
-//                 message: format!(
-//                     "Found {count} database objects using reserved keywords: {}",
-//                     violations.join(", ")
-//                 ),
-//                 count: Some(count),
-//             }));
-//         }
-
-//         Ok(None)
-//     });
-
-//     match result {
-//         Ok(res) => Ok(res),
-//         Err(e) => Err(format!("Database error: {e}")),
-//     }
-// }
-
-// fn execute_t012_rule() -> Result<Option<RuleResult>, String> {
-//     // T012: Tables with sensitive columns (requires anon extension)
-
-//     // First check if anon extension is available
-//     let check_anon_query = "
-//         SELECT count(*) as ext_count
-//         FROM pg_extension
-//         WHERE extname = 'anon'";
-
-//     let result: Result<Option<RuleResult>, spi::SpiError> = Spi::connect(|client| {
-//         let anon_count: i64 = client
-//             .select(check_anon_query, None, &[])?
-//             .first()
-//             .get::<i64>(1)?
-//             .unwrap_or(0);
-
-//         if anon_count == 0 {
-//             return Ok(Some(RuleResult {
-//                 ruleid: "T012".to_string(),
-//                 level: "info".to_string(),
-//                 message: "Anon extension not found. Install postgresql-anonymizer to detect sensitive columns".to_string(),
-//                 count: Some(0),
-//             }));
-//         }
-
-//         // If anon extension is available, try to detect sensitive columns
-//         let mut count = 0i64;
-//         let mut sensitive_data = Vec::new();
-
-//         for row in client.select(T012_SQL, None, &[])? {
-//             let schema: String = row.get(1)?.unwrap_or_default();
-//             let table: String = row.get(2)?.unwrap_or_default();
-//             let column: String = row.get(3)?.unwrap_or_default();
-//             let category: String = row.get(4)?.unwrap_or_default();
-//             sensitive_data.push(format!("{schema}.{table}.{column} ({category})"));
-//             count += 1;
-//         }
-
-//         if count > 0 {
-//             return Ok(Some(RuleResult {
-//                 ruleid: "T012".to_string(),
-//                 level: "warning".to_string(),
-//                 message: format!(
-//                     "Found {count} potentially sensitive columns: {}",
-//                     sensitive_data.join(", ")
-//                 ),
-//                 count: Some(count),
-//             }));
-//         }
-
-//         Ok(None)
-//     });
-
-//     match result {
-//         Ok(res) => Ok(res),
-//         Err(_e) => {
-//             // If there's an error, it might be because anon functions don't exist
-//             // Return an info message instead of failing
-//             Ok(Some(RuleResult {
-//                 ruleid: "T012".to_string(),
-//                 level: "info".to_string(),
-//                 message: "Could not check for sensitive columns. Ensure anon extension is properly configured".to_string(),
-//                 count: Some(0),
-//             }))
-//         }
-//     }
-// }
 
 fn execute_s001_rule() -> Result<Option<RuleResult>, String> {
     // S001: Schemas without default role grants

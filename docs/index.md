@@ -9,6 +9,8 @@ Today, in the DBRE world where databases are cloud-managed, developers and opera
 
 So databases objects lives their own life, created by persons that do their best. It can be usefull to be able to detect some wrong desing creation (for example foreign keys created accross differents schemas...). That's what pglinter was created for.
 
+This extension is not designed for DBAs who often have their own tools and scripts to detect those potential problems, but for developers, operations teams, or CI pipelines that do not have deep knowledge on database best practices.
+
 Database linting and analysis for PostgreSQL
 ===============================================================================
 
