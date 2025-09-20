@@ -1321,47 +1321,16 @@ fn execute_s001_rule() -> Result<Option<RuleResult>, String> {
 
 fn execute_s002_rule() -> Result<Option<RuleResult>, String> {
     // S002: Schemas prefixed/suffixed with environment names
-    let environment_keywords = vec![
-        "staging",
-        "stg",
-        "preprod",
-        "prod",
-        "production",
-        "dev",
-        "development",
-        "test",
-        "testing",
-        "sandbox",
-        "sbox",
-        "demo",
-        "uat",
-        "qa",
-    ];
 
-    // Read SQL template from file
-    let sql_template = S002_SQL;
+    let ruleid = "S002";
 
-    // Build the query conditions for environment patterns
-    let prefix_conditions: Vec<String> = environment_keywords
-        .iter()
-        .map(|env| format!("nspname ILIKE '{env}_%'"))
-        .collect();
-    let suffix_conditions: Vec<String> = environment_keywords
-        .iter()
-        .map(|env| format!("nspname ILIKE '%_{env}'"))
-        .collect();
-
-    let all_conditions = [prefix_conditions, suffix_conditions].concat();
-    let condition_clause = all_conditions.join(" OR ");
-
-    let environment_schema_query =
-        sql_template.replace("{ENVIRONMENT_CONDITIONS}", &condition_clause);
+    pgrx::debug1!("execute_s002_rule; Starting execution for rule {}", ruleid);
 
     let result: Result<Option<RuleResult>, spi::SpiError> = Spi::connect(|client| {
         let mut count = 0i64;
         let mut schemas = Vec::new();
-
-        for row in client.select(&environment_schema_query, None, &[])? {
+        pgrx::debug1!("execute_s002_rule; Executing SQL: {}", S002_SQL);
+        for row in client.select(S002_SQL, None, &[])? {
             let schema: String = row.get(1)?.unwrap_or_default();
             schemas.push(schema);
             count += 1;
