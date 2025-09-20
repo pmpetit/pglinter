@@ -55,6 +55,7 @@ REGRESS_TESTS+= b004_idx_not_used
 REGRESS_TESTS+= b005_public_schema
 REGRESS_TESTS+= b006_uppercase_test
 REGRESS_TESTS+= b007_tables_not_selected
+REGRESS_TESTS+= b008_fk_outside_schema
 REGRESS_TESTS+= c001_comprehensive_test
 REGRESS_TESTS+= c002_hba_security_test
 REGRESS_TESTS+= t001_primary_keys

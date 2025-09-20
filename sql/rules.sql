@@ -51,6 +51,11 @@ INSERT INTO pglinter.rules (id,name,code,warning_level,error_level,scope,descrip
     '{0}/{1} table(s) are never selected the {2} threshold: {3}%.',
     ARRAY['Is it necessary to update/delete/insert rows in table(s) that are never selected ?']),
 
+(8, 'HowManyTablesWithFkOutsideSchema', 'B008', 20, 80, 'BASE',
+    'Count number of tables with foreign keys outside their schema.',
+    '{0}/{1} table(s) with foreign keys outside schema exceed the {2} threshold: {3}%.',
+    ARRAY['Consider restructuring schema design to keep related tables in same schema', 'ask a dba']),
+
 -- Cluster Rules (C series)
 (10, 'MaxConnectionsByWorkMemIsNotLargerThanMemory', 'C001', 1, 1, 'CLUSTER',
     'Number of cx (max_connections * work_mem) is not greater than memory.',
