@@ -1,8 +1,35 @@
-e-- Installation functions for non-superuser pglinter usage
+-- =============================================================================
+-- pglinter Installation Helper for Non-Superusers
+-- =============================================================================
+--
+-- This file provides functions to help install and configure pglinter for
+-- regular (non-superuser) database users. It must be executed by a superuser
+-- to grant necessary permissions and set up the extension for target users.
+--
+-- Main Functions:
+--   - pglinter_install_for_user(): Install extension for a specific user
+--   - Grant necessary permissions for pglinter schema and functions
+--   - Handle extension dependencies and setup
+--
+-- Usage:
+--   1. Connect as superuser (postgres)
+--   2. Execute this file: \i sql/install_for_users.sql
+--   3. Install for specific user: SELECT pglinter_install_for_user('username');
+--   4. Or install for current user: SELECT pglinter_install_for_user();
+--
+-- Security Note:
+--   This creates functions that require superuser privileges to execute
+--   properly, but allows delegation of pglinter access to regular users.
+--
+-- =============================================================================
+
+-- Installation functions for non-superuser pglinter usage
 -- This file should be run by a superuser to set up pglinter for regular users
 
 -- Function to install pglinter extension for regular users
-CREATE OR REPLACE FUNCTION pglinter_install_for_user(target_user text DEFAULT current_user)
+CREATE OR REPLACE FUNCTION pglinter_install_for_user(
+    target_user text DEFAULT current_user
+)
 RETURNS text AS $$
 DECLARE
     result_msg text;
@@ -50,7 +77,7 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;
 
 -- Function to check pglinter status
 CREATE OR REPLACE FUNCTION pglinter_status()
-RETURNS TABLE(
+RETURNS TABLE (
     extension_installed boolean,
     extension_version text,
     schema_accessible boolean,
@@ -95,10 +122,10 @@ END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
 -- Grant execute permissions to public (or specific roles)
-GRANT EXECUTE ON FUNCTION pglinter_install_for_user(text) TO PUBLIC;
-GRANT EXECUTE ON FUNCTION pglinter_uninstall() TO PUBLIC;
-GRANT EXECUTE ON FUNCTION pglinter_status() TO PUBLIC;
-GRANT EXECUTE ON FUNCTION pglinter_grant_to_user(text) TO PUBLIC;
+GRANT EXECUTE ON FUNCTION pglinter_install_for_user(text) TO public;
+GRANT EXECUTE ON FUNCTION pglinter_uninstall() TO public;
+GRANT EXECUTE ON FUNCTION pglinter_status() TO public;
+GRANT EXECUTE ON FUNCTION pglinter_grant_to_user(text) TO public;
 
 -- Usage instructions
 DO $$

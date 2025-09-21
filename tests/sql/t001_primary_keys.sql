@@ -150,30 +150,4 @@ ANALYZE inventory_logs;
 SELECT 'Running T001 check after adding primary keys (should show no issues):' as test_info;
 SELECT pglinter.perform_table_check();
 
-SELECT 'Summary:' as info;
-SELECT '
-This example demonstrates:
-1. How tables without primary keys are detected by the T001 rule
-2. The difference between T001 (individual table detection) and B001 (database-wide percentage)
-3. How adding primary keys resolves T001 violations
-4. Why primary keys are essential for database design
-
-The T001 rule specifically identifies individual tables that lack primary keys.
-Primary keys are crucial for:
-- Ensuring row uniqueness and data integrity
-- Enabling efficient replication
-- Supporting foreign key relationships
-- Optimizing query performance
-- Meeting database design best practices
-
-Key differences from B001:
-- T001: Lists specific tables without primary keys (table-level rule)
-- B001: Reports percentage of tables without primary keys (database-wide rule)
-- T001: Part of table checks (pglinter.perform_table_check())
-- B001: Part of base checks (pglinter.perform_base_check())
-
-The T001 rule helps database administrators identify exactly which tables need
-primary keys, making it easier to prioritize and fix data integrity issues.
-' as explanation;
-
 ROLLBACK;

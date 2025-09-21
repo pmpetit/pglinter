@@ -13,7 +13,7 @@ SELECT
     code,
     pglinter.get_rule_levels(code) as levels
 FROM pglinter.list_rules()
-WHERE code IN ('B001', 'T001', 'T005', 'C001')
+WHERE code IN ('B001', 'T001', 'T005', 'C002')
 ORDER BY code;
 
 -- Update T005 to have different thresholds
@@ -56,7 +56,7 @@ ORDER BY code;
 \echo 'Raw warning_level and error_level from rules table:'
 SELECT code, name, warning_level, error_level, enable
 FROM pglinter.rules
-WHERE code IN ('B001', 'T001', 'T005', 'C001')
+WHERE code IN ('B001', 'T001', 'T005', 'C002')
 ORDER BY code;
 
 \echo 'Rule level management demo completed!'

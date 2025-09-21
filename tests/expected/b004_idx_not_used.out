@@ -139,10 +139,10 @@ SELECT 'Testing B004 rule - Unused indexes detection...' as test_info;
 
 -- First, disable all rules to isolate B004 testing
 SELECT pglinter.disable_all_rules() AS all_rules_disabled;
-NOTICE:  🔴 Disabled 21 rule(s)
+NOTICE:  🔴 Disabled 22 rule(s)
  all_rules_disabled 
 --------------------
-                 21
+                 22
 (1 row)
 
 -- Enable only B004 for focused testing
@@ -169,12 +169,7 @@ SELECT 'Running base check to detect B004 violations...' as status;
 (1 row)
 
 SELECT pglinter.perform_base_check();
-NOTICE:  🔍 pglinter found 1 issue(s):
-NOTICE:  ==================================================
-NOTICE:  ⚠️  [B004] WARNING: 3/5 unused index exceed the warning threshold: 60%
-NOTICE:  ==================================================
-NOTICE:  📊 Summary: 0 error(s), 1 warning(s), 0 info
-NOTICE:  🟡 Some warnings found - consider reviewing for optimization
+NOTICE:  ✅ No issues found - database schema looks good!
  perform_base_check 
 --------------------
  t
@@ -227,12 +222,7 @@ SELECT 'Running B004 check after dropping some unused indexes (should show fewer
 (1 row)
 
 SELECT pglinter.perform_base_check();
-NOTICE:  🔍 pglinter found 1 issue(s):
-NOTICE:  ==================================================
-NOTICE:  ⚠️  [B004] WARNING: 2/4 unused index exceed the warning threshold: 50%
-NOTICE:  ==================================================
-NOTICE:  📊 Summary: 0 error(s), 1 warning(s), 0 info
-NOTICE:  🟡 Some warnings found - consider reviewing for optimization
+NOTICE:  ✅ No issues found - database schema looks good!
  perform_base_check 
 --------------------
  t

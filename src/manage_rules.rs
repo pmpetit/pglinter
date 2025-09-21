@@ -1,4 +1,34 @@
 use pgrx::prelude::*;
+use serde::{Serialize, Deserialize};
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct Rule {
+    pub id: i32,
+    pub name: String,
+    pub code: String,
+    pub enable: bool,
+    pub warning_level: i32,
+    pub error_level: i32,
+    pub scope: String,
+    pub description: String,
+    pub message: String,
+    pub fixes: Vec<String>,
+    pub q1: Option<String>,
+    pub q2: Option<String>,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct ExportMetadata {
+    pub export_timestamp: String,
+    pub total_rules: usize,
+    pub format_version: String,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct RulesExport {
+    pub metadata: ExportMetadata,
+    pub rules: Vec<Rule>,
+}
 
 // Rule management functions
 pub fn enable_rule(rule_code: &str) -> Result<bool, String> {
@@ -337,4 +367,229 @@ pub fn get_rule_levels(rule_code: &str) -> Result<(i32, i32), String> {
         Ok(levels) => Ok(levels),
         Err(e) => Err(format!("Database error: {e}")),
     }
+}
+
+/// Show current rule queries for debugging
+pub fn show_rule_queries(rule_code: &str) -> Result<bool, String> {
+    let query = "
+        SELECT code, name, q1, q2
+        FROM pglinter.rules
+        WHERE code = $1";
+
+    let result: Result<bool, spi::SpiError> = Spi::connect(|client| {
+        let mut rows = client.select(query, None, &[rule_code.into()])?;
+        if let Some(row) = rows.next() {
+            let code: String = row.get(1)?.unwrap_or_default();
+            let name: String = row.get(2)?.unwrap_or_default();
+            let q1: Option<String> = row.get(3)?;
+            let q2: Option<String> = row.get(4)?;
+
+            pgrx::notice!("🔍 Rule {} Queries ('{}'):", code, name);
+            pgrx::notice!("{}", "=".repeat(60));
+
+            match q1 {
+                Some(query) => {
+                    pgrx::notice!("📊 q1 Query:");
+                    pgrx::notice!("{}", query);
+                },
+                None => pgrx::notice!("📊 q1 Query: <NOT SET>"),
+            }
+
+            pgrx::notice!("");
+
+            match q2 {
+                Some(query) => {
+                    pgrx::notice!("⚠️  q2 Query:");
+                    pgrx::notice!("{}", query);
+                },
+                None => pgrx::notice!("⚠️  q2 Query: <NOT SET>"),
+            }
+
+            pgrx::notice!("{}", "=".repeat(60));
+            Ok(true)
+        } else {
+            pgrx::warning!("⚠️  Rule {} not found", rule_code);
+            Ok(false)
+        }
+    });
+
+    match result {
+        Ok(success) => Ok(success),
+        Err(e) => Err(format!("Database error: {e}")),
+    }
+}
+
+/// Export all rules to YAML format
+pub fn export_rules_to_yaml() -> Result<String, String> {
+    let query = "
+        SELECT id, name, code, enable, warning_level, error_level,
+               scope, description, message, fixes, q1, q2
+        FROM pglinter.rules
+        ORDER BY code";
+
+    let result: Result<Vec<Rule>, spi::SpiError> = Spi::connect(|client| {
+        let mut rows = client.select(query, None, &[])?;
+        let mut rules = Vec::new();
+
+        while let Some(row) = rows.next() {
+            let fixes_array: Vec<Option<String>> = row.get(10)?.unwrap_or_default();
+            let fixes: Vec<String> = fixes_array.into_iter().filter_map(|f| f).collect();
+
+            let rule = Rule {
+                id: row.get(1)?.unwrap_or(0),
+                name: row.get(2)?.unwrap_or_default(),
+                code: row.get(3)?.unwrap_or_default(),
+                enable: row.get(4)?.unwrap_or(true),
+                warning_level: row.get(5)?.unwrap_or(50),
+                error_level: row.get(6)?.unwrap_or(90),
+                scope: row.get(7)?.unwrap_or_default(),
+                description: row.get(8)?.unwrap_or_default(),
+                message: row.get(9)?.unwrap_or_default(),
+                fixes,
+                q1: row.get(11)?,
+                q2: row.get(12)?,
+            };
+            rules.push(rule);
+        }
+
+        Ok(rules)
+    });
+
+    match result {
+        Ok(rules) => {
+            let export_data = RulesExport {
+                metadata: ExportMetadata {
+                    export_timestamp: chrono::Utc::now().to_rfc3339(),
+                    total_rules: rules.len(),
+                    format_version: "1.0".to_string(),
+                },
+                rules,
+            };
+
+            match serde_yaml::to_string(&export_data) {
+                Ok(yaml) => Ok(yaml),
+                Err(e) => Err(format!("YAML serialization error: {}", e)),
+            }
+        },
+        Err(e) => Err(format!("Database error: {}", e)),
+    }
+}
+
+/// Export rules to YAML file
+pub fn export_rules_to_file(file_path: &str) -> Result<String, String> {
+    let yaml_content = export_rules_to_yaml()?;
+
+    match std::fs::write(file_path, &yaml_content) {
+        Ok(_) => Ok(format!("✅ Rules exported successfully to: {}", file_path)),
+        Err(e) => Err(format!("File write error: {}", e)),
+    }
+}
+
+/// Import rules from YAML format
+pub fn import_rules_from_yaml(yaml_content: &str) -> Result<String, String> {
+    let import_data: RulesExport = match serde_yaml::from_str(yaml_content) {
+        Ok(data) => data,
+        Err(e) => return Err(format!("YAML parsing error: {}", e)),
+    };
+
+    pgrx::notice!("📥 Importing {} rules from YAML (format v{})",
+                  import_data.metadata.total_rules,
+                  import_data.metadata.format_version);
+
+    let mut imported_count = 0;
+    let mut updated_count = 0;
+    let mut errors = Vec::new();
+
+    for rule in import_data.rules {
+        let fixes_array: Vec<Option<String>> = rule.fixes.into_iter().map(Some).collect();
+        let rule_code_for_error = rule.code.clone();
+
+        let upsert_query = "
+            INSERT INTO pglinter.rules (id, name, code, enable, warning_level, error_level,
+                                      scope, description, message, fixes, q1, q2)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+            ON CONFLICT (id)
+            DO UPDATE SET
+                name = EXCLUDED.name,
+                code = EXCLUDED.code,
+                enable = EXCLUDED.enable,
+                warning_level = EXCLUDED.warning_level,
+                error_level = EXCLUDED.error_level,
+                scope = EXCLUDED.scope,
+                description = EXCLUDED.description,
+                message = EXCLUDED.message,
+                fixes = EXCLUDED.fixes,
+                q1 = EXCLUDED.q1,
+                q2 = EXCLUDED.q2
+            RETURNING (xmax = 0) as is_new";
+
+        let result: Result<bool, spi::SpiError> = Spi::connect_mut(|client| {
+            let mut rows = client.select(
+                upsert_query,
+                None,
+                &[
+                    rule.id.into(),
+                    rule.name.into(),
+                    rule.code.into(),
+                    rule.enable.into(),
+                    rule.warning_level.into(),
+                    rule.error_level.into(),
+                    rule.scope.into(),
+                    rule.description.into(),
+                    rule.message.into(),
+                    fixes_array.into(),
+                    rule.q1.into(),
+                    rule.q2.into(),
+                ]
+            )?;
+
+            if let Some(row) = rows.next() {
+                let is_new: bool = row.get(1)?.unwrap_or(false);
+                Ok(is_new)
+            } else {
+                Ok(false)
+            }
+        });
+
+        match result {
+            Ok(is_new) => {
+                if is_new {
+                    imported_count += 1;
+                } else {
+                    updated_count += 1;
+                }
+            },
+            Err(e) => {
+                errors.push(format!("Rule {}: {}", rule_code_for_error, e));
+            }
+        }
+    }
+
+    let mut result_msg = format!(
+        "✅ Import completed: {} new rules, {} updated rules",
+        imported_count, updated_count
+    );
+
+    if !errors.is_empty() {
+        result_msg.push_str(&format!("\n⚠️  {} errors encountered:", errors.len()));
+        for error in errors.iter().take(5) {
+            result_msg.push_str(&format!("\n  - {}", error));
+        }
+        if errors.len() > 5 {
+            result_msg.push_str(&format!("\n  ... and {} more errors", errors.len() - 5));
+        }
+    }
+
+    Ok(result_msg)
+}
+
+/// Import rules from YAML file
+pub fn import_rules_from_file(file_path: &str) -> Result<String, String> {
+    let yaml_content = match std::fs::read_to_string(file_path) {
+        Ok(content) => content,
+        Err(e) => return Err(format!("File read error: {}", e)),
+    };
+
+    pgrx::notice!("📂 Reading rules from: {}", file_path);
+    import_rules_from_yaml(&yaml_content)
 }

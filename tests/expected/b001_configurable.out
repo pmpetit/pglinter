@@ -17,10 +17,10 @@ NOTICE:  extension "pglinter" does not exist, skipping
 CREATE EXTENSION IF NOT EXISTS pglinter;
 -- First, disable all rules to isolate B001 testing
 SELECT pglinter.disable_all_rules() AS all_rules_disabled;
-NOTICE:  🔴 Disabled 21 rule(s)
+NOTICE:  🔴 Disabled 22 rule(s)
  all_rules_disabled 
 --------------------
-                 21
+                 22
 (1 row)
 
 -- Enable only B001 for focused testing
@@ -29,13 +29,6 @@ NOTICE:  ✅ Rule B001 has been enabled
  b001_enabled 
 --------------
  t
-(1 row)
-
--- Check current B001 thresholds
-SELECT warning_level, error_level FROM pglinter.rules WHERE code = 'B001';
- warning_level | error_level 
----------------+-------------
-            20 |          80
 (1 row)
 
 -- Test B001 rule - should show it uses the configured thresholds

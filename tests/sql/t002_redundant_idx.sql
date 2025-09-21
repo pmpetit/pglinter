@@ -2,6 +2,20 @@
 
 \pset pager off
 
+BEGIN;
+
+-- Drop extension if exists to reset state
+DROP EXTENSION IF EXISTS pglinter;
+-- Create extension
+CREATE EXTENSION IF NOT EXISTS pglinter;
+
+-- First, disable all rules to isolate B001 testing
+SELECT pglinter.disable_all_rules() AS all_rules_disabled;
+
+-- Enable only B001 for focused testing
+SELECT pglinter.enable_rule('T002') AS b001_enabled;
+
+
 -- Create test tables with redundant indexes for T002 testing
 CREATE TABLE IF NOT EXISTS customers_with_redundant_idx (
     customer_id INT PRIMARY KEY,
@@ -62,6 +76,10 @@ CREATE INDEX idx_products_category_active_2 ON products_with_redundant_idx (
 -- Case 5: Redundant indexes on orders table
 CREATE INDEX idx_orders_customer_1 ON orders_with_redundant_idx (customer_id);
 CREATE INDEX idx_orders_customer_2 ON orders_with_redundant_idx (customer_id);
+CREATE INDEX idx_orders_customer_3 ON orders_with_redundant_idx (customer_id, product_id);
+CREATE INDEX idx_orders_customer_4 ON orders_with_redundant_idx (customer_id, product_id, order_date);
+CREATE INDEX idx_orders_customer_5 ON orders_with_redundant_idx (customer_id, product_id, order_date, status);
+
 
 -- Case 6: Different composite index redundancy on orders table
 CREATE INDEX idx_orders_date_status_1 ON orders_with_redundant_idx (
@@ -75,8 +93,6 @@ CREATE INDEX idx_orders_date_status_2 ON orders_with_redundant_idx (
 CREATE INDEX idx_customers_phone ON customers_with_redundant_idx (phone);
 CREATE INDEX idx_products_price ON products_with_redundant_idx (price);
 CREATE INDEX idx_orders_total ON orders_with_redundant_idx (total_amount);
-
-CREATE EXTENSION IF NOT EXISTS pglinter;
 
 -- First, disable all rules to isolate T002 testing
 SELECT pglinter.disable_all_rules() AS all_rules_disabled;
@@ -107,7 +123,4 @@ SELECT pglinter.perform_table_check();
 SELECT pglinter.enable_rule('T002') AS t002_re_enabled;
 SELECT pglinter.perform_table_check();
 
--- -- Clean up test tables
-DROP TABLE IF EXISTS customers_with_redundant_idx CASCADE;
-DROP TABLE IF EXISTS products_with_redundant_idx CASCADE;
-DROP TABLE IF EXISTS orders_with_redundant_idx CASCADE;
+ROLLBACK;

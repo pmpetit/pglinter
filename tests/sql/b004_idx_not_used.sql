@@ -31,7 +31,7 @@ SELECT
     (i % 5) + 1,  -- customer_id (1-5)
     i % 100 + 10,  -- page_views (10-109)
     (i % 3600) + 300,  -- session_duration (300-3899 seconds)
-    '2024-01-01'::timestamp + (i || ' seconds')::interval,  -- varying dates
+    '2024-01-01'::TIMESTAMP + (i || ' seconds')::INTERVAL,  -- varying dates
     CASE (i % 4)
         WHEN 0 THEN 'desktop'
         WHEN 1 THEN 'mobile'
@@ -43,38 +43,58 @@ SELECT
         WHEN 1 THEN 'firefox'
         ELSE 'safari'
     END
-FROM generate_series(1, 22000) i;
+FROM GENERATE_SERIES(1, 22000) AS i;
 
 -- Reset statistics to start fresh
-SELECT pg_stat_reset();
+SELECT PG_STAT_RESET();
 
 -- Update table statistics
 ANALYZE customer_analytics;
 
 -- Use some indexes on customer_analytics (mixed usage)
-SELECT COUNT(*) FROM customer_analytics WHERE customer_id = 1;
-SELECT COUNT(*) FROM customer_analytics WHERE customer_id = 2;
-SELECT COUNT(*) FROM customer_analytics WHERE customer_id IN (1,2,3);
-SELECT id,customer_id,page_views,session_duration  FROM customer_analytics WHERE customer_id = 1 ORDER BY id LIMIT 10;
+SELECT COUNT(*) FROM customer_analytics
+WHERE customer_id = 1;
+SELECT COUNT(*) FROM customer_analytics
+WHERE customer_id = 2;
+SELECT COUNT(*) FROM customer_analytics
+WHERE customer_id IN (1, 2, 3);
+SELECT
+    id,
+    customer_id,
+    page_views,
+    session_duration
+FROM customer_analytics
+WHERE customer_id = 1
+ORDER BY id LIMIT 10;
 
 -- Do not use indexes
-SELECT COUNT(*) FROM customer_analytics WHERE last_login > '2024-01-01';
-SELECT COUNT(*) FROM customer_analytics WHERE last_login > '2024-01-15';
-SELECT COUNT(*) FROM customer_analytics WHERE last_login BETWEEN '2024-01-01' AND '2024-01-20';
-SELECT id,customer_id,page_views,session_duration FROM customer_analytics WHERE last_login > '2024-01-01' ORDER BY last_login LIMIT 10;
+SELECT COUNT(*) FROM customer_analytics
+WHERE last_login > '2024-01-01';
+SELECT COUNT(*) FROM customer_analytics
+WHERE last_login > '2024-01-15';
+SELECT COUNT(*) FROM customer_analytics
+WHERE last_login BETWEEN '2024-01-01' AND '2024-01-20';
+SELECT
+    id,
+    customer_id,
+    page_views,
+    session_duration
+FROM customer_analytics
+WHERE last_login > '2024-01-01'
+ORDER BY last_login LIMIT 10;
 
 -- Update statistics after usage
 -- Update table statistics
 ANALYZE customer_analytics;
 
 -- Give some time....
-SELECT pg_sleep(2);
+SELECT PG_SLEEP(2);
 
 -- Create the extension and test B004 rule
 DROP EXTENSION IF EXISTS pglinter CASCADE;
 CREATE EXTENSION IF NOT EXISTS pglinter;
 
-SELECT 'Testing B004 rule - Unused indexes detection...' as test_info;
+SELECT 'Testing B004 rule - Unused indexes detection...' AS test_info;
 
 -- First, disable all rules to isolate B004 testing
 SELECT pglinter.disable_all_rules() AS all_rules_disabled;
@@ -87,11 +107,11 @@ SELECT pglinter.is_rule_enabled('B004') AS b004_status;
 
 -- Run base check to detect B004 violations
 -- Expected result: Should detect unused indexes with idx_scan = 0
-SELECT 'Running base check to detect B004 violations...' as status;
+SELECT 'Running base check to detect B004 violations...' AS status;
 SELECT pglinter.perform_base_check();
 
 -- Test rule management for B004
-SELECT 'Testing B004 rule management...' as test_section;
+SELECT 'Testing B004 rule management...' AS test_section;
 SELECT pglinter.explain_rule('B004');
 
 -- Drop some unused indexes to show improvement
@@ -100,17 +120,23 @@ DROP INDEX idx_analytics_device_type;
 -- Update table statistics
 ANALYZE customer_analytics;
 -- Give some time....
-SELECT pg_sleep(2);
+SELECT PG_SLEEP(2);
 
 -- Run B004 check again (should show fewer violations)
-SELECT 'Running B004 check after dropping some unused indexes (should show fewer violations):' as test_info;
+SELECT 'Running B004 check after dropping some unused indexes (should show fewer violations):' AS test_info;
 SELECT pglinter.perform_base_check();
+
+-- Test with file output
+SELECT pglinter.perform_base_check('/tmp/pglinter_b004_results.sarif');
+-- Test if file exists and show checksum
+\! md5sum /tmp/pglinter_b004_results.sarif
+
 
 -- Update B004 thresholds to demonstrate message formatting
 SELECT pglinter.update_rule_levels('B004', 60, 90);
 
 -- Final demonstration with current state
-SELECT 'Final B004 (base check) - Shows percentage-based unused index analysis:' as b004_demo;
+SELECT 'Final B004 (base check) - Shows percentage-based unused index analysis:' AS b004_demo;
 SELECT pglinter.perform_base_check();
 
 DROP TABLE customer_analytics;

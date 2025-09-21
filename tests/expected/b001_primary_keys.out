@@ -135,10 +135,10 @@ SELECT 'Testing B001 rule - Database-wide primary key percentage analysis...' as
 
 -- First, disable all rules to isolate B001 testing
 SELECT pglinter.disable_all_rules() AS all_rules_disabled;
-NOTICE:  🔴 Disabled 21 rule(s)
+NOTICE:  🔴 Disabled 22 rule(s)
  all_rules_disabled 
 --------------------
-                 21
+                 22
 (1 row)
 
 -- Enable only B001 for focused testing
@@ -274,57 +274,6 @@ NOTICE:  📊 Summary: 1 error(s), 0 warning(s), 0 info
 NOTICE:  🔴 Critical issues found - please review and fix errors
  perform_base_check 
 --------------------
- t
-(1 row)
-
--- Test comparison between B001 (base rule) and T001 (table rule)
-SELECT 'Demonstrating difference between B001 (base) and T001 (table) rules:' as comparison_info;
-                           comparison_info                            
-----------------------------------------------------------------------
- Demonstrating difference between B001 (base) and T001 (table) rules:
-(1 row)
-
--- Enable T001 to show the difference
-SELECT pglinter.enable_rule('T001') AS t001_enabled;
-NOTICE:  ✅ Rule T001 has been enabled
- t001_enabled 
---------------
- t
-(1 row)
-
-SELECT 'B001 (base check) - Shows percentage-based violation:' as b001_demo;
-                       b001_demo                       
--------------------------------------------------------
- B001 (base check) - Shows percentage-based violation:
-(1 row)
-
-SELECT pglinter.perform_base_check();
-NOTICE:  🔍 pglinter found 1 issue(s):
-NOTICE:  ==================================================
-NOTICE:  ❌ [B001] ERROR: 8/10 table(s) without primary key exceed the error threshold: 80%.
-NOTICE:  ==================================================
-NOTICE:  📊 Summary: 1 error(s), 0 warning(s), 0 info
-NOTICE:  🔴 Critical issues found - please review and fix errors
- perform_base_check 
---------------------
- t
-(1 row)
-
-SELECT 'T001 (table check) - Shows individual tables without primary keys:' as t001_demo;
-                             t001_demo                              
---------------------------------------------------------------------
- T001 (table check) - Shows individual tables without primary keys:
-(1 row)
-
-SELECT pglinter.perform_table_check();
-NOTICE:  🔍 pglinter found 1 issue(s):
-NOTICE:  ==================================================
-NOTICE:  ⚠️  [T001] WARNING: Found 2 tables without primary key: public.shipments_no_pk, public.payments_no_pk
-NOTICE:  ==================================================
-NOTICE:  📊 Summary: 0 error(s), 1 warning(s), 0 info
-NOTICE:  🟡 Some warnings found - consider reviewing for optimization
- perform_table_check 
----------------------
  t
 (1 row)
 

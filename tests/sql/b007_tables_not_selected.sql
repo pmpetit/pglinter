@@ -159,6 +159,10 @@ SELECT pglinter.is_rule_enabled('B007') AS b007_status;
 
 SELECT pglinter.perform_base_check();
 
+-- Test with file output
+SELECT pglinter.perform_base_check('/tmp/pglinter_b007_results.sarif');
+-- Test if file exists and show checksum
+\! md5sum /tmp/pglinter_b007_results.sarif
 
 -- Now simulate realistic usage patterns:
 

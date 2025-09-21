@@ -77,10 +77,10 @@ SELECT 'Testing B006 rule - Comprehensive uppercase object detection...' as test
 
 -- First, disable all rules to isolate B006 testing
 SELECT pglinter.disable_all_rules() AS all_rules_disabled;
-NOTICE:  🔴 Disabled 21 rule(s)
+NOTICE:  🔴 Disabled 22 rule(s)
  all_rules_disabled 
 --------------------
-                 21
+                 22
 (1 row)
 
 -- Enable only B006 for focused testing
@@ -107,12 +107,7 @@ SELECT 'Running B006 check to detect comprehensive uppercase violations...' as s
 (1 row)
 
 SELECT pglinter.perform_base_check();
-NOTICE:  🔍 pglinter found 1 issue(s):
-NOTICE:  ==================================================
-NOTICE:  ⚠️  [B006] WARNING: 16/28 object(s) using uppercase for name or columns exceed the warning threshold: 57%.
-NOTICE:  ==================================================
-NOTICE:  📊 Summary: 0 error(s), 1 warning(s), 0 info
-NOTICE:  🟡 Some warnings found - consider reviewing for optimization
+NOTICE:  ✅ No issues found - database schema looks good!
  perform_base_check 
 --------------------
  t

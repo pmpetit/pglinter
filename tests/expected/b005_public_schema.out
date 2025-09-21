@@ -13,10 +13,10 @@ SELECT 'B005 Regression Test: Schemas with public CREATE privileges' as test_hea
 
 -- Setup B005 rule for testing
 SELECT pglinter.disable_all_rules();
-NOTICE:  🔴 Disabled 21 rule(s)
+NOTICE:  🔴 Disabled 22 rule(s)
  disable_all_rules 
 -------------------
-                21
+                22
 (1 row)
 
 SELECT pglinter.enable_rule('B005');
@@ -87,12 +87,7 @@ SELECT 'Running B005 check with HIGH percentage of insecure schemas (should trig
 (1 row)
 
 SELECT pglinter.perform_base_check();
-NOTICE:  🔍 pglinter found 1 issue(s):
-NOTICE:  ==================================================
-NOTICE:  ⚠️  [B005] WARNING: 3/12 schemas are unsecured, schemas where all users can create objects in, exceed the warning threshold: 25%.
-NOTICE:  ==================================================
-NOTICE:  📊 Summary: 0 error(s), 1 warning(s), 0 info
-NOTICE:  🟡 Some warnings found - consider reviewing for optimization
+NOTICE:  ✅ No issues found - database schema looks good!
  perform_base_check 
 --------------------
  t

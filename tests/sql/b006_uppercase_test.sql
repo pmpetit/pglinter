@@ -20,7 +20,10 @@ CREATE TABLE test_b006_schema."CUSTOMERS_TABLE" (
 
 -- 2. View with uppercase name (quoted for case sensitivity)
 CREATE VIEW test_b006_schema."ACTIVE_CUSTOMERS" AS
-SELECT customer_id, "FIRST_NAME", last_name
+SELECT
+    customer_id,
+    "FIRST_NAME",
+    last_name
 FROM test_b006_schema."CUSTOMERS_TABLE"
 WHERE customer_id > 0;
 
@@ -60,8 +63,8 @@ $$ LANGUAGE plpgsql;
 ALTER TABLE test_b006_schema."CUSTOMERS_TABLE" ADD COLUMN updated_at TIMESTAMP DEFAULT NOW();
 
 CREATE TRIGGER "UPDATE_TIMESTAMP_TRIGGER"
-    BEFORE UPDATE ON test_b006_schema."CUSTOMERS_TABLE"
-    FOR EACH ROW EXECUTE FUNCTION test_b006_schema.update_timestamp();
+BEFORE UPDATE ON test_b006_schema."CUSTOMERS_TABLE"
+FOR EACH ROW EXECUTE FUNCTION test_b006_schema.update_timestamp();
 
 -- 8. Constraint with uppercase name (user-defined, not auto-generated)
 ALTER TABLE test_b006_schema."CUSTOMERS_TABLE"
@@ -72,22 +75,22 @@ CREATE TYPE test_b006_schema."CUSTOMER_STATUS" AS ENUM ('active', 'inactive', 'p
 
 -- 10. Domain with uppercase name
 CREATE DOMAIN test_b006_schema."EMAIL_DOMAIN" AS VARCHAR(100)
-CHECK (VALUE ~ '^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$');
+CHECK (value ~ '^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$');
 
 -- 11. Create another schema with uppercase name
 CREATE SCHEMA "TEST_UPPERCASE_SCHEMA";
 
 -- Create some data for testing
 INSERT INTO test_b006_schema."CUSTOMERS_TABLE" ("FIRST_NAME", last_name, "EMAIL_ADDRESS", phone_number) VALUES
-    ('John', 'Doe', 'john.doe@example.com', '555-1234'),
-    ('Jane', 'Smith', 'jane.smith@example.com', '555-5678'),
-    ('Bob', 'Johnson', 'bob.johnson@example.com', '555-9012');
+('John', 'Doe', 'john.doe@example.com', '555-1234'),
+('Jane', 'Smith', 'jane.smith@example.com', '555-5678'),
+('Bob', 'Johnson', 'bob.johnson@example.com', '555-9012');
 
 -- Create the extension and test B006 rule
 DROP EXTENSION IF EXISTS pglinter CASCADE;
 CREATE EXTENSION IF NOT EXISTS pglinter;
 
-SELECT 'Testing B006 rule - Comprehensive uppercase object detection...' as test_info;
+SELECT 'Testing B006 rule - Comprehensive uppercase object detection...' AS test_info;
 
 -- First, disable all rules to isolate B006 testing
 SELECT pglinter.disable_all_rules() AS all_rules_disabled;
@@ -100,12 +103,16 @@ SELECT pglinter.is_rule_enabled('B006') AS b006_status;
 
 -- Run B006 check to detect uppercase violations
 -- Expected result: Should detect multiple uppercase objects we created
-SELECT 'Running B006 check to detect comprehensive uppercase violations...' as status;
+SELECT 'Running B006 check to detect comprehensive uppercase violations...' AS status;
 SELECT pglinter.perform_base_check();
 
+-- Test with file output
+SELECT pglinter.perform_base_check('/tmp/pglinter_b006_results.sarif');
+-- Test if file exists and show checksum
+\! md5sum /tmp/pglinter_b006_results.sarif
+
 -- Test rule management for B006
-SELECT 'Testing B006 rule management...' as test_section;
+SELECT 'Testing B006 rule management...' AS test_section;
 SELECT pglinter.explain_rule('B006');
 
 ROLLBACK;
-
