@@ -174,21 +174,21 @@ INSERT INTO pglinter.rules (
 (
     26, 'TableWithUnusedIndex', 'T006', 200, 500, 'TABLE',
     'Table unused index, base on pg_stat_user_indexes, indexes associated to constraints are discard. Warning and error level are in Mo (the table size to consider).',
-    'Index {index_name} on {schema}.{table} size {index_size_mb} Mo seems to be unused (idx_scan=0), reach the {log_level} threshold: {level_size} Mo.',
+    'Index (larger than threshold) seems to be unused.',
     ARRAY['remove unused index or change warning/error threshold']
 ),
 
 (
     27, 'TableWithFkMismatch', 'T007', 1, 1, 'TABLE',
     'table with fk mismatch, ex smallint refer to a bigint.',
-    'Table {schema}.{table} constraint: {constraint_name} on {column_name} column {col1_datatype} ref {ref_table} column {ref_column} type ({ref_type}).',
+    'Table with fk type mismatch.',
     ARRAY['consider rewrite your model', 'ask a dba']
 ),
 
 (
     28, 'TableWithRoleNotGranted', 'T008', 1, 1, 'TABLE',
     'Table has no roles grantee. Meaning that users will need direct access on it (not through a role).',
-    'No role grantee on table {schema}.{table}. it means that except owner, users will need a direct grant on this table, not through a role. Prefer RBAC access if possible.',
+    'No role grantee on table. it means that except owner, users will need a direct grant on this table, not through a role. Prefer RBAC access if possible.',
     ARRAY[
         'create roles (myschema_ro & myschema_rw) and grant it on table with appropriate privileges'
     ]
@@ -197,7 +197,7 @@ INSERT INTO pglinter.rules (
 (
     29, 'ReservedKeyWord', 'T009', 10, 20, 'TABLE',
     'An object use reserved keywords.',
-    '{table_schema}.{table_name} {object_type} violate retricted keyword rule.',
+    'Reserved keywords in object.',
     ARRAY['Rename the object to use a non reserved keyword']
 ),
 
@@ -374,7 +374,7 @@ SET q1 = $$
 SELECT
     tc.table_schema::text || '.'
     || tc.table_name::text || ' fk '
-    || tc.constraint_name::text || ' references '
+    || tc.constraint_name::text || ' reference '
     || ccu.table_schema::text || '.'
     || ccu.table_name::text AS problematic_object
 FROM information_schema.table_constraints tc
@@ -506,11 +506,11 @@ WHERE code = 'T003';
 -- =============================================================================
 UPDATE pglinter.rules
 SET q1 = $$
-SELECT t.table_schema::text || '.' || t.table_name::text AS problematic_object
+SELECT t.table_schema::text || '.' || t.table_name::text||' as no role granted' AS problematic_object
 FROM information_schema.tables AS t
 WHERE
     t.table_schema NOT IN (
-        'public', 'pg_toast', 'pg_catalog', 'information_schema'
+        'public', 'pg_toast', 'pg_catalog', 'information_schema', 'pglinter'
     )
     AND NOT EXISTS (
         SELECT 1
@@ -654,9 +654,9 @@ UPDATE pglinter.rules
 SET q1 = $$
 SELECT
     pi.schemaname::text || '.'
-    || pi.tablename::text || '.'
-    || pi.indexname::text || '.'
-    || pg_relation_size(indexrelid)::text AS problematic_object
+    || pi.tablename::text || ' idx '
+    || pi.indexname::text || ' size '
+    || pg_size_pretty(pg_relation_size(indexrelid))::text AS problematic_object
 FROM pg_stat_user_indexes AS psi
 INNER JOIN pg_indexes AS pi
     ON
@@ -1037,10 +1037,10 @@ SELECT
     tc.table_schema::text || '.'
     || tc.table_name::text || ' constraint '
     || tc.constraint_name::text || ' column '
-    || kcu.column_name::text || ' type is'
+    || kcu.column_name::text || ' type is '
     || col1.data_type::text || ' but'
     || ccu.table_name::text || '.'
-    || ccu.column_name::text || ' type is'
+    || ccu.column_name::text || ' type is '
     || col2.data_type::text AS problematic_object
 FROM information_schema.table_constraints AS tc
 INNER JOIN information_schema.key_column_usage AS kcu
@@ -1094,7 +1094,7 @@ WITH reserved_keywords AS (
     ]) AS keyword
 )
 SELECT
-    object_type || ':' || schema_name || '.' || object_name AS problematic_object
+    object_type || ':' || schema_name || '.' || object_name ||' is a reserved keyword.' AS problematic_object
 FROM (
     -- Tables using reserved keywords
     SELECT

@@ -1,0 +1,39 @@
+DELETE 0
+                                                                                            file_import_result
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ ✅ Rules imported successfully from: /tmp/test_rules_import.yaml
+ 📥 Importing 2 rules from YAML (format v1.0)
+ ✅ Import completed: 2 new rules, 0 updated rules
+(1 row)
+
+         code         |          name          | enable | warning_level | error_level |   scope
+----------------------+------------------------+--------+---------------+-------------+-----------
+ TEST_FILE_001        | Test File Import Rule 1| t      |            35 |          75 | FILE_TEST
+ TEST_FILE_002        | Test File Import Rule 2| f      |            20 |          60 | BASE
+(2 rows)
+
+                                                                                            nonexistent_file_result
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ File read error: No such file or directory (os error 2)
+(1 row)
+
+                                                                                            invalid_file_result
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ YAML parsing error: missing field `metadata` at line 1 column 1
+(1 row)
+
+                                                                                            empty_file_result
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ YAML parsing error: EOF while parsing a value at line 1 column 1
+(1 row)
+
+ imported_rules_count
+----------------------
+                    2
+(1 row)
+
+DELETE 2
+ remaining_file_test_rules
+---------------------------
+                         0
+(1 row)

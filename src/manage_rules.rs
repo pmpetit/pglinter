@@ -524,7 +524,7 @@ pub fn import_rules_from_yaml(yaml_content: &str) -> Result<String, String> {
             RETURNING (xmax = 0) as is_new";
 
         let result: Result<bool, spi::SpiError> = Spi::connect_mut(|client| {
-            let mut rows = client.select(
+            let mut rows = client.update(
                 upsert_query,
                 None,
                 &[

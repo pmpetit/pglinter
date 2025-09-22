@@ -1,0 +1,57 @@
+DELETE 0
+                                                                                            import_result
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ ✅ Import completed: 2 new rules, 0 updated rules
+(1 row)
+
+         code         |       name       | enable | warning_level | error_level | scope |               description               |          message           |             fixes             |            q1            |          q2
+----------------------+------------------+--------+---------------+-------------+-------+-----------------------------------------+----------------------------+-------------------------------+--------------------------+----------------------
+ TEST_YAML_001        | Test YAML Rule 1 | t      |            30 |          70 | TEST  | Test rule for YAML import validation   | Test rule found {0} issues | {"Fix suggestion 1","Fix suggestion 2"} | SELECT 'test' as result |
+ TEST_YAML_002        | Test YAML Rule 2 | f      |            25 |          80 | BASE  | Second test rule for YAML import        | Second test rule message   | {"Another fix suggestion"}    | SELECT 1 as count        | SELECT 0 as problems
+(2 rows)
+
+                                                                                            update_result
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ ✅ Import completed: 0 new rules, 1 updated rules
+(1 row)
+
+         code         |          name           | enable | warning_level | error_level |     scope     |           description           |             message             | fixes_count |             q1             |       q2
+----------------------+-------------------------+--------+---------------+-------------+---------------+---------------------------------+---------------------------------+-------------+----------------------------+----------------
+ TEST_YAML_001        | Updated Test YAML Rule 1| f      |            40 |          85 | UPDATED_TEST  | Updated test rule description   | Updated test message with {0} items |           3 | SELECT 'updated' as result | SELECT 5 as count
+(1 row)
+
+                                                                                            null_values_result
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ ✅ Import completed: 1 new rules, 0 updated rules
+(1 row)
+
+         code         |      name       | q1_is_null | q2_is_null | fixes_count
+----------------------+-----------------+------------+------------+-------------
+ TEST_YAML_003        | Test Null Values| t          | t          |
+(1 row)
+
+                                                                                            invalid_yaml_result
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ YAML parsing error: invalid type: found unexpected end of stream, expected newline at line 4 column 1
+(1 row)
+
+                                                                                            empty_rules_result
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ ✅ Import completed: 0 new rules, 0 updated rules
+(1 row)
+
+                                                                                            minimal_rule_result
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ ✅ Import completed: 1 new rules, 0 updated rules
+(1 row)
+
+         code         |    name     | scope
+----------------------+-------------+-------
+ TEST_YAML_MIN        | Minimal Rule| BASE
+(1 row)
+
+DELETE 4
+ remaining_test_rules
+----------------------
+                    0
+(1 row)

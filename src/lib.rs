@@ -302,12 +302,12 @@ mod pglinter {
     }
 
     #[pg_extern(security_definer)]
-    fn import_rules_from_yaml(file_path: &str) -> Option<String>  {
-        match manage_rules::import_rules_from_yaml(file_path) {
+    fn import_rules_from_yaml(yaml_content: &str) -> Option<String>  {
+        match manage_rules::import_rules_from_yaml(yaml_content) {
             Ok(result) => Some(result.to_string()),
             Err(e) => {
                 pgrx::warning!("Failed to import: {}", e);
-                None
+                Some(e.to_string())
             }
         }
     }
@@ -318,7 +318,7 @@ mod pglinter {
             Ok(result) => Some(result.to_string()),
             Err(e) => {
                 pgrx::warning!("Failed to import: {}", e);
-                None
+                Some(e.to_string())
             }
         }
     }

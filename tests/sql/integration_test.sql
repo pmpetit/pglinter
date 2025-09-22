@@ -21,10 +21,10 @@ CREATE TABLE products (
     price NUMERIC
 );
 
-CREATE INDEX idx_name_1 ON products(name);
-CREATE INDEX idx_name_2 ON products(name); -- redundant
-CREATE INDEX idx_composite_1 ON products(category, price);
-CREATE INDEX idx_composite_2 ON products(category, price); -- redundant
+CREATE INDEX idx_name_1 ON products (name);
+CREATE INDEX idx_name_2 ON products (name); -- redundant
+CREATE INDEX idx_composite_1 ON products (category, price);
+CREATE INDEX idx_composite_2 ON products (category, price); -- redundant
 
 -- 3. Foreign keys without indexes (B003, T004)
 CREATE TABLE orders (
@@ -36,9 +36,9 @@ CREATE TABLE orders (
 
 -- Add foreign keys without creating indexes
 ALTER TABLE orders ADD CONSTRAINT fk_user
-    FOREIGN KEY (user_id) REFERENCES users_no_pk(id);
+FOREIGN KEY (user_id) REFERENCES users_no_pk (id);
 ALTER TABLE orders ADD CONSTRAINT fk_product
-    FOREIGN KEY (product_id) REFERENCES products(id);
+FOREIGN KEY (product_id) REFERENCES products (id);
 
 -- 4. Tables with uppercase names/columns (B006, T011)
 CREATE TABLE "UPPERCASE_ISSUES" (
@@ -75,27 +75,27 @@ CREATE TABLE dev_reports.summaries (
 CREATE EXTENSION IF NOT EXISTS pglinter;
 
 -- Run comprehensive analysis
-SELECT '=== COMPREHENSIVE pglinter ANALYSIS ===' as info;
+SELECT '=== COMPREHENSIVE pglinter ANALYSIS ===' AS info;
 
 -- Test all rule categories
-SELECT 'BASE RULES:' as category;
+SELECT 'BASE RULES:' AS category;
 SELECT pglinter.perform_base_check();
 
-SELECT 'TABLE RULES:' as category;
+SELECT 'TABLE RULES:' AS category;
 SELECT pglinter.perform_table_check();
 
-SELECT 'SCHEMA RULES:' as category;
+SELECT 'SCHEMA RULES:' AS category;
 SELECT pglinter.perform_schema_check();
 
-SELECT 'CLUSTER RULES:' as category;
+SELECT 'CLUSTER RULES:' AS category;
 SELECT pglinter.perform_cluster_check();
 
 -- Test comprehensive check
-SELECT 'COMPREHENSIVE CHECK:' as category;
+SELECT 'COMPREHENSIVE CHECK:' AS category;
 SELECT pglinter.check_all();
 
 -- Test rule management features
-SELECT '=== RULE MANAGEMENT ===' as info;
+SELECT '=== RULE MANAGEMENT ===' AS info;
 
 -- Show all rules
 SELECT pglinter.show_rules();
@@ -106,13 +106,13 @@ SELECT pglinter.explain_rule('T003');
 SELECT pglinter.explain_rule('S002');
 
 -- Test output to file functionality
-SELECT '=== OUTPUT TO FILE TEST ===' as info;
+SELECT '=== OUTPUT TO FILE TEST ===' AS info;
 SELECT pglinter.perform_base_check('/tmp/integration_base.sarif');
 SELECT pglinter.perform_table_check('/tmp/integration_table.sarif');
 SELECT pglinter.perform_schema_check('/tmp/integration_schema.sarif');
 
 -- Test rule disable/enable functionality
-SELECT '=== RULE TOGGLE TEST ===' as info;
+SELECT '=== RULE TOGGLE TEST ===' AS info;
 
 -- Disable some rules
 SELECT pglinter.disable_rule('B001');

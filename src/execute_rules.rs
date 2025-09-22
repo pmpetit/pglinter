@@ -80,7 +80,15 @@ fn execute_q1_rule_dynamic(scope: &str, ruleid: &str, q1: &str) -> Result<Option
             return Err(format!("Failed to get {} configuration: {e}", ruleid));
         }
     };
-    let (_, _, rule_message) = config;
+    let (warning_level, error_level, rule_message) = config;
+
+    // Check if query contains parameters
+    let has_parameters = q1.contains("$1");
+
+    if has_parameters {
+        pgrx::debug1!("execute_q1_rule_dynamic; {} query contains parameters, handling special case", ruleid);
+        return execute_q1_rule_with_params(scope, ruleid, q1, warning_level, error_level, &rule_message);
+    }
 
     let result: Result<Option<RuleResult>, spi::SpiError> = Spi::connect(|client| {
         let mut count = 0i64;
@@ -115,6 +123,87 @@ fn execute_q1_rule_dynamic(scope: &str, ruleid: &str, q1: &str) -> Result<Option
     match result {
         Ok(res) => Ok(res),
         Err(e) => Err(format!("Database error: {e}")),
+    }
+}
+
+/// Execute q1 rule with parameters (for rules that need special parameter handling)
+fn execute_q1_rule_with_params(
+    scope: &str,
+    ruleid: &str,
+    q1: &str,
+    warning_level: i64,
+    error_level: i64,
+    rule_message: &str
+) -> Result<Option<RuleResult>, String> {
+
+    // Get parameters based on rule type
+    let params = get_rule_parameters(ruleid, warning_level, error_level)?;
+
+    pgrx::debug1!("execute_q1_rule_with_params; Executing {} with {} parameters", ruleid, params.len());
+
+    let result: Result<Option<RuleResult>, spi::SpiError> = Spi::connect(|client| {
+        let mut count = 0i64;
+        let mut details = Vec::new();
+
+        // Handle parameterized queries
+        let rows = if params.is_empty() {
+            client.select(q1, None, &[])?
+        } else {
+            // For now, handle the most common case of a single i64 parameter
+            if params.len() == 1 {
+                client.select(q1, None, &[params[0].into()])?
+            } else {
+                // Return empty iterator for unsupported parameter counts
+                return Ok(None);
+            }
+        };
+
+        for row in rows {
+            let message: String = row.get(1)?.unwrap_or_default();
+            details.push(message);
+            count += 1;
+        }
+
+        if count > 0 {
+            return Ok(Some(RuleResult {
+                ruleid: ruleid.to_string(),
+                level: "warning".to_string(),
+                message: format!(
+                    "{} {} {} : \n{} \n",
+                    scope,
+                    rule_message,
+                    count,
+                    details.join("\n")
+                ),
+                count: Some(count),
+            }));
+        }
+
+        Ok(None)
+    });
+
+    match result {
+        Ok(res) => Ok(res),
+        Err(e) => Err(format!("Database error: {e}")),
+    }
+}
+
+/// Get parameters for specific rules
+fn get_rule_parameters(ruleid: &str, warning_level: i64, _error_level: i64) -> Result<Vec<i64>, String> {
+    match ruleid {
+        "T006" => {
+            // T006 uses warning/error levels as size thresholds in MB
+            // Convert to bytes for pg_relation_size comparison
+            Ok(vec![warning_level * 1024 * 1024])
+        },
+        "T004" => {
+            // T004 might use warning_level as percentage threshold
+            Ok(vec![warning_level])
+        },
+        _ => {
+            // Default: use warning_level as first parameter
+            Ok(vec![warning_level])
+        }
     }
 }
 

@@ -29,6 +29,7 @@ CREATE TABLE IF NOT EXISTS orders_table (
     amount DECIMAL(10, 2)
 );
 
+DROP EXTENSION IF EXISTS pglinter;
 CREATE EXTENSION IF NOT EXISTS pglinter;
 
 -- First, disable all rules to isolate B001 testing

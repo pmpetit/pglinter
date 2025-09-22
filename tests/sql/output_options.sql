@@ -10,8 +10,8 @@ CREATE TABLE table_without_pk (
 );
 
 -- Create redundant indexes
-CREATE INDEX idx_name_1 ON table_without_pk(name);
-CREATE INDEX idx_name_2 ON table_without_pk(name);
+CREATE INDEX idx_name_1 ON table_without_pk (name);
+CREATE INDEX idx_name_2 ON table_without_pk (name);
 
 -- Create table with uppercase (triggers B006 and T011)
 CREATE TABLE "UPPERCASE_TABLE" (
@@ -25,25 +25,25 @@ CREATE SCHEMA prod_testing;
 CREATE EXTENSION IF NOT EXISTS pglinter;
 
 -- Test 1: Output to prompt (no file parameter)
-SELECT 'Testing output to prompt...' as test_info;
+SELECT 'Testing output to prompt...' AS test_info;
 SELECT pglinter.perform_base_check();
 SELECT pglinter.perform_table_check();
 SELECT pglinter.perform_schema_check();
 
 -- Test 2: Output to prompt (NULL file parameter)
-SELECT 'Testing output to prompt with NULL...' as test_info;
+SELECT 'Testing output to prompt with NULL...' AS test_info;
 SELECT pglinter.perform_base_check(NULL);
 SELECT pglinter.perform_table_check(NULL);
 SELECT pglinter.perform_schema_check(NULL);
 
 -- Test 3: Output to file
-SELECT 'Testing output to file...' as test_info;
+SELECT 'Testing output to file...' AS test_info;
 SELECT pglinter.perform_base_check('/tmp/test_base_output.sarif');
 SELECT pglinter.perform_table_check('/tmp/test_table_output.sarif');
 SELECT pglinter.perform_schema_check('/tmp/test_schema_output.sarif');
 
 -- Test 4: Comprehensive check with different output options
-SELECT 'Testing comprehensive check - to prompt...' as test_info;
+SELECT 'Testing comprehensive check - to prompt...' AS test_info;
 SELECT pglinter.check_all();
 
 -- Test 5: Individual rule testing
