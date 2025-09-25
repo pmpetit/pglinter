@@ -528,7 +528,7 @@ WHERE code = 'T008';
 -- T010 - Tables With Sensitive Columns (requires anon extension)
 -- =============================================================================
 UPDATE pglinter.rules
-SET q1 = $$
+SET enable=false,q1 = $$
 SELECT
     schemaname::text || '.'
     || tablename::text || '.'
