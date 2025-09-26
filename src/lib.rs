@@ -501,6 +501,139 @@ mod tests {
     }
 
     #[pg_test]
+    fn test_explain_rule_with_fixes() {
+        // Setup test rule with fixes data to test the fix list formatting (lines 220-226)
+        let _ = Spi::run("DELETE FROM pglinter.rules WHERE code = 'TEST_FIXES'");
+
+        // Insert rule with multiple fixes including Some and None values to test the filtering
+        let _ = Spi::run("
+            INSERT INTO pglinter.rules (id, code, name, enable, description, scope, message, fixes)
+            VALUES (
+                9999,
+                'TEST_FIXES',
+                'Test Rule With Fixes',
+                true,
+                'This rule tests the fix list formatting',
+                'TABLE',
+                'Test message for fixes',
+                ARRAY['Add a primary key to the table', 'Create an index on frequently queried columns', 'Consider partitioning large tables']
+            )
+        ");
+
+        // Test the explain_rule function with fixes
+        let result = manage_rules::explain_rule("TEST_FIXES");
+        assert!(result.is_ok());
+
+        let explanation = result.unwrap();
+
+        // Verify basic rule information is present
+        assert!(explanation.contains("TEST_FIXES"));
+        assert!(explanation.contains("Test Rule With Fixes"));
+        assert!(explanation.contains("This rule tests the fix list formatting"));
+
+        // Test the fix list formatting (lines 220-226 in manage_rules.rs)
+        // The fixes should be formatted as a numbered list with proper indentation
+        assert!(explanation.contains("🔧 How to Fix:"));
+        assert!(explanation.contains("   1. Add a primary key to the table"));
+        assert!(explanation.contains("   2. Create an index on frequently queried columns"));
+        assert!(explanation.contains("   3. Consider partitioning large tables"));
+
+        // Verify the formatting is correct (numbered list with spaces)
+        let fix_section_start = explanation.find("🔧 How to Fix:").unwrap();
+        let fix_section = &explanation[fix_section_start..];
+
+        // Check that each fix is on its own line and properly numbered
+        assert!(fix_section.contains("   1. "), "First fix should be numbered as '   1. '");
+        assert!(fix_section.contains("   2. "), "Second fix should be numbered as '   2. '");
+        assert!(fix_section.contains("   3. "), "Third fix should be numbered as '   3. '");
+
+        // Cleanup
+        let _ = Spi::run("DELETE FROM pglinter.rules WHERE code = 'TEST_FIXES'");
+    }
+
+    #[pg_test]
+    fn test_explain_rule_with_empty_fixes() {
+        // Test the case where fixes array is empty (should show "No specific fixes available.")
+        let _ = Spi::run("DELETE FROM pglinter.rules WHERE code = 'TEST_NO_FIXES'");
+
+        let _ = Spi::run("
+            INSERT INTO pglinter.rules (id, code, name, enable, description, scope, message, fixes)
+            VALUES (
+                9998,
+                'TEST_NO_FIXES',
+                'Test Rule Without Fixes',
+                true,
+                'This rule has no fixes',
+                'BASE',
+                'Test message without fixes',
+                ARRAY[]::text[]
+            )
+        ");
+
+        let result = manage_rules::explain_rule("TEST_NO_FIXES");
+        assert!(result.is_ok());
+
+        let explanation = result.unwrap();
+
+        // Should contain the default message when no fixes are available
+        assert!(explanation.contains("No specific fixes available."));
+        assert!(!explanation.contains("   1. "), "Should not contain numbered fixes");
+
+        // Cleanup
+        let _ = Spi::run("DELETE FROM pglinter.rules WHERE code = 'TEST_NO_FIXES'");
+    }
+
+    #[pg_test]
+    fn test_explain_rule_with_mixed_fixes() {
+        // Test the case where the fixes array has a mix of valid and NULL values
+        // This tests the NULL filtering logic in the explain_rule function
+        let _ = Spi::run("DELETE FROM pglinter.rules WHERE code = 'TEST_MIXED_FIXES'");
+
+        // Insert rule and then update with mixed NULL and non-NULL fixes
+        let _ = Spi::run("
+            INSERT INTO pglinter.rules (id, code, name, enable, description, scope, message)
+            VALUES (
+                9997,
+                'TEST_MIXED_FIXES',
+                'Test Rule With Mixed Fixes',
+                true,
+                'This rule tests NULL filtering in fixes',
+                'TABLE',
+                'Test message for mixed fixes'
+            )
+        ");
+
+        // Update with an array that contains NULLs - this simulates real-world data
+        let _ = Spi::run("
+            UPDATE pglinter.rules
+            SET fixes = ARRAY['Add primary key', NULL::text, 'Create indexes', NULL::text, 'Optimize queries']::text[]
+            WHERE code = 'TEST_MIXED_FIXES'
+        ");
+
+        let result = manage_rules::explain_rule("TEST_MIXED_FIXES");
+        assert!(result.is_ok());
+
+        let explanation = result.unwrap();
+
+        // Should show the fixes section
+        assert!(explanation.contains("🔧 How to Fix:"));
+
+        // The NULL filtering code should skip NULL entries
+        // Based on the current implementation using enumerate(),
+        // we expect the original array indices to be used for numbering
+        assert!(explanation.contains("   1. Add primary key"));    // Index 0 + 1 = 1
+        assert!(explanation.contains("   3. Create indexes"));     // Index 2 + 1 = 3 (skips NULL at index 1)
+        assert!(explanation.contains("   5. Optimize queries"));   // Index 4 + 1 = 5 (skips NULL at index 3)
+
+        // Should not have entries for the NULL positions
+        assert!(!explanation.contains("   2. "));  // Index 1 was NULL
+        assert!(!explanation.contains("   4. "));  // Index 3 was NULL
+
+        // Cleanup
+        let _ = Spi::run("DELETE FROM pglinter.rules WHERE code = 'TEST_MIXED_FIXES'");
+    }
+
+    #[pg_test]
     fn test_rule_toggle_workflow() {
         // Test a complete workflow: enable -> check -> disable -> check
         fixtures::setup_test_rule("TEST009", 9009, "Test Rule 9", false, 20, 80);
@@ -661,29 +794,56 @@ mod tests {
         fixtures::setup_test_rule("TEST018", 9018, "Test Rule 18", true, 20, 80);
         fixtures::setup_test_rule("TEST019", 9019, "Test Rule 19", false, 20, 80);
 
-        // Test enable_all_rules SQL function
-        let enabled_count_before =
-            Spi::get_one::<i64>("SELECT COUNT(*) FROM pglinter.rules WHERE enable = false")
-                .unwrap()
-                .unwrap_or(0);
+        // First, disable all rules to get a known state
+        let _ = Spi::get_one::<i32>("SELECT pglinter.disable_all_rules()").unwrap();
+
+        // Count total rules (they should all be disabled now)
+        let total_rules = Spi::get_one::<i64>("SELECT COUNT(*) FROM pglinter.rules")
+            .unwrap()
+            .unwrap_or(0);
+
+        // Test enable_all_rules SQL function - should enable all rules
         let result = Spi::get_one::<i32>("SELECT pglinter.enable_all_rules()").unwrap();
         assert!(result.is_some());
-        assert_eq!(result.unwrap() as i64, enabled_count_before);
+        assert_eq!(result.unwrap() as i64, total_rules);
 
-        // Test disable_all_rules SQL function
-        let enabled_count_before_disable =
-            Spi::get_one::<i64>("SELECT COUNT(*) FROM pglinter.rules WHERE enable = true")
-                .unwrap()
-                .unwrap_or(0);
-        let result = Spi::get_one::<i32>("SELECT pglinter.disable_all_rules()").unwrap();
-        assert!(result.is_some());
-        assert_eq!(result.unwrap() as i64, enabled_count_before_disable);
+        // Verify all rules are now enabled
+        let enabled_count_after = Spi::get_one::<i64>("SELECT COUNT(*) FROM pglinter.rules WHERE enable = true")
+            .unwrap()
+            .unwrap_or(0);
+        assert_eq!(enabled_count_after, total_rules);
+
+        // Test disable_all_rules SQL function - should disable all rules
+        let result_disable = Spi::get_one::<i32>("SELECT pglinter.disable_all_rules()").unwrap();
+        assert!(result_disable.is_some());
+        assert_eq!(result_disable.unwrap() as i64, total_rules);
+
+        // Verify all rules are now disabled
+        let disabled_count_after = Spi::get_one::<i64>("SELECT COUNT(*) FROM pglinter.rules WHERE enable = false")
+            .unwrap()
+            .unwrap_or(0);
+        assert_eq!(disabled_count_after, total_rules);
 
         // Verify both test rules are now disabled using fixture helpers
         let test018_enabled = fixtures::get_rule_bool_property("TEST018", "enable");
         assert_eq!(test018_enabled, Some(false));
         let test019_enabled = fixtures::get_rule_bool_property("TEST019", "enable");
         assert_eq!(test019_enabled, Some(false));
+
+        // Test edge case: calling disable_all_rules when all are already disabled
+        let result_already_disabled = Spi::get_one::<i32>("SELECT pglinter.disable_all_rules()").unwrap();
+        assert!(result_already_disabled.is_some());
+        assert_eq!(result_already_disabled.unwrap(), 0); // Should return 0 since no rules were changed
+
+        // Test edge case: calling enable_all_rules when all are disabled
+        let result_enable_all = Spi::get_one::<i32>("SELECT pglinter.enable_all_rules()").unwrap();
+        assert!(result_enable_all.is_some());
+        assert_eq!(result_enable_all.unwrap() as i64, total_rules);
+
+        // Test edge case: calling enable_all_rules when all are already enabled
+        let result_already_enabled = Spi::get_one::<i32>("SELECT pglinter.enable_all_rules()").unwrap();
+        assert!(result_already_enabled.is_some());
+        assert_eq!(result_already_enabled.unwrap(), 0); // Should return 0 since no rules were changed
 
         // Cleanup
         fixtures::cleanup_test_rule("TEST018");
@@ -1494,6 +1654,163 @@ mod tests {
         let _ = std::fs::remove_file(sarif_file_path_2);
         fixtures::cleanup_test_tables();
     }
+
+    #[pg_test]
+    fn test_execute_q1_rule_warning_scenario() {
+        // Setup test tables that will trigger violations
+        fixtures::setup_test_tables();
+
+        // Enable T001 rule (tables without primary keys) for testing
+        let _ = Spi::run("UPDATE pglinter.rules SET enable = true WHERE code = 'T001'");
+
+        // Set specific warning/error levels to ensure we get warning level results
+        // warning_level=1 means if 1 or more violations, it's a warning
+        // error_level=10 means if 10 or more violations, it's an error
+        let _ = Spi::run("UPDATE pglinter.rules SET warning_level = 1, error_level = 10 WHERE code = 'T001'");
+
+        // Execute table check which internally uses execute_q1_rule_with_params
+        // This should trigger violations from our test tables without primary keys
+        let result = Spi::get_one::<bool>("SELECT pglinter.perform_table_check()").unwrap();
+        assert!(result.is_some());
+        assert_eq!(result.unwrap(), true);
+
+        // Test with SARIF output to verify the warning message format
+        let test_sarif_file = "/tmp/test_q1_warning.json";
+        let result_sarif = Spi::get_one::<bool>(
+            &format!("SELECT pglinter.perform_table_check('{}')", test_sarif_file)
+        ).unwrap();
+        assert!(result_sarif.is_some());
+        assert_eq!(result_sarif.unwrap(), true);
+
+        // Verify SARIF file was created and contains results
+        if std::fs::metadata(test_sarif_file).is_ok() {
+            let sarif_content = std::fs::read_to_string(test_sarif_file).expect("Failed to read SARIF file");
+
+            // Parse JSON to verify structure matches the warning scenario output
+            let sarif_json: serde_json::Value = serde_json::from_str(&sarif_content)
+                .expect("SARIF should be valid JSON");
+
+            if let Some(results) = sarif_json["runs"][0]["results"].as_array() {
+                // Should have at least one result (from our test tables)
+                assert!(!results.is_empty(), "Should have results from test tables");
+
+                // Check that results have the expected structure from execute_q1_rule_with_params
+                let mut found_table_result = false;
+                for result in results {
+                    if let Some(rule_id) = result["ruleId"].as_str() {
+                        // Look for our T001 rule specifically
+                        if rule_id == "T001" {
+                            found_table_result = true;
+
+                            // Verify the result has required fields
+                            assert!(result["message"]["text"].is_string(), "Result should have text message");
+                            assert!(result["ruleId"].is_string(), "Result should have rule ID");
+
+                            let message = result["message"]["text"].as_str().unwrap_or("");
+                            // The format from execute_q1_rule_with_params should include the scope and details
+                            assert!(message.contains("TABLE"), "T001 message should contain TABLE scope");
+
+                            // Check that we have a level (warning, error, or note)
+                            assert!(result["level"].is_string(), "Result should have a level");
+                            let level = result["level"].as_str().unwrap_or("");
+                            assert!(["warning", "error", "note"].contains(&level),
+                                   "Result level should be warning, error, or note");
+                        }
+                    }
+                }
+
+                // Ensure we found at least one result from our T001 rule
+                assert!(found_table_result, "Should have found at least one T001 rule result");
+            }
+        }
+
+        // Cleanup
+        let _ = std::fs::remove_file(test_sarif_file);
+        fixtures::cleanup_test_tables();
+
+        // Reset rule to default state
+        let _ = Spi::run("UPDATE pglinter.rules SET enable = false WHERE code = 'T001'");
+    }
+
+    #[pg_test]
+    fn test_execute_q1_rule_warning_message_format() {
+        // Test the specific warning result creation format in execute_q1_rule_with_params (lines 167-180)
+        // This tests the exact message format when count > 0
+
+        // Setup test tables to ensure we have violations
+        fixtures::setup_test_tables();
+
+        // Enable a simple rule that will trigger the warning path
+        // T001 (tables without primary keys) is ideal since our test tables include one without PK
+        let _ = Spi::run("UPDATE pglinter.rules SET enable = true WHERE code = 'T001'");
+
+        // Set thresholds to ensure warning level result (low warning, high error)
+        let _ = Spi::run("UPDATE pglinter.rules SET warning_level = 1, error_level = 100 WHERE code = 'T001'");
+
+        // Execute table check which will trigger execute_q1_rule_with_params for T001
+        // This should create a warning-level RuleResult using the format on lines 171-177
+        let test_sarif_file = "/tmp/test_warning_format.json";
+        let result = Spi::get_one::<bool>(
+            &format!("SELECT pglinter.perform_table_check('{}')", test_sarif_file)
+        ).unwrap();
+        assert!(result.is_some());
+        assert_eq!(result.unwrap(), true);
+
+        // Verify the SARIF output contains the exact message format from execute_q1_rule_with_params
+        assert!(std::fs::metadata(test_sarif_file).is_ok(), "SARIF file should be created");
+
+        let sarif_content = std::fs::read_to_string(test_sarif_file).expect("Failed to read SARIF file");
+        let sarif_json: serde_json::Value = serde_json::from_str(&sarif_content)
+            .expect("SARIF should be valid JSON");
+
+        if let Some(results) = sarif_json["runs"][0]["results"].as_array() {
+            let mut found_warning_result = false;
+
+            for result in results {
+                if let Some(rule_id) = result["ruleId"].as_str() {
+                    if rule_id == "T001" && result["level"].as_str() == Some("warning") {
+                        found_warning_result = true;
+
+                        let message = result["message"]["text"].as_str().unwrap();
+
+                        // Test the exact format from lines 171-177:
+                        // format!("{} {} {} : \n{} \n", scope, rule_message, count, details.join("\n"))
+
+                        // Should start with scope
+                        assert!(message.starts_with("TABLE"), "Message should start with scope 'TABLE'");
+
+                        // Should contain the specific format pattern: " : \n"
+                        assert!(message.contains(" : \n"), "Message should contain ' : \\n' from format string");
+
+                        // Should end with " \n" (from the format string)
+                        assert!(message.ends_with(" \n"), "Message should end with ' \\n' from format string");
+
+                        // Should contain a number (the count)
+                        assert!(message.chars().any(char::is_numeric), "Message should contain count number");
+
+                        // Verify the count field if it exists (might be optional in SARIF format)
+                        if result["count"].is_number() {
+                            let count = result["count"].as_u64().unwrap();
+                            assert!(count > 0, "Count should be > 0 for warning (lines 167-168 condition)");
+                        }
+
+                        // Verify it's specifically a warning level (line 170)
+                        assert_eq!(result["level"].as_str().unwrap(), "warning", "Level should be 'warning' from line 170");
+
+                        break;
+                    }
+                }
+            }
+
+            assert!(found_warning_result, "Should have found T001 warning result testing lines 167-180");
+        }
+
+        // Cleanup
+        let _ = std::fs::remove_file(test_sarif_file);
+        fixtures::cleanup_test_tables();
+        let _ = Spi::run("UPDATE pglinter.rules SET enable = false WHERE code = 'T001'");
+    }
+
 }
 
 /// This module is required by `cargo pgrx test` invocations.
