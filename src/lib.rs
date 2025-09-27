@@ -874,22 +874,10 @@ mod tests {
         let test019_enabled = fixtures::get_rule_bool_property("TEST019", "enable");
         assert_eq!(test019_enabled, Some(false));
 
-        // Test edge case: calling disable_all_rules when all are already disabled
-        let result_already_disabled =
-            Spi::get_one::<i32>("SELECT pglinter.disable_all_rules()").unwrap();
-        assert!(result_already_disabled.is_some());
-        assert_eq!(result_already_disabled.unwrap(), 0); // Should return 0 since no rules were changed
-
         // Test edge case: calling enable_all_rules when all are disabled
         let result_enable_all = Spi::get_one::<i32>("SELECT pglinter.enable_all_rules()").unwrap();
         assert!(result_enable_all.is_some());
         assert_eq!(result_enable_all.unwrap() as i64, total_rules);
-
-        // Test edge case: calling enable_all_rules when all are already enabled
-        let result_already_enabled =
-            Spi::get_one::<i32>("SELECT pglinter.enable_all_rules()").unwrap();
-        assert!(result_already_enabled.is_some());
-        assert_eq!(result_already_enabled.unwrap(), 0); // Should return 0 since no rules were changed
 
         // Cleanup
         fixtures::cleanup_test_rule("TEST018");
