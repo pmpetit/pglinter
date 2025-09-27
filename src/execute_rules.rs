@@ -67,6 +67,15 @@ pub struct RuleResult {
     pub count: Option<i64>,
 }
 
+#[derive(Debug, Clone)]
+pub struct RuleData {
+    pub code: String,
+    pub name: String,
+    pub q1: String,
+    pub q2: Option<String>,
+    pub scope: String,
+}
+
 fn execute_q1_rule_dynamic(scope: &str, ruleid: &str, q1: &str) -> Result<Option<RuleResult>, String> {
 
     let config = match get_rule_config(ruleid) {
@@ -331,17 +340,23 @@ pub fn execute_rules(scope: &str ) -> Result<Vec<RuleResult>, String> {
         AND q1 IS NOT NULL
         ORDER BY code";
 
-    let rule_result: Result<Vec<(String, String, String, Option<String>, String)>, spi::SpiError> = Spi::connect(|client| {
+    let rule_result: Result<Vec<RuleData>, spi::SpiError> = Spi::connect(|client| {
         let mut rules = Vec::new();
 
         for row in client.select(rules_query, None, &[scope.into()])? {
             let code: String = row.get(1)?.unwrap_or_default();
-            let _name: String = row.get(2)?.unwrap_or_default();
+            let name: String = row.get(2)?.unwrap_or_default();
             let q1: String = row.get(3)?.unwrap_or_default();
             let q2: Option<String> = row.get(4)?;
             let scope: String = row.get(5)?.unwrap_or_default();
 
-            rules.push((code, _name, q1, q2, scope));
+            rules.push(RuleData {
+                code,
+                name,
+                q1,
+                q2,
+                scope,
+            });
         }
 
         Ok(rules)
@@ -351,52 +366,52 @@ pub fn execute_rules(scope: &str ) -> Result<Vec<RuleResult>, String> {
         Ok(rules) => {
             pgrx::debug1!("execute_rule; Found {} {} rules to execute", rules.len(),scope);
 
-            for (code, _name, q1, q2_opt, scope) in rules {
+            for rule in rules {
                 // Check if rule is enabled before executing
-                if is_rule_enabled(&code)? {
-                    pgrx::debug1!("execute_rule; Processing BASE rule: {}", code);
+                if is_rule_enabled(&rule.code)? {
+                    pgrx::debug1!("execute_rule; Processing BASE rule: {}", rule.code);
 
                     // Determine execution pattern based on q2 presence
-                    match q2_opt {
+                    match &rule.q2 {
                         Some(q2) => {
                             // Execute as q1+q2 rule (with thresholds)
-                            pgrx::debug1!("execute_rule; Executing {} as Q1+Q2 rule", code);
-                            match execute_q1_q2_rule_dynamic(&code, &q1, &q2) {
+                            pgrx::debug1!("execute_rule; Executing {} as Q1+Q2 rule", rule.code);
+                            match execute_q1_q2_rule_dynamic(&rule.code, &rule.q1, q2) {
                                 Ok(Some(result)) => {
                                     pgrx::debug1!("execute_rule; {} produced result: {} - {}",
-                                                code, result.level, result.message);
+                                                rule.code, result.level, result.message);
                                     results.push(result);
                                 },
                                 Ok(None) => {
-                                    pgrx::debug1!("execute_rule; {} passed thresholds - no issues", code);
+                                    pgrx::debug1!("execute_rule; {} passed thresholds - no issues", rule.code);
                                 },
                                 Err(e) => {
-                                    pgrx::debug1!("execute_rule; {} failed with error: {}", code, e);
-                                    return Err(format!("Failed to execute rule {}: {}", code, e));
+                                    pgrx::debug1!("execute_rule; {} failed with error: {}", rule.code, e);
+                                    return Err(format!("Failed to execute rule {}: {}", rule.code, e));
                                 }
                             }
                         },
                         None => {
                             // Execute as q1-only rule (direct warning)
-                            pgrx::debug1!("execute_rule; Executing {} as Q1-only rule", code);
-                            match execute_q1_rule_dynamic(&scope, &code, &q1) {
+                            pgrx::debug1!("execute_rule; Executing {} as Q1-only rule", rule.code);
+                            match execute_q1_rule_dynamic(&rule.scope, &rule.code, &rule.q1) {
                                 Ok(Some(result)) => {
                                     pgrx::debug1!("execute_rule; {} produced result: {} - {}",
-                                                code, result.level, result.message);
+                                                rule.code, result.level, result.message);
                                     results.push(result);
                                 },
                                 Ok(None) => {
-                                    pgrx::debug1!("execute_rule; {} found no issues", code);
+                                    pgrx::debug1!("execute_rule; {} found no issues", rule.code);
                                 },
                                 Err(e) => {
-                                    pgrx::debug1!("execute_rule; {} failed with error: {}", code, e);
-                                    return Err(format!("Failed to execute rule {}: {}", code, e));
+                                    pgrx::debug1!("execute_rule; {} failed with error: {}", rule.code, e);
+                                    return Err(format!("Failed to execute rule {}: {}", rule.code, e));
                                 }
                             }
                         }
                     }
                 } else {
-                    pgrx::debug1!("execute_rule; Skipping disabled rule: {}", code);
+                    pgrx::debug1!("execute_rule; Skipping disabled rule: {}", rule.code);
                 }
             }
         },
