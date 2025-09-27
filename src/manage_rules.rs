@@ -428,12 +428,12 @@ pub fn export_rules_to_yaml() -> Result<String, String> {
         ORDER BY code";
 
     let result: Result<Vec<Rule>, spi::SpiError> = Spi::connect(|client| {
-        let mut rows = client.select(query, None, &[])?;
+        let rows = client.select(query, None, &[])?;
         let mut rules = Vec::new();
 
-        while let Some(row) = rows.next() {
+        for row in rows {
             let fixes_array: Vec<Option<String>> = row.get(10)?.unwrap_or_default();
-            let fixes: Vec<String> = fixes_array.into_iter().filter_map(|f| f).collect();
+            let fixes: Vec<String> = fixes_array.into_iter().flatten().collect();
 
             let rule = Rule {
                 id: row.get(1)?.unwrap_or(0),
