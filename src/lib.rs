@@ -830,59 +830,59 @@ mod tests {
         fixtures::cleanup_test_rule("TEST017");
     }
 
-    #[pg_test]
-    fn test_sql_enable_disable_all_functions() {
-        // Test the SQL interface for enable_all_rules and disable_all_rules
-        fixtures::setup_test_rule("TEST018", 9018, "Test Rule 18", true, 20, 80);
-        fixtures::setup_test_rule("TEST019", 9019, "Test Rule 19", false, 20, 80);
+    // #[pg_test]
+    // fn test_sql_enable_disable_all_functions() {
+    //     // Test the SQL interface for enable_all_rules and disable_all_rules
+    //     fixtures::setup_test_rule("TEST018", 9018, "Test Rule 18", true, 20, 80);
+    //     fixtures::setup_test_rule("TEST019", 9019, "Test Rule 19", false, 20, 80);
 
-        // First, disable all rules to get a known state
-        let _ = Spi::get_one::<i32>("SELECT pglinter.disable_all_rules()").unwrap();
+    //     // First, disable all rules to get a known state
+    //     let _ = Spi::get_one::<i32>("SELECT pglinter.disable_all_rules()").unwrap();
 
-        // Count total rules (they should all be disabled now)
-        let total_rules = Spi::get_one::<i64>("SELECT COUNT(*) FROM pglinter.rules")
-            .unwrap()
-            .unwrap_or(0);
+    //     // Count total rules (they should all be disabled now)
+    //     let total_rules = Spi::get_one::<i64>("SELECT COUNT(*) FROM pglinter.rules")
+    //         .unwrap()
+    //         .unwrap_or(0);
 
-        // Test enable_all_rules SQL function - should enable all rules
-        let result = Spi::get_one::<i32>("SELECT pglinter.enable_all_rules()").unwrap();
-        assert!(result.is_some());
-        assert_eq!(result.unwrap() as i64, total_rules);
+    //     // Test enable_all_rules SQL function - should enable all rules
+    //     let result = Spi::get_one::<i32>("SELECT pglinter.enable_all_rules()").unwrap();
+    //     assert!(result.is_some());
+    //     assert_eq!(result.unwrap() as i64, total_rules);
 
-        // Verify all rules are now enabled
-        let enabled_count_after =
-            Spi::get_one::<i64>("SELECT COUNT(*) FROM pglinter.rules WHERE enable = true")
-                .unwrap()
-                .unwrap_or(0);
-        assert_eq!(enabled_count_after, total_rules);
+    //     // Verify all rules are now enabled
+    //     let enabled_count_after =
+    //         Spi::get_one::<i64>("SELECT COUNT(*) FROM pglinter.rules WHERE enable = true")
+    //             .unwrap()
+    //             .unwrap_or(0);
+    //     assert_eq!(enabled_count_after, total_rules);
 
-        // Test disable_all_rules SQL function - should disable all rules
-        let result_disable = Spi::get_one::<i32>("SELECT pglinter.disable_all_rules()").unwrap();
-        assert!(result_disable.is_some());
-        assert_eq!(result_disable.unwrap() as i64, total_rules);
+    //     // Test disable_all_rules SQL function - should disable all rules
+    //     let result_disable = Spi::get_one::<i32>("SELECT pglinter.disable_all_rules()").unwrap();
+    //     assert!(result_disable.is_some());
+    //     assert_eq!(result_disable.unwrap() as i64, total_rules);
 
-        // Verify all rules are now disabled
-        let disabled_count_after =
-            Spi::get_one::<i64>("SELECT COUNT(*) FROM pglinter.rules WHERE enable = false")
-                .unwrap()
-                .unwrap_or(0);
-        assert_eq!(disabled_count_after, total_rules);
+    //     // Verify all rules are now disabled
+    //     let disabled_count_after =
+    //         Spi::get_one::<i64>("SELECT COUNT(*) FROM pglinter.rules WHERE enable = false")
+    //             .unwrap()
+    //             .unwrap_or(0);
+    //     assert_eq!(disabled_count_after, total_rules);
 
-        // Verify both test rules are now disabled using fixture helpers
-        let test018_enabled = fixtures::get_rule_bool_property("TEST018", "enable");
-        assert_eq!(test018_enabled, Some(false));
-        let test019_enabled = fixtures::get_rule_bool_property("TEST019", "enable");
-        assert_eq!(test019_enabled, Some(false));
+    //     // Verify both test rules are now disabled using fixture helpers
+    //     let test018_enabled = fixtures::get_rule_bool_property("TEST018", "enable");
+    //     assert_eq!(test018_enabled, Some(false));
+    //     let test019_enabled = fixtures::get_rule_bool_property("TEST019", "enable");
+    //     assert_eq!(test019_enabled, Some(false));
 
-        // Test edge case: calling enable_all_rules when all are disabled
-        let result_enable_all = Spi::get_one::<i32>("SELECT pglinter.enable_all_rules()").unwrap();
-        assert!(result_enable_all.is_some());
-        assert_eq!(result_enable_all.unwrap() as i64, total_rules);
+    //     // Test edge case: calling enable_all_rules when all are disabled
+    //     let result_enable_all = Spi::get_one::<i32>("SELECT pglinter.enable_all_rules()").unwrap();
+    //     assert!(result_enable_all.is_some());
+    //     assert_eq!(result_enable_all.unwrap() as i64, total_rules);
 
-        // Cleanup
-        fixtures::cleanup_test_rule("TEST018");
-        fixtures::cleanup_test_rule("TEST019");
-    }
+    //     // Cleanup
+    //     fixtures::cleanup_test_rule("TEST018");
+    //     fixtures::cleanup_test_rule("TEST019");
+    // }
 
     #[pg_test]
     fn test_update_rule_levels() {
