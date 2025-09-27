@@ -70,7 +70,7 @@ pub struct RuleResult {
 #[derive(Debug, Clone)]
 pub struct RuleData {
     pub code: String,
-    pub name: String,
+    //pub name: String,
     pub q1: String,
     pub q2: Option<String>,
     pub scope: String,
@@ -345,14 +345,12 @@ pub fn execute_rules(scope: &str ) -> Result<Vec<RuleResult>, String> {
 
         for row in client.select(rules_query, None, &[scope.into()])? {
             let code: String = row.get(1)?.unwrap_or_default();
-            let name: String = row.get(2)?.unwrap_or_default();
             let q1: String = row.get(3)?.unwrap_or_default();
             let q2: Option<String> = row.get(4)?;
             let scope: String = row.get(5)?.unwrap_or_default();
 
             rules.push(RuleData {
                 code,
-                name,
                 q1,
                 q2,
                 scope,
