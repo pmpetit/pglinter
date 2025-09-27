@@ -133,10 +133,10 @@ SELECT 'Disabling all rules to test T008 specifically...' AS status;
 (1 row)
 
 SELECT pglinter.disable_all_rules() AS all_rules_disabled;
-NOTICE:  🔴 Disabled 21 rule(s)
+NOTICE:  🔴 Disabled 20 rule(s)
  all_rules_disabled 
 --------------------
-                 21
+                 20
 (1 row)
 
 SELECT pglinter.enable_rule('T008') AS t008_enabled;
@@ -156,12 +156,11 @@ SELECT 'Running table check with only T008 enabled:' AS test_info;
 SELECT pglinter.perform_table_check();
 NOTICE:  🔍 pglinter found 1 issue(s):
 NOTICE:  ==================================================
-NOTICE:  ⚠️  [T008] WARNING: Found 5 table without role associated: 
-No role grantee on table test_app_schema.users_no_grants. it means that except owner, users will need a direct grant on this table, not through a role. Prefer RBAC access if possible.
-No role grantee on table test_app_schema.products_no_grants. it means that except owner, users will need a direct grant on this table, not through a role. Prefer RBAC access if possible.
-No role grantee on table test_reports_schema.sales_data_no_grants. it means that except owner, users will need a direct grant on this table, not through a role. Prefer RBAC access if possible.
-No role grantee on table test_data_schema.analytics_no_grants. it means that except owner, users will need a direct grant on this table, not through a role. Prefer RBAC access if possible.
-No role grantee on table pglinter.rules. it means that except owner, users will need a direct grant on this table, not through a role. Prefer RBAC access if possible. 
+NOTICE:  ⚠️  [T008] WARNING: TABLE No role grantee on table. it means that except owner, users will need a direct grant on this table, not through a role. Prefer RBAC access if possible. 4 : 
+test_app_schema.users_no_grants as no role granted
+test_app_schema.products_no_grants as no role granted
+test_reports_schema.sales_data_no_grants as no role granted
+test_data_schema.analytics_no_grants as no role granted 
 
 NOTICE:  ==================================================
 NOTICE:  📊 Summary: 0 error(s), 1 warning(s), 0 info
@@ -203,12 +202,11 @@ NOTICE:  ✅ Rule T008 has been enabled
 SELECT pglinter.perform_table_check(); -- Should include T008 again
 NOTICE:  🔍 pglinter found 1 issue(s):
 NOTICE:  ==================================================
-NOTICE:  ⚠️  [T008] WARNING: Found 5 table without role associated: 
-No role grantee on table test_app_schema.users_no_grants. it means that except owner, users will need a direct grant on this table, not through a role. Prefer RBAC access if possible.
-No role grantee on table test_app_schema.products_no_grants. it means that except owner, users will need a direct grant on this table, not through a role. Prefer RBAC access if possible.
-No role grantee on table test_reports_schema.sales_data_no_grants. it means that except owner, users will need a direct grant on this table, not through a role. Prefer RBAC access if possible.
-No role grantee on table test_data_schema.analytics_no_grants. it means that except owner, users will need a direct grant on this table, not through a role. Prefer RBAC access if possible.
-No role grantee on table pglinter.rules. it means that except owner, users will need a direct grant on this table, not through a role. Prefer RBAC access if possible. 
+NOTICE:  ⚠️  [T008] WARNING: TABLE No role grantee on table. it means that except owner, users will need a direct grant on this table, not through a role. Prefer RBAC access if possible. 4 : 
+test_app_schema.users_no_grants as no role granted
+test_app_schema.products_no_grants as no role granted
+test_reports_schema.sales_data_no_grants as no role granted
+test_data_schema.analytics_no_grants as no role granted 
 
 NOTICE:  ==================================================
 NOTICE:  📊 Summary: 0 error(s), 1 warning(s), 0 info

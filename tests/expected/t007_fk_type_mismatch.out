@@ -187,10 +187,10 @@ SELECT 'Disabling all rules to test T007 specifically...' AS status;
 (1 row)
 
 SELECT pglinter.disable_all_rules() AS all_rules_disabled;
-NOTICE:  🔴 Disabled 21 rule(s)
+NOTICE:  🔴 Disabled 20 rule(s)
  all_rules_disabled 
 --------------------
-                 21
+                 20
 (1 row)
 
 SELECT pglinter.enable_rule('T007') AS t007_enabled;
@@ -210,12 +210,12 @@ SELECT 'Running table check with all rules disabled (should show no T007 results
 SELECT pglinter.perform_table_check();
 NOTICE:  🔍 pglinter found 1 issue(s):
 NOTICE:  ==================================================
-NOTICE:  ⚠️  [T007] WARNING: Found 5 redundant idx in table: 
-Table public.test_orders_int_to_bigint constraint: test_orders_int_to_bigint_user_id_fkey on user_id column integer ref test_users_bigint column user_id type (bigint).
-Table public.test_reviews_bigint_to_int constraint: test_reviews_bigint_to_int_category_id_fkey on category_id column bigint ref test_categories_integer column category_id type (integer).
-Table public.test_inventory_int_to_smallint constraint: test_inventory_int_to_smallint_product_id_fkey on product_id column integer ref test_products_smallint column product_id type (smallint).
-Table public.test_stores_varchar_to_text constraint: test_stores_varchar_to_text_region_code_fkey on region_code column character varying ref test_regions_text column region_code type (text).
-Table public.test_discounts_smallint_to_int constraint: test_discounts_smallint_to_int_category_id_fkey on category_id column smallint ref test_categories_integer column category_id type (integer). 
+NOTICE:  ⚠️  [T007] WARNING: TABLE Table with fk type mismatch. 5 : 
+public.test_orders_int_to_bigint constraint test_orders_int_to_bigint_user_id_fkey column user_id type is integer buttest_users_bigint.user_id type is bigint
+public.test_reviews_bigint_to_int constraint test_reviews_bigint_to_int_category_id_fkey column category_id type is bigint buttest_categories_integer.category_id type is integer
+public.test_inventory_int_to_smallint constraint test_inventory_int_to_smallint_product_id_fkey column product_id type is integer buttest_products_smallint.product_id type is smallint
+public.test_stores_varchar_to_text constraint test_stores_varchar_to_text_region_code_fkey column region_code type is character varying buttest_regions_text.region_code type is text
+public.test_discounts_smallint_to_int constraint test_discounts_smallint_to_int_category_id_fkey column category_id type is smallint buttest_categories_integer.category_id type is integer 
 
 NOTICE:  ==================================================
 NOTICE:  📊 Summary: 0 error(s), 1 warning(s), 0 info
@@ -257,12 +257,12 @@ NOTICE:  ✅ Rule T007 has been enabled
 SELECT pglinter.perform_table_check(); -- Should include T007 again
 NOTICE:  🔍 pglinter found 1 issue(s):
 NOTICE:  ==================================================
-NOTICE:  ⚠️  [T007] WARNING: Found 5 redundant idx in table: 
-Table public.test_orders_int_to_bigint constraint: test_orders_int_to_bigint_user_id_fkey on user_id column integer ref test_users_bigint column user_id type (bigint).
-Table public.test_reviews_bigint_to_int constraint: test_reviews_bigint_to_int_category_id_fkey on category_id column bigint ref test_categories_integer column category_id type (integer).
-Table public.test_inventory_int_to_smallint constraint: test_inventory_int_to_smallint_product_id_fkey on product_id column integer ref test_products_smallint column product_id type (smallint).
-Table public.test_stores_varchar_to_text constraint: test_stores_varchar_to_text_region_code_fkey on region_code column character varying ref test_regions_text column region_code type (text).
-Table public.test_discounts_smallint_to_int constraint: test_discounts_smallint_to_int_category_id_fkey on category_id column smallint ref test_categories_integer column category_id type (integer). 
+NOTICE:  ⚠️  [T007] WARNING: TABLE Table with fk type mismatch. 5 : 
+public.test_orders_int_to_bigint constraint test_orders_int_to_bigint_user_id_fkey column user_id type is integer buttest_users_bigint.user_id type is bigint
+public.test_reviews_bigint_to_int constraint test_reviews_bigint_to_int_category_id_fkey column category_id type is bigint buttest_categories_integer.category_id type is integer
+public.test_inventory_int_to_smallint constraint test_inventory_int_to_smallint_product_id_fkey column product_id type is integer buttest_products_smallint.product_id type is smallint
+public.test_stores_varchar_to_text constraint test_stores_varchar_to_text_region_code_fkey column region_code type is character varying buttest_regions_text.region_code type is text
+public.test_discounts_smallint_to_int constraint test_discounts_smallint_to_int_category_id_fkey column category_id type is smallint buttest_categories_integer.category_id type is integer 
 
 NOTICE:  ==================================================
 NOTICE:  📊 Summary: 0 error(s), 1 warning(s), 0 info

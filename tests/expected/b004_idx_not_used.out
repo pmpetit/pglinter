@@ -27,7 +27,7 @@ SELECT
     (i % 5) + 1,  -- customer_id (1-5)
     i % 100 + 10,  -- page_views (10-109)
     (i % 3600) + 300,  -- session_duration (300-3899 seconds)
-    '2024-01-01'::timestamp + (i || ' seconds')::interval,  -- varying dates
+    '2024-01-01'::TIMESTAMP + (i || ' seconds')::INTERVAL,  -- varying dates
     CASE (i % 4)
         WHEN 0 THEN 'desktop'
         WHEN 1 THEN 'mobile'
@@ -39,9 +39,9 @@ SELECT
         WHEN 1 THEN 'firefox'
         ELSE 'safari'
     END
-FROM generate_series(1, 22000) i;
+FROM GENERATE_SERIES(1, 22000) AS i;
 -- Reset statistics to start fresh
-SELECT pg_stat_reset();
+SELECT PG_STAT_RESET();
  pg_stat_reset 
 ---------------
  
@@ -50,25 +50,35 @@ SELECT pg_stat_reset();
 -- Update table statistics
 ANALYZE customer_analytics;
 -- Use some indexes on customer_analytics (mixed usage)
-SELECT COUNT(*) FROM customer_analytics WHERE customer_id = 1;
+SELECT COUNT(*) FROM customer_analytics
+WHERE customer_id = 1;
  count 
 -------
   4400
 (1 row)
 
-SELECT COUNT(*) FROM customer_analytics WHERE customer_id = 2;
+SELECT COUNT(*) FROM customer_analytics
+WHERE customer_id = 2;
  count 
 -------
   4400
 (1 row)
 
-SELECT COUNT(*) FROM customer_analytics WHERE customer_id IN (1,2,3);
+SELECT COUNT(*) FROM customer_analytics
+WHERE customer_id IN (1, 2, 3);
  count 
 -------
  13200
 (1 row)
 
-SELECT id,customer_id,page_views,session_duration  FROM customer_analytics WHERE customer_id = 1 ORDER BY id LIMIT 10;
+SELECT
+    id,
+    customer_id,
+    page_views,
+    session_duration
+FROM customer_analytics
+WHERE customer_id = 1
+ORDER BY id LIMIT 10;
  id | customer_id | page_views | session_duration 
 ----+-------------+------------+------------------
   5 |           1 |         15 |              305
@@ -84,25 +94,35 @@ SELECT id,customer_id,page_views,session_duration  FROM customer_analytics WHERE
 (10 rows)
 
 -- Do not use indexes
-SELECT COUNT(*) FROM customer_analytics WHERE last_login > '2024-01-01';
+SELECT COUNT(*) FROM customer_analytics
+WHERE last_login > '2024-01-01';
  count 
 -------
  22000
 (1 row)
 
-SELECT COUNT(*) FROM customer_analytics WHERE last_login > '2024-01-15';
+SELECT COUNT(*) FROM customer_analytics
+WHERE last_login > '2024-01-15';
  count 
 -------
      0
 (1 row)
 
-SELECT COUNT(*) FROM customer_analytics WHERE last_login BETWEEN '2024-01-01' AND '2024-01-20';
+SELECT COUNT(*) FROM customer_analytics
+WHERE last_login BETWEEN '2024-01-01' AND '2024-01-20';
  count 
 -------
  22000
 (1 row)
 
-SELECT id,customer_id,page_views,session_duration FROM customer_analytics WHERE last_login > '2024-01-01' ORDER BY last_login LIMIT 10;
+SELECT
+    id,
+    customer_id,
+    page_views,
+    session_duration
+FROM customer_analytics
+WHERE last_login > '2024-01-01'
+ORDER BY last_login LIMIT 10;
  id | customer_id | page_views | session_duration 
 ----+-------------+------------+------------------
   1 |           2 |         11 |              301
@@ -121,7 +141,7 @@ SELECT id,customer_id,page_views,session_duration FROM customer_analytics WHERE 
 -- Update table statistics
 ANALYZE customer_analytics;
 -- Give some time....
-SELECT pg_sleep(2);
+SELECT PG_SLEEP(2);
  pg_sleep 
 ----------
  
@@ -131,7 +151,7 @@ SELECT pg_sleep(2);
 DROP EXTENSION IF EXISTS pglinter CASCADE;
 NOTICE:  extension "pglinter" does not exist, skipping
 CREATE EXTENSION IF NOT EXISTS pglinter;
-SELECT 'Testing B004 rule - Unused indexes detection...' as test_info;
+SELECT 'Testing B004 rule - Unused indexes detection...' AS test_info;
                     test_info                    
 -------------------------------------------------
  Testing B004 rule - Unused indexes detection...
@@ -139,10 +159,10 @@ SELECT 'Testing B004 rule - Unused indexes detection...' as test_info;
 
 -- First, disable all rules to isolate B004 testing
 SELECT pglinter.disable_all_rules() AS all_rules_disabled;
-NOTICE:  🔴 Disabled 22 rule(s)
+NOTICE:  🔴 Disabled 20 rule(s)
  all_rules_disabled 
 --------------------
-                 22
+                 20
 (1 row)
 
 -- Enable only B004 for focused testing
@@ -162,21 +182,26 @@ SELECT pglinter.is_rule_enabled('B004') AS b004_status;
 
 -- Run base check to detect B004 violations
 -- Expected result: Should detect unused indexes with idx_scan = 0
-SELECT 'Running base check to detect B004 violations...' as status;
+SELECT 'Running base check to detect B004 violations...' AS status;
                      status                      
 -------------------------------------------------
  Running base check to detect B004 violations...
 (1 row)
 
 SELECT pglinter.perform_base_check();
-NOTICE:  ✅ No issues found - database schema looks good!
+NOTICE:  🔍 pglinter found 1 issue(s):
+NOTICE:  ==================================================
+NOTICE:  ⚠️  [B004] WARNING: 3/5 unused index exceed the warning threshold: 60%
+NOTICE:  ==================================================
+NOTICE:  📊 Summary: 0 error(s), 1 warning(s), 0 info
+NOTICE:  🟡 Some warnings found - consider reviewing for optimization
  perform_base_check 
 --------------------
  t
 (1 row)
 
 -- Test rule management for B004
-SELECT 'Testing B004 rule management...' as test_section;
+SELECT 'Testing B004 rule management...' AS test_section;
           test_section           
 ---------------------------------
  Testing B004 rule management...
@@ -208,26 +233,41 @@ DROP INDEX idx_analytics_device_type;
 -- Update table statistics
 ANALYZE customer_analytics;
 -- Give some time....
-SELECT pg_sleep(2);
+SELECT PG_SLEEP(2);
  pg_sleep 
 ----------
  
 (1 row)
 
 -- Run B004 check again (should show fewer violations)
-SELECT 'Running B004 check after dropping some unused indexes (should show fewer violations):' as test_info;
+SELECT 'Running B004 check after dropping some unused indexes (should show fewer violations):' AS test_info;
                                        test_info                                       
 ---------------------------------------------------------------------------------------
  Running B004 check after dropping some unused indexes (should show fewer violations):
 (1 row)
 
 SELECT pglinter.perform_base_check();
-NOTICE:  ✅ No issues found - database schema looks good!
+NOTICE:  🔍 pglinter found 1 issue(s):
+NOTICE:  ==================================================
+NOTICE:  ⚠️  [B004] WARNING: 2/4 unused index exceed the warning threshold: 50%
+NOTICE:  ==================================================
+NOTICE:  📊 Summary: 0 error(s), 1 warning(s), 0 info
+NOTICE:  🟡 Some warnings found - consider reviewing for optimization
  perform_base_check 
 --------------------
  t
 (1 row)
 
+-- Test with file output
+SELECT pglinter.perform_base_check('/tmp/pglinter_b004_results.sarif');
+ perform_base_check 
+--------------------
+ t
+(1 row)
+
+-- Test if file exists and show checksum
+\! md5sum /tmp/pglinter_b004_results.sarif
+6f9137d468fa46f3f874a97ddb77a835  /tmp/pglinter_b004_results.sarif
 -- Update B004 thresholds to demonstrate message formatting
 SELECT pglinter.update_rule_levels('B004', 60, 90);
 NOTICE:  ✅ Updated rule B004 levels: warning=60, error=90
@@ -237,7 +277,7 @@ NOTICE:  ✅ Updated rule B004 levels: warning=60, error=90
 (1 row)
 
 -- Final demonstration with current state
-SELECT 'Final B004 (base check) - Shows percentage-based unused index analysis:' as b004_demo;
+SELECT 'Final B004 (base check) - Shows percentage-based unused index analysis:' AS b004_demo;
                                 b004_demo                                
 -------------------------------------------------------------------------
  Final B004 (base check) - Shows percentage-based unused index analysis:

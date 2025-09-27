@@ -185,10 +185,10 @@ SELECT 'Disabling all rules to test T009 specifically...' AS status;
 (1 row)
 
 SELECT pglinter.disable_all_rules() AS all_rules_disabled;
-NOTICE:  🔴 Disabled 21 rule(s)
+NOTICE:  🔴 Disabled 20 rule(s)
  all_rules_disabled 
 --------------------
-                 21
+                 20
 (1 row)
 
 SELECT pglinter.enable_rule('T009') AS t009_enabled;
@@ -208,44 +208,22 @@ SELECT 'Running table check with only T009 enabled:' AS test_info;
 SELECT pglinter.perform_table_check();
 NOTICE:  🔍 pglinter found 1 issue(s):
 NOTICE:  ==================================================
-NOTICE:  ⚠️  [T009] WARNING: Found 37 objects using reserved keywords: 
-test_naming_schema.users_with_bad_columns column:LIMIT violate retricted keyword rule.
-test_naming_schema.WHERE table violate retricted keyword rule.
-test_keywords_schema.FROM table violate retricted keyword rule.
-test_keywords_schema.AND function violate retricted keyword rule.
-test_naming_schema.WHERE type violate retricted keyword rule.
-test_keywords_schema.THEN function violate retricted keyword rule.
-test_naming_schema.users_with_bad_columns column:OFFSET violate retricted keyword rule.
-test_naming_schema.INNER view violate retricted keyword rule.
-test_keywords_schema.products_with_bad_columns column:HAVING violate retricted keyword rule.
-test_keywords_schema.PRIMARY index violate retricted keyword rule.
-test_keywords_schema.NULL type violate retricted keyword rule.
-test_keywords_schema.NULL sequence violate retricted keyword rule.
-test_keywords_schema.SELECT table violate retricted keyword rule.
-test_keywords_schema.DISTINCT type violate retricted keyword rule.
-test_keywords_schema.ELSE trigger violate retricted keyword rule.
-test_naming_schema.ORDER table violate retricted keyword rule.
-test_keywords_schema.products_with_bad_columns column:GROUP violate retricted keyword rule.
-test_keywords_schema.FROM type violate retricted keyword rule.
-test_keywords_schema.FALSE type violate retricted keyword rule.
-test_keywords_schema.FALSE sequence violate retricted keyword rule.
-test_keywords_schema.DISTINCT table violate retricted keyword rule.
-test_naming_schema.END function violate retricted keyword rule.
-test_naming_schema.TRUE type violate retricted keyword rule.
-test_naming_schema.users_with_bad_columns column:JOIN violate retricted keyword rule.
-test_naming_schema.INNER type violate retricted keyword rule.
-test_naming_schema.WHEN type violate retricted keyword rule.
-test_keywords_schema.DISTINCT view violate retricted keyword rule.
-test_naming_schema.UNIQUE index violate retricted keyword rule.
-test_naming_schema.BINARY trigger violate retricted keyword rule.
-test_naming_schema.ORDER type violate retricted keyword rule.
-test_keywords_schema.FOREIGN index violate retricted keyword rule.
-test_keywords_schema.products_with_bad_columns column:UNION violate retricted keyword rule.
-test_keywords_schema.CASE type violate retricted keyword rule.
-test_naming_schema.TRUE sequence violate retricted keyword rule.
-test_naming_schema.OR function violate retricted keyword rule.
-test_naming_schema.INNER table violate retricted keyword rule.
-test_keywords_schema.SELECT type violate retricted keyword rule. 
+NOTICE:  ⚠️  [T009] WARNING: TABLE Reserved keywords in object. 15 : 
+table:test_keywords_schema.SELECT is a reserved keyword.
+column:test_naming_schema.users_with_bad_columns.LIMIT is a reserved keyword.
+table:test_keywords_schema.DISTINCT is a reserved keyword.
+column:test_naming_schema.users_with_bad_columns.OFFSET is a reserved keyword.
+column:test_keywords_schema.products_with_bad_columns.UNION is a reserved keyword.
+column:test_keywords_schema.products_with_bad_columns.HAVING is a reserved keyword.
+table:test_naming_schema.ORDER is a reserved keyword.
+column:test_keywords_schema.products_with_bad_columns.GROUP is a reserved keyword.
+column:test_naming_schema.users_with_bad_columns.JOIN is a reserved keyword.
+index:test_naming_schema.UNIQUE is a reserved keyword.
+table:test_naming_schema.INNER is a reserved keyword.
+index:test_keywords_schema.FOREIGN is a reserved keyword.
+table:test_keywords_schema.FROM is a reserved keyword.
+table:test_naming_schema.WHERE is a reserved keyword.
+index:test_keywords_schema.PRIMARY is a reserved keyword. 
 
 NOTICE:  ==================================================
 NOTICE:  📊 Summary: 0 error(s), 1 warning(s), 0 info
@@ -287,44 +265,22 @@ NOTICE:  ✅ Rule T009 has been enabled
 SELECT pglinter.perform_table_check(); -- Should include T009 again
 NOTICE:  🔍 pglinter found 1 issue(s):
 NOTICE:  ==================================================
-NOTICE:  ⚠️  [T009] WARNING: Found 37 objects using reserved keywords: 
-test_naming_schema.users_with_bad_columns column:LIMIT violate retricted keyword rule.
-test_naming_schema.WHERE table violate retricted keyword rule.
-test_keywords_schema.FROM table violate retricted keyword rule.
-test_keywords_schema.AND function violate retricted keyword rule.
-test_naming_schema.WHERE type violate retricted keyword rule.
-test_keywords_schema.THEN function violate retricted keyword rule.
-test_naming_schema.users_with_bad_columns column:OFFSET violate retricted keyword rule.
-test_naming_schema.INNER view violate retricted keyword rule.
-test_keywords_schema.products_with_bad_columns column:HAVING violate retricted keyword rule.
-test_keywords_schema.PRIMARY index violate retricted keyword rule.
-test_keywords_schema.NULL type violate retricted keyword rule.
-test_keywords_schema.NULL sequence violate retricted keyword rule.
-test_keywords_schema.SELECT table violate retricted keyword rule.
-test_keywords_schema.DISTINCT type violate retricted keyword rule.
-test_keywords_schema.ELSE trigger violate retricted keyword rule.
-test_naming_schema.ORDER table violate retricted keyword rule.
-test_keywords_schema.products_with_bad_columns column:GROUP violate retricted keyword rule.
-test_keywords_schema.FROM type violate retricted keyword rule.
-test_keywords_schema.FALSE type violate retricted keyword rule.
-test_keywords_schema.FALSE sequence violate retricted keyword rule.
-test_keywords_schema.DISTINCT table violate retricted keyword rule.
-test_naming_schema.END function violate retricted keyword rule.
-test_naming_schema.TRUE type violate retricted keyword rule.
-test_naming_schema.users_with_bad_columns column:JOIN violate retricted keyword rule.
-test_naming_schema.INNER type violate retricted keyword rule.
-test_naming_schema.WHEN type violate retricted keyword rule.
-test_keywords_schema.DISTINCT view violate retricted keyword rule.
-test_naming_schema.UNIQUE index violate retricted keyword rule.
-test_naming_schema.BINARY trigger violate retricted keyword rule.
-test_naming_schema.ORDER type violate retricted keyword rule.
-test_keywords_schema.FOREIGN index violate retricted keyword rule.
-test_keywords_schema.products_with_bad_columns column:UNION violate retricted keyword rule.
-test_keywords_schema.CASE type violate retricted keyword rule.
-test_naming_schema.TRUE sequence violate retricted keyword rule.
-test_naming_schema.OR function violate retricted keyword rule.
-test_naming_schema.INNER table violate retricted keyword rule.
-test_keywords_schema.SELECT type violate retricted keyword rule. 
+NOTICE:  ⚠️  [T009] WARNING: TABLE Reserved keywords in object. 15 : 
+table:test_keywords_schema.SELECT is a reserved keyword.
+column:test_naming_schema.users_with_bad_columns.LIMIT is a reserved keyword.
+table:test_keywords_schema.DISTINCT is a reserved keyword.
+column:test_naming_schema.users_with_bad_columns.OFFSET is a reserved keyword.
+column:test_keywords_schema.products_with_bad_columns.UNION is a reserved keyword.
+column:test_keywords_schema.products_with_bad_columns.HAVING is a reserved keyword.
+table:test_naming_schema.ORDER is a reserved keyword.
+column:test_keywords_schema.products_with_bad_columns.GROUP is a reserved keyword.
+column:test_naming_schema.users_with_bad_columns.JOIN is a reserved keyword.
+index:test_naming_schema.UNIQUE is a reserved keyword.
+table:test_naming_schema.INNER is a reserved keyword.
+index:test_keywords_schema.FOREIGN is a reserved keyword.
+table:test_keywords_schema.FROM is a reserved keyword.
+table:test_naming_schema.WHERE is a reserved keyword.
+index:test_keywords_schema.PRIMARY is a reserved keyword. 
 
 NOTICE:  ==================================================
 NOTICE:  📊 Summary: 0 error(s), 1 warning(s), 0 info

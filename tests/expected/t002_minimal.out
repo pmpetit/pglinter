@@ -18,10 +18,10 @@ DROP EXTENSION IF EXISTS pglinter CASCADE;
 CREATE EXTENSION IF NOT EXISTS pglinter;
 -- Enable only T002
 SELECT pglinter.disable_all_rules();
-NOTICE:  🔴 Disabled 21 rule(s)
+NOTICE:  🔴 Disabled 20 rule(s)
  disable_all_rules 
 -------------------
-                21
+                20
 (1 row)
 
 SELECT pglinter.enable_rule('T002');
@@ -35,10 +35,10 @@ NOTICE:  ✅ Rule T002 has been enabled
 SELECT pglinter.perform_table_check();
 NOTICE:  🔍 pglinter found 1 issue(s):
 NOTICE:  ==================================================
-NOTICE:  ⚠️  [T002] WARNING: Found 3 redundant idx in table: 
-public.test_redundant : idx_name_2 (first_name, last_name)) is a superset of idx_name_1 (first_name))
-public.test_redundant : idx_name_3 (first_name, last_name, tel)) is a superset of idx_name_2 (first_name, last_name))
-public.test_redundant : idx_name_3 (first_name, last_name, tel)) is a superset of idx_name_1 (first_name)) 
+NOTICE:  ⚠️  [T002] WARNING: TABLE duplicated index 3 : 
+public.test_redundant idx idx_name_1 columns (first_name) is a subset of idx idx_name_2 columns (first_name,last_name)
+public.test_redundant idx idx_name_1 columns (first_name) is a subset of idx idx_name_3 columns (first_name,last_name,tel)
+public.test_redundant idx idx_name_2 columns (first_name,last_name) is a subset of idx idx_name_3 columns (first_name,last_name,tel) 
 
 NOTICE:  ==================================================
 NOTICE:  📊 Summary: 0 error(s), 1 warning(s), 0 info

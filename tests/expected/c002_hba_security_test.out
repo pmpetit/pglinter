@@ -5,7 +5,7 @@ BEGIN;
 -- Create the extension and test C002 rule
 DROP EXTENSION IF EXISTS pglinter CASCADE;
 CREATE EXTENSION IF NOT EXISTS pglinter;
-SELECT 'Testing C002 rule - pg_hba.conf security checks...' as test_info;
+SELECT 'Testing C002 rule - pg_hba.conf security checks...' AS test_info;
                      test_info                      
 ----------------------------------------------------
  Testing C002 rule - pg_hba.conf security checks...
@@ -13,10 +13,10 @@ SELECT 'Testing C002 rule - pg_hba.conf security checks...' as test_info;
 
 -- First, disable all rules to isolate C002 testing
 SELECT pglinter.disable_all_rules() AS all_rules_disabled;
-NOTICE:  🔴 Disabled 21 rule(s)
+NOTICE:  🔴 Disabled 20 rule(s)
  all_rules_disabled 
 --------------------
-                 21
+                 20
 (1 row)
 
 -- Enable only C002 for focused testing
@@ -35,7 +35,7 @@ SELECT pglinter.is_rule_enabled('C002') AS c002_status;
 (1 row)
 
 -- Test 1: Run C002 check with current settings
-SELECT '=== Test 2: C002 Rule Execution ===' as test_section;
+SELECT '=== Test 2: C002 Rule Execution ===' AS test_section;
             test_section             
 -------------------------------------
  === Test 2: C002 Rule Execution ===
@@ -53,14 +53,23 @@ NOTICE:  🔴 Critical issues found - please review and fix errors
  t
 (1 row)
 
+-- Test if file exists and show checksum
+SELECT pglinter.perform_base_check('/tmp/pglinter_c002_results.sarif');
+ perform_base_check 
+--------------------
+ t
+(1 row)
+
+\! md5sum /tmp/pglinter_c002_results.sarif
+7cd6073b52ee9a1173c05c016e2458f4  /tmp/pglinter_c002_results.sarif
 -- Test rule explanation
-SELECT 'C002 rule explanation:' as explanation_info;
+SELECT 'C002 rule explanation:' AS explanation_info;
     explanation_info    
 ------------------------
  C002 rule explanation:
 (1 row)
 
-SELECT pglinter.explain_rule('C002') as rule_explanation;
+SELECT pglinter.explain_rule('C002') AS rule_explanation;
 NOTICE:  📖 Rule Explanation for C002
 ============================================================
 

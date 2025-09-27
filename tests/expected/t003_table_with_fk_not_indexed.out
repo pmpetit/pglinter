@@ -23,10 +23,10 @@ DROP EXTENSION IF EXISTS pglinter CASCADE;
 CREATE EXTENSION IF NOT EXISTS pglinter;
 -- Disable all rules first to isolate T004 testing
 SELECT pglinter.disable_all_rules() AS all_rules_disabled;
-NOTICE:  🔴 Disabled 21 rule(s)
+NOTICE:  🔴 Disabled 20 rule(s)
  all_rules_disabled 
 --------------------
-                 21
+                 20
 (1 row)
 
 -- Enable T003 specifically
@@ -41,8 +41,8 @@ NOTICE:  ✅ Rule T003 has been enabled
 SELECT pglinter.perform_table_check(); -- Should include T004 results
 NOTICE:  🔍 pglinter found 1 issue(s):
 NOTICE:  ==================================================
-NOTICE:  ⚠️  [T003] WARNING: Found 1 foreign key(s) without index in table: 
-public.child unindexed constraint fk_parent 
+NOTICE:  ⚠️  [T003] WARNING: TABLE unindexed constraint 1 : 
+public.child constraint name:fk_parent 
 
 NOTICE:  ==================================================
 NOTICE:  📊 Summary: 0 error(s), 1 warning(s), 0 info

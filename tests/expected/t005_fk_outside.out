@@ -161,10 +161,10 @@ SELECT 'Disabling all rules to test T005 specifically...' as status;
 (1 row)
 
 SELECT pglinter.disable_all_rules() AS all_rules_disabled;
-NOTICE:  🔴 Disabled 21 rule(s)
+NOTICE:  🔴 Disabled 20 rule(s)
  all_rules_disabled 
 --------------------
-                 21
+                 20
 (1 row)
 
 -- Run table check (should show no results since all rules are disabled)
@@ -199,7 +199,7 @@ NOTICE:  📖 Rule Explanation for T005
 table with fk outside its schema. This can be problematic for  maintenance and scalability of the database, refreshing staging/preprod from prod, as well as for understanding the data model.  Migration challenges: Moving or restructuring schemas becomes difficult.
 
 ⚠️  Message Template:
-foreign key {constraint_name} on {schema}.{table_name} is in schema {referenced_schema}.{referenced_table}.
+foreign key outside schema
 
 🔧 How to Fix:
    1. consider rewrite your model
@@ -246,12 +246,12 @@ SELECT 'Running table check with T005 enabled - should detect cross-schema forei
 SELECT pglinter.perform_table_check(); -- Should include T005 results
 NOTICE:  🔍 pglinter found 1 issue(s):
 NOTICE:  ==================================================
-NOTICE:  ⚠️  [T005] WARNING: Found 5 table(s) with fk outside its schema : 
-foreign key orders_customer_id_fkey on sales_schema.orders is in schema public.customers.
-foreign key order_items_product_id_fkey on sales_schema.order_items is in schema public.products.
-foreign key product_stock_product_id_fkey on inventory_schema.product_stock is in schema public.products.
-foreign key stock_movements_created_by_fkey on inventory_schema.stock_movements is in schema public.users.
-foreign key user_activity_log_user_id_fkey on audit_schema.user_activity_log is in schema public.users. 
+NOTICE:  ⚠️  [T005] WARNING: TABLE foreign key outside schema 5 : 
+sales_schema.orders fk orders_customer_id_fkey reference public.customers
+sales_schema.order_items fk order_items_product_id_fkey reference public.products
+inventory_schema.product_stock fk product_stock_product_id_fkey reference public.products
+inventory_schema.stock_movements fk stock_movements_created_by_fkey reference public.users
+audit_schema.user_activity_log fk user_activity_log_user_id_fkey reference public.users 
 
 NOTICE:  ==================================================
 NOTICE:  📊 Summary: 0 error(s), 1 warning(s), 0 info
@@ -293,12 +293,12 @@ NOTICE:  ✅ Rule T005 has been enabled
 SELECT pglinter.perform_table_check(); -- Should include T005 again
 NOTICE:  🔍 pglinter found 1 issue(s):
 NOTICE:  ==================================================
-NOTICE:  ⚠️  [T005] WARNING: Found 5 table(s) with fk outside its schema : 
-foreign key orders_customer_id_fkey on sales_schema.orders is in schema public.customers.
-foreign key order_items_product_id_fkey on sales_schema.order_items is in schema public.products.
-foreign key product_stock_product_id_fkey on inventory_schema.product_stock is in schema public.products.
-foreign key stock_movements_created_by_fkey on inventory_schema.stock_movements is in schema public.users.
-foreign key user_activity_log_user_id_fkey on audit_schema.user_activity_log is in schema public.users. 
+NOTICE:  ⚠️  [T005] WARNING: TABLE foreign key outside schema 5 : 
+sales_schema.orders fk orders_customer_id_fkey reference public.customers
+sales_schema.order_items fk order_items_product_id_fkey reference public.products
+inventory_schema.product_stock fk product_stock_product_id_fkey reference public.products
+inventory_schema.stock_movements fk stock_movements_created_by_fkey reference public.users
+audit_schema.user_activity_log fk user_activity_log_user_id_fkey reference public.users 
 
 NOTICE:  ==================================================
 NOTICE:  📊 Summary: 0 error(s), 1 warning(s), 0 info

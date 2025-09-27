@@ -1,6 +1,9 @@
 -- Demo script for the new rule level management functions
 -- This script demonstrates how to get and update warning_level and error_level for rules
 
+DROP EXTENSION IF EXISTS pglinter CASCADE;
+CREATE EXTENSION IF NOT EXISTS pglinter;
+
 \echo 'Testing rule level management functions...'
 
 -- First, let's see the current levels for T005
@@ -43,14 +46,6 @@ SELECT pglinter.get_rule_levels('T001') as updated_levels;
 -- Try to update a non-existent rule
 \echo 'Trying to update non-existent rule (should return false):'
 SELECT pglinter.update_rule_levels('NONEXISTENT', 10, 20) as should_be_false;
-
--- Show all updated levels
-\echo 'All rule levels after updates:'
-SELECT
-    code,
-    pglinter.get_rule_levels(code) as levels
-FROM pglinter.list_rules()
-ORDER BY code;
 
 -- You can also query the rules table directly to see the raw values
 \echo 'Raw warning_level and error_level from rules table:'

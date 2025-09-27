@@ -132,7 +132,7 @@ NOTICE:  📖 Rule Explanation for T001
 table without primary key.
 
 ⚠️  Message Template:
-No primary key on table {0}.{1}.{2}.
+no primary key on table(s)
 
 🔧 How to Fix:
    1. create a primary key
@@ -178,7 +178,12 @@ SELECT 'Running table check with T001 enabled - should detect tables without pri
 SELECT pglinter.perform_table_check(); -- Should include T001 results
 NOTICE:  🔍 pglinter found 1 issue(s):
 NOTICE:  ==================================================
-NOTICE:  ⚠️  [T001] WARNING: Found 4 tables without primary key: public.customer_orders, public.product_reviews, public.user_sessions, public.inventory_logs
+NOTICE:  ⚠️  [T001] WARNING: TABLE no primary key on table(s) 4 : 
+public.customer_orders
+public.product_reviews
+public.user_sessions
+public.inventory_logs 
+
 NOTICE:  ==================================================
 NOTICE:  📊 Summary: 0 error(s), 1 warning(s), 0 info
 NOTICE:  🟡 Some warnings found - consider reviewing for optimization
@@ -219,7 +224,12 @@ NOTICE:  ✅ Rule T001 has been enabled
 SELECT pglinter.perform_table_check(); -- Should include T001 again
 NOTICE:  🔍 pglinter found 1 issue(s):
 NOTICE:  ==================================================
-NOTICE:  ⚠️  [T001] WARNING: Found 4 tables without primary key: public.customer_orders, public.product_reviews, public.user_sessions, public.inventory_logs
+NOTICE:  ⚠️  [T001] WARNING: TABLE no primary key on table(s) 4 : 
+public.customer_orders
+public.product_reviews
+public.user_sessions
+public.inventory_logs 
+
 NOTICE:  ==================================================
 NOTICE:  📊 Summary: 0 error(s), 1 warning(s), 0 info
 NOTICE:  🟡 Some warnings found - consider reviewing for optimization
@@ -257,64 +267,6 @@ NOTICE:  ✅ No issues found - database schema looks good!
  perform_table_check 
 ---------------------
  t
-(1 row)
-
-SELECT 'Summary:' as info;
-   info   
-----------
- Summary:
-(1 row)
-
-SELECT '
-This example demonstrates:
-1. How tables without primary keys are detected by the T001 rule
-2. The difference between T001 (individual table detection) and B001 (database-wide percentage)
-3. How adding primary keys resolves T001 violations
-4. Why primary keys are essential for database design
-
-The T001 rule specifically identifies individual tables that lack primary keys.
-Primary keys are crucial for:
-- Ensuring row uniqueness and data integrity
-- Enabling efficient replication
-- Supporting foreign key relationships
-- Optimizing query performance
-- Meeting database design best practices
-
-Key differences from B001:
-- T001: Lists specific tables without primary keys (table-level rule)
-- B001: Reports percentage of tables without primary keys (database-wide rule)
-- T001: Part of table checks (pglinter.perform_table_check())
-- B001: Part of base checks (pglinter.perform_base_check())
-
-The T001 rule helps database administrators identify exactly which tables need
-primary keys, making it easier to prioritize and fix data integrity issues.
-' as explanation;
-                                           explanation                                           
--------------------------------------------------------------------------------------------------
-                                                                                                +
- This example demonstrates:                                                                     +
- 1. How tables without primary keys are detected by the T001 rule                               +
- 2. The difference between T001 (individual table detection) and B001 (database-wide percentage)+
- 3. How adding primary keys resolves T001 violations                                            +
- 4. Why primary keys are essential for database design                                          +
-                                                                                                +
- The T001 rule specifically identifies individual tables that lack primary keys.                +
- Primary keys are crucial for:                                                                  +
- - Ensuring row uniqueness and data integrity                                                   +
- - Enabling efficient replication                                                               +
- - Supporting foreign key relationships                                                         +
- - Optimizing query performance                                                                 +
- - Meeting database design best practices                                                       +
-                                                                                                +
- Key differences from B001:                                                                     +
- - T001: Lists specific tables without primary keys (table-level rule)                          +
- - B001: Reports percentage of tables without primary keys (database-wide rule)                 +
- - T001: Part of table checks (pglinter.perform_table_check())                                  +
- - B001: Part of base checks (pglinter.perform_base_check())                                    +
-                                                                                                +
- The T001 rule helps database administrators identify exactly which tables need                 +
- primary keys, making it easier to prioritize and fix data integrity issues.                    +
- 
 (1 row)
 
 ROLLBACK;

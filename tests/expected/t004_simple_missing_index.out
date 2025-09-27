@@ -134,10 +134,10 @@ DROP EXTENSION IF EXISTS pglinter CASCADE;
 CREATE EXTENSION IF NOT EXISTS pglinter;
 -- Disable all rules first
 SELECT pglinter.disable_all_rules() AS all_rules_disabled;
-NOTICE:  🔴 Disabled 21 rule(s)
+NOTICE:  🔴 Disabled 20 rule(s)
  all_rules_disabled 
 --------------------
-                 21
+                 20
 (1 row)
 
 -- enable T004
@@ -151,12 +151,12 @@ NOTICE:  ✅ Rule T004 has been enabled
 SELECT pglinter.perform_table_check(); -- Should include T004
 NOTICE:  🔍 pglinter found 1 issue(s):
 NOTICE:  ==================================================
-NOTICE:  ❌ [T004] ERROR: Found 1 table(s) with potential missing index (seq scan > threshold): 
-public.user_activities table with potential missing index, seq scan exceed the error threshold: 100. 
+NOTICE:  ⚠️  [T004] WARNING: TABLE table with potential missing index 1 : 
+public.user_activities:100 % of seq scan 
 
 NOTICE:  ==================================================
-NOTICE:  📊 Summary: 1 error(s), 0 warning(s), 0 info
-NOTICE:  🔴 Critical issues found - please review and fix errors
+NOTICE:  📊 Summary: 0 error(s), 1 warning(s), 0 info
+NOTICE:  🟡 Some warnings found - consider reviewing for optimization
  perform_table_check 
 ---------------------
  t
@@ -326,7 +326,7 @@ NOTICE:  📖 Rule Explanation for T004
  with high level of seq scan, base on pg_stat_user_tables.
 
 ⚠️  Message Template:
-{schema}.{table} table with potential missing index, seq scan exceed the {log_level} threshold: {seq_scan_percentage}.
+table with potential missing index
 
 🔧 How to Fix:
    1. ask a dba
@@ -353,8 +353,8 @@ NOTICE:  ✅ Rule T004 has been enabled
 SELECT pglinter.perform_table_check(); -- Should include T004
 NOTICE:  🔍 pglinter found 1 issue(s):
 NOTICE:  ==================================================
-NOTICE:  ⚠️  [T004] WARNING: Found 1 table(s) with potential missing index (seq scan > threshold): 
-public.indexed_user_activities table with potential missing index, seq scan exceed the warning threshold: 69. 
+NOTICE:  ⚠️  [T004] WARNING: TABLE table with potential missing index 1 : 
+public.indexed_user_activities:69 % of seq scan 
 
 NOTICE:  ==================================================
 NOTICE:  📊 Summary: 0 error(s), 1 warning(s), 0 info

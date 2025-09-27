@@ -1,5 +1,26 @@
 -- Test for pglinter T002 rule: Tables with redundant indexes
 \pset pager off
+BEGIN;
+-- Drop extension if exists to reset state
+DROP EXTENSION IF EXISTS pglinter;
+-- Create extension
+CREATE EXTENSION IF NOT EXISTS pglinter;
+-- First, disable all rules to isolate B001 testing
+SELECT pglinter.disable_all_rules() AS all_rules_disabled;
+NOTICE:  🔴 Disabled 20 rule(s)
+ all_rules_disabled 
+--------------------
+                 20
+(1 row)
+
+-- Enable only B001 for focused testing
+SELECT pglinter.enable_rule('T002') AS b001_enabled;
+NOTICE:  ✅ Rule T002 has been enabled
+ b001_enabled 
+--------------
+ t
+(1 row)
+
 -- Create test tables with redundant indexes for T002 testing
 CREATE TABLE IF NOT EXISTS customers_with_redundant_idx (
     customer_id INT PRIMARY KEY,
@@ -53,6 +74,9 @@ CREATE INDEX idx_products_category_active_2 ON products_with_redundant_idx (
 -- Case 5: Redundant indexes on orders table
 CREATE INDEX idx_orders_customer_1 ON orders_with_redundant_idx (customer_id);
 CREATE INDEX idx_orders_customer_2 ON orders_with_redundant_idx (customer_id);
+CREATE INDEX idx_orders_customer_3 ON orders_with_redundant_idx (customer_id, product_id);
+CREATE INDEX idx_orders_customer_4 ON orders_with_redundant_idx (customer_id, product_id, order_date);
+CREATE INDEX idx_orders_customer_5 ON orders_with_redundant_idx (customer_id, product_id, order_date, status);
 -- Case 6: Different composite index redundancy on orders table
 CREATE INDEX idx_orders_date_status_1 ON orders_with_redundant_idx (
     order_date, status
@@ -64,8 +88,6 @@ CREATE INDEX idx_orders_date_status_2 ON orders_with_redundant_idx (
 CREATE INDEX idx_customers_phone ON customers_with_redundant_idx (phone);
 CREATE INDEX idx_products_price ON products_with_redundant_idx (price);
 CREATE INDEX idx_orders_total ON orders_with_redundant_idx (total_amount);
-CREATE EXTENSION IF NOT EXISTS pglinter;
-NOTICE:  extension "pglinter" already exists, skipping
 -- First, disable all rules to isolate T002 testing
 SELECT pglinter.disable_all_rules() AS all_rules_disabled;
 NOTICE:  🔴 Disabled 1 rule(s)
@@ -91,24 +113,37 @@ SELECT pglinter.perform_table_check('/tmp/pglinter_T002_results.sarif');
 
 -- Test if file exists and show checksum
 \! md5sum /tmp/pglinter_T002_results.sarif
-c74ce1d01890de37c27b8cbb260bd3a5  /tmp/pglinter_T002_results.sarif
+e087b16a25e3c5367d95c44cecba0a62  /tmp/pglinter_T002_results.sarif
 -- Test with no output file (should output to prompt)
 SELECT pglinter.perform_table_check();
 NOTICE:  🔍 pglinter found 1 issue(s):
 NOTICE:  ==================================================
-NOTICE:  ⚠️  [T002] WARNING: Found 12 redundant idx in table: 
-public.customers_with_redundant_idx : idx_customers_email_1 (email)) is a superset of idx_customers_email_2 (email))
-public.customers_with_redundant_idx : idx_customers_email_2 (email)) is a superset of idx_customers_email_1 (email))
-public.customers_with_redundant_idx : idx_customers_name_1 (first_name, last_name)) is a superset of idx_customers_name_2 (first_name, last_name))
-public.customers_with_redundant_idx : idx_customers_name_2 (first_name, last_name)) is a superset of idx_customers_name_1 (first_name, last_name))
-public.orders_with_redundant_idx : idx_orders_customer_1 (customer_id)) is a superset of idx_orders_customer_2 (customer_id))
-public.orders_with_redundant_idx : idx_orders_customer_2 (customer_id)) is a superset of idx_orders_customer_1 (customer_id))
-public.orders_with_redundant_idx : idx_orders_date_status_1 (order_date, status)) is a superset of idx_orders_date_status_2 (order_date, status))
-public.orders_with_redundant_idx : idx_orders_date_status_2 (order_date, status)) is a superset of idx_orders_date_status_1 (order_date, status))
-public.products_with_redundant_idx : idx_products_category_active_1 (category, is_active)) is a superset of idx_products_category_active_2 (category, is_active))
-public.products_with_redundant_idx : idx_products_category_active_2 (category, is_active)) is a superset of idx_products_category_active_1 (category, is_active))
-public.products_with_redundant_idx : idx_products_sku_1 (sku)) is a superset of idx_products_sku_2 (sku))
-public.products_with_redundant_idx : idx_products_sku_2 (sku)) is a superset of idx_products_sku_1 (sku)) 
+NOTICE:  ⚠️  [T002] WARNING: TABLE duplicated index 25 : 
+public.customers_with_redundant_idx idx customers_with_redundant_idx_email_key columns (email) is a subset of idx idx_customers_email_1 columns (email)
+public.customers_with_redundant_idx idx customers_with_redundant_idx_email_key columns (email) is a subset of idx idx_customers_email_2 columns (email)
+public.customers_with_redundant_idx idx idx_customers_email_1 columns (email) is a subset of idx customers_with_redundant_idx_email_key columns (email)
+public.customers_with_redundant_idx idx idx_customers_email_1 columns (email) is a subset of idx idx_customers_email_2 columns (email)
+public.customers_with_redundant_idx idx idx_customers_email_2 columns (email) is a subset of idx customers_with_redundant_idx_email_key columns (email)
+public.customers_with_redundant_idx idx idx_customers_email_2 columns (email) is a subset of idx idx_customers_email_1 columns (email)
+public.customers_with_redundant_idx idx idx_customers_name_1 columns (first_name,last_name) is a subset of idx idx_customers_name_2 columns (first_name,last_name)
+public.customers_with_redundant_idx idx idx_customers_name_2 columns (first_name,last_name) is a subset of idx idx_customers_name_1 columns (first_name,last_name)
+public.orders_with_redundant_idx idx idx_orders_customer_1 columns (customer_id) is a subset of idx idx_orders_customer_2 columns (customer_id)
+public.orders_with_redundant_idx idx idx_orders_customer_1 columns (customer_id) is a subset of idx idx_orders_customer_3 columns (customer_id,product_id)
+public.orders_with_redundant_idx idx idx_orders_customer_1 columns (customer_id) is a subset of idx idx_orders_customer_4 columns (customer_id,product_id,order_date)
+public.orders_with_redundant_idx idx idx_orders_customer_1 columns (customer_id) is a subset of idx idx_orders_customer_5 columns (customer_id,product_id,order_date,status)
+public.orders_with_redundant_idx idx idx_orders_customer_2 columns (customer_id) is a subset of idx idx_orders_customer_1 columns (customer_id)
+public.orders_with_redundant_idx idx idx_orders_customer_2 columns (customer_id) is a subset of idx idx_orders_customer_3 columns (customer_id,product_id)
+public.orders_with_redundant_idx idx idx_orders_customer_2 columns (customer_id) is a subset of idx idx_orders_customer_4 columns (customer_id,product_id,order_date)
+public.orders_with_redundant_idx idx idx_orders_customer_2 columns (customer_id) is a subset of idx idx_orders_customer_5 columns (customer_id,product_id,order_date,status)
+public.orders_with_redundant_idx idx idx_orders_customer_3 columns (customer_id,product_id) is a subset of idx idx_orders_customer_4 columns (customer_id,product_id,order_date)
+public.orders_with_redundant_idx idx idx_orders_customer_3 columns (customer_id,product_id) is a subset of idx idx_orders_customer_5 columns (customer_id,product_id,order_date,status)
+public.orders_with_redundant_idx idx idx_orders_customer_4 columns (customer_id,product_id,order_date) is a subset of idx idx_orders_customer_5 columns (customer_id,product_id,order_date,status)
+public.orders_with_redundant_idx idx idx_orders_date_status_1 columns (order_date,status) is a subset of idx idx_orders_date_status_2 columns (order_date,status)
+public.orders_with_redundant_idx idx idx_orders_date_status_2 columns (order_date,status) is a subset of idx idx_orders_date_status_1 columns (order_date,status)
+public.products_with_redundant_idx idx idx_products_category_active_1 columns (category,is_active) is a subset of idx idx_products_category_active_2 columns (category,is_active)
+public.products_with_redundant_idx idx idx_products_category_active_2 columns (category,is_active) is a subset of idx idx_products_category_active_1 columns (category,is_active)
+public.products_with_redundant_idx idx idx_products_sku_1 columns (sku) is a subset of idx idx_products_sku_2 columns (sku)
+public.products_with_redundant_idx idx idx_products_sku_2 columns (sku) is a subset of idx idx_products_sku_1 columns (sku) 
 
 NOTICE:  ==================================================
 NOTICE:  📊 Summary: 0 error(s), 1 warning(s), 0 info
@@ -130,7 +165,7 @@ NOTICE:  📖 Rule Explanation for T002
 table with duplicated index.
 
 ⚠️  Message Template:
-{schema}.{table} : {redundant_index} ({redundant_index_def}) is a superset of {superset_index} ({superset_index_def})
+duplicated index
 
 🔧 How to Fix:
    1. remove duplicated index
@@ -174,19 +209,32 @@ NOTICE:  ✅ Rule T002 has been enabled
 SELECT pglinter.perform_table_check();
 NOTICE:  🔍 pglinter found 1 issue(s):
 NOTICE:  ==================================================
-NOTICE:  ⚠️  [T002] WARNING: Found 12 redundant idx in table: 
-public.customers_with_redundant_idx : idx_customers_email_1 (email)) is a superset of idx_customers_email_2 (email))
-public.customers_with_redundant_idx : idx_customers_email_2 (email)) is a superset of idx_customers_email_1 (email))
-public.customers_with_redundant_idx : idx_customers_name_1 (first_name, last_name)) is a superset of idx_customers_name_2 (first_name, last_name))
-public.customers_with_redundant_idx : idx_customers_name_2 (first_name, last_name)) is a superset of idx_customers_name_1 (first_name, last_name))
-public.orders_with_redundant_idx : idx_orders_customer_1 (customer_id)) is a superset of idx_orders_customer_2 (customer_id))
-public.orders_with_redundant_idx : idx_orders_customer_2 (customer_id)) is a superset of idx_orders_customer_1 (customer_id))
-public.orders_with_redundant_idx : idx_orders_date_status_1 (order_date, status)) is a superset of idx_orders_date_status_2 (order_date, status))
-public.orders_with_redundant_idx : idx_orders_date_status_2 (order_date, status)) is a superset of idx_orders_date_status_1 (order_date, status))
-public.products_with_redundant_idx : idx_products_category_active_1 (category, is_active)) is a superset of idx_products_category_active_2 (category, is_active))
-public.products_with_redundant_idx : idx_products_category_active_2 (category, is_active)) is a superset of idx_products_category_active_1 (category, is_active))
-public.products_with_redundant_idx : idx_products_sku_1 (sku)) is a superset of idx_products_sku_2 (sku))
-public.products_with_redundant_idx : idx_products_sku_2 (sku)) is a superset of idx_products_sku_1 (sku)) 
+NOTICE:  ⚠️  [T002] WARNING: TABLE duplicated index 25 : 
+public.customers_with_redundant_idx idx customers_with_redundant_idx_email_key columns (email) is a subset of idx idx_customers_email_1 columns (email)
+public.customers_with_redundant_idx idx customers_with_redundant_idx_email_key columns (email) is a subset of idx idx_customers_email_2 columns (email)
+public.customers_with_redundant_idx idx idx_customers_email_1 columns (email) is a subset of idx customers_with_redundant_idx_email_key columns (email)
+public.customers_with_redundant_idx idx idx_customers_email_1 columns (email) is a subset of idx idx_customers_email_2 columns (email)
+public.customers_with_redundant_idx idx idx_customers_email_2 columns (email) is a subset of idx customers_with_redundant_idx_email_key columns (email)
+public.customers_with_redundant_idx idx idx_customers_email_2 columns (email) is a subset of idx idx_customers_email_1 columns (email)
+public.customers_with_redundant_idx idx idx_customers_name_1 columns (first_name,last_name) is a subset of idx idx_customers_name_2 columns (first_name,last_name)
+public.customers_with_redundant_idx idx idx_customers_name_2 columns (first_name,last_name) is a subset of idx idx_customers_name_1 columns (first_name,last_name)
+public.orders_with_redundant_idx idx idx_orders_customer_1 columns (customer_id) is a subset of idx idx_orders_customer_2 columns (customer_id)
+public.orders_with_redundant_idx idx idx_orders_customer_1 columns (customer_id) is a subset of idx idx_orders_customer_3 columns (customer_id,product_id)
+public.orders_with_redundant_idx idx idx_orders_customer_1 columns (customer_id) is a subset of idx idx_orders_customer_4 columns (customer_id,product_id,order_date)
+public.orders_with_redundant_idx idx idx_orders_customer_1 columns (customer_id) is a subset of idx idx_orders_customer_5 columns (customer_id,product_id,order_date,status)
+public.orders_with_redundant_idx idx idx_orders_customer_2 columns (customer_id) is a subset of idx idx_orders_customer_1 columns (customer_id)
+public.orders_with_redundant_idx idx idx_orders_customer_2 columns (customer_id) is a subset of idx idx_orders_customer_3 columns (customer_id,product_id)
+public.orders_with_redundant_idx idx idx_orders_customer_2 columns (customer_id) is a subset of idx idx_orders_customer_4 columns (customer_id,product_id,order_date)
+public.orders_with_redundant_idx idx idx_orders_customer_2 columns (customer_id) is a subset of idx idx_orders_customer_5 columns (customer_id,product_id,order_date,status)
+public.orders_with_redundant_idx idx idx_orders_customer_3 columns (customer_id,product_id) is a subset of idx idx_orders_customer_4 columns (customer_id,product_id,order_date)
+public.orders_with_redundant_idx idx idx_orders_customer_3 columns (customer_id,product_id) is a subset of idx idx_orders_customer_5 columns (customer_id,product_id,order_date,status)
+public.orders_with_redundant_idx idx idx_orders_customer_4 columns (customer_id,product_id,order_date) is a subset of idx idx_orders_customer_5 columns (customer_id,product_id,order_date,status)
+public.orders_with_redundant_idx idx idx_orders_date_status_1 columns (order_date,status) is a subset of idx idx_orders_date_status_2 columns (order_date,status)
+public.orders_with_redundant_idx idx idx_orders_date_status_2 columns (order_date,status) is a subset of idx idx_orders_date_status_1 columns (order_date,status)
+public.products_with_redundant_idx idx idx_products_category_active_1 columns (category,is_active) is a subset of idx idx_products_category_active_2 columns (category,is_active)
+public.products_with_redundant_idx idx idx_products_category_active_2 columns (category,is_active) is a subset of idx idx_products_category_active_1 columns (category,is_active)
+public.products_with_redundant_idx idx idx_products_sku_1 columns (sku) is a subset of idx idx_products_sku_2 columns (sku)
+public.products_with_redundant_idx idx idx_products_sku_2 columns (sku) is a subset of idx idx_products_sku_1 columns (sku) 
 
 NOTICE:  ==================================================
 NOTICE:  📊 Summary: 0 error(s), 1 warning(s), 0 info
@@ -196,7 +244,4 @@ NOTICE:  🟡 Some warnings found - consider reviewing for optimization
  t
 (1 row)
 
--- -- Clean up test tables
-DROP TABLE IF EXISTS customers_with_redundant_idx CASCADE;
-DROP TABLE IF EXISTS products_with_redundant_idx CASCADE;
-DROP TABLE IF EXISTS orders_with_redundant_idx CASCADE;
+ROLLBACK;

@@ -146,14 +146,14 @@ INSERT INTO clean_schema.employees (first_name, last_name, email, department_id,
 CREATE EXTENSION IF NOT EXISTS pglinter;
 -- Test B008 rule execution
 SELECT 'Testing B008 rule - Tables with foreign keys outside schema...' AS test_info;
-                           test_info
+                           test_info                            
 ----------------------------------------------------------------
  Testing B008 rule - Tables with foreign keys outside schema...
 (1 row)
 
 -- Test the B008 rule with base check
 SELECT 'Running base check to test B008 rule:' AS test_step;
-               test_step
+               test_step               
 ---------------------------------------
  Running base check to test B008 rule:
 (1 row)
@@ -167,14 +167,14 @@ NOTICE:  ⚠️  [B008] WARNING: 4/11 table(s) with foreign keys outside schema 
 NOTICE:  ==================================================
 NOTICE:  📊 Summary: 2 error(s), 1 warning(s), 0 info
 NOTICE:  🔴 Critical issues found - please review and fix errors
- perform_base_check
+ perform_base_check 
 --------------------
  t
 (1 row)
 
 -- Test rule management for B008
 SELECT 'Testing B008 rule management...' AS test_step;
-            test_step
+            test_step            
 ---------------------------------
  Testing B008 rule management...
 (1 row)
@@ -196,27 +196,27 @@ Count number of tables with foreign keys outside their schema.
    1. Consider restructuring schema design to keep related tables in same schema
    2. ask a dba
 ============================================================
- explain_rule
+ explain_rule 
 --------------
  t
 (1 row)
 
 SELECT pglinter.is_rule_enabled('B008') AS b008_enabled;
- b008_enabled
+ b008_enabled 
 --------------
  t
 (1 row)
 
 -- Test disabling B008
 SELECT 'Testing B008 disable...' AS test_step;
-        test_step
+        test_step        
 -------------------------
  Testing B008 disable...
 (1 row)
 
 SELECT pglinter.disable_rule('B008') AS b008_disabled;
 NOTICE:  🔴 Rule B008 has been disabled
- b008_disabled
+ b008_disabled 
 ---------------
  t
 (1 row)
@@ -229,21 +229,21 @@ NOTICE:  ❌ [B003] ERROR: 6/6 table(s) without index on foreign key exceed the 
 NOTICE:  ==================================================
 NOTICE:  📊 Summary: 2 error(s), 0 warning(s), 0 info
 NOTICE:  🔴 Critical issues found - please review and fix errors
- perform_base_check
+ perform_base_check 
 --------------------
  t
 (1 row)
 
 -- Re-enable B008
 SELECT 'Testing B008 re-enable...' AS test_step;
-         test_step
+         test_step         
 ---------------------------
  Testing B008 re-enable...
 (1 row)
 
 SELECT pglinter.enable_rule('B008') AS b008_reenabled;
 NOTICE:  ✅ Rule B008 has been enabled
- b008_reenabled
+ b008_reenabled 
 ----------------
  t
 (1 row)
@@ -257,28 +257,28 @@ NOTICE:  ⚠️  [B008] WARNING: 4/11 table(s) with foreign keys outside schema 
 NOTICE:  ==================================================
 NOTICE:  📊 Summary: 2 error(s), 1 warning(s), 0 info
 NOTICE:  🔴 Critical issues found - please review and fix errors
- perform_base_check
+ perform_base_check 
 --------------------
  t
 (1 row)
 
 -- Test with only B008 enabled
 SELECT 'Testing B008 in isolation...' AS test_step;
-          test_step
+          test_step           
 ------------------------------
  Testing B008 in isolation...
 (1 row)
 
 SELECT pglinter.disable_all_rules() AS all_disabled;
-NOTICE:  🔴 Disabled 22 rule(s)
- all_disabled
+NOTICE:  🔴 Disabled 20 rule(s)
+ all_disabled 
 --------------
-           22
+           20
 (1 row)
 
 SELECT pglinter.enable_rule('B008') AS b008_only_enabled;
 NOTICE:  ✅ Rule B008 has been enabled
- b008_only_enabled
+ b008_only_enabled 
 -------------------
  t
 (1 row)
@@ -290,33 +290,47 @@ NOTICE:  ⚠️  [B008] WARNING: 4/11 table(s) with foreign keys outside schema 
 NOTICE:  ==================================================
 NOTICE:  📊 Summary: 0 error(s), 1 warning(s), 0 info
 NOTICE:  🟡 Some warnings found - consider reviewing for optimization
- perform_base_check
+ perform_base_check 
 --------------------
  t
 (1 row)
 
 -- Show rule status
 SELECT 'Current B008 rule status:' AS status_info;
-        status_info
+        status_info        
 ---------------------------
  Current B008 rule status:
 (1 row)
 
 SELECT * FROM pglinter.rules WHERE code = 'B008';
- id |               name               | code | enable | warning_level | error_level | scope |                          description                           |                                      message                                      |                                           fixes                                            |                                                          q1                                                           |                                                                                                                                                                                       q2
-----+----------------------------------+------+--------+---------------+-------------+-------+----------------------------------------------------------------+-----------------------------------------------------------------------------------+--------------------------------------------------------------------------------------------+--------------------------------------------------------------------------------------------------------------------------------+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-  8 | HowManyTablesWithFkOutsideSchema | B008 | t      |            20 |          80 | BASE  | Count number of tables with foreign keys outside their schema. | {0}/{1} table(s) with foreign keys outside schema exceed the {2} threshold: {3}%. | {"Consider restructuring schema design to keep related tables in same schema","ask a dba"} | SELECT count(*) FROM pg_catalog.pg_tables WHERE schemaname NOT IN ('pg_toast', 'pg_catalog', 'information_schema', 'pglinter') | SELECT COUNT(DISTINCT tc.table_schema || '.' || tc.table_name) FROM information_schema.table_constraints tc INNER JOIN information_schema.constraint_column_usage ccu ON tc.constraint_name = ccu.constraint_name WHERE tc.constraint_type = 'FOREIGN KEY' AND tc.table_schema != ccu.table_schema AND tc.table_schema NOT IN ('pg_toast', 'pg_catalog', 'information_schema', 'pglinter')
+ id |               name               | code | enable | warning_level | error_level | scope |                          description                           |                                      message                                      |                                           fixes                                            |                                 q1                                 |                                 q2                                 
+----+----------------------------------+------+--------+---------------+-------------+-------+----------------------------------------------------------------+-----------------------------------------------------------------------------------+--------------------------------------------------------------------------------------------+--------------------------------------------------------------------+--------------------------------------------------------------------
+  8 | HowManyTablesWithFkOutsideSchema | B008 | t      |            20 |          80 | BASE  | Count number of tables with foreign keys outside their schema. | {0}/{1} table(s) with foreign keys outside schema exceed the {2} threshold: {3}%. | {"Consider restructuring schema design to keep related tables in same schema","ask a dba"} |                                                                   +|                                                                   +
+    |                                  |      |        |               |             |       |                                                                |                                                                                   |                                                                                            | SELECT count(*)                                                   +| SELECT                                                            +
+    |                                  |      |        |               |             |       |                                                                |                                                                                   |                                                                                            | FROM pg_catalog.pg_tables pt                                      +|     COUNT(                                                        +
+    |                                  |      |        |               |             |       |                                                                |                                                                                   |                                                                                            | WHERE                                                             +|         DISTINCT tc.table_schema || '.' || tc.table_name          +
+    |                                  |      |        |               |             |       |                                                                |                                                                                   |                                                                                            |     schemaname NOT IN (                                           +|     ) AS tables_with_fk_outside_schema                            +
+    |                                  |      |        |               |             |       |                                                                |                                                                                   |                                                                                            |         'pg_toast', 'pg_catalog', 'information_schema', 'pglinter'+| FROM information_schema.table_constraints AS tc                   +
+    |                                  |      |        |               |             |       |                                                                |                                                                                   |                                                                                            |     )                                                             +| INNER JOIN information_schema.constraint_column_usage AS ccu      +
+    |                                  |      |        |               |             |       |                                                                |                                                                                   |                                                                                            |                                                                    |     ON tc.constraint_name = ccu.constraint_name                   +
+    |                                  |      |        |               |             |       |                                                                |                                                                                   |                                                                                            |                                                                    | WHERE                                                             +
+    |                                  |      |        |               |             |       |                                                                |                                                                                   |                                                                                            |                                                                    |     tc.constraint_type = 'FOREIGN KEY'                            +
+    |                                  |      |        |               |             |       |                                                                |                                                                                   |                                                                                            |                                                                    |     AND tc.table_schema != ccu.table_schema                       +
+    |                                  |      |        |               |             |       |                                                                |                                                                                   |                                                                                            |                                                                    |     AND tc.table_schema NOT IN (                                  +
+    |                                  |      |        |               |             |       |                                                                |                                                                                   |                                                                                            |                                                                    |         'pg_toast', 'pg_catalog', 'information_schema', 'pglinter'+
+    |                                  |      |        |               |             |       |                                                                |                                                                                   |                                                                                            |                                                                    |     )                                                             +
+    |                                  |      |        |               |             |       |                                                                |                                                                                   |                                                                                            |                                                                    | 
 (1 row)
 
 -- Test threshold configuration
 SELECT 'Testing B008 threshold configuration...' AS test_step;
-                test_step
+                test_step                
 -----------------------------------------
  Testing B008 threshold configuration...
 (1 row)
 
 SELECT pglinter.get_rule_levels('B008') AS current_b008_levels;
-       current_b008_levels
+       current_b008_levels        
 ----------------------------------
  warning_level=20, error_level=80
 (1 row)
@@ -324,13 +338,13 @@ SELECT pglinter.get_rule_levels('B008') AS current_b008_levels;
 -- Make B008 more strict temporarily
 SELECT pglinter.update_rule_levels('B008', 10, 30) AS b008_strict_update;
 NOTICE:  ✅ Updated rule B008 levels: warning=10, error=30
- b008_strict_update
+ b008_strict_update 
 --------------------
  t
 (1 row)
 
 SELECT 'B008 with stricter thresholds (should trigger more easily):' AS strict_test;
-                         strict_test
+                         strict_test                         
 -------------------------------------------------------------
  B008 with stricter thresholds (should trigger more easily):
 (1 row)
@@ -342,15 +356,24 @@ NOTICE:  ❌ [B008] ERROR: 4/11 table(s) with foreign keys outside schema exceed
 NOTICE:  ==================================================
 NOTICE:  📊 Summary: 1 error(s), 0 warning(s), 0 info
 NOTICE:  🔴 Critical issues found - please review and fix errors
- perform_base_check
+ perform_base_check 
 --------------------
  t
 (1 row)
 
+-- Test if file exists and show checksum
+SELECT pglinter.perform_base_check('/tmp/pglinter_b008_results.sarif');
+ perform_base_check 
+--------------------
+ t
+(1 row)
+
+\! md5sum /tmp/pglinter_b008_results.sarif
+d9f47d1cb57304a2e62db29db60e4297  /tmp/pglinter_b008_results.sarif
 -- Reset to original levels
 SELECT pglinter.update_rule_levels('B008', 20, 80) AS b008_reset_levels;
 NOTICE:  ✅ Updated rule B008 levels: warning=20, error=80
- b008_reset_levels
+ b008_reset_levels 
 -------------------
  t
 (1 row)

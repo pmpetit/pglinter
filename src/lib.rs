@@ -326,6 +326,42 @@ mod pglinter {
         }
     }
 
+    #[pg_extern(security_definer)]
+    fn list_rules() -> Option<String> {
+        match manage_rules::list_rules() {
+            Ok(rules) => {
+                if rules.is_empty() {
+                    Some("No rules found.".to_string())
+                } else {
+                    let mut output = String::new();
+                    output.push_str("📋 Available Rules:\n");
+                    output.push_str(&"=".repeat(60));
+                    output.push('\n');
+
+                    for (code, name, enabled) in rules {
+                        let status_icon = if enabled { "✅" } else { "❌" };
+                        let status_text = if enabled { "ENABLED" } else { "DISABLED" };
+
+                        output.push_str(&format!(
+                            "{} [{}] {} - {}\n",
+                            status_icon,
+                            code,
+                            status_text,
+                            name
+                        ));
+                    }
+
+                    output.push_str(&"=".repeat(60));
+                    Some(output)
+                }
+            }
+            Err(e) => {
+                pgrx::warning!("Failed to list rules: {}", e);
+                Some(format!("Error listing rules: {}", e))
+            }
+        }
+    }
+
 }
 
 //----------------------------------------------------------------------------

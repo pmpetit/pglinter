@@ -35,6 +35,9 @@
 \! echo "    q1: \"SELECT 2 as count\"" >> /tmp/test_rules_import.yaml
 \! echo "    q2: \"SELECT 1 as problems\"" >> /tmp/test_rules_import.yaml
 
+DROP EXTENSION IF EXISTS pglinter CASCADE;
+CREATE EXTENSION IF NOT EXISTS pglinter;
+
 -- Test 1: Import rules from file
 SELECT pglinter.import_rules_from_file('/tmp/test_rules_import.yaml') AS file_import_result;
 
