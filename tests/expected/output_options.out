@@ -50,8 +50,8 @@ public.table_without_pk idx idx_name_1 columns (name) is a subset of idx idx_nam
 public.table_without_pk idx idx_name_2 columns (name) is a subset of idx idx_name_1 columns (name) 
 
 NOTICE:  ⚠️  [T004] WARNING: TABLE table with potential missing index 2 : 
-public.UPPERCASE_TABLE:100 % of seq scan
-public.table_without_pk:100 % of seq scan 
+public.table_without_pk:100 % of seq scan
+public.UPPERCASE_TABLE:100 % of seq scan 
 
 NOTICE:  ==================================================
 NOTICE:  📊 Summary: 0 error(s), 3 warning(s), 0 info
@@ -112,8 +112,8 @@ public.table_without_pk idx idx_name_1 columns (name) is a subset of idx idx_nam
 public.table_without_pk idx idx_name_2 columns (name) is a subset of idx idx_name_1 columns (name) 
 
 NOTICE:  ⚠️  [T004] WARNING: TABLE table with potential missing index 2 : 
-public.UPPERCASE_TABLE:100 % of seq scan
-public.table_without_pk:100 % of seq scan 
+public.table_without_pk:100 % of seq scan
+public.UPPERCASE_TABLE:100 % of seq scan 
 
 NOTICE:  ==================================================
 NOTICE:  📊 Summary: 0 error(s), 3 warning(s), 0 info
@@ -206,8 +206,8 @@ public.table_without_pk idx idx_name_1 columns (name) is a subset of idx idx_nam
 public.table_without_pk idx idx_name_2 columns (name) is a subset of idx idx_name_1 columns (name) 
 
 NOTICE:  ⚠️  [T004] WARNING: TABLE table with potential missing index 2 : 
-public.UPPERCASE_TABLE:100 % of seq scan
-public.table_without_pk:100 % of seq scan 
+public.table_without_pk:100 % of seq scan
+public.UPPERCASE_TABLE:100 % of seq scan 
 
 NOTICE:  ==================================================
 NOTICE:  📊 Summary: 0 error(s), 3 warning(s), 0 info

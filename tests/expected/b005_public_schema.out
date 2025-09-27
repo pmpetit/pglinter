@@ -89,7 +89,7 @@ SELECT 'Running B005 check with HIGH percentage of insecure schemas (should trig
 SELECT pglinter.perform_base_check();
 NOTICE:  🔍 pglinter found 1 issue(s):
 NOTICE:  ==================================================
-NOTICE:  ⚠️  [B005] WARNING: 3/12 schemas are unsecured, schemas where all users can create objects in, exceed the warning threshold: 25%.
+NOTICE:  ⚠️  [B005] WARNING: 3/13 schemas are unsecured, schemas where all users can create objects in, exceed the warning threshold: 23%.
 NOTICE:  ==================================================
 NOTICE:  📊 Summary: 0 error(s), 1 warning(s), 0 info
 NOTICE:  🟡 Some warnings found - consider reviewing for optimization
@@ -107,7 +107,7 @@ SELECT pglinter.perform_base_check('/tmp/pglinter_b005_results.sarif');
 
 -- Test if file exists and show checksum
 \! md5sum /tmp/pglinter_b005_results.sarif
-c84f1415641f103fdbc660f77fa4fd58  /tmp/pglinter_b005_results.sarif
+261d0faab466bc413d66e95d019e1e46  /tmp/pglinter_b005_results.sarif
 -- PART 3: Test threshold adjustment
 SELECT 'PART 3: Testing B005 threshold adjustments (should not trigger)' AS test_part;
                             test_part                            
