@@ -163,6 +163,254 @@ echo "Generating summary report..."
 echo "📊 Summary report created: $REPORT_DIR/summary.md"
 ```
 
+## Rule Configuration Management with YAML
+
+### Exporting Rules to YAML
+
+pglinter supports exporting rule configurations to YAML format for backup, version control, or modification:
+
+```sql
+-- Export all rules to YAML string (view in psql output)
+SELECT pglinter.export_rules_to_yaml();
+
+-- Export rules directly to a file
+SELECT pglinter.export_rules_to_file('/tmp/pglinter_rules_backup.yaml');
+```
+
+### Sample YAML Output
+
+The exported YAML includes metadata and all rule configurations:
+
+```yaml
+metadata:
+  export_timestamp: "2024-01-15T14:30:00Z"
+  total_rules: 45
+  format_version: "1.0"
+rules:
+  - id: 1
+    name: "HowManyTableWithoutPrimaryKey"
+    code: "B001"
+    enable: true
+    warning_level: 20
+    error_level: 80
+    scope: "BASE"
+    description: "Count number of tables without primary key."
+    message: "{0}/{1} table(s) without primary key exceed the {2} threshold: {3}%."
+    fixes: ["create a primary key or change warning/error threshold"]
+    q1: "SELECT count(*) FROM pg_tables WHERE schemaname NOT IN ('information_schema', 'pg_catalog')"
+    q2: "SELECT count(*) FROM pg_tables t WHERE NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conrelid = t.oid AND contype = 'p') AND t.schemaname NOT IN ('information_schema', 'pg_catalog')"
+  - id: 2
+    name: "HowManyRedudantIndex"
+    code: "B002"
+    enable: true
+    warning_level: 20
+    error_level: 80
+    scope: "BASE"
+    # ... more rules
+```
+
+### Modifying Rules in YAML
+
+Common modifications you can make to the YAML file:
+
+1. **Adjust Warning/Error Thresholds**:
+   ```yaml
+   # Make B001 more sensitive (lower thresholds)
+   - id: 1
+     name: "HowManyTableWithoutPrimaryKey" 
+     code: "B001"
+     warning_level: 10  # Changed from 20
+     error_level: 50    # Changed from 80
+   ```
+
+2. **Enable/Disable Rules**:
+   ```yaml
+   # Disable strict security rules for development
+   - id: 5
+     code: "B005"
+     enable: false      # Changed from true
+   ```
+
+3. **Customize Messages**:
+   ```yaml
+   # Add more descriptive message
+   - id: 1
+     code: "B001"
+     message: "⚠️ DATABASE HEALTH: {0}/{1} tables lack primary keys ({3}% exceeds {2}% threshold). This impacts data integrity and replication."
+   ```
+
+4. **Update Rule Queries**:
+   ```yaml
+   # Modify B001 to exclude specific schemas
+   - id: 1
+     code: "B001" 
+     q1: "SELECT count(*) FROM pg_tables WHERE schemaname NOT IN ('information_schema', 'pg_catalog', 'staging', 'temp')"
+     q2: "SELECT count(*) FROM pg_tables t WHERE NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conrelid = t.oid AND contype = 'p') AND t.schemaname NOT IN ('information_schema', 'pg_catalog', 'staging', 'temp')"
+   ```
+
+### Re-importing Modified Rules
+
+After editing the YAML file, import the changes back:
+
+```sql
+-- Import from YAML file
+SELECT pglinter.import_rules_from_file('/tmp/pglinter_rules_modified.yaml');
+
+-- Or import directly from YAML string
+SELECT pglinter.import_rules_from_yaml('
+metadata:
+  format_version: "1.0"
+rules:
+  - id: 1
+    code: "B001"
+    warning_level: 10
+    error_level: 50
+    # ... rest of rule definition
+');
+```
+
+### Complete Workflow Example
+
+Here's a complete example of exporting, modifying, and re-importing rules:
+
+```bash
+#!/bin/bash
+# rule_management_workflow.sh
+
+# Step 1: Export current rules
+echo "📤 Exporting current rules..."
+psql -d myapp_prod -t -c "SELECT pglinter.export_rules_to_file('/tmp/rules_backup.yaml');"
+
+# Step 2: Create a development-friendly version
+echo "✏️ Creating development configuration..."
+cat > /tmp/rules_dev.yaml << 'EOF'
+metadata:
+  export_timestamp: "2024-01-15T15:00:00Z"
+  total_rules: 3
+  format_version: "1.0"
+rules:
+  # Relaxed primary key rule for development
+  - id: 1
+    name: "HowManyTableWithoutPrimaryKey"
+    code: "B001"
+    enable: true
+    warning_level: 50    # More lenient for dev
+    error_level: 90      # Higher error threshold
+    scope: "BASE"
+    description: "Count number of tables without primary key (dev settings)."
+    message: "DEV: {0}/{1} tables without primary keys ({3}% > {2}%). Consider adding PKs before production."
+    fixes: ["Add primary key: ALTER TABLE table_name ADD PRIMARY KEY (id)"]
+    q1: "SELECT count(*) FROM pg_tables WHERE schemaname NOT IN ('information_schema', 'pg_catalog')"
+    q2: "SELECT count(*) FROM pg_tables t WHERE NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conrelid = t.oid AND contype = 'p') AND t.schemaname NOT IN ('information_schema', 'pg_catalog')"
+    
+  # Disable public schema security in dev
+  - id: 5
+    name: "UnsecuredPublicSchema"
+    code: "B005"
+    enable: false        # Disabled for development
+    warning_level: 20
+    error_level: 80
+    scope: "BASE"
+    description: "Public schema security (disabled in dev)."
+    message: "Public schema allows object creation by all users."
+    fixes: ["REVOKE CREATE ON SCHEMA public FROM PUBLIC"]
+    
+  # Keep FK indexing rule active
+  - id: 3
+    name: "HowManyTableWithoutIndexOnFk"
+    code: "B003"
+    enable: true
+    warning_level: 30    # Slightly more lenient
+    error_level: 70
+    scope: "BASE"
+    description: "Count tables without indexes on foreign keys."
+    message: "{0}/{1} tables lack FK indexes ({3}% > {2}%). Performance may suffer."
+    fixes: ["CREATE INDEX ON table_name (foreign_key_column)"]
+EOF
+
+# Step 3: Apply development configuration
+echo "🔧 Applying development configuration..."
+psql -d myapp_dev -c "SELECT pglinter.import_rules_from_file('/tmp/rules_dev.yaml');"
+
+# Step 4: Verify changes
+echo "✅ Verifying rule changes..."
+psql -d myapp_dev -c "
+SELECT rule_code, enabled, warning_level, error_level, 
+       CASE WHEN enabled THEN '✅' ELSE '❌' END as status
+FROM pglinter.show_rules() 
+WHERE rule_code IN ('B001', 'B005', 'B003')
+ORDER BY rule_code;
+"
+
+# Step 5: Run analysis with new settings
+echo "🔍 Running analysis with new configuration..."
+psql -d myapp_dev -c "SELECT pglinter.perform_base_check();"
+
+echo "🎉 Configuration update complete!"
+```
+
+### Environment-Specific Rule Management
+
+Create different YAML configurations for different environments:
+
+```bash
+# Create environment-specific configurations
+mkdir -p /etc/pglinter/environments
+
+# Production: All rules enabled, strict thresholds
+cat > /etc/pglinter/environments/production.yaml << 'EOF'
+metadata:
+  format_version: "1.0"
+rules:
+  - {code: "B001", enable: true, warning_level: 5, error_level: 15}
+  - {code: "B002", enable: true, warning_level: 10, error_level: 25}
+  - {code: "B003", enable: true, warning_level: 10, error_level: 30}
+  - {code: "B005", enable: true, warning_level: 0, error_level: 1}
+EOF
+
+# Development: Relaxed rules  
+cat > /etc/pglinter/environments/development.yaml << 'EOF'
+metadata:
+  format_version: "1.0"
+rules:
+  - {code: "B001", enable: true, warning_level: 40, error_level: 80}
+  - {code: "B002", enable: true, warning_level: 30, error_level: 60}
+  - {code: "B003", enable: true, warning_level: 30, error_level: 70}
+  - {code: "B005", enable: false}
+EOF
+
+# Apply environment-specific configuration
+ENVIRONMENT=${1:-development}
+psql -d $DATABASE -c "SELECT pglinter.import_rules_from_file('/etc/pglinter/environments/${ENVIRONMENT}.yaml');"
+```
+
+### Version Control Integration
+
+Track rule changes in Git:
+
+```bash
+# Add to your deployment pipeline
+git add /etc/pglinter/
+git commit -m "Update pglinter rules for production deployment"
+
+# Automated rule deployment
+#!/bin/bash
+# deploy_rules.sh
+ENVIRONMENT=$1
+RULES_FILE="/etc/pglinter/environments/${ENVIRONMENT}.yaml"
+
+if [[ -f "$RULES_FILE" ]]; then
+    echo "Deploying $ENVIRONMENT rules..."
+    psql -d $DATABASE -c "SELECT pglinter.import_rules_from_file('$RULES_FILE');"
+    echo "✅ Rules deployed successfully"
+else
+    echo "❌ Rules file not found: $RULES_FILE"
+    exit 1
+fi
+```
+
+This YAML-based approach provides powerful configuration management capabilities, allowing you to maintain consistent rule settings across environments while tracking changes over time.
+
 ## Example base on rule B001 and T001 (primary key missing), why using a base and table approach
 
 This example explain the point of view about the B001 rule which detects database-wide primary key issues vs T001 rule.

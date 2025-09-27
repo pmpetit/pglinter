@@ -88,7 +88,6 @@ pdf:
 		tutorials/README.md \
 		how-to/README.md \
 		examples/README.md \
-		dev/README.md \
 		-o build/pdf/pglinter-documentation.pdf \
 		--pdf-engine=xelatex \
 		--toc \

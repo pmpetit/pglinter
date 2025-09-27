@@ -66,7 +66,6 @@ Individual table-specific checks:
 * **T009**: Tables with no roles granted
 * **T010**: Tables using reserved keywords
 * **T011**: Tables with uppercase names/columns
-* **T012**: Tables with sensitive columns (requires anon extension)
 
 ### Schema Rules (S-series)
 
@@ -112,7 +111,6 @@ Schema-level checks:
 * **[Functions Reference](functions/README.md)**: Complete function reference
 * **[Rule Reference](rules/README.md)**: Detailed description of all rules
 * **[How-To Guides](how-to/README.md)**: Practical guides for common scenarios
-* **[Development](dev/README.md)**: Contributing and development guides
 
 ## Integration
 
