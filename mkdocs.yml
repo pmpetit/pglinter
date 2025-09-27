@@ -27,8 +27,6 @@ nav:
   - Examples:
     - 'Usage Examples': examples/README.md
     - 'Rules management': examples/rule_level_management.md
-  - Development:
-    - 'Contributing': dev/README.md
 
 # Markdown settings
 markdown_extensions:
