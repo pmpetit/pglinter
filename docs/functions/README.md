@@ -169,6 +169,49 @@ SELECT pglinter.perform_schema_check('/tmp/schema_analysis.sarif');
 
 ## Rule Management Functions
 
+### list_rules()
+
+Displays a formatted list of all available rules with their current status and names.
+
+## Syntax
+
+```sql
+SELECT pglinter.list_rules();
+```
+
+## Returns
+
+- `text`: Formatted table showing all rules with status icons, codes, status, and names
+
+## Example
+
+```sql
+-- Show formatted list of all rules
+SELECT pglinter.list_rules();
+```
+
+## Sample Output
+
+```text
+📋 Available Rules:
+============================================================
+✅ [B001] ENABLED - Tables without primary keys
+❌ [B002] DISABLED - Redundant indexes detection
+✅ [B003] ENABLED - Foreign keys without indexes
+❌ [T001] DISABLED - Individual table primary key check
+✅ [T005] ENABLED - Sequential scan analysis
+============================================================
+```
+
+## Features
+
+- **Visual Status**: Uses ✅ for enabled rules and ❌ for disabled rules
+- **Clear Format**: Shows rule code, status, and descriptive name
+- **Complete List**: Displays all available rules in the system
+- **Sorted Output**: Rules are ordered by rule code for easy scanning
+
+---
+
 ### show_rules()
 
 Displays all available rules with their current status.
@@ -487,6 +530,240 @@ SELECT 'T005' as rule_code, pglinter.get_rule_levels('T005') as levels;
 - Returns default values (warning=50, error=90) for unconfigured rules
 - Currently only T005 supports configurable levels
 - Values for T005 represent percentage thresholds
+
+---
+
+## Rule Import/Export Functions
+
+### export_rules_to_yaml()
+
+Exports all rules and their configurations to YAML format.
+
+## Syntax
+
+```sql
+SELECT pglinter.export_rules_to_yaml();
+```
+
+## Returns
+
+- `text`: YAML-formatted string containing all rules with metadata, configuration, and timestamps
+
+## Examples
+
+```sql
+-- Export all rules to view YAML structure
+SELECT pglinter.export_rules_to_yaml();
+
+-- Save export to a variable for processing
+\set yaml_export `SELECT pglinter.export_rules_to_yaml();`
+\echo :yaml_export
+```
+
+## Sample Output
+
+```yaml
+metadata:
+  export_timestamp: "2023-10-15T14:30:00Z"
+  total_rules: 15
+  format_version: "1.0"
+rules:
+  B001:
+    name: "Tables without primary keys"
+    enabled: true
+    scope: "BASE"
+    warning_level: 20
+    error_level: 80
+    message: "Tables without primary key found"
+    # ... additional rule data
+```
+
+---
+
+### export_rules_to_file(file_path)
+
+Exports all rules and configurations directly to a YAML file on the filesystem.
+
+## Syntax
+
+```sql
+SELECT pglinter.export_rules_to_file(file_path text);
+```
+
+## Parameters
+
+- `file_path`: Absolute path where the YAML file will be created
+
+## Returns
+
+- `text`: Success message confirming export completion and file location
+
+## Examples
+
+```sql
+-- Export to a specific file
+SELECT pglinter.export_rules_to_file('/tmp/pglinter_rules.yaml');
+
+-- Export with timestamp in filename
+SELECT pglinter.export_rules_to_file(
+    '/backups/rules_' || to_char(now(), 'YYYY-MM-DD_HH24-MI-SS') || '.yaml'
+);
+
+-- Export for version control
+SELECT pglinter.export_rules_to_file('/project/config/pglinter_rules.yaml');
+```
+
+## Notes
+
+- Requires PostgreSQL to have write access to the specified directory
+- Creates a complete backup of all rule configurations
+- Includes metadata about export time and rule counts
+- Can be used for version control of rule configurations
+
+---
+
+### import_rules_from_yaml(yaml_content)
+
+Imports rule configurations from a YAML string, creating new rules or updating existing ones.
+
+## Syntax
+
+```sql
+SELECT pglinter.import_rules_from_yaml(yaml_content text);
+```
+
+## Parameters
+
+- `yaml_content`: YAML-formatted string containing rule definitions
+
+## Returns
+
+- `text`: Summary of import operation including counts of new and updated rules
+
+## Examples
+
+```sql
+-- Import from a YAML string
+SELECT pglinter.import_rules_from_yaml('
+metadata:
+  format_version: "1.0"
+rules:
+  CUSTOM001:
+    name: "Custom validation rule"
+    enabled: true
+    scope: "TABLE"
+    warning_level: 10
+    error_level: 50
+');
+
+-- Import complex configuration
+SELECT pglinter.import_rules_from_yaml('
+metadata:
+  format_version: "1.0"
+rules:
+  B001:
+    enabled: false
+    warning_level: 15
+    error_level: 85
+  T005:
+    enabled: true
+    warning_level: 30
+    error_level: 70
+');
+```
+
+---
+
+### import_rules_from_file(file_path)
+
+Imports rule configurations from a YAML file on the filesystem.
+
+## Syntax
+
+```sql
+SELECT pglinter.import_rules_from_file(file_path text);
+```
+
+## Parameters
+
+- `file_path`: Absolute path to the YAML file containing rule definitions
+
+## Returns
+
+- `text`: Summary of import operation including counts of new and updated rules
+
+## Examples
+
+```sql
+-- Import from a configuration file
+SELECT pglinter.import_rules_from_file('/config/pglinter_rules.yaml');
+
+-- Import from backup
+SELECT pglinter.import_rules_from_file('/backups/rules_2023-10-15.yaml');
+
+-- Import development configuration
+SELECT pglinter.import_rules_from_file('/project/dev_rules.yaml');
+```
+
+## Error Handling
+
+Common error scenarios and solutions:
+
+```sql
+-- File not found
+SELECT pglinter.import_rules_from_file('/nonexistent/file.yaml');
+-- Returns: "Error: File read error - file not found"
+
+-- Invalid YAML syntax
+SELECT pglinter.import_rules_from_yaml('invalid: yaml: content:');
+-- Returns: "Error: YAML parsing error - invalid syntax"
+
+-- Permission denied
+SELECT pglinter.export_rules_to_file('/root/protected.yaml');
+-- Returns: "Error: File write error - permission denied"
+```
+
+## Use Cases
+
+### Configuration Management
+
+```sql
+-- 1. Export current production configuration
+SELECT pglinter.export_rules_to_file('/backups/prod_rules.yaml');
+
+-- 2. Import to development environment
+SELECT pglinter.import_rules_from_file('/backups/prod_rules.yaml');
+```
+
+### Environment-Specific Rules
+
+```sql
+-- Development: Relaxed rules
+SELECT pglinter.import_rules_from_yaml('
+rules:
+  T005:
+    warning_level: 80
+    error_level: 95
+');
+
+-- Production: Strict rules
+SELECT pglinter.import_rules_from_yaml('
+rules:
+  T005:
+    warning_level: 30
+    error_level: 60
+');
+```
+
+### Version Control Integration
+
+```sql
+-- Export for commit
+SELECT pglinter.export_rules_to_file('/project/.pglinter/rules.yaml');
+
+-- Import after deployment
+SELECT pglinter.import_rules_from_file('/project/.pglinter/rules.yaml');
+```
 
 ---
 

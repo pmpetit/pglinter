@@ -4,8 +4,18 @@
 use pgrx::prelude::*;
 
 /// Generic setup function for creating a test rule
-pub fn setup_test_rule(code: &str, id: i32, name: &str, enabled: bool, warning_level: i32, error_level: i32) {
-    let _ = Spi::run(&format!("DELETE FROM pglinter.rules WHERE code = '{}'", code));
+pub fn setup_test_rule(
+    code: &str,
+    id: i32,
+    name: &str,
+    enabled: bool,
+    warning_level: i32,
+    error_level: i32,
+) {
+    let _ = Spi::run(&format!(
+        "DELETE FROM pglinter.rules WHERE code = '{}'",
+        code
+    ));
     let _ = Spi::run(&format!(
         "INSERT INTO pglinter.rules (id, code, name, enable, warning_level, error_level) VALUES ({}, '{}', '{}', {}, {}, {})",
         id, code, name, enabled, warning_level, error_level
@@ -14,7 +24,10 @@ pub fn setup_test_rule(code: &str, id: i32, name: &str, enabled: bool, warning_l
 
 /// Generic cleanup function for removing test rules
 pub fn cleanup_test_rule(code: &str) {
-    let _ = Spi::run(&format!("DELETE FROM pglinter.rules WHERE code = '{}'", code));
+    let _ = Spi::run(&format!(
+        "DELETE FROM pglinter.rules WHERE code = '{}'",
+        code
+    ));
 }
 
 /// Create test tables for rule testing
@@ -42,7 +55,10 @@ pub fn cleanup_test_tables() {
 
 /// Get rule boolean property from database
 pub fn get_rule_bool_property(code: &str, property: &str) -> Option<bool> {
-    let query = format!("SELECT {} FROM pglinter.rules WHERE code = '{}'", property, code);
+    let query = format!(
+        "SELECT {} FROM pglinter.rules WHERE code = '{}'",
+        property, code
+    );
     Spi::get_one::<bool>(&query).unwrap_or(Some(false))
 }
 
@@ -81,7 +97,7 @@ rules:
 "#
 }
 
-pub fn get_invalid_yaml_content()  -> &'static str {
+pub fn get_invalid_yaml_content() -> &'static str {
     r#"
 metadata:
   export_timestamp: "invalid-timestamp"

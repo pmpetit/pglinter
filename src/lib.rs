@@ -19,10 +19,7 @@ fn hello_pglinter() -> &'static str {
 
 #[pg_schema]
 mod pglinter {
-    use crate::execute_rules::{
-        execute_rules,
-        generate_sarif_output_optional,
-    };
+    use crate::execute_rules::{execute_rules, generate_sarif_output_optional};
     use crate::manage_rules;
     use pgrx::prelude::*;
 
@@ -122,7 +119,6 @@ mod pglinter {
     fn check_schema() -> Option<bool> {
         perform_schema_check(None)
     }
-
 
     #[pg_extern(security_definer)]
     fn check_all() -> Option<bool> {
@@ -283,7 +279,7 @@ mod pglinter {
     }
 
     #[pg_extern(security_definer)]
-    fn export_rules_to_yaml() -> Option<String>  {
+    fn export_rules_to_yaml() -> Option<String> {
         match manage_rules::export_rules_to_yaml() {
             Ok(result) => Some(result.to_string()),
             Err(e) => {
@@ -294,7 +290,7 @@ mod pglinter {
     }
 
     #[pg_extern(security_definer)]
-    fn export_rules_to_file(file_path: &str) -> Option<String>  {
+    fn export_rules_to_file(file_path: &str) -> Option<String> {
         match manage_rules::export_rules_to_file(file_path) {
             Ok(result) => Some(result.to_string()),
             Err(e) => {
@@ -305,7 +301,7 @@ mod pglinter {
     }
 
     #[pg_extern(security_definer)]
-    fn import_rules_from_yaml(yaml_content: &str) -> Option<String>  {
+    fn import_rules_from_yaml(yaml_content: &str) -> Option<String> {
         match manage_rules::import_rules_from_yaml(yaml_content) {
             Ok(result) => Some(result.to_string()),
             Err(e) => {
@@ -316,7 +312,7 @@ mod pglinter {
     }
 
     #[pg_extern(security_definer)]
-    fn import_rules_from_file(file_path: &str) -> Option<String>  {
+    fn import_rules_from_file(file_path: &str) -> Option<String> {
         match manage_rules::import_rules_from_file(file_path) {
             Ok(result) => Some(result.to_string()),
             Err(e) => {
@@ -344,10 +340,7 @@ mod pglinter {
 
                         output.push_str(&format!(
                             "{} [{}] {} - {}\n",
-                            status_icon,
-                            code,
-                            status_text,
-                            name
+                            status_icon, code, status_text, name
                         ));
                     }
 
@@ -361,7 +354,6 @@ mod pglinter {
             }
         }
     }
-
 }
 
 //----------------------------------------------------------------------------
@@ -371,8 +363,8 @@ mod pglinter {
 #[cfg(any(test, feature = "pg_test"))]
 #[pg_schema]
 mod tests {
-    use crate::manage_rules;
     use crate::fixtures;
+    use crate::manage_rules;
     use pgrx::prelude::*;
 
     #[pg_test]
@@ -471,10 +463,8 @@ mod tests {
     #[pg_test]
     fn test_list_rules() {
         // Setup test rules using fixture
-        fixtures::setup_test_rule(
-            "TEST005", 9005, "Test Rule 5", true, 20, 80);
-        fixtures::setup_test_rule(
-            "TEST006", 9006, "Test Rule 6", false, 20, 80);
+        fixtures::setup_test_rule("TEST005", 9005, "Test Rule 5", true, 20, 80);
+        fixtures::setup_test_rule("TEST006", 9006, "Test Rule 6", false, 20, 80);
 
         let result = manage_rules::list_rules();
         assert!(result.is_ok());
@@ -579,9 +569,18 @@ mod tests {
         let fix_section = &explanation[fix_section_start..];
 
         // Check that each fix is on its own line and properly numbered
-        assert!(fix_section.contains("   1. "), "First fix should be numbered as '   1. '");
-        assert!(fix_section.contains("   2. "), "Second fix should be numbered as '   2. '");
-        assert!(fix_section.contains("   3. "), "Third fix should be numbered as '   3. '");
+        assert!(
+            fix_section.contains("   1. "),
+            "First fix should be numbered as '   1. '"
+        );
+        assert!(
+            fix_section.contains("   2. "),
+            "Second fix should be numbered as '   2. '"
+        );
+        assert!(
+            fix_section.contains("   3. "),
+            "Third fix should be numbered as '   3. '"
+        );
 
         // Cleanup
         let _ = Spi::run("DELETE FROM pglinter.rules WHERE code = 'TEST_FIXES'");
@@ -592,7 +591,8 @@ mod tests {
         // Test the case where fixes array is empty (should show "No specific fixes available.")
         let _ = Spi::run("DELETE FROM pglinter.rules WHERE code = 'TEST_NO_FIXES'");
 
-        let _ = Spi::run("
+        let _ = Spi::run(
+            "
             INSERT INTO pglinter.rules (id, code, name, enable, description, scope, message, fixes)
             VALUES (
                 9998,
@@ -604,7 +604,8 @@ mod tests {
                 'Test message without fixes',
                 ARRAY[]::text[]
             )
-        ");
+        ",
+        );
 
         let result = manage_rules::explain_rule("TEST_NO_FIXES");
         assert!(result.is_ok());
@@ -613,7 +614,10 @@ mod tests {
 
         // Should contain the default message when no fixes are available
         assert!(explanation.contains("No specific fixes available."));
-        assert!(!explanation.contains("   1. "), "Should not contain numbered fixes");
+        assert!(
+            !explanation.contains("   1. "),
+            "Should not contain numbered fixes"
+        );
 
         // Cleanup
         let _ = Spi::run("DELETE FROM pglinter.rules WHERE code = 'TEST_NO_FIXES'");
@@ -626,7 +630,8 @@ mod tests {
         let _ = Spi::run("DELETE FROM pglinter.rules WHERE code = 'TEST_MIXED_FIXES'");
 
         // Insert rule and then update with mixed NULL and non-NULL fixes
-        let _ = Spi::run("
+        let _ = Spi::run(
+            "
             INSERT INTO pglinter.rules (id, code, name, enable, description, scope, message)
             VALUES (
                 9997,
@@ -637,7 +642,8 @@ mod tests {
                 'TABLE',
                 'Test message for mixed fixes'
             )
-        ");
+        ",
+        );
 
         // Update with an array that contains NULLs - this simulates real-world data
         let _ = Spi::run("
@@ -657,13 +663,13 @@ mod tests {
         // The NULL filtering code should skip NULL entries
         // Based on the current implementation using enumerate(),
         // we expect the original array indices to be used for numbering
-        assert!(explanation.contains("   1. Add primary key"));    // Index 0 + 1 = 1
-        assert!(explanation.contains("   3. Create indexes"));     // Index 2 + 1 = 3 (skips NULL at index 1)
-        assert!(explanation.contains("   5. Optimize queries"));   // Index 4 + 1 = 5 (skips NULL at index 3)
+        assert!(explanation.contains("   1. Add primary key")); // Index 0 + 1 = 1
+        assert!(explanation.contains("   3. Create indexes")); // Index 2 + 1 = 3 (skips NULL at index 1)
+        assert!(explanation.contains("   5. Optimize queries")); // Index 4 + 1 = 5 (skips NULL at index 3)
 
         // Should not have entries for the NULL positions
-        assert!(!explanation.contains("   2. "));  // Index 1 was NULL
-        assert!(!explanation.contains("   4. "));  // Index 3 was NULL
+        assert!(!explanation.contains("   2. ")); // Index 1 was NULL
+        assert!(!explanation.contains("   4. ")); // Index 3 was NULL
 
         // Cleanup
         let _ = Spi::run("DELETE FROM pglinter.rules WHERE code = 'TEST_MIXED_FIXES'");
@@ -742,7 +748,7 @@ mod tests {
     #[pg_test]
     fn test_disable_all_rules() {
         // Set up test rules with mixed enabled/disabled states using fixtures
-        fixtures::setup_test_rule("TEST013", 9013, "Test Rule 13", true, 20, 80 );
+        fixtures::setup_test_rule("TEST013", 9013, "Test Rule 13", true, 20, 80);
         fixtures::setup_test_rule("TEST014", 9014, "Test Rule 14", true, 20, 80);
         fixtures::setup_test_rule("TEST015", 9015, "Test Rule 15", false, 20, 80);
 
@@ -844,9 +850,10 @@ mod tests {
         assert_eq!(result.unwrap() as i64, total_rules);
 
         // Verify all rules are now enabled
-        let enabled_count_after = Spi::get_one::<i64>("SELECT COUNT(*) FROM pglinter.rules WHERE enable = true")
-            .unwrap()
-            .unwrap_or(0);
+        let enabled_count_after =
+            Spi::get_one::<i64>("SELECT COUNT(*) FROM pglinter.rules WHERE enable = true")
+                .unwrap()
+                .unwrap_or(0);
         assert_eq!(enabled_count_after, total_rules);
 
         // Test disable_all_rules SQL function - should disable all rules
@@ -855,9 +862,10 @@ mod tests {
         assert_eq!(result_disable.unwrap() as i64, total_rules);
 
         // Verify all rules are now disabled
-        let disabled_count_after = Spi::get_one::<i64>("SELECT COUNT(*) FROM pglinter.rules WHERE enable = false")
-            .unwrap()
-            .unwrap_or(0);
+        let disabled_count_after =
+            Spi::get_one::<i64>("SELECT COUNT(*) FROM pglinter.rules WHERE enable = false")
+                .unwrap()
+                .unwrap_or(0);
         assert_eq!(disabled_count_after, total_rules);
 
         // Verify both test rules are now disabled using fixture helpers
@@ -867,7 +875,8 @@ mod tests {
         assert_eq!(test019_enabled, Some(false));
 
         // Test edge case: calling disable_all_rules when all are already disabled
-        let result_already_disabled = Spi::get_one::<i32>("SELECT pglinter.disable_all_rules()").unwrap();
+        let result_already_disabled =
+            Spi::get_one::<i32>("SELECT pglinter.disable_all_rules()").unwrap();
         assert!(result_already_disabled.is_some());
         assert_eq!(result_already_disabled.unwrap(), 0); // Should return 0 since no rules were changed
 
@@ -877,7 +886,8 @@ mod tests {
         assert_eq!(result_enable_all.unwrap() as i64, total_rules);
 
         // Test edge case: calling enable_all_rules when all are already enabled
-        let result_already_enabled = Spi::get_one::<i32>("SELECT pglinter.enable_all_rules()").unwrap();
+        let result_already_enabled =
+            Spi::get_one::<i32>("SELECT pglinter.enable_all_rules()").unwrap();
         assert!(result_already_enabled.is_some());
         assert_eq!(result_already_enabled.unwrap(), 0); // Should return 0 since no rules were changed
 
@@ -885,7 +895,6 @@ mod tests {
         fixtures::cleanup_test_rule("TEST018");
         fixtures::cleanup_test_rule("TEST019");
     }
-
 
     #[pg_test]
     fn test_update_rule_levels() {
@@ -944,22 +953,31 @@ mod tests {
     #[pg_test]
     fn test_update_rule_levels_exceptions() {
         // Test 1: Test with non-existent rule (should return false, not throw exception)
-        let result_nonexistent = manage_rules::update_rule_levels("NONEXISTENT_RULE", Some(10), Some(20));
+        let result_nonexistent =
+            manage_rules::update_rule_levels("NONEXISTENT_RULE", Some(10), Some(20));
         assert!(result_nonexistent.is_ok());
         assert_eq!(result_nonexistent.unwrap(), false); // Should return false for non-existent rule
 
         // Test 2: Test SQL interface with non-existent rule
-        let sql_result_nonexistent = Spi::get_one::<bool>(
-            "SELECT pglinter.update_rule_levels('NONEXISTENT_RULE', 10, 20)"
-        ).unwrap();
+        let sql_result_nonexistent =
+            Spi::get_one::<bool>("SELECT pglinter.update_rule_levels('NONEXISTENT_RULE', 10, 20)")
+                .unwrap();
         assert!(sql_result_nonexistent.is_some());
         assert_eq!(sql_result_nonexistent.unwrap(), false);
 
         // Test 3: Setup a rule and test valid updates to ensure basic functionality works
-        fixtures::setup_test_rule("TEST_EXCEPTION_RULE", 9997, "Test Exception Rule", true, 5, 10);
+        fixtures::setup_test_rule(
+            "TEST_EXCEPTION_RULE",
+            9997,
+            "Test Exception Rule",
+            true,
+            5,
+            10,
+        );
 
         // Test valid update first
-        let result_valid = manage_rules::update_rule_levels("TEST_EXCEPTION_RULE", Some(20), Some(40));
+        let result_valid =
+            manage_rules::update_rule_levels("TEST_EXCEPTION_RULE", Some(20), Some(40));
         assert!(result_valid.is_ok());
         assert_eq!(result_valid.unwrap(), true);
 
@@ -972,7 +990,11 @@ mod tests {
 
         // Test 4: Test with extreme values (PostgreSQL integer limits)
         // This should work within PostgreSQL's integer range (-2147483648 to 2147483647)
-        let result_extreme = manage_rules::update_rule_levels("TEST_EXCEPTION_RULE", Some(2147483647), Some(-2147483648));
+        let result_extreme = manage_rules::update_rule_levels(
+            "TEST_EXCEPTION_RULE",
+            Some(2147483647),
+            Some(-2147483648),
+        );
         assert!(result_extreme.is_ok());
         assert_eq!(result_extreme.unwrap(), true);
 
@@ -1002,8 +1024,9 @@ mod tests {
 
         // Test 7: Test the SQL interface with extreme values to ensure it handles the same edge cases
         let sql_result_extreme = Spi::get_one::<bool>(
-            "SELECT pglinter.update_rule_levels('TEST_EXCEPTION_RULE', -2147483648, 2147483647)"
-        ).unwrap();
+            "SELECT pglinter.update_rule_levels('TEST_EXCEPTION_RULE', -2147483648, 2147483647)",
+        )
+        .unwrap();
         assert!(sql_result_extreme.is_some());
         assert_eq!(sql_result_extreme.unwrap(), true);
 
@@ -1015,7 +1038,8 @@ mod tests {
         let _ = Spi::run("INSERT INTO pglinter.rules (id, code, name, enable, warning_level, error_level, scope) VALUES (9996, 'TEST_CORRUPTED_RULE', 'Test Corrupted Rule', true, NULL, NULL, 'BASE')");
 
         // Update rule with NULL current values - function should handle this gracefully
-        let result_null_current = manage_rules::update_rule_levels("TEST_CORRUPTED_RULE", Some(10), Some(20));
+        let result_null_current =
+            manage_rules::update_rule_levels("TEST_CORRUPTED_RULE", Some(10), Some(20));
         assert!(result_null_current.is_ok());
         assert_eq!(result_null_current.unwrap(), true);
 
@@ -1030,7 +1054,6 @@ mod tests {
         fixtures::cleanup_test_rule("TEST_EXCEPTION_RULE");
         fixtures::cleanup_test_rule("TEST_CORRUPTED_RULE");
     }
-
 
     #[pg_test]
     fn test_show_rule_queries() {
@@ -1070,7 +1093,8 @@ mod tests {
     #[pg_test]
     fn test_import_rules_from_file() {
         // Test 1: Test with non-existent file
-        let result_not_found = manage_rules::import_rules_from_file("/nonexistent/path/to/file.yaml");
+        let result_not_found =
+            manage_rules::import_rules_from_file("/nonexistent/path/to/file.yaml");
         assert!(result_not_found.is_err());
         assert!(result_not_found.unwrap_err().contains("File read error"));
 
@@ -1094,40 +1118,44 @@ mod tests {
 
         // Test 4: Verify the imported rules exist in the database
         let rule1_exists = Spi::get_one::<bool>(
-            "SELECT EXISTS(SELECT 1 FROM pglinter.rules WHERE code = 'TEST_IMPORT_1')"
-        ).unwrap();
+            "SELECT EXISTS(SELECT 1 FROM pglinter.rules WHERE code = 'TEST_IMPORT_1')",
+        )
+        .unwrap();
         assert!(rule1_exists.unwrap());
 
         let rule2_exists = Spi::get_one::<bool>(
-            "SELECT EXISTS(SELECT 1 FROM pglinter.rules WHERE code = 'TEST_IMPORT_2')"
-        ).unwrap();
+            "SELECT EXISTS(SELECT 1 FROM pglinter.rules WHERE code = 'TEST_IMPORT_2')",
+        )
+        .unwrap();
         assert!(rule2_exists.unwrap());
 
         // Test 5: Verify rule1 properties
-        let rule1_name = Spi::get_one::<String>(
-            "SELECT name FROM pglinter.rules WHERE code = 'TEST_IMPORT_1'"
-        ).unwrap();
+        let rule1_name =
+            Spi::get_one::<String>("SELECT name FROM pglinter.rules WHERE code = 'TEST_IMPORT_1'")
+                .unwrap();
         assert_eq!(rule1_name.unwrap(), "Test Import Rule 1");
 
-        let rule1_enabled = Spi::get_one::<bool>(
-            "SELECT enable FROM pglinter.rules WHERE code = 'TEST_IMPORT_1'"
-        ).unwrap();
+        let rule1_enabled =
+            Spi::get_one::<bool>("SELECT enable FROM pglinter.rules WHERE code = 'TEST_IMPORT_1'")
+                .unwrap();
         assert!(rule1_enabled.unwrap());
 
         let rule1_warning = Spi::get_one::<i32>(
-            "SELECT warning_level FROM pglinter.rules WHERE code = 'TEST_IMPORT_1'"
-        ).unwrap();
+            "SELECT warning_level FROM pglinter.rules WHERE code = 'TEST_IMPORT_1'",
+        )
+        .unwrap();
         assert_eq!(rule1_warning.unwrap(), 30);
 
         // Test 6: Verify rule2 properties
-        let rule2_enabled = Spi::get_one::<bool>(
-            "SELECT enable FROM pglinter.rules WHERE code = 'TEST_IMPORT_2'"
-        ).unwrap();
+        let rule2_enabled =
+            Spi::get_one::<bool>("SELECT enable FROM pglinter.rules WHERE code = 'TEST_IMPORT_2'")
+                .unwrap();
         assert!(!rule2_enabled.unwrap()); // Should be false
 
         let rule2_error = Spi::get_one::<i32>(
-            "SELECT error_level FROM pglinter.rules WHERE code = 'TEST_IMPORT_2'"
-        ).unwrap();
+            "SELECT error_level FROM pglinter.rules WHERE code = 'TEST_IMPORT_2'",
+        )
+        .unwrap();
         assert_eq!(rule2_error.unwrap(), 80);
 
         // Test 7: Test updating existing rules (import again)
@@ -1140,7 +1168,8 @@ mod tests {
         let invalid_yaml_content = fixtures::get_invalid_yaml_content();
 
         let invalid_file_path = "/tmp/pglinter_invalid_test.yaml";
-        std::fs::write(invalid_file_path, invalid_yaml_content).expect("Failed to write invalid test file");
+        std::fs::write(invalid_file_path, invalid_yaml_content)
+            .expect("Failed to write invalid test file");
 
         let result_invalid = manage_rules::import_rules_from_file(invalid_file_path);
         assert!(result_invalid.is_err());
@@ -1156,13 +1185,16 @@ mod tests {
 
         // Test 10: Test with file that exists but has wrong permissions (if supported on system)
         let protected_file_path = "/tmp/pglinter_protected_test.yaml";
-        std::fs::write(protected_file_path, temp_yaml_content).expect("Failed to write protected test file");
+        std::fs::write(protected_file_path, temp_yaml_content)
+            .expect("Failed to write protected test file");
 
         // Try to make file unreadable (this might not work on all systems)
         #[cfg(unix)]
         {
             use std::os::unix::fs::PermissionsExt;
-            let mut perms = std::fs::metadata(protected_file_path).unwrap().permissions();
+            let mut perms = std::fs::metadata(protected_file_path)
+                .unwrap()
+                .permissions();
             perms.set_mode(0o000); // No permissions
             let _ = std::fs::set_permissions(protected_file_path, perms);
 
@@ -1212,45 +1244,50 @@ mod tests {
         assert!(success_msg.contains("2 new rules"));
 
         let yaml_test_3_exists = Spi::get_one::<bool>(
-            "SELECT EXISTS(SELECT 1 FROM pglinter.rules WHERE code = 'TEST_IMPORT_1')"
-        ).unwrap();
+            "SELECT EXISTS(SELECT 1 FROM pglinter.rules WHERE code = 'TEST_IMPORT_1')",
+        )
+        .unwrap();
         assert!(yaml_test_3_exists.unwrap());
 
         // Test 4: Verify specific rule properties for TEST_IMPORT_1
-        let rule1_name = Spi::get_one::<String>(
-            "SELECT name FROM pglinter.rules WHERE code = 'TEST_IMPORT_1'"
-        ).unwrap();
+        let rule1_name =
+            Spi::get_one::<String>("SELECT name FROM pglinter.rules WHERE code = 'TEST_IMPORT_1'")
+                .unwrap();
         assert_eq!(rule1_name.unwrap(), "Test Import Rule 1");
 
-        let rule1_enabled = Spi::get_one::<bool>(
-            "SELECT enable FROM pglinter.rules WHERE code = 'TEST_IMPORT_1'"
-        ).unwrap();
+        let rule1_enabled =
+            Spi::get_one::<bool>("SELECT enable FROM pglinter.rules WHERE code = 'TEST_IMPORT_1'")
+                .unwrap();
         assert!(rule1_enabled.unwrap());
 
         let rule1_warning = Spi::get_one::<i32>(
-            "SELECT warning_level FROM pglinter.rules WHERE code = 'TEST_IMPORT_1'"
-        ).unwrap();
+            "SELECT warning_level FROM pglinter.rules WHERE code = 'TEST_IMPORT_1'",
+        )
+        .unwrap();
         assert_eq!(rule1_warning.unwrap(), 30);
 
         let rule1_error = Spi::get_one::<i32>(
-            "SELECT error_level FROM pglinter.rules WHERE code = 'TEST_IMPORT_1'"
-        ).unwrap();
+            "SELECT error_level FROM pglinter.rules WHERE code = 'TEST_IMPORT_1'",
+        )
+        .unwrap();
         assert_eq!(rule1_error.unwrap(), 70);
 
         // Test 5: Verify TEST_IMPORT_2 properties (disabled, null q1)
-        let rule2_enabled = Spi::get_one::<bool>(
-            "SELECT enable FROM pglinter.rules WHERE code = 'TEST_IMPORT_2'"
-        ).unwrap();
+        let rule2_enabled =
+            Spi::get_one::<bool>("SELECT enable FROM pglinter.rules WHERE code = 'TEST_IMPORT_2'")
+                .unwrap();
         assert!(!rule2_enabled.unwrap());
 
         let rule2_q1_is_null = Spi::get_one::<bool>(
-            "SELECT q1 IS NULL FROM pglinter.rules WHERE code = 'TEST_IMPORT_2'"
-        ).unwrap();
+            "SELECT q1 IS NULL FROM pglinter.rules WHERE code = 'TEST_IMPORT_2'",
+        )
+        .unwrap();
         assert!(rule2_q1_is_null.unwrap());
 
         let rule2_q2_is_null = Spi::get_one::<bool>(
-            "SELECT q2 IS NULL FROM pglinter.rules WHERE code = 'TEST_IMPORT_2'"
-        ).unwrap();
+            "SELECT q2 IS NULL FROM pglinter.rules WHERE code = 'TEST_IMPORT_2'",
+        )
+        .unwrap();
         assert!(!rule2_q2_is_null.unwrap()); // Should not be null
 
         // Test 7: Re-import same YAML to test updates
@@ -1294,9 +1331,9 @@ mod tests {
         assert!(result_special.is_ok());
 
         // Verify the special characters are preserved
-        let special_name = Spi::get_one::<String>(
-            "SELECT name FROM pglinter.rules WHERE code = 'SPECIAL_TEST'"
-        ).unwrap();
+        let special_name =
+            Spi::get_one::<String>("SELECT name FROM pglinter.rules WHERE code = 'SPECIAL_TEST'")
+                .unwrap();
         assert!(special_name.unwrap().contains("<>&\"'`"));
 
         // Clean up all test rules
@@ -1323,7 +1360,8 @@ mod tests {
         assert_eq!(check_result.unwrap(), true);
 
         // Test with output file parameter via SQL
-        let result_with_file = Spi::get_one::<bool>("SELECT pglinter.perform_base_check('/tmp/test_output.sarif')");
+        let result_with_file =
+            Spi::get_one::<bool>("SELECT pglinter.perform_base_check('/tmp/test_output.sarif')");
         assert!(result_with_file.is_ok());
         let check_result_with_file = result_with_file.unwrap();
         assert!(check_result_with_file.is_some());
@@ -1347,7 +1385,9 @@ mod tests {
         assert_eq!(check_result.unwrap(), true);
 
         // Test with output file parameter via SQL
-        let result_with_file = Spi::get_one::<bool>("SELECT pglinter.perform_cluster_check('/tmp/test_cluster_output.sarif')");
+        let result_with_file = Spi::get_one::<bool>(
+            "SELECT pglinter.perform_cluster_check('/tmp/test_cluster_output.sarif')",
+        );
         assert!(result_with_file.is_ok());
         let check_result_with_file = result_with_file.unwrap();
         assert!(check_result_with_file.is_some());
@@ -1371,7 +1411,9 @@ mod tests {
         assert_eq!(check_result.unwrap(), true);
 
         // Test with output file parameter via SQL
-        let result_with_file = Spi::get_one::<bool>("SELECT pglinter.perform_table_check('/tmp/test_table_output.sarif')");
+        let result_with_file = Spi::get_one::<bool>(
+            "SELECT pglinter.perform_table_check('/tmp/test_table_output.sarif')",
+        );
         assert!(result_with_file.is_ok());
         let check_result_with_file = result_with_file.unwrap();
         assert!(check_result_with_file.is_some());
@@ -1395,7 +1437,9 @@ mod tests {
         assert_eq!(check_result.unwrap(), true);
 
         // Test with output file parameter via SQL
-        let result_with_file = Spi::get_one::<bool>("SELECT pglinter.perform_schema_check('/tmp/test_schema_output.sarif')");
+        let result_with_file = Spi::get_one::<bool>(
+            "SELECT pglinter.perform_schema_check('/tmp/test_schema_output.sarif')",
+        );
         assert!(result_with_file.is_ok());
         let check_result_with_file = result_with_file.unwrap();
         assert!(check_result_with_file.is_some());
@@ -1503,7 +1547,8 @@ mod tests {
         assert!(success_msg.contains(export_file_path));
 
         // Verify file was created and contains expected content
-        let file_content = std::fs::read_to_string(export_file_path).expect("Failed to read exported file");
+        let file_content =
+            std::fs::read_to_string(export_file_path).expect("Failed to read exported file");
         assert!(file_content.contains("FILE_EXPORT_1"));
         assert!(file_content.contains("File Export Test Rule"));
         assert!(file_content.contains("metadata:"));
@@ -1511,15 +1556,18 @@ mod tests {
 
         // Test 2: Test SQL interface
         let temp_file_path_2 = "/tmp/pglinter_sql_export_test.yaml";
-        let sql_result = Spi::get_one::<String>(
-            &format!("SELECT pglinter.export_rules_to_file('{}')", temp_file_path_2)
-        ).unwrap();
+        let sql_result = Spi::get_one::<String>(&format!(
+            "SELECT pglinter.export_rules_to_file('{}')",
+            temp_file_path_2
+        ))
+        .unwrap();
         assert!(sql_result.is_some());
         let sql_success_msg = sql_result.unwrap();
         assert!(sql_success_msg.contains("Rules exported successfully"));
 
         // Verify SQL export file
-        let sql_file_content = std::fs::read_to_string(temp_file_path_2).expect("Failed to read SQL exported file");
+        let sql_file_content =
+            std::fs::read_to_string(temp_file_path_2).expect("Failed to read SQL exported file");
         assert!(sql_file_content.contains("FILE_EXPORT_1"));
 
         // Test 3: Test with invalid/protected file path (only test if we can create the directory structure)
@@ -1547,7 +1595,14 @@ mod tests {
     #[pg_test]
     fn test_get_rule_levels() {
         // Setup test rule with specific levels
-        fixtures::setup_test_rule("GET_LEVELS_TEST", 9990, "Get Levels Test Rule", true, 25, 85);
+        fixtures::setup_test_rule(
+            "GET_LEVELS_TEST",
+            9990,
+            "Get Levels Test Rule",
+            true,
+            25,
+            85,
+        );
 
         // Test 1: Get levels for existing rule
         let result = manage_rules::get_rule_levels("GET_LEVELS_TEST");
@@ -1557,7 +1612,8 @@ mod tests {
         assert_eq!(error, 85);
 
         // Test 2: Test via SQL interface
-        let sql_result = Spi::get_one::<String>("SELECT pglinter.get_rule_levels('GET_LEVELS_TEST')").unwrap();
+        let sql_result =
+            Spi::get_one::<String>("SELECT pglinter.get_rule_levels('GET_LEVELS_TEST')").unwrap();
         assert!(sql_result.is_some());
         let levels_str = sql_result.unwrap();
         assert_eq!(levels_str, "warning_level=25, error_level=85");
@@ -1567,10 +1623,12 @@ mod tests {
         assert!(result_nonexistent.is_ok());
         let (warning_default, error_default) = result_nonexistent.unwrap();
         assert_eq!(warning_default, 50); // Default warning level
-        assert_eq!(error_default, 90);   // Default error level
+        assert_eq!(error_default, 90); // Default error level
 
         // Test 4: Test SQL interface with non-existent rule
-        let sql_result_nonexistent = Spi::get_one::<String>("SELECT pglinter.get_rule_levels('NONEXISTENT_LEVELS')").unwrap();
+        let sql_result_nonexistent =
+            Spi::get_one::<String>("SELECT pglinter.get_rule_levels('NONEXISTENT_LEVELS')")
+                .unwrap();
         assert!(sql_result_nonexistent.is_some()); // Should return default values, not NULL
         let nonexistent_levels_str = sql_result_nonexistent.unwrap();
         assert_eq!(nonexistent_levels_str, "warning_level=50, error_level=90");
@@ -1586,7 +1644,8 @@ mod tests {
         assert_eq!(error_null, 0);
 
         // Test 6: Test SQL interface with NULL levels rule
-        let sql_result_null = Spi::get_one::<String>("SELECT pglinter.get_rule_levels('NULL_LEVELS_TEST')").unwrap();
+        let sql_result_null =
+            Spi::get_one::<String>("SELECT pglinter.get_rule_levels('NULL_LEVELS_TEST')").unwrap();
         assert!(sql_result_null.is_some());
         let null_levels_str = sql_result_null.unwrap();
         assert_eq!(null_levels_str, "warning_level=0, error_level=0");
@@ -1601,7 +1660,14 @@ mod tests {
         // Test list_rules function with database in various states
 
         // Test 1: Normal operation (covered in existing test_list_rules)
-        fixtures::setup_test_rule("LIST_ERROR_TEST", 9988, "List Error Test Rule", true, 10, 20);
+        fixtures::setup_test_rule(
+            "LIST_ERROR_TEST",
+            9988,
+            "List Error Test Rule",
+            true,
+            10,
+            20,
+        );
 
         let result = manage_rules::list_rules();
         assert!(result.is_ok());
@@ -1623,7 +1689,9 @@ mod tests {
         assert!(result_unusual.is_ok());
         let rules_unusual = result_unusual.unwrap();
 
-        let unusual_rule = rules_unusual.iter().find(|(code, _, _)| code == "UNUSUAL_DATA_RULE");
+        let unusual_rule = rules_unusual
+            .iter()
+            .find(|(code, _, _)| code == "UNUSUAL_DATA_RULE");
         assert!(unusual_rule.is_some());
         let (_, name_unusual, enabled_unusual) = unusual_rule.unwrap();
         assert_eq!(name_unusual, ""); // Empty name should be handled
@@ -1644,26 +1712,35 @@ mod tests {
 
         // Test 1: Test SARIF output generation with file output
         let sarif_file_path = "/tmp/pglinter_test_sarif.json";
-        let result_with_file = Spi::get_one::<bool>(
-            &format!("SELECT pglinter.perform_table_check('{}')", sarif_file_path)
-        ).unwrap();
+        let result_with_file = Spi::get_one::<bool>(&format!(
+            "SELECT pglinter.perform_table_check('{}')",
+            sarif_file_path
+        ))
+        .unwrap();
         assert!(result_with_file.is_some());
         assert_eq!(result_with_file.unwrap(), true);
 
         // Verify SARIF file was created
-        assert!(std::fs::metadata(sarif_file_path).is_ok(), "SARIF file should be created");
+        assert!(
+            std::fs::metadata(sarif_file_path).is_ok(),
+            "SARIF file should be created"
+        );
 
         // Read and verify SARIF file content
-        let sarif_content = std::fs::read_to_string(sarif_file_path).expect("Failed to read SARIF file");
+        let sarif_content =
+            std::fs::read_to_string(sarif_file_path).expect("Failed to read SARIF file");
 
         // Basic content checks
         assert!(!sarif_content.is_empty(), "SARIF file should not be empty");
-        assert!(sarif_content.contains("version"), "SARIF should contain version");
+        assert!(
+            sarif_content.contains("version"),
+            "SARIF should contain version"
+        );
         assert!(sarif_content.contains("runs"), "SARIF should contain runs");
 
         // Try to parse as JSON (basic validation)
-        let _sarif_json: serde_json::Value = serde_json::from_str(&sarif_content)
-            .expect("SARIF output should be valid JSON");
+        let _sarif_json: serde_json::Value =
+            serde_json::from_str(&sarif_content).expect("SARIF output should be valid JSON");
 
         // Test 2: Test without file output (should not create file)
         let result_no_file = Spi::get_one::<bool>("SELECT pglinter.perform_table_check()").unwrap();
@@ -1673,15 +1750,18 @@ mod tests {
         // Test 3: Test with different rule scope
         let sarif_file_path_2 = "/tmp/pglinter_test_sarif_2.json";
         let _ = Spi::run("UPDATE pglinter.rules SET enable = true WHERE code = 'B001'");
-        let result_base = Spi::get_one::<bool>(
-            &format!("SELECT pglinter.perform_base_check('{}')", sarif_file_path_2)
-        ).unwrap();
+        let result_base = Spi::get_one::<bool>(&format!(
+            "SELECT pglinter.perform_base_check('{}')",
+            sarif_file_path_2
+        ))
+        .unwrap();
         assert!(result_base.is_some());
         assert_eq!(result_base.unwrap(), true);
 
         // Verify second SARIF file exists
         if std::fs::metadata(sarif_file_path_2).is_ok() {
-            let sarif_content_2 = std::fs::read_to_string(sarif_file_path_2).expect("Failed to read second SARIF file");
+            let sarif_content_2 = std::fs::read_to_string(sarif_file_path_2)
+                .expect("Failed to read second SARIF file");
             assert!(!sarif_content_2.is_empty());
         }
 
@@ -1702,7 +1782,9 @@ mod tests {
         // Set specific warning/error levels to ensure we get warning level results
         // warning_level=1 means if 1 or more violations, it's a warning
         // error_level=10 means if 10 or more violations, it's an error
-        let _ = Spi::run("UPDATE pglinter.rules SET warning_level = 1, error_level = 10 WHERE code = 'T001'");
+        let _ = Spi::run(
+            "UPDATE pglinter.rules SET warning_level = 1, error_level = 10 WHERE code = 'T001'",
+        );
 
         // Execute table check which internally uses execute_q1_rule_with_params
         // This should trigger violations from our test tables without primary keys
@@ -1712,19 +1794,22 @@ mod tests {
 
         // Test with SARIF output to verify the warning message format
         let test_sarif_file = "/tmp/test_q1_warning.json";
-        let result_sarif = Spi::get_one::<bool>(
-            &format!("SELECT pglinter.perform_table_check('{}')", test_sarif_file)
-        ).unwrap();
+        let result_sarif = Spi::get_one::<bool>(&format!(
+            "SELECT pglinter.perform_table_check('{}')",
+            test_sarif_file
+        ))
+        .unwrap();
         assert!(result_sarif.is_some());
         assert_eq!(result_sarif.unwrap(), true);
 
         // Verify SARIF file was created and contains results
         if std::fs::metadata(test_sarif_file).is_ok() {
-            let sarif_content = std::fs::read_to_string(test_sarif_file).expect("Failed to read SARIF file");
+            let sarif_content =
+                std::fs::read_to_string(test_sarif_file).expect("Failed to read SARIF file");
 
             // Parse JSON to verify structure matches the warning scenario output
-            let sarif_json: serde_json::Value = serde_json::from_str(&sarif_content)
-                .expect("SARIF should be valid JSON");
+            let sarif_json: serde_json::Value =
+                serde_json::from_str(&sarif_content).expect("SARIF should be valid JSON");
 
             if let Some(results) = sarif_json["runs"][0]["results"].as_array() {
                 // Should have at least one result (from our test tables)
@@ -1739,24 +1824,35 @@ mod tests {
                             found_table_result = true;
 
                             // Verify the result has required fields
-                            assert!(result["message"]["text"].is_string(), "Result should have text message");
+                            assert!(
+                                result["message"]["text"].is_string(),
+                                "Result should have text message"
+                            );
                             assert!(result["ruleId"].is_string(), "Result should have rule ID");
 
                             let message = result["message"]["text"].as_str().unwrap_or("");
                             // The format from execute_q1_rule_with_params should include the scope and details
-                            assert!(message.contains("TABLE"), "T001 message should contain TABLE scope");
+                            assert!(
+                                message.contains("TABLE"),
+                                "T001 message should contain TABLE scope"
+                            );
 
                             // Check that we have a level (warning, error, or note)
                             assert!(result["level"].is_string(), "Result should have a level");
                             let level = result["level"].as_str().unwrap_or("");
-                            assert!(["warning", "error", "note"].contains(&level),
-                                   "Result level should be warning, error, or note");
+                            assert!(
+                                ["warning", "error", "note"].contains(&level),
+                                "Result level should be warning, error, or note"
+                            );
                         }
                     }
                 }
 
                 // Ensure we found at least one result from our T001 rule
-                assert!(found_table_result, "Should have found at least one T001 rule result");
+                assert!(
+                    found_table_result,
+                    "Should have found at least one T001 rule result"
+                );
             }
         }
 
@@ -1781,23 +1877,31 @@ mod tests {
         let _ = Spi::run("UPDATE pglinter.rules SET enable = true WHERE code = 'T001'");
 
         // Set thresholds to ensure warning level result (low warning, high error)
-        let _ = Spi::run("UPDATE pglinter.rules SET warning_level = 1, error_level = 100 WHERE code = 'T001'");
+        let _ = Spi::run(
+            "UPDATE pglinter.rules SET warning_level = 1, error_level = 100 WHERE code = 'T001'",
+        );
 
         // Execute table check which will trigger execute_q1_rule_with_params for T001
         // This should create a warning-level RuleResult using the format on lines 171-177
         let test_sarif_file = "/tmp/test_warning_format.json";
-        let result = Spi::get_one::<bool>(
-            &format!("SELECT pglinter.perform_table_check('{}')", test_sarif_file)
-        ).unwrap();
+        let result = Spi::get_one::<bool>(&format!(
+            "SELECT pglinter.perform_table_check('{}')",
+            test_sarif_file
+        ))
+        .unwrap();
         assert!(result.is_some());
         assert_eq!(result.unwrap(), true);
 
         // Verify the SARIF output contains the exact message format from execute_q1_rule_with_params
-        assert!(std::fs::metadata(test_sarif_file).is_ok(), "SARIF file should be created");
+        assert!(
+            std::fs::metadata(test_sarif_file).is_ok(),
+            "SARIF file should be created"
+        );
 
-        let sarif_content = std::fs::read_to_string(test_sarif_file).expect("Failed to read SARIF file");
-        let sarif_json: serde_json::Value = serde_json::from_str(&sarif_content)
-            .expect("SARIF should be valid JSON");
+        let sarif_content =
+            std::fs::read_to_string(test_sarif_file).expect("Failed to read SARIF file");
+        let sarif_json: serde_json::Value =
+            serde_json::from_str(&sarif_content).expect("SARIF should be valid JSON");
 
         if let Some(results) = sarif_json["runs"][0]["results"].as_array() {
             let mut found_warning_result = false;
@@ -1813,32 +1917,54 @@ mod tests {
                         // format!("{} {} {} : \n{} \n", scope, rule_message, count, details.join("\n"))
 
                         // Should start with scope
-                        assert!(message.starts_with("TABLE"), "Message should start with scope 'TABLE'");
+                        assert!(
+                            message.starts_with("TABLE"),
+                            "Message should start with scope 'TABLE'"
+                        );
 
                         // Should contain the specific format pattern: " : \n"
-                        assert!(message.contains(" : \n"), "Message should contain ' : \\n' from format string");
+                        assert!(
+                            message.contains(" : \n"),
+                            "Message should contain ' : \\n' from format string"
+                        );
 
                         // Should end with " \n" (from the format string)
-                        assert!(message.ends_with(" \n"), "Message should end with ' \\n' from format string");
+                        assert!(
+                            message.ends_with(" \n"),
+                            "Message should end with ' \\n' from format string"
+                        );
 
                         // Should contain a number (the count)
-                        assert!(message.chars().any(char::is_numeric), "Message should contain count number");
+                        assert!(
+                            message.chars().any(char::is_numeric),
+                            "Message should contain count number"
+                        );
 
                         // Verify the count field if it exists (might be optional in SARIF format)
                         if result["count"].is_number() {
                             let count = result["count"].as_u64().unwrap();
-                            assert!(count > 0, "Count should be > 0 for warning (lines 167-168 condition)");
+                            assert!(
+                                count > 0,
+                                "Count should be > 0 for warning (lines 167-168 condition)"
+                            );
                         }
 
                         // Verify it's specifically a warning level (line 170)
-                        assert_eq!(result["level"].as_str().unwrap(), "warning", "Level should be 'warning' from line 170");
+                        assert_eq!(
+                            result["level"].as_str().unwrap(),
+                            "warning",
+                            "Level should be 'warning' from line 170"
+                        );
 
                         break;
                     }
                 }
             }
 
-            assert!(found_warning_result, "Should have found T001 warning result testing lines 167-180");
+            assert!(
+                found_warning_result,
+                "Should have found T001 warning result testing lines 167-180"
+            );
         }
 
         // Cleanup
@@ -1846,7 +1972,6 @@ mod tests {
         fixtures::cleanup_test_tables();
         let _ = Spi::run("UPDATE pglinter.rules SET enable = false WHERE code = 'T001'");
     }
-
 }
 
 /// This module is required by `cargo pgrx test` invocations.

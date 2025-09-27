@@ -1,5 +1,5 @@
 use pgrx::prelude::*;
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Rule {
@@ -391,7 +391,7 @@ pub fn show_rule_queries(rule_code: &str) -> Result<bool, String> {
                 Some(query) => {
                     pgrx::notice!("📊 q1 Query:");
                     pgrx::notice!("{}", query);
-                },
+                }
                 None => pgrx::notice!("📊 q1 Query: <NOT SET>"),
             }
 
@@ -401,7 +401,7 @@ pub fn show_rule_queries(rule_code: &str) -> Result<bool, String> {
                 Some(query) => {
                     pgrx::notice!("⚠️  q2 Query:");
                     pgrx::notice!("{}", query);
-                },
+                }
                 None => pgrx::notice!("⚠️  q2 Query: <NOT SET>"),
             }
 
@@ -470,7 +470,7 @@ pub fn export_rules_to_yaml() -> Result<String, String> {
                 Ok(yaml) => Ok(yaml),
                 Err(e) => Err(format!("YAML serialization error: {}", e)),
             }
-        },
+        }
         Err(e) => Err(format!("Database error: {}", e)),
     }
 }
@@ -492,9 +492,11 @@ pub fn import_rules_from_yaml(yaml_content: &str) -> Result<String, String> {
         Err(e) => return Err(format!("YAML parsing error: {}", e)),
     };
 
-    pgrx::notice!("📥 Importing {} rules from YAML (format v{})",
-                  import_data.metadata.total_rules,
-                  import_data.metadata.format_version);
+    pgrx::notice!(
+        "📥 Importing {} rules from YAML (format v{})",
+        import_data.metadata.total_rules,
+        import_data.metadata.format_version
+    );
 
     let mut imported_count = 0;
     let mut updated_count = 0;
@@ -540,7 +542,7 @@ pub fn import_rules_from_yaml(yaml_content: &str) -> Result<String, String> {
                     fixes_array.into(),
                     rule.q1.into(),
                     rule.q2.into(),
-                ]
+                ],
             )?;
 
             if let Some(row) = rows.next() {
@@ -558,7 +560,7 @@ pub fn import_rules_from_yaml(yaml_content: &str) -> Result<String, String> {
                 } else {
                     updated_count += 1;
                 }
-            },
+            }
             Err(e) => {
                 errors.push(format!("Rule {}: {}", rule_code_for_error, e));
             }

@@ -44,7 +44,6 @@ fn get_rule_config(rule_code: &str) -> Result<(i64, i64, String), String> {
     }
 }
 
-
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum RuleScope {
     Base,
@@ -76,16 +75,26 @@ pub struct RuleData {
     pub scope: String,
 }
 
-fn execute_q1_rule_dynamic(scope: &str, ruleid: &str, q1: &str) -> Result<Option<RuleResult>, String> {
-
+fn execute_q1_rule_dynamic(
+    scope: &str,
+    ruleid: &str,
+    q1: &str,
+) -> Result<Option<RuleResult>, String> {
     let config = match get_rule_config(ruleid) {
         Ok(config) => {
-            pgrx::debug1!("get_rule_config; Retrieved rule_message for {}: {}",
-                        ruleid, config.2);
+            pgrx::debug1!(
+                "get_rule_config; Retrieved rule_message for {}: {}",
+                ruleid,
+                config.2
+            );
             config
-        },
+        }
         Err(e) => {
-            pgrx::debug1!("execute_q1_q2_rule_dynamic; Failed to get configuration for {}: {}", ruleid, e);
+            pgrx::debug1!(
+                "execute_q1_q2_rule_dynamic; Failed to get configuration for {}: {}",
+                ruleid,
+                e
+            );
             return Err(format!("Failed to get {} configuration: {e}", ruleid));
         }
     };
@@ -95,8 +104,18 @@ fn execute_q1_rule_dynamic(scope: &str, ruleid: &str, q1: &str) -> Result<Option
     let has_parameters = q1.contains("$1");
 
     if has_parameters {
-        pgrx::debug1!("execute_q1_rule_dynamic; {} query contains parameters, handling special case", ruleid);
-        return execute_q1_rule_with_params(scope, ruleid, q1, warning_level, error_level, &rule_message);
+        pgrx::debug1!(
+            "execute_q1_rule_dynamic; {} query contains parameters, handling special case",
+            ruleid
+        );
+        return execute_q1_rule_with_params(
+            scope,
+            ruleid,
+            q1,
+            warning_level,
+            error_level,
+            &rule_message,
+        );
     }
 
     let result: Result<Option<RuleResult>, spi::SpiError> = Spi::connect(|client| {
@@ -105,9 +124,7 @@ fn execute_q1_rule_dynamic(scope: &str, ruleid: &str, q1: &str) -> Result<Option
 
         for row in client.select(q1, None, &[])? {
             let message: String = row.get(1)?.unwrap_or_default();
-            details.push(
-                message
-            );
+            details.push(message);
             count += 1;
         }
 
@@ -142,13 +159,16 @@ fn execute_q1_rule_with_params(
     q1: &str,
     warning_level: i64,
     error_level: i64,
-    rule_message: &str
+    rule_message: &str,
 ) -> Result<Option<RuleResult>, String> {
-
     // Get parameters based on rule type
     let params = get_rule_parameters(ruleid, warning_level, error_level)?;
 
-    pgrx::debug1!("execute_q1_rule_with_params; Executing {} with {} parameters", ruleid, params.len());
+    pgrx::debug1!(
+        "execute_q1_rule_with_params; Executing {} with {} parameters",
+        ruleid,
+        params.len()
+    );
 
     let result: Result<Option<RuleResult>, spi::SpiError> = Spi::connect(|client| {
         let mut count = 0i64;
@@ -198,17 +218,21 @@ fn execute_q1_rule_with_params(
 }
 
 /// Get parameters for specific rules
-fn get_rule_parameters(ruleid: &str, warning_level: i64, _error_level: i64) -> Result<Vec<i64>, String> {
+fn get_rule_parameters(
+    ruleid: &str,
+    warning_level: i64,
+    _error_level: i64,
+) -> Result<Vec<i64>, String> {
     match ruleid {
         "T006" => {
             // T006 uses warning/error levels as size thresholds in MB
             // Convert to bytes for pg_relation_size comparison
             Ok(vec![warning_level * 1024 * 1024])
-        },
+        }
         "T004" => {
             // T004 might use warning_level as percentage threshold
             Ok(vec![warning_level])
-        },
+        }
         _ => {
             // Default: use warning_level as first parameter
             Ok(vec![warning_level])
@@ -216,40 +240,69 @@ fn get_rule_parameters(ruleid: &str, warning_level: i64, _error_level: i64) -> R
     }
 }
 
-fn execute_q1_q2_rule_dynamic(ruleid: &str, q1: &str, q2: &str) -> Result<Option<RuleResult>, String> {
+fn execute_q1_q2_rule_dynamic(
+    ruleid: &str,
+    q1: &str,
+    q2: &str,
+) -> Result<Option<RuleResult>, String> {
     // Debug: Log function entry
-    pgrx::debug1!("execute_q1_q2_rule_dynamic; Starting execution for rule {}", ruleid);
+    pgrx::debug1!(
+        "execute_q1_q2_rule_dynamic; Starting execution for rule {}",
+        ruleid
+    );
 
     let (warning_threshold, error_threshold, rule_message) = match get_rule_config(ruleid) {
         Ok(config) => {
-            pgrx::debug1!("execute_q1_q2_rule_dynamic; Retrieved thresholds for {} - warning: {}, error: {}",
-                        ruleid, config.0, config.1);
+            pgrx::debug1!(
+                "execute_q1_q2_rule_dynamic; Retrieved thresholds for {} - warning: {}, error: {}",
+                ruleid,
+                config.0,
+                config.1
+            );
             config
-        },
+        }
         Err(e) => {
-            pgrx::debug1!("execute_q1_q2_rule_dynamic; Failed to get configuration for {}: {}", ruleid, e);
+            pgrx::debug1!(
+                "execute_q1_q2_rule_dynamic; Failed to get configuration for {}: {}",
+                ruleid,
+                e
+            );
             return Err(format!("Failed to get {} configuration: {e}", ruleid));
         }
     };
 
     let result: Result<Option<RuleResult>, spi::SpiError> = Spi::connect(|client| {
-        pgrx::debug1!("execute_q1_q2_rule_dynamic; Executing total count for {}", ruleid);
+        pgrx::debug1!(
+            "execute_q1_q2_rule_dynamic; Executing total count for {}",
+            ruleid
+        );
         let q1: i64 = client
             .select(q1, None, &[])?
             .first()
             .get::<i64>(1)?
             .unwrap_or(0);
 
-        pgrx::debug1!("execute_q1_q2_rule_dynamic; total count result for {}: {}", ruleid, q1);
+        pgrx::debug1!(
+            "execute_q1_q2_rule_dynamic; total count result for {}: {}",
+            ruleid,
+            q1
+        );
 
-        pgrx::debug1!("execute_q1_q2_rule_dynamic; Executing problem count for {}", ruleid);
+        pgrx::debug1!(
+            "execute_q1_q2_rule_dynamic; Executing problem count for {}",
+            ruleid
+        );
         let q2: i64 = client
             .select(q2, None, &[])?
             .first()
             .get::<i64>(1)?
             .unwrap_or(0);
 
-        pgrx::debug1!("execute_q1_q2_rule_dynamic; problem count result for {}: {}", ruleid, q2);
+        pgrx::debug1!(
+            "execute_q1_q2_rule_dynamic; problem count result for {}: {}",
+            ruleid,
+            q2
+        );
 
         if q1 > 0 {
             let percentage = (q2 * 100) / q1;
@@ -259,8 +312,12 @@ fn execute_q1_q2_rule_dynamic(ruleid: &str, q1: &str, q2: &str) -> Result<Option
 
             // Check error threshold first (higher severity)
             if percentage >= error_threshold {
-                pgrx::debug1!("execute_rule_dynamic; {} triggered ERROR threshold ({}% >= {}%)",
-                            ruleid, percentage, error_threshold);
+                pgrx::debug1!(
+                    "execute_rule_dynamic; {} triggered ERROR threshold ({}% >= {}%)",
+                    ruleid,
+                    percentage,
+                    error_threshold
+                );
 
                 // Replace placeholders in rule message
                 let formatted_message = rule_message
@@ -269,8 +326,12 @@ fn execute_q1_q2_rule_dynamic(ruleid: &str, q1: &str, q2: &str) -> Result<Option
                     .replace("{2}", "error")
                     .replace("{3}", &percentage.to_string());
 
-                pgrx::debug1!("execute_q1_q2_rule_dynamic; {} message template '{}' -> '{}'",
-                            ruleid, rule_message, formatted_message);
+                pgrx::debug1!(
+                    "execute_q1_q2_rule_dynamic; {} message template '{}' -> '{}'",
+                    ruleid,
+                    rule_message,
+                    formatted_message
+                );
 
                 return Ok(Some(RuleResult {
                     ruleid: ruleid.to_string(),
@@ -281,8 +342,12 @@ fn execute_q1_q2_rule_dynamic(ruleid: &str, q1: &str, q2: &str) -> Result<Option
             }
             // Check warning threshold
             else if percentage >= warning_threshold {
-                pgrx::debug1!("execute_q1_q2_rule_dynamic; {} triggered WARNING threshold ({}% >= {}%)",
-                            ruleid, percentage, warning_threshold);
+                pgrx::debug1!(
+                    "execute_q1_q2_rule_dynamic; {} triggered WARNING threshold ({}% >= {}%)",
+                    ruleid,
+                    percentage,
+                    warning_threshold
+                );
 
                 // Replace placeholders in rule message
                 let formatted_message = rule_message
@@ -291,8 +356,12 @@ fn execute_q1_q2_rule_dynamic(ruleid: &str, q1: &str, q2: &str) -> Result<Option
                     .replace("{2}", "warning")
                     .replace("{3}", &percentage.to_string());
 
-                pgrx::debug1!("execute_q1_q2_rule_dynamic; {} message template '{}' -> '{}'",
-                            ruleid, rule_message, formatted_message);
+                pgrx::debug1!(
+                    "execute_q1_q2_rule_dynamic; {} message template '{}' -> '{}'",
+                    ruleid,
+                    rule_message,
+                    formatted_message
+                );
 
                 return Ok(Some(RuleResult {
                     ruleid: ruleid.to_string(),
@@ -301,11 +370,18 @@ fn execute_q1_q2_rule_dynamic(ruleid: &str, q1: &str, q2: &str) -> Result<Option
                     count: Some(q2),
                 }));
             } else {
-                pgrx::debug1!("execute_q1_q2_rule_dynamic; {} passed all thresholds ({}% < warning {}%)",
-                            ruleid, percentage, warning_threshold);
+                pgrx::debug1!(
+                    "execute_q1_q2_rule_dynamic; {} passed all thresholds ({}% < warning {}%)",
+                    ruleid,
+                    percentage,
+                    warning_threshold
+                );
             }
         } else {
-            pgrx::debug1!("execute_q1_q2_rule_dynamic; {} skipped - no data found (total = 0)", ruleid);
+            pgrx::debug1!(
+                "execute_q1_q2_rule_dynamic; {} skipped - no data found (total = 0)",
+                ruleid
+            );
         }
 
         Ok(None)
@@ -313,21 +389,27 @@ fn execute_q1_q2_rule_dynamic(ruleid: &str, q1: &str, q2: &str) -> Result<Option
 
     match result {
         Ok(res) => {
-            pgrx::debug1!("execute_q1_q2_rule_dynamic; {} completed successfully", ruleid);
+            pgrx::debug1!(
+                "execute_q1_q2_rule_dynamic; {} completed successfully",
+                ruleid
+            );
             Ok(res)
-        },
+        }
         Err(e) => {
-            pgrx::debug1!("execute_q1_q2_rule_dynamic; {} failed with database error: {}", ruleid, e);
+            pgrx::debug1!(
+                "execute_q1_q2_rule_dynamic; {} failed with database error: {}",
+                ruleid,
+                e
+            );
             Err(format!("Database error: {e}"))
-        },
+        }
     }
 }
-
 
 /// Execute all BASE scope rules regardless of q2 null status
 /// This function combines the logic from execute_q1_q2_rules and execute_q1_rules
 /// but filters for BASE scope rules only
-pub fn execute_rules(scope: &str ) -> Result<Vec<RuleResult>, String> {
+pub fn execute_rules(scope: &str) -> Result<Vec<RuleResult>, String> {
     pgrx::debug1!("execute_rule; Starting execution of all {} rules", scope);
     let mut results = Vec::new();
 
@@ -362,7 +444,11 @@ pub fn execute_rules(scope: &str ) -> Result<Vec<RuleResult>, String> {
 
     match rule_result {
         Ok(rules) => {
-            pgrx::debug1!("execute_rule; Found {} {} rules to execute", rules.len(),scope);
+            pgrx::debug1!(
+                "execute_rule; Found {} {} rules to execute",
+                rules.len(),
+                scope
+            );
 
             for rule in rules {
                 // Check if rule is enabled before executing
@@ -376,34 +462,59 @@ pub fn execute_rules(scope: &str ) -> Result<Vec<RuleResult>, String> {
                             pgrx::debug1!("execute_rule; Executing {} as Q1+Q2 rule", rule.code);
                             match execute_q1_q2_rule_dynamic(&rule.code, &rule.q1, q2) {
                                 Ok(Some(result)) => {
-                                    pgrx::debug1!("execute_rule; {} produced result: {} - {}",
-                                                rule.code, result.level, result.message);
+                                    pgrx::debug1!(
+                                        "execute_rule; {} produced result: {} - {}",
+                                        rule.code,
+                                        result.level,
+                                        result.message
+                                    );
                                     results.push(result);
-                                },
+                                }
                                 Ok(None) => {
-                                    pgrx::debug1!("execute_rule; {} passed thresholds - no issues", rule.code);
-                                },
+                                    pgrx::debug1!(
+                                        "execute_rule; {} passed thresholds - no issues",
+                                        rule.code
+                                    );
+                                }
                                 Err(e) => {
-                                    pgrx::debug1!("execute_rule; {} failed with error: {}", rule.code, e);
-                                    return Err(format!("Failed to execute rule {}: {}", rule.code, e));
+                                    pgrx::debug1!(
+                                        "execute_rule; {} failed with error: {}",
+                                        rule.code,
+                                        e
+                                    );
+                                    return Err(format!(
+                                        "Failed to execute rule {}: {}",
+                                        rule.code, e
+                                    ));
                                 }
                             }
-                        },
+                        }
                         None => {
                             // Execute as q1-only rule (direct warning)
                             pgrx::debug1!("execute_rule; Executing {} as Q1-only rule", rule.code);
                             match execute_q1_rule_dynamic(&rule.scope, &rule.code, &rule.q1) {
                                 Ok(Some(result)) => {
-                                    pgrx::debug1!("execute_rule; {} produced result: {} - {}",
-                                                rule.code, result.level, result.message);
+                                    pgrx::debug1!(
+                                        "execute_rule; {} produced result: {} - {}",
+                                        rule.code,
+                                        result.level,
+                                        result.message
+                                    );
                                     results.push(result);
-                                },
+                                }
                                 Ok(None) => {
                                     pgrx::debug1!("execute_rule; {} found no issues", rule.code);
-                                },
+                                }
                                 Err(e) => {
-                                    pgrx::debug1!("execute_rule; {} failed with error: {}", rule.code, e);
-                                    return Err(format!("Failed to execute rule {}: {}", rule.code, e));
+                                    pgrx::debug1!(
+                                        "execute_rule; {} failed with error: {}",
+                                        rule.code,
+                                        e
+                                    );
+                                    return Err(format!(
+                                        "Failed to execute rule {}: {}",
+                                        rule.code, e
+                                    ));
                                 }
                             }
                         }
@@ -412,18 +523,20 @@ pub fn execute_rules(scope: &str ) -> Result<Vec<RuleResult>, String> {
                     pgrx::debug1!("execute_rule; Skipping disabled rule: {}", rule.code);
                 }
             }
-        },
+        }
         Err(e) => {
             pgrx::debug1!("execute_rule; Database error while fetching rules: {}", e);
             return Err(format!("Database error: {e}"));
         }
     }
 
-    pgrx::debug1!("execute_rule; Completed execution of rules, found {} issues", results.len());
+    pgrx::debug1!(
+        "execute_rule; Completed execution of rules, found {} issues",
+        results.len()
+    );
 
     Ok(results)
 }
-
 
 // Output and SARIF functions
 pub fn output_results_to_prompt(results: Vec<RuleResult>) -> Result<bool, String> {
