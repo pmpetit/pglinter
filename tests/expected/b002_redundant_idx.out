@@ -50,10 +50,10 @@ CREATE INDEX idx_customer_date_2 ON orders_table (product_name, order_date);
 CREATE EXTENSION IF NOT EXISTS pglinter;
 -- First, disable all rules to isolate B001 testing
 SELECT pglinter.disable_all_rules() AS all_rules_disabled;
-NOTICE:  🔴 Disabled 20 rule(s)
+NOTICE:  🔴 Disabled 21 rule(s)
  all_rules_disabled 
 --------------------
-                 20
+                 21
 (1 row)
 
 -- Enable only B002 for focused testing
