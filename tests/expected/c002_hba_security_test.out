@@ -1,0 +1,92 @@
+-- Comprehensive test for pglinter C002 rule: Insecure pg_hba.conf entries
+-- This script tests the detection of insecure authentication methods in pg_hba.conf
+CREATE EXTENSION pglinter;
+BEGIN;
+\pset pager off
+SELECT 'Testing C002 rule - pg_hba.conf security checks...' AS test_info;
+                     test_info                      
+----------------------------------------------------
+ Testing C002 rule - pg_hba.conf security checks...
+(1 row)
+
+-- First, disable all rules to isolate C002 testing
+SELECT pglinter.disable_all_rules() AS all_rules_disabled;
+NOTICE:  🔴 Disabled 20 rule(s)
+ all_rules_disabled 
+--------------------
+                 20
+(1 row)
+
+-- Enable only C002 for focused testing
+SELECT pglinter.enable_rule('C002') AS c002_enabled;
+NOTICE:  ✅ Rule C002 has been enabled
+ c002_enabled 
+--------------
+ t
+(1 row)
+
+-- Verify C002 is enabled
+SELECT pglinter.is_rule_enabled('C002') AS c002_status;
+ c002_status 
+-------------
+ t
+(1 row)
+
+-- Test 1: Run C002 check with current settings
+SELECT '=== Test 2: C002 Rule Execution ===' AS test_section;
+            test_section             
+-------------------------------------
+ === Test 2: C002 Rule Execution ===
+(1 row)
+
+SELECT pglinter.perform_cluster_check();
+NOTICE:  🔍 pglinter found 1 issue(s):
+NOTICE:  ==================================================
+NOTICE:  ❌ [C002] ERROR: 6 entries in pg_hba.conf with trust or password authentication method exceed the warning threshold: 6.
+NOTICE:  ==================================================
+NOTICE:  📊 Summary: 1 error(s), 0 warning(s), 0 info
+NOTICE:  🔴 Critical issues found - please review and fix errors
+ perform_cluster_check 
+-----------------------
+ t
+(1 row)
+
+-- Test if file exists and show checksum
+SELECT pglinter.perform_base_check('/tmp/pglinter_c002_results.sarif');
+ perform_base_check 
+--------------------
+ t
+(1 row)
+
+\! md5sum /tmp/pglinter_c002_results.sarif
+7cd6073b52ee9a1173c05c016e2458f4  /tmp/pglinter_c002_results.sarif
+-- Test rule explanation
+SELECT 'C002 rule explanation:' AS explanation_info;
+    explanation_info    
+------------------------
+ C002 rule explanation:
+(1 row)
+
+SELECT pglinter.explain_rule('C002') AS rule_explanation;
+NOTICE:  📖 Rule Explanation for C002
+============================================================
+
+🎯 Rule Name: PgHbaEntriesWithMethodTrustOrPasswordShouldNotExists
+📋 Scope: CLUSTER
+
+📝 Description:
+This configuration is extremely insecure and should only be used in a controlled, non-production environment for testing purposes. In a production environment, you should use more secure authentication methods such as md5, scram-sha-256, or cert, and restrict access to trusted IP addresses only.
+
+⚠️  Message Template:
+{0} entries in pg_hba.conf with trust or password authentication method exceed the warning threshold: {1}.
+
+🔧 How to Fix:
+   1. change trust or password method in pg_hba.conf
+============================================================
+ rule_explanation 
+------------------
+ t
+(1 row)
+
+ROLLBACK;
+DROP EXTENSION pglinter CASCADE;

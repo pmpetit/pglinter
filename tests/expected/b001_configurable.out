@@ -1,4 +1,5 @@
 -- Quick test to verify B001 rule uses configurable thresholds
+CREATE EXTENSION pglinter;
 BEGIN;
 -- Create a table without primary key
 CREATE TABLE test_no_pk (
@@ -10,17 +11,12 @@ CREATE TABLE test_with_pk (
     id INTEGER PRIMARY KEY,
     name TEXT
 );
--- Drop extension if exists to reset state
-DROP EXTENSION IF EXISTS pglinter;
-NOTICE:  extension "pglinter" does not exist, skipping
--- Create extension
-CREATE EXTENSION IF NOT EXISTS pglinter;
 -- First, disable all rules to isolate B001 testing
 SELECT pglinter.disable_all_rules() AS all_rules_disabled;
-NOTICE:  🔴 Disabled 22 rule(s)
+NOTICE:  🔴 Disabled 20 rule(s)
  all_rules_disabled 
 --------------------
-                 22
+                 20
 (1 row)
 
 -- Enable only B001 for focused testing
@@ -31,18 +27,11 @@ NOTICE:  ✅ Rule B001 has been enabled
  t
 (1 row)
 
--- Check current B001 thresholds
-SELECT warning_level, error_level FROM pglinter.rules WHERE code = 'B001';
- warning_level | error_level 
----------------+-------------
-            20 |          80
-(1 row)
-
 -- Test B001 rule - should show it uses the configured thresholds
 SELECT pglinter.perform_base_check();
 NOTICE:  🔍 pglinter found 1 issue(s):
 NOTICE:  ==================================================
-NOTICE:  ⚠️  [B001] WARNING: 50% tables without primary key exceed the warning threshold: 20%
+NOTICE:  ⚠️  [B001] WARNING: 1/2 table(s) without primary key exceed the warning threshold: 50%.
 NOTICE:  ==================================================
 NOTICE:  📊 Summary: 0 error(s), 1 warning(s), 0 info
 NOTICE:  🟡 Some warnings found - consider reviewing for optimization
@@ -51,6 +40,14 @@ NOTICE:  🟡 Some warnings found - consider reviewing for optimization
  t
 (1 row)
 
+SELECT pglinter.perform_base_check('/tmp/pglinter_b001_results.sarif');
+ perform_base_check 
+--------------------
+ t
+(1 row)
+
+\! md5sum /tmp/pglinter_b001_results.sarif
+47790c72d41ca108840793a8c5977514  /tmp/pglinter_b001_results.sarif
 -- Update B001 thresholds to very large values (60%, 80%) not to trigger on any table without PK
 SELECT pglinter.update_rule_levels('B001', 60, 80);
 NOTICE:  ✅ Updated rule B001 levels: warning=60, error=80
@@ -60,7 +57,11 @@ NOTICE:  ✅ Updated rule B001 levels: warning=60, error=80
 (1 row)
 
 -- Check updated thresholds
-SELECT warning_level, error_level FROM pglinter.rules WHERE code = 'B001';
+SELECT
+    warning_level,
+    error_level
+FROM pglinter.rules
+WHERE code = 'B001';
  warning_level | error_level 
 ---------------+-------------
             60 |          80
@@ -83,3 +84,4 @@ NOTICE:  ✅ Updated rule B001 levels: warning=60, error=80
 (1 row)
 
 ROLLBACK;
+DROP EXTENSION pglinter CASCADE;

@@ -1,5 +1,6 @@
 -- Simple example to demonstrate database-wide primary key analysis and B001 rule detection
 -- This script creates multiple tables with and without primary keys to test the B001 percentage-based rule
+CREATE EXTENSION pglinter;
 BEGIN;
 -- Create tables WITHOUT primary keys to trigger B001 rule (need enough to exceed 20% threshold)
 -- These tables will contribute to the "tables without primary key" count
@@ -9,7 +10,7 @@ CREATE TABLE orders_no_pk (
     product_id INTEGER NOT NULL,
     order_date DATE NOT NULL DEFAULT CURRENT_DATE,
     quantity INTEGER DEFAULT 1,
-    total_amount DECIMAL(10,2),
+    total_amount DECIMAL(10, 2),
     status VARCHAR(20) DEFAULT 'pending'
 );
 CREATE TABLE customers_no_pk (
@@ -28,7 +29,7 @@ CREATE TABLE products_no_pk (
     product_name VARCHAR(100) NOT NULL,
     description TEXT,
     category_id INTEGER,
-    price DECIMAL(10,2) NOT NULL,
+    price DECIMAL(10, 2) NOT NULL,
     stock_quantity INTEGER DEFAULT 0,
     is_active BOOLEAN DEFAULT TRUE
 );
@@ -63,7 +64,7 @@ CREATE TABLE payments_no_pk (
     payment_id INTEGER NOT NULL,
     order_id INTEGER NOT NULL,
     payment_method VARCHAR(20) NOT NULL,
-    amount DECIMAL(10,2) NOT NULL,
+    amount DECIMAL(10, 2) NOT NULL,
     payment_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     transaction_reference VARCHAR(100),
     payment_status VARCHAR(20) DEFAULT 'pending'
@@ -93,25 +94,25 @@ CREATE TABLE settings_with_pk (
 );
 -- Insert some test data to make tables more realistic
 INSERT INTO orders_no_pk (order_id, customer_id, product_id, quantity, total_amount, status) VALUES
-    (1001, 1, 101, 2, 59.98, 'completed'),
-    (1002, 2, 102, 1, 29.99, 'pending'),
-    (1003, 1, 103, 3, 89.97, 'shipped');
+(1001, 1, 101, 2, 59.98, 'completed'),
+(1002, 2, 102, 1, 29.99, 'pending'),
+(1003, 1, 103, 3, 89.97, 'shipped');
 INSERT INTO customers_no_pk (customer_id, first_name, last_name, email, phone) VALUES
-    (1, 'John', 'Doe', 'john.doe@example.com', '555-0101'),
-    (2, 'Jane', 'Smith', 'jane.smith@example.com', '555-0102'),
-    (3, 'Bob', 'Johnson', 'bob.johnson@example.com', '555-0103');
+(1, 'John', 'Doe', 'john.doe@example.com', '555-0101'),
+(2, 'Jane', 'Smith', 'jane.smith@example.com', '555-0102'),
+(3, 'Bob', 'Johnson', 'bob.johnson@example.com', '555-0103');
 INSERT INTO products_no_pk (product_id, product_name, description, category_id, price, stock_quantity) VALUES
-    (101, 'Laptop Computer', 'High-performance laptop', 1, 899.99, 50),
-    (102, 'Wireless Mouse', 'Ergonomic wireless mouse', 2, 24.99, 100),
-    (103, 'Keyboard', 'Mechanical keyboard', 2, 79.99, 75);
+(101, 'Laptop Computer', 'High-performance laptop', 1, 899.99, 50),
+(102, 'Wireless Mouse', 'Ergonomic wireless mouse', 2, 24.99, 100),
+(103, 'Keyboard', 'Mechanical keyboard', 2, 79.99, 75);
 INSERT INTO categories_with_pk (category_name, description) VALUES
-    ('Electronics', 'Electronic devices and accessories'),
-    ('Computers', 'Computer hardware and peripherals'),
-    ('Office Supplies', 'General office equipment');
+('Electronics', 'Electronic devices and accessories'),
+('Computers', 'Computer hardware and peripherals'),
+('Office Supplies', 'General office equipment');
 INSERT INTO users_with_pk (username, email, password_hash) VALUES
-    ('admin', 'admin@example.com', 'hashed_password_1'),
-    ('user1', 'user1@example.com', 'hashed_password_2'),
-    ('user2', 'user2@example.com', 'hashed_password_3');
+('admin', 'admin@example.com', 'hashed_password_1'),
+('user1', 'user1@example.com', 'hashed_password_2'),
+('user2', 'user2@example.com', 'hashed_password_3');
 -- Update table statistics
 ANALYZE orders_no_pk;
 ANALYZE customers_no_pk;
@@ -123,11 +124,8 @@ ANALYZE payments_no_pk;
 ANALYZE categories_with_pk;
 ANALYZE users_with_pk;
 ANALYZE settings_with_pk;
--- Create the extension and test B001 rule
-DROP EXTENSION IF EXISTS pglinter CASCADE;
-NOTICE:  extension "pglinter" does not exist, skipping
-CREATE EXTENSION IF NOT EXISTS pglinter;
-SELECT 'Testing B001 rule - Database-wide primary key percentage analysis...' as test_info;
+-- Test B001 rule
+SELECT 'Testing B001 rule - Database-wide primary key percentage analysis...' AS test_info;
                               test_info                               
 ----------------------------------------------------------------------
  Testing B001 rule - Database-wide primary key percentage analysis...
@@ -135,10 +133,10 @@ SELECT 'Testing B001 rule - Database-wide primary key percentage analysis...' as
 
 -- First, disable all rules to isolate B001 testing
 SELECT pglinter.disable_all_rules() AS all_rules_disabled;
-NOTICE:  🔴 Disabled 22 rule(s)
+NOTICE:  🔴 Disabled 20 rule(s)
  all_rules_disabled 
 --------------------
-                 22
+                 20
 (1 row)
 
 -- Enable only B001 for focused testing
@@ -157,7 +155,7 @@ SELECT pglinter.is_rule_enabled('B001') AS b001_status;
 (1 row)
 
 -- Run base check to detect database-wide primary key percentage issues
-SELECT 'Running base check to detect B001 violations...' as status;
+SELECT 'Running base check to detect B001 violations...' AS status;
                      status                      
 -------------------------------------------------
  Running base check to detect B001 violations...
@@ -166,7 +164,7 @@ SELECT 'Running base check to detect B001 violations...' as status;
 SELECT pglinter.perform_base_check();
 NOTICE:  🔍 pglinter found 1 issue(s):
 NOTICE:  ==================================================
-NOTICE:  ⚠️  [B001] WARNING: 70% tables without primary key exceed the warning threshold: 20%
+NOTICE:  ⚠️  [B001] WARNING: 3/10 table(s) without primary key exceed the warning threshold: 30%.
 NOTICE:  ==================================================
 NOTICE:  📊 Summary: 0 error(s), 1 warning(s), 0 info
 NOTICE:  🟡 Some warnings found - consider reviewing for optimization
@@ -176,7 +174,7 @@ NOTICE:  🟡 Some warnings found - consider reviewing for optimization
 (1 row)
 
 -- Test rule management for B001
-SELECT 'Testing B001 rule management...' as test_section;
+SELECT 'Testing B001 rule management...' AS test_section;
           test_section           
 ---------------------------------
  Testing B001 rule management...
@@ -197,7 +195,7 @@ SELECT pglinter.is_rule_enabled('B001') AS b001_status_after_disable;
 (1 row)
 
 -- Run base check again (should skip B001)
-SELECT 'Running base check with B001 disabled (should find no B001 violations)...' as status;
+SELECT 'Running base check with B001 disabled (should find no B001 violations)...' AS status;
                                   status                                   
 ---------------------------------------------------------------------------
  Running base check with B001 disabled (should find no B001 violations)...
@@ -225,7 +223,7 @@ SELECT pglinter.is_rule_enabled('B001') AS b001_status_after_enable;
 (1 row)
 
 -- Run base check again (should detect B001 violations)
-SELECT 'Running base check with B001 re-enabled...' as status;
+SELECT 'Running base check with B001 re-enabled...' AS status;
                    status                   
 --------------------------------------------
  Running base check with B001 re-enabled...
@@ -234,7 +232,7 @@ SELECT 'Running base check with B001 re-enabled...' as status;
 SELECT pglinter.perform_base_check();
 NOTICE:  🔍 pglinter found 1 issue(s):
 NOTICE:  ==================================================
-NOTICE:  ⚠️  [B001] WARNING: 70% tables without primary key exceed the warning threshold: 20%
+NOTICE:  ⚠️  [B001] WARNING: 3/10 table(s) without primary key exceed the warning threshold: 30%.
 NOTICE:  ==================================================
 NOTICE:  📊 Summary: 0 error(s), 1 warning(s), 0 info
 NOTICE:  🟡 Some warnings found - consider reviewing for optimization
@@ -244,7 +242,7 @@ NOTICE:  🟡 Some warnings found - consider reviewing for optimization
 (1 row)
 
 -- Now let's fix some of the issues by adding primary keys to reduce the percentage
-SELECT 'Adding primary keys to some tables to improve the percentage...' as improvement_info;
+SELECT 'Adding primary keys to some tables to improve the percentage...' AS improvement_info;
                         improvement_info                         
 -----------------------------------------------------------------
  Adding primary keys to some tables to improve the percentage...
@@ -259,63 +257,34 @@ ALTER TABLE inventory_no_pk ADD CONSTRAINT pk_inventory PRIMARY KEY (inventory_i
 -- Keep 2 tables without primary keys to maintain some violations but below threshold
 -- shipments_no_pk and payments_no_pk will remain without primary keys
 -- Run B001 check again (should show reduced violations or no violations)
-SELECT 'Running B001 check after adding primary keys (should show improved percentage):' as test_info;
+SELECT 'Running B001 check after adding primary keys (should show improved percentage):' AS test_info;
                                     test_info                                    
 ---------------------------------------------------------------------------------
  Running B001 check after adding primary keys (should show improved percentage):
 (1 row)
 
 SELECT pglinter.perform_base_check();
-NOTICE:  ✅ No issues found - database schema looks good!
- perform_base_check 
---------------------
- t
-(1 row)
-
--- Test comparison between B001 (base rule) and T001 (table rule)
-SELECT 'Demonstrating difference between B001 (base) and T001 (table) rules:' as comparison_info;
-                           comparison_info                            
-----------------------------------------------------------------------
- Demonstrating difference between B001 (base) and T001 (table) rules:
-(1 row)
-
--- Enable T001 to show the difference
-SELECT pglinter.enable_rule('T001') AS t001_enabled;
-NOTICE:  ✅ Rule T001 has been enabled
- t001_enabled 
---------------
- t
-(1 row)
-
-SELECT 'B001 (base check) - Shows percentage-based violation:' as b001_demo;
-                       b001_demo                       
--------------------------------------------------------
- B001 (base check) - Shows percentage-based violation:
-(1 row)
-
-SELECT pglinter.perform_base_check();
-NOTICE:  ✅ No issues found - database schema looks good!
- perform_base_check 
---------------------
- t
-(1 row)
-
-SELECT 'T001 (table check) - Shows individual tables without primary keys:' as t001_demo;
-                             t001_demo                              
---------------------------------------------------------------------
- T001 (table check) - Shows individual tables without primary keys:
-(1 row)
-
-SELECT pglinter.perform_table_check();
 NOTICE:  🔍 pglinter found 1 issue(s):
 NOTICE:  ==================================================
-NOTICE:  ⚠️  [T001] WARNING: Found 2 tables without primary key: public.shipments_no_pk, public.payments_no_pk
+NOTICE:  ❌ [B001] ERROR: 8/10 table(s) without primary key exceed the error threshold: 80%.
 NOTICE:  ==================================================
-NOTICE:  📊 Summary: 0 error(s), 1 warning(s), 0 info
-NOTICE:  🟡 Some warnings found - consider reviewing for optimization
- perform_table_check 
----------------------
+NOTICE:  📊 Summary: 1 error(s), 0 warning(s), 0 info
+NOTICE:  🔴 Critical issues found - please review and fix errors
+ perform_base_check 
+--------------------
  t
 (1 row)
 
+SELECT pglinter.perform_base_check('/tmp/pglinter_b001_results.sarif');
+ perform_base_check 
+--------------------
+ t
+(1 row)
+
+\! md5sum /tmp/pglinter_b001_results.sarif
+195a0691130871a55b92ff102748f44c  /tmp/pglinter_b001_results.sarif
 ROLLBACK;
+DROP EXTENSION pglinter CASCADE;REATE EXTENSION pglinter;
+ERROR:  syntax error at or near "REATE"
+LINE 1: REATE EXTENSION pglinter;
+        ^

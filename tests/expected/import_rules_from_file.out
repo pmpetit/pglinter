@@ -1,0 +1,110 @@
+-- Test import_rules_from_file function
+-- This test validates the file-based YAML import functionality
+-- Create a temporary test file with YAML content using echo with proper escaping
+\! echo "metadata:" > /tmp/test_rules_import.yaml
+\! echo "  export_timestamp: \"2024-01-01T12:00:00Z\"" >> /tmp/test_rules_import.yaml
+\! echo "  total_rules: 2" >> /tmp/test_rules_import.yaml
+\! echo "  format_version: \"1.0\"" >> /tmp/test_rules_import.yaml
+\! echo "rules:" >> /tmp/test_rules_import.yaml
+\! echo "  - id: 9010" >> /tmp/test_rules_import.yaml
+\! echo "    name: \"Test File Import Rule 1\"" >> /tmp/test_rules_import.yaml
+\! echo "    code: \"TEST_FILE_001\"" >> /tmp/test_rules_import.yaml
+\! echo "    enable: true" >> /tmp/test_rules_import.yaml
+\! echo "    warning_level: 35" >> /tmp/test_rules_import.yaml
+\! echo "    error_level: 75" >> /tmp/test_rules_import.yaml
+\! echo "    scope: \"FILE_TEST\"" >> /tmp/test_rules_import.yaml
+\! echo "    description: \"Test rule imported from file\"" >> /tmp/test_rules_import.yaml
+\! echo "    message: \"File import test found {0} issues\"" >> /tmp/test_rules_import.yaml
+\! echo "    fixes:" >> /tmp/test_rules_import.yaml
+\! echo "      - \"File-based fix suggestion\"" >> /tmp/test_rules_import.yaml
+\! echo "    q1: \"SELECT 'file_test' as result\"" >> /tmp/test_rules_import.yaml
+\! echo "    q2: null" >> /tmp/test_rules_import.yaml
+\! echo "  - id: 9011" >> /tmp/test_rules_import.yaml
+\! echo "    name: \"Test File Import Rule 2\"" >> /tmp/test_rules_import.yaml
+\! echo "    code: \"TEST_FILE_002\"" >> /tmp/test_rules_import.yaml
+\! echo "    enable: false" >> /tmp/test_rules_import.yaml
+\! echo "    warning_level: 20" >> /tmp/test_rules_import.yaml
+\! echo "    error_level: 60" >> /tmp/test_rules_import.yaml
+\! echo "    scope: \"BASE\"" >> /tmp/test_rules_import.yaml
+\! echo "    description: \"Second file import test rule\"" >> /tmp/test_rules_import.yaml
+\! echo "    message: \"Second file test message\"" >> /tmp/test_rules_import.yaml
+\! echo "    fixes:" >> /tmp/test_rules_import.yaml
+\! echo "      - \"Another file fix\"" >> /tmp/test_rules_import.yaml
+\! echo "      - \"Second file fix\"" >> /tmp/test_rules_import.yaml
+\! echo "    q1: \"SELECT 2 as count\"" >> /tmp/test_rules_import.yaml
+\! echo "    q2: \"SELECT 1 as problems\"" >> /tmp/test_rules_import.yaml
+CREATE EXTENSION pglinter;
+-- Test 1: Import rules from file
+SELECT pglinter.import_rules_from_file('/tmp/test_rules_import.yaml') AS file_import_result;
+NOTICE:  📂 Reading rules from: /tmp/test_rules_import.yaml
+NOTICE:  📥 Importing 2 rules from YAML (format v1.0)
+                file_import_result                
+--------------------------------------------------
+ ✅ Import completed: 2 new rules, 0 updated rules
+(1 row)
+
+-- Verify imported rules
+SELECT
+    code,
+    name,
+    enable,
+    warning_level,
+    error_level,
+    scope
+FROM pglinter.rules
+WHERE code LIKE 'TEST_FILE_%'
+ORDER BY code;
+     code      |          name           | enable | warning_level | error_level |   scope   
+---------------+-------------------------+--------+---------------+-------------+-----------
+ TEST_FILE_001 | Test File Import Rule 1 | t      |            35 |          75 | FILE_TEST
+ TEST_FILE_002 | Test File Import Rule 2 | f      |            20 |          60 | BASE
+(2 rows)
+
+-- Test 2: Import from non-existent file (should return error)
+SELECT pglinter.import_rules_from_file('/tmp/non_existent_file.yaml') AS nonexistent_file_result;
+WARNING:  Failed to import: File read error: No such file or directory (os error 2)
+                 nonexistent_file_result                 
+---------------------------------------------------------
+ File read error: No such file or directory (os error 2)
+(1 row)
+
+SELECT pglinter.import_rules_from_file('/tmp/invalid_rules.yaml') AS invalid_file_result;
+WARNING:  Failed to import: File read error: No such file or directory (os error 2)
+                   invalid_file_result                   
+---------------------------------------------------------
+ File read error: No such file or directory (os error 2)
+(1 row)
+
+-- Test 4: Test with empty file
+\! touch /tmp/empty_rules.yaml
+SELECT pglinter.import_rules_from_file('/tmp/empty_rules.yaml') AS empty_file_result;
+NOTICE:  📂 Reading rules from: /tmp/empty_rules.yaml
+WARNING:  Failed to import: YAML parsing error: missing field `metadata`
+              empty_file_result               
+----------------------------------------------
+ YAML parsing error: missing field `metadata`
+(1 row)
+
+-- Verify final state - should still have our valid imported rules
+SELECT
+    COUNT(*) AS imported_rules_count
+FROM pglinter.rules
+WHERE code LIKE 'TEST_FILE_%';
+ imported_rules_count 
+----------------------
+                    2
+(1 row)
+
+-- Clean up test data and files
+DELETE FROM pglinter.rules WHERE code LIKE 'TEST_FILE_%';
+\! rm -f /tmp/test_rules_import.yaml /tmp/invalid_rules.yaml /tmp/empty_rules.yaml
+-- Final verification - no test rules should remain
+SELECT COUNT(*) AS remaining_file_test_rules
+FROM pglinter.rules
+WHERE code LIKE 'TEST_FILE_%';
+ remaining_file_test_rules 
+---------------------------
+                         0
+(1 row)
+
+DROP EXTENSION pglinter CASCADE;

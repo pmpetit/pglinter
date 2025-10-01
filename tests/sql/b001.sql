@@ -1,4 +1,6 @@
 -- Test for pglinter B001 rule with file output
+CREATE EXTENSION pglinter;
+
 BEGIN;
 
 CREATE TABLE IF NOT EXISTS my_table_without_pk (
@@ -11,8 +13,6 @@ CREATE TABLE IF NOT EXISTS my_table_without_pk (
     error_level INT,
     scope TEXT
 );
-
-CREATE EXTENSION IF NOT EXISTS pglinter;
 
 -- Disable all rules first
 SELECT pglinter.disable_all_rules() AS all_rules_disabled;
@@ -46,3 +46,5 @@ SELECT pglinter.perform_base_check('/tmp/pglinter_base_results.sarif');
 \! md5sum /tmp/pglinter_base_results.sarif
 
 ROLLBACK;
+
+DROP EXTENSION pglinter CASCADE;

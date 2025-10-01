@@ -355,43 +355,7 @@ No primary key on table public.logs
 
 ---
 
-### T002: Tables Without Any Indexes
-
-**Description**: Identifies tables that have no indexes at all.
-
-**Severity**: Warning
-
-**Why This Matters**:
-
-- Tables without indexes force full table scans
-- Severely impacts query performance
-- May indicate incomplete schema design
-
-**Example Output**:
-
-```text
-Found 2 tables without any index: public.logs, public.temp_data
-```
-
-**How to Fix**:
-
-1. Add primary key (which creates an index automatically)
-2. Create indexes on frequently queried columns
-3. Analyze query patterns to determine optimal index strategy
-
-**SQL Example**:
-
-```sql
--- Add primary key (creates index)
-ALTER TABLE logs ADD COLUMN id SERIAL PRIMARY KEY;
-
--- Add index on frequently queried column
-CREATE INDEX idx_logs_timestamp ON logs (created_at);
-```
-
----
-
-### T003: Tables With Redundant Indexes
+### T002: Tables With Redundant Indexes
 
 **Description**: Table-specific detection of redundant indexes.
 
@@ -415,7 +379,7 @@ Found 2 tables with redundant indexes: public.users, public.orders
 
 ---
 
-### T004: Foreign Keys Without Indexes
+### T003: Foreign Keys Without Indexes
 
 **Description**: Identifies specific foreign keys that lack supporting indexes.
 
@@ -439,7 +403,7 @@ Found 3 foreign keys without indexes: public.orders (FK: fk_customer), public.it
 
 ---
 
-### T005: High Sequential Scan Usage
+### T004: High Sequential Scan Usage
 
 **Description**: Detects tables with high sequential scan ratios indicating potential missing indexes.
 
@@ -473,15 +437,15 @@ Found 2 tables with seq scan percentage > 50%: public.orders (seq scan %: 75.1),
 
 ```sql
 -- Make T005 more sensitive
-SELECT pglinter.update_rule_levels('T005', 30.0, 70.0);
+SELECT pglinter.update_rule_levels('T004', 30.0, 70.0);
 
 -- Check current thresholds
-SELECT pglinter.get_rule_levels('T005');
+SELECT pglinter.get_rule_levels('T004');
 ```
 
 ---
 
-### T006: Cross-Schema Foreign Keys
+### T005: Cross-Schema Foreign Keys
 
 **Description**: Detects foreign keys that reference tables in different schemas.
 
@@ -507,7 +471,7 @@ Found tables with cross-schema foreign keys
 
 ---
 
-### T007: Unused Indexes (Table-Specific)
+### T006: Unused Indexes (Table-Specific)
 
 **Description**: Identifies unused indexes on specific tables with size information.
 
@@ -533,7 +497,7 @@ Found 2 unused indexes larger than 1MB: public.orders.idx_old_status (5MB), publ
 
 ---
 
-### T008: Foreign Key Type Mismatches
+### T007: Foreign Key Type Mismatches
 
 **Description**: Detects foreign keys where the referencing and referenced columns have different data types.
 
@@ -566,7 +530,7 @@ ALTER TABLE orders ALTER COLUMN customer_id TYPE bigint;
 
 ---
 
-### T009: Tables Without Role Grants
+### T008: Tables Without Role Grants
 
 **Description**: Identifies tables that have no specific role grants.
 
@@ -602,7 +566,7 @@ ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT SELECT ON TABLES TO app_user;
 
 ---
 
-### T010: Reserved Keywords Usage
+### T009: Reserved Keywords Usage
 
 **Description**: Detects tables and columns using PostgreSQL reserved keywords.
 
@@ -645,7 +609,7 @@ ALTER TABLE products RENAME COLUMN "select" TO selection_flag;
 
 ---
 
-### T011: Uppercase Names (Table-Specific)
+### T010: Uppercase Names (Table-Specific)
 
 **Description**: Table-specific detection of uppercase letters in table and column names.
 
@@ -669,7 +633,7 @@ Found 2 database objects with uppercase letters: public.UserProfiles (table), pu
 
 ---
 
-### T012: Sensitive Columns
+### T011: Sensitive Columns
 
 **Description**: Detects potentially sensitive columns using the PostgreSQL anonymizer extension.
 

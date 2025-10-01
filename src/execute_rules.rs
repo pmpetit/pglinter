@@ -4,32 +4,6 @@ use serde_json::json;
 use std::fs::File;
 use std::io::Write;
 
-// Embed SQL files at compile time
-const B001_TOTAL_TABLES_SQL: &str = include_str!("../sql/b001_total_tables.sql");
-const B001_TABLES_WITH_PK_SQL: &str = include_str!("../sql/b001_tables_with_pk.sql");
-const B002_TOTAL_INDEXES_SQL: &str = include_str!("../sql/b002_total_indexes.sql");
-const B002_REDUNDANT_INDEXES_SQL: &str = include_str!("../sql/b002_redundant_indexes.sql");
-const B003_SQL: &str = include_str!("../sql/b003.sql");
-const B004_SQL: &str = include_str!("../sql/b004.sql");
-const B005_SQL: &str = include_str!("../sql/b005.sql");
-const B006_SQL: &str = include_str!("../sql/b006.sql");
-const C001_SQL: &str = include_str!("../sql/c001.sql");
-const C002_SQL: &str = include_str!("../sql/c002.sql");
-const T001_SQL: &str = include_str!("../sql/t001.sql");
-const T002_SQL: &str = include_str!("../sql/t002.sql");
-const T003_SQL: &str = include_str!("../sql/t003.sql");
-const T004_SQL: &str = include_str!("../sql/t004.sql");
-const T005_SQL: &str = include_str!("../sql/t005.sql");
-const T006_SQL: &str = include_str!("../sql/t006.sql");
-const T007_SQL: &str = include_str!("../sql/t007.sql");
-const T008_SQL: &str = include_str!("../sql/t008.sql");
-const T009_SQL: &str = include_str!("../sql/t009.sql");
-const T010_SQL: &str = include_str!("../sql/t010.sql");
-const T011_SQL: &str = include_str!("../sql/t011.sql");
-const T012_SQL: &str = include_str!("../sql/t012.sql");
-const S001_SQL: &str = include_str!("../sql/s001.sql");
-const S002_SQL: &str = include_str!("../sql/s002.sql");
-
 // Import the rule management functions
 use crate::manage_rules::is_rule_enabled;
 
@@ -70,19 +44,19 @@ fn get_rule_config(rule_code: &str) -> Result<(i64, i64, String), String> {
     }
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub enum RuleScope {
-    Base,
-    Cluster,
-    Table,
-    Schema,
-}
+// #[derive(Debug, Clone, Serialize, Deserialize)]
+// pub enum RuleScope {
+//     Base,
+//     Cluster,
+//     Table,
+//     Schema,
+// }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct RuleParam {
-    pub key: String,
-    pub value: String,
-}
+// #[derive(Debug, Clone, Serialize, Deserialize)]
+// pub struct RuleParam {
+//     pub key: String,
+//     pub value: String,
+// }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct RuleResult {
@@ -92,599 +66,78 @@ pub struct RuleResult {
     pub count: Option<i64>,
 }
 
-pub fn execute_base_rules() -> Result<Vec<RuleResult>, String> {
-    let mut results = Vec::new();
-
-    // B001: Tables without primary key
-    if is_rule_enabled("B001").unwrap_or(true) {
-        match execute_b001_rule() {
-            Ok(Some(result)) => results.push(result),
-            Ok(None) => {}
-            Err(e) => return Err(format!("B001 failed: {e}")),
-        }
-    }
-
-    // B002: Redundant indexes
-    if is_rule_enabled("B002").unwrap_or(true) {
-        match execute_b002_rule() {
-            Ok(Some(result)) => results.push(result),
-            Ok(None) => {}
-            Err(e) => return Err(format!("B002 failed: {e}")),
-        }
-    }
-
-    // B003: Tables without indexes on foreign keys
-    if is_rule_enabled("B003").unwrap_or(true) {
-        match execute_b003_rule() {
-            Ok(Some(result)) => results.push(result),
-            Ok(None) => {}
-            Err(e) => return Err(format!("B003 failed: {e}")),
-        }
-    }
-
-    // B004: Unused indexes
-    if is_rule_enabled("B004").unwrap_or(true) {
-        match execute_b004_rule() {
-            Ok(Some(result)) => results.push(result),
-            Ok(None) => {}
-            Err(e) => return Err(format!("B004 failed: {e}")),
-        }
-    }
-
-    // B005: Unsecured public schema
-    if is_rule_enabled("B005").unwrap_or(true) {
-        match execute_b005_rule() {
-            Ok(Some(result)) => results.push(result),
-            Ok(None) => {}
-            Err(e) => return Err(format!("B005 failed: {e}")),
-        }
-    }
-
-    // B006: Tables with uppercase names/columns
-    if is_rule_enabled("B006").unwrap_or(true) {
-        match execute_b006_rule() {
-            Ok(Some(result)) => results.push(result),
-            Ok(None) => {}
-            Err(e) => return Err(format!("B006 failed: {e}")),
-        }
-    }
-
-    Ok(results)
+#[derive(Debug, Clone)]
+pub struct RuleData {
+    pub code: String,
+    //pub name: String,
+    pub q1: String,
+    pub q2: Option<String>,
+    pub scope: String,
 }
 
-pub fn execute_cluster_rules() -> Result<Vec<RuleResult>, String> {
-    let mut results = Vec::new();
-
-    // C001: Memory configuration check
-    if is_rule_enabled("C001").unwrap_or(true) {
-        match execute_c001_rule() {
-            Ok(Some(result)) => results.push(result),
-            Ok(None) => {}
-            Err(e) => return Err(format!("C001 failed: {e}")),
+fn execute_q1_rule_dynamic(
+    scope: &str,
+    ruleid: &str,
+    q1: &str,
+) -> Result<Option<RuleResult>, String> {
+    let config = match get_rule_config(ruleid) {
+        Ok(config) => {
+            pgrx::debug1!(
+                "get_rule_config; Retrieved rule_message for {}: {}",
+                ruleid,
+                config.2
+            );
+            config
         }
-    }
-
-    // C002: Insecure pg_hba.conf entries
-    if is_rule_enabled("C002").unwrap_or(true) {
-        match execute_c002_rule() {
-            Ok(Some(result)) => results.push(result),
-            Ok(None) => {}
-            Err(e) => return Err(format!("C002 failed: {e}")),
-        }
-    }
-
-    Ok(results)
-}
-
-pub fn execute_table_rules() -> Result<Vec<RuleResult>, String> {
-    let mut results = Vec::new();
-
-    // T001: Tables without primary key
-    if is_rule_enabled("T001").unwrap_or(true) {
-        match execute_t001_rule() {
-            Ok(Some(result)) => results.push(result),
-            Ok(None) => {}
-            Err(e) => return Err(format!("T001 failed: {e}")),
-        }
-    }
-
-    // T002: Tables without any index
-    if is_rule_enabled("T002").unwrap_or(true) {
-        match execute_t002_rule() {
-            Ok(Some(result)) => results.push(result),
-            Ok(None) => {}
-            Err(e) => return Err(format!("T002 failed: {e}")),
-        }
-    }
-
-    // T003: Tables with redundant indexes
-    if is_rule_enabled("T003").unwrap_or(true) {
-        match execute_t003_rule() {
-            Ok(Some(result)) => results.push(result),
-            Ok(None) => {}
-            Err(e) => return Err(format!("T003 failed: {e}")),
-        }
-    }
-
-    // T004: Tables with foreign keys not indexed
-    if is_rule_enabled("T004").unwrap_or(true) {
-        match execute_t004_rule() {
-            Ok(Some(result)) => results.push(result),
-            Ok(None) => {}
-            Err(e) => return Err(format!("T004 failed: {e}")),
-        }
-    }
-
-    // T005: Tables with potential missing indexes (high seq scan)
-    if is_rule_enabled("T005").unwrap_or(true) {
-        match execute_t005_rule() {
-            Ok(Some(result)) => results.push(result),
-            Ok(None) => {}
-            Err(e) => return Err(format!("T005 failed: {e}")),
-        }
-    }
-
-    // T006: Tables with foreign keys outside schema
-    if is_rule_enabled("T006").unwrap_or(true) {
-        match execute_t006_rule() {
-            Ok(Some(result)) => results.push(result),
-            Ok(None) => {}
-            Err(e) => return Err(format!("T006 failed: {e}")),
-        }
-    }
-
-    // T007: Tables with unused indexes
-    if is_rule_enabled("T007").unwrap_or(true) {
-        match execute_t007_rule() {
-            Ok(Some(result)) => results.push(result),
-            Ok(None) => {}
-            Err(e) => return Err(format!("T007 failed: {e}")),
-        }
-    }
-
-    // T008: Tables with foreign key type mismatch
-    if is_rule_enabled("T008").unwrap_or(true) {
-        match execute_t008_rule() {
-            Ok(Some(result)) => results.push(result),
-            Ok(None) => {}
-            Err(e) => return Err(format!("T008 failed: {e}")),
-        }
-    }
-
-    // T009: Tables with no roles granted
-    if is_rule_enabled("T009").unwrap_or(true) {
-        match execute_t009_rule() {
-            Ok(Some(result)) => results.push(result),
-            Ok(None) => {}
-            Err(e) => return Err(format!("T009 failed: {e}")),
-        }
-    }
-
-    // T010: Tables using reserved keywords
-    if is_rule_enabled("T010").unwrap_or(true) {
-        match execute_t010_rule() {
-            Ok(Some(result)) => results.push(result),
-            Ok(None) => {}
-            Err(e) => return Err(format!("T010 failed: {e}")),
-        }
-    }
-
-    // T011: Tables with uppercase names/columns
-    if is_rule_enabled("T011").unwrap_or(true) {
-        match execute_t011_rule() {
-            Ok(Some(result)) => results.push(result),
-            Ok(None) => {}
-            Err(e) => return Err(format!("T011 failed: {e}")),
-        }
-    }
-
-    // T012: Tables with sensitive columns (requires anon extension)
-    if is_rule_enabled("T012").unwrap_or(true) {
-        match execute_t012_rule() {
-            Ok(Some(result)) => results.push(result),
-            Ok(None) => {}
-            Err(e) => return Err(format!("T012 failed: {e}")),
-        }
-    }
-
-    Ok(results)
-}
-
-pub fn execute_schema_rules() -> Result<Vec<RuleResult>, String> {
-    let mut results = Vec::new();
-
-    // S001: Schemas without default role grants
-    if is_rule_enabled("S001").unwrap_or(true) {
-        match execute_s001_rule() {
-            Ok(Some(result)) => results.push(result),
-            Ok(None) => {}
-            Err(e) => return Err(format!("S001 failed: {e}")),
-        }
-    }
-
-    // S002: Schemas prefixed/suffixed with environment names
-    if is_rule_enabled("S002").unwrap_or(true) {
-        match execute_s002_rule() {
-            Ok(Some(result)) => results.push(result),
-            Ok(None) => {}
-            Err(e) => return Err(format!("S002 failed: {e}")),
-        }
-    }
-
-    Ok(results)
-}
-
-// Individual rule implementations
-fn execute_b001_rule() -> Result<Option<RuleResult>, String> {
-    // Get thresholds from rules table
-    let (warning_threshold, error_threshold, _rule_message) = match get_rule_config("B001") {
-        Ok(config) => config,
         Err(e) => {
-            return Err(format!("Failed to get B001 configuration: {e}"));
+            pgrx::debug1!(
+                "execute_q1_q2_rule_dynamic; Failed to get configuration for {}: {}",
+                ruleid,
+                e
+            );
+            return Err(format!("Failed to get {} configuration: {e}", ruleid));
         }
     };
+    let (warning_level, error_level, rule_message) = config;
 
-    let result: Result<Option<RuleResult>, spi::SpiError> = Spi::connect(|client| {
-        let total_tables: i64 = client
-            .select(B001_TOTAL_TABLES_SQL, None, &[])?
-            .first()
-            .get::<i64>(1)?
-            .unwrap_or(0);
+    // Check if query contains parameters
+    let has_parameters = q1.contains("$1");
 
-        let tables_with_pk: i64 = client
-            .select(B001_TABLES_WITH_PK_SQL, None, &[])?
-            .first()
-            .get::<i64>(1)?
-            .unwrap_or(0);
-
-        let tables_without_pk = total_tables - tables_with_pk;
-
-        if total_tables > 0 {
-            let percentage = (tables_without_pk * 100) / total_tables;
-
-            // Check error threshold first (higher severity)
-            if percentage > error_threshold {
-                return Ok(Some(RuleResult {
-                    ruleid: "B001".to_string(),
-                    level: "error".to_string(),
-                    message: format!(
-                        "{percentage}% tables without primary key exceed the error threshold: {error_threshold}%"
-                    ),
-                    count: Some(total_tables),
-                }));
-            }
-            // Check warning threshold
-            else if percentage > warning_threshold {
-                return Ok(Some(RuleResult {
-                    ruleid: "B001".to_string(),
-                    level: "warning".to_string(),
-                    message: format!(
-                        "{percentage}% tables without primary key exceed the warning threshold: {warning_threshold}%"
-                    ),
-                    count: Some(total_tables),
-                }));
-            }
-        }
-
-        Ok(None)
-    });
-
-    match result {
-        Ok(res) => Ok(res),
-        Err(e) => Err(format!("Database error: {e}")),
+    if has_parameters {
+        pgrx::debug1!(
+            "execute_q1_rule_dynamic; {} query contains parameters, handling special case",
+            ruleid
+        );
+        return execute_q1_rule_with_params(
+            scope,
+            ruleid,
+            q1,
+            warning_level,
+            error_level,
+            &rule_message,
+        );
     }
-}
 
-fn execute_b002_rule() -> Result<Option<RuleResult>, String> {
-    // Get thresholds from rules table
-    let (warning_threshold, error_threshold, _rule_message) = match get_rule_config("B002") {
-        Ok(config) => config,
-        Err(e) => {
-            return Err(format!("Failed to get B002 configuration: {e}"));
-        }
-    };
-
-    let result: Result<Option<RuleResult>, spi::SpiError> = Spi::connect(|client| {
-        let total_indexes: i64 = client
-            .select(B002_TOTAL_INDEXES_SQL, None, &[])?
-            .first()
-            .get::<i64>(1)?
-            .unwrap_or(0);
-
-        let redundant_indexes: i64 = client
-            .select(B002_REDUNDANT_INDEXES_SQL, None, &[])?
-            .first()
-            .get::<i64>(1)?
-            .unwrap_or(0);
-
-        if total_indexes > 0 {
-            let percentage = (redundant_indexes * 100) / total_indexes;
-
-            // Check error threshold first (higher severity)
-            if percentage >= error_threshold {
-                return Ok(Some(RuleResult {
-                    ruleid: "B002".to_string(),
-                    level: "error".to_string(),
-                    message: format!(
-                        "{percentage}% redundant indexes exceed the error threshold: {error_threshold}%"
-                    ),
-                    count: Some(total_indexes),
-                }));
-            }
-            // Check warning threshold
-            else if percentage >= warning_threshold {
-                return Ok(Some(RuleResult {
-                    ruleid: "B002".to_string(),
-                    level: "warning".to_string(),
-                    message: format!(
-                        "{percentage}% redundant indexes exceed the warning threshold: {warning_threshold}%"
-                    ),
-                    count: Some(total_indexes),
-                }));
-            }
-        }
-
-        Ok(None)
-    });
-
-    match result {
-        Ok(res) => Ok(res),
-        Err(e) => Err(format!("Database error: {e}")),
-    }
-}
-
-fn execute_b003_rule() -> Result<Option<RuleResult>, String> {
-    // B003: Tables without indexes on foreign keys
-    let result: Result<Option<RuleResult>, spi::SpiError> = Spi::connect(|client| {
-        let count: i64 = client
-            .select(B003_SQL, None, &[])?
-            .first()
-            .get::<i64>(1)?
-            .unwrap_or(0);
-
-        if count > 0 {
-            return Ok(Some(RuleResult {
-                ruleid: "B003".to_string(),
-                level: "warning".to_string(),
-                message: format!("Found {count} foreign key columns without indexes"),
-                count: Some(count),
-            }));
-        }
-
-        Ok(None)
-    });
-
-    match result {
-        Ok(res) => Ok(res),
-        Err(e) => Err(format!("Database error: {e}")),
-    }
-}
-
-fn execute_b004_rule() -> Result<Option<RuleResult>, String> {
-    // B004: Unused indexes (simplified check using pg_stat_user_indexes)
-    let result: Result<Option<RuleResult>, spi::SpiError> = Spi::connect(|client| {
-        let count: i64 = client
-            .select(B004_SQL, None, &[])?
-            .first()
-            .get::<i64>(1)?
-            .unwrap_or(0);
-
-        if count > 0 {
-            return Ok(Some(RuleResult {
-                ruleid: "B004".to_string(),
-                level: "warning".to_string(),
-                message: format!("Found {count} potentially unused indexes"),
-                count: Some(count),
-            }));
-        }
-
-        Ok(None)
-    });
-
-    match result {
-        Ok(res) => Ok(res),
-        Err(e) => Err(format!("Database error: {e}")),
-    }
-}
-
-fn execute_b005_rule() -> Result<Option<RuleResult>, String> {
-    // B005: Unsecured public schema
-    let result: Result<Option<RuleResult>, spi::SpiError> = Spi::connect(|client| {
-        let has_public_create: bool = client
-            .select(B005_SQL, None, &[])?
-            .first()
-            .get::<bool>(1)?
-            .unwrap_or(false);
-
-        if has_public_create {
-            return Ok(Some(RuleResult {
-                ruleid: "B005".to_string(),
-                level: "error".to_string(),
-                message: "Public schema allows CREATE privilege for all users - security risk"
-                    .to_string(),
-                count: Some(1),
-            }));
-        }
-
-        Ok(None)
-    });
-
-    match result {
-        Ok(res) => Ok(res),
-        Err(e) => Err(format!("Database error: {e}")),
-    }
-}
-
-fn execute_b006_rule() -> Result<Option<RuleResult>, String> {
-    // B006: Tables with uppercase names/columns
-    let result: Result<Option<RuleResult>, spi::SpiError> = Spi::connect(|client| {
-        let count: i64 = client
-            .select(B006_SQL, None, &[])?
-            .first()
-            .get::<i64>(1)?
-            .unwrap_or(0);
-
-        if count > 0 {
-            return Ok(Some(RuleResult {
-                ruleid: "B006".to_string(),
-                level: "warning".to_string(),
-                message: format!("Found {count} database objects with uppercase letters"),
-                count: Some(count),
-            }));
-        }
-
-        Ok(None)
-    });
-
-    match result {
-        Ok(res) => Ok(res),
-        Err(e) => Err(format!("Database error: {e}")),
-    }
-}
-
-fn execute_c001_rule() -> Result<Option<RuleResult>, String> {
-    let result: Result<Option<RuleResult>, spi::SpiError> = Spi::connect(|client| {
-        for row in client.select(C001_SQL, None, &[])? {
-            let max_connections: i32 = row.get(1)?.unwrap_or(100);
-            let _work_mem_str: String = row.get(2)?.unwrap_or("4MB".to_string());
-
-            // Simple check: if max_connections > 1000, flag as potential issue
-            if max_connections > 1000 {
-                return Ok(Some(RuleResult {
-                    ruleid: "C001".to_string(),
-                    level: "warning".to_string(),
-                    message: format!("High max_connections setting: {max_connections}"),
-                    count: Some(max_connections as i64),
-                }));
-            }
-        }
-        Ok(None)
-    });
-
-    match result {
-        Ok(res) => Ok(res),
-        Err(e) => Err(format!("Database error: {e}")),
-    }
-}
-
-fn execute_c002_rule() -> Result<Option<RuleResult>, String> {
-    // C002: Insecure pg_hba.conf entries (simplified check)
-    // Note: This is a simplified version as we can't directly read pg_hba.conf from SQL
-    let result: Result<Option<RuleResult>, spi::SpiError> = Spi::connect(|client| {
-        let _count: i64 = client
-            .select(C002_SQL, None, &[])?
-            .first()
-            .get::<i64>(1)?
-            .unwrap_or(0);
-
-        // For now, just return a warning about checking pg_hba.conf manually
-        Ok(Some(RuleResult {
-            ruleid: "C002".to_string(),
-            level: "info".to_string(),
-            message: "Please manually check pg_hba.conf for insecure trust/password methods"
-                .to_string(),
-            count: Some(1),
-        }))
-    });
-
-    match result {
-        Ok(res) => Ok(res),
-        Err(e) => Err(format!("Database error: {e}")),
-    }
-}
-
-fn execute_t001_rule() -> Result<Option<RuleResult>, String> {
-    let result: Result<Option<RuleResult>, spi::SpiError> = Spi::connect(|client| {
-        let mut count = 0i64;
-        let mut tables = Vec::new();
-
-        for row in client.select(T001_SQL, None, &[])? {
-            let schema: String = row.get(1)?.unwrap_or_default();
-            let table: String = row.get(2)?.unwrap_or_default();
-            tables.push(format!("{schema}.{table}"));
-            count += 1;
-        }
-
-        if count > 0 {
-            return Ok(Some(RuleResult {
-                ruleid: "T001".to_string(),
-                level: "warning".to_string(),
-                message: format!(
-                    "Found {count} tables without primary key: {}",
-                    tables.join(", ")
-                ),
-                count: Some(count),
-            }));
-        }
-
-        Ok(None)
-    });
-
-    match result {
-        Ok(res) => Ok(res),
-        Err(e) => Err(format!("Database error: {e}")),
-    }
-}
-
-fn execute_t002_rule() -> Result<Option<RuleResult>, String> {
-    // T002: Tables without any index
-    let result: Result<Option<RuleResult>, spi::SpiError> = Spi::connect(|client| {
-        let mut count = 0i64;
-        let mut tables = Vec::new();
-
-        for row in client.select(T002_SQL, None, &[])? {
-            let schema: String = row.get(1)?.unwrap_or_default();
-            let table: String = row.get(2)?.unwrap_or_default();
-            tables.push(format!("{schema}.{table}"));
-            count += 1;
-        }
-
-        if count > 0 {
-            return Ok(Some(RuleResult {
-                ruleid: "T002".to_string(),
-                level: "warning".to_string(),
-                message: format!(
-                    "Found {count} tables without any index: {}",
-                    tables.join(", ")
-                ),
-                count: Some(count),
-            }));
-        }
-
-        Ok(None)
-    });
-
-    match result {
-        Ok(res) => Ok(res),
-        Err(e) => Err(format!("Database error: {e}")),
-    }
-}
-
-fn execute_t003_rule() -> Result<Option<RuleResult>, String> {
-    // T003: Tables with redundant indexes
     let result: Result<Option<RuleResult>, spi::SpiError> = Spi::connect(|client| {
         let mut count = 0i64;
         let mut details = Vec::new();
 
-        for row in client.select(T003_SQL, None, &[])? {
-            let redundant_index: String = row.get(1)?.unwrap_or_default();
-            let superset_index: String = row.get(2)?.unwrap_or_default();
-            let schema: String = row.get(3)?.unwrap_or_default();
-            let table: String = row.get(4)?.unwrap_or_default();
-            details.push(format!(
-                "{schema}.{table} (redundant index: {redundant_index}, superset: {superset_index})"
-            ));
+        for row in client.select(q1, None, &[])? {
+            let message: String = row.get(1)?.unwrap_or_default();
+            details.push(message);
             count += 1;
         }
 
         if count > 0 {
             return Ok(Some(RuleResult {
-                ruleid: "T003".to_string(),
+                ruleid: ruleid.to_string(),
                 level: "warning".to_string(),
                 message: format!(
-                    "Found {} redundant idx in table: {}",
+                    "{} {} {} : \n{} \n",
+                    scope,
+                    rule_message,
                     count,
-                    details.join(", ")
+                    details.join("\n")
                 ),
                 count: Some(count),
             }));
@@ -699,28 +152,57 @@ fn execute_t003_rule() -> Result<Option<RuleResult>, String> {
     }
 }
 
-fn execute_t004_rule() -> Result<Option<RuleResult>, String> {
-    // T004: Tables with foreign keys not indexed
+/// Execute q1 rule with parameters (for rules that need special parameter handling)
+fn execute_q1_rule_with_params(
+    scope: &str,
+    ruleid: &str,
+    q1: &str,
+    warning_level: i64,
+    error_level: i64,
+    rule_message: &str,
+) -> Result<Option<RuleResult>, String> {
+    // Get parameters based on rule type
+    let params = get_rule_parameters(ruleid, warning_level, error_level)?;
+
+    pgrx::debug1!(
+        "execute_q1_rule_with_params; Executing {} with {} parameters",
+        ruleid,
+        params.len()
+    );
+
     let result: Result<Option<RuleResult>, spi::SpiError> = Spi::connect(|client| {
         let mut count = 0i64;
-        let mut tables = Vec::new();
+        let mut details = Vec::new();
 
-        for row in client.select(T004_SQL, None, &[])? {
-            let schema: String = row.get(1)?.unwrap_or_default();
-            let table: String = row.get(2)?.unwrap_or_default();
-            let constraint: String = row.get(3)?.unwrap_or_default();
-            tables.push(format!("{schema}.{table} (FK: {constraint})"));
+        // Handle parameterized queries
+        let rows = if params.is_empty() {
+            client.select(q1, None, &[])?
+        } else {
+            // For now, handle the most common case of a single i64 parameter
+            if params.len() == 1 {
+                client.select(q1, None, &[params[0].into()])?
+            } else {
+                // Return empty iterator for unsupported parameter counts
+                return Ok(None);
+            }
+        };
+
+        for row in rows {
+            let message: String = row.get(1)?.unwrap_or_default();
+            details.push(message);
             count += 1;
         }
 
         if count > 0 {
             return Ok(Some(RuleResult {
-                ruleid: "T004".to_string(),
+                ruleid: ruleid.to_string(),
                 level: "warning".to_string(),
                 message: format!(
-                    "Found {} foreign keys without indexes: {}",
+                    "{} {} {} : \n{} \n",
+                    scope,
+                    rule_message,
                     count,
-                    tables.join(", ")
+                    details.join("\n")
                 ),
                 count: Some(count),
             }));
@@ -735,601 +217,325 @@ fn execute_t004_rule() -> Result<Option<RuleResult>, String> {
     }
 }
 
-fn execute_t005_rule() -> Result<Option<RuleResult>, String> {
-    // T005: Tables with potential missing indexes (high sequential scan usage)
+/// Get parameters for specific rules
+fn get_rule_parameters(
+    ruleid: &str,
+    warning_level: i64,
+    _error_level: i64,
+) -> Result<Vec<i64>, String> {
+    match ruleid {
+        "T006" => {
+            // T006 uses warning/error levels as size thresholds in MB
+            // Convert to bytes for pg_relation_size comparison
+            Ok(vec![warning_level * 1024 * 1024])
+        }
+        "T004" => {
+            // T004 might use warning_level as percentage threshold
+            Ok(vec![warning_level])
+        }
+        _ => {
+            // Default: use warning_level as first parameter
+            Ok(vec![warning_level])
+        }
+    }
+}
 
-    // Get thresholds from rules table
-    let (warning_threshold, error_threshold, _rule_message) = match get_rule_config("T005") {
-        Ok(config) => config,
+fn execute_q1_q2_rule_dynamic(
+    ruleid: &str,
+    q1: &str,
+    q2: &str,
+) -> Result<Option<RuleResult>, String> {
+    // Debug: Log function entry
+    pgrx::debug1!(
+        "execute_q1_q2_rule_dynamic; Starting execution for rule {}",
+        ruleid
+    );
+
+    let (warning_threshold, error_threshold, rule_message) = match get_rule_config(ruleid) {
+        Ok(config) => {
+            pgrx::debug1!(
+                "execute_q1_q2_rule_dynamic; Retrieved thresholds for {} - warning: {}, error: {}",
+                ruleid,
+                config.0,
+                config.1
+            );
+            config
+        }
         Err(e) => {
-            return Err(format!("Failed to get T005 configuration: {e}"));
+            pgrx::debug1!(
+                "execute_q1_q2_rule_dynamic; Failed to get configuration for {}: {}",
+                ruleid,
+                e
+            );
+            return Err(format!("Failed to get {} configuration: {e}", ruleid));
         }
     };
 
     let result: Result<Option<RuleResult>, spi::SpiError> = Spi::connect(|client| {
-        let mut count = 0i64;
-        let mut tables = Vec::new();
-
-        // First check with warning threshold
-        for row in client.select(T005_SQL, None, &[warning_threshold.into()])? {
-            let schema: String = row.get(1)?.unwrap_or_default();
-            let table: String = row.get(2)?.unwrap_or_default();
-            let seq_percentage: f64 = row.get(5)?.unwrap_or(0.0);
-            tables.push(format!(
-                "{schema}.{table} (seq scan %: {seq_percentage:.1})"
-            ));
-            count += 1;
-        }
-
-        if count > 0 {
-            // Determine level based on thresholds
-            let mut error_count = 0i64;
-            let mut error_tables = Vec::new();
-
-            // Check if any tables exceed error threshold
-            for row in client.select(T005_SQL, None, &[error_threshold.into()])? {
-                let schema: String = row.get(1)?.unwrap_or_default();
-                let table: String = row.get(2)?.unwrap_or_default();
-                let seq_percentage: f64 = row.get(5)?.unwrap_or(0.0);
-                error_tables.push(format!(
-                    "{schema}.{table} (seq scan %: {seq_percentage:.1})"
-                ));
-                error_count += 1;
-            }
-
-            let (level, message) = if error_count > 0 {
-                (
-                    "error",
-                    format!(
-                        "Found {} tables with high level of seq scan > {}%: {}",
-                        error_count,
-                        error_threshold,
-                        error_tables.join(", ")
-                    ),
-                )
-            } else {
-                (
-                    "warning",
-                    format!(
-                        "Found {} tables with high level of seq scan > {}%: {}",
-                        count,
-                        warning_threshold,
-                        tables.join(", ")
-                    ),
-                )
-            };
-
-            return Ok(Some(RuleResult {
-                ruleid: "T005".to_string(),
-                level: level.to_string(),
-                message,
-                count: Some(if error_count > 0 { error_count } else { count }),
-            }));
-        }
-
-        Ok(None)
-    });
-
-    match result {
-        Ok(res) => Ok(res),
-        Err(e) => Err(format!("Database error: {e}")),
-    }
-}
-
-fn execute_t006_rule() -> Result<Option<RuleResult>, String> {
-    // T006: Tables with foreign keys referencing other schemas
-    let result: Result<Option<RuleResult>, spi::SpiError> = Spi::connect(|client| {
-        let mut count = 0i64;
-        let mut violations = Vec::new();
-
-        for row in client.select(T006_SQL, None, &[])? {
-            let schema: String = row.get(1)?.unwrap_or_default();
-            let table: String = row.get(2)?.unwrap_or_default();
-            let constraint: String = row.get(3)?.unwrap_or_default();
-            let ref_schema: String = row.get(4)?.unwrap_or_default();
-            violations.push(format!(
-                "{schema}.{table} -> {ref_schema} (FK: {constraint})"
-            ));
-            count += 1;
-        }
-
-        if count > 0 {
-            return Ok(Some(RuleResult {
-                ruleid: "T006".to_string(),
-                level: "warning".to_string(),
-                message: format!(
-                    "Found {count} foreign keys referencing other schemas: {}",
-                    violations.join(", ")
-                ),
-                count: Some(count),
-            }));
-        }
-
-        Ok(None)
-    });
-
-    match result {
-        Ok(res) => Ok(res),
-        Err(e) => Err(format!("Database error: {e}")),
-    }
-}
-
-fn execute_t007_rule() -> Result<Option<RuleResult>, String> {
-    // T007: Tables with unused indexes
-    let size_threshold_mb = 1i64; // 1MB minimum size to consider
-    let size_threshold_bytes = size_threshold_mb * 1024 * 1024;
-
-    let result: Result<Option<RuleResult>, spi::SpiError> = Spi::connect(|client| {
-        let mut count = 0i64;
-        let mut unused_indexes = Vec::new();
-
-        for row in client.select(T007_SQL, None, &[size_threshold_bytes.into()])? {
-            let schema: String = row.get(1)?.unwrap_or_default();
-            let table: String = row.get(2)?.unwrap_or_default();
-            let index: String = row.get(3)?.unwrap_or_default();
-            let size: i64 = row.get(4)?.unwrap_or(0);
-            let size_mb = size / 1024 / 1024;
-            unused_indexes.push(format!("{schema}.{table}.{index} ({size_mb}MB)"));
-            count += 1;
-        }
-
-        if count > 0 {
-            return Ok(Some(RuleResult {
-                ruleid: "T007".to_string(),
-                level: "warning".to_string(),
-                message: format!(
-                    "Found {count} unused indexes larger than {size_threshold_mb}MB: {}",
-                    unused_indexes.join(", ")
-                ),
-                count: Some(count),
-            }));
-        }
-
-        Ok(None)
-    });
-
-    match result {
-        Ok(res) => Ok(res),
-        Err(e) => Err(format!("Database error: {e}")),
-    }
-}
-
-fn execute_t008_rule() -> Result<Option<RuleResult>, String> {
-    // T008: Tables with foreign key type mismatches
-    let result: Result<Option<RuleResult>, spi::SpiError> = Spi::connect(|client| {
-        let mut count = 0i64;
-        let mut mismatches = Vec::new();
-
-        for row in client.select(T008_SQL, None, &[])? {
-            let schema: String = row.get(1)?.unwrap_or_default();
-            let table: String = row.get(2)?.unwrap_or_default();
-            let constraint: String = row.get(3)?.unwrap_or_default();
-            let column: String = row.get(4)?.unwrap_or_default();
-            let fk_type: String = row.get(5)?.unwrap_or_default();
-            let ref_table: String = row.get(6)?.unwrap_or_default();
-            let ref_column: String = row.get(7)?.unwrap_or_default();
-            let ref_type: String = row.get(8)?.unwrap_or_default();
-
-            mismatches.push(format!("{schema}.{table}.{column} ({fk_type}) -> {ref_table}.{ref_column} ({ref_type}) [FK: {constraint}]"));
-            count += 1;
-        }
-
-        if count > 0 {
-            return Ok(Some(RuleResult {
-                ruleid: "T008".to_string(),
-                level: "error".to_string(),
-                message: format!(
-                    "Found {count} foreign key type mismatches: {}",
-                    mismatches.join(", ")
-                ),
-                count: Some(count),
-            }));
-        }
-
-        Ok(None)
-    });
-
-    match result {
-        Ok(res) => Ok(res),
-        Err(e) => Err(format!("Database error: {e}")),
-    }
-}
-
-fn execute_t009_rule() -> Result<Option<RuleResult>, String> {
-    // T009: Tables with no roles granted (only for non-public schemas)
-    let result: Result<Option<RuleResult>, spi::SpiError> = Spi::connect(|client| {
-        let mut count = 0i64;
-        let mut tables = Vec::new();
-
-        for row in client.select(T009_SQL, None, &[])? {
-            let schema: String = row.get(1)?.unwrap_or_default();
-            let table: String = row.get(2)?.unwrap_or_default();
-            tables.push(format!("{schema}.{table}"));
-            count += 1;
-        }
-
-        if count > 0 {
-            return Ok(Some(RuleResult {
-                ruleid: "T009".to_string(),
-                level: "warning".to_string(),
-                message: format!(
-                    "Found {count} tables without role grants: {}",
-                    tables.join(", ")
-                ),
-                count: Some(count),
-            }));
-        }
-
-        Ok(None)
-    });
-
-    match result {
-        Ok(res) => Ok(res),
-        Err(e) => Err(format!("Database error: {e}")),
-    }
-}
-
-fn execute_t010_rule() -> Result<Option<RuleResult>, String> {
-    // T010: Tables using reserved keywords
-    let reserved_keywords = vec![
-        "ALL",
-        "ANALYSE",
-        "ANALYZE",
-        "AND",
-        "ANY",
-        "ARRAY",
-        "AS",
-        "ASC",
-        "ASYMMETRIC",
-        "AUTHORIZATION",
-        "BINARY",
-        "BOTH",
-        "CASE",
-        "CAST",
-        "CHECK",
-        "COLLATE",
-        "COLLATION",
-        "COLUMN",
-        "CONCURRENTLY",
-        "CONSTRAINT",
-        "CREATE",
-        "CROSS",
-        "CURRENT_CATALOG",
-        "CURRENT_DATE",
-        "CURRENT_ROLE",
-        "CURRENT_SCHEMA",
-        "CURRENT_TIME",
-        "CURRENT_TIMESTAMP",
-        "CURRENT_USER",
-        "DEFAULT",
-        "DEFERRABLE",
-        "DESC",
-        "DISTINCT",
-        "DO",
-        "ELSE",
-        "END",
-        "EXCEPT",
-        "FALSE",
-        "FETCH",
-        "FOR",
-        "FOREIGN",
-        "FREEZE",
-        "FROM",
-        "FULL",
-        "GRANT",
-        "GROUP",
-        "HAVING",
-        "ILIKE",
-        "IN",
-        "INITIALLY",
-        "INNER",
-        "INTERSECT",
-        "INTO",
-        "IS",
-        "ISNULL",
-        "JOIN",
-        "LATERAL",
-        "LEADING",
-        "LEFT",
-        "LIKE",
-        "LIMIT",
-        "LOCALTIME",
-        "LOCALTIMESTAMP",
-        "NATURAL",
-        "NOT",
-        "NOTNULL",
-        "NULL",
-        "OFFSET",
-        "ON",
-        "ONLY",
-        "OR",
-        "ORDER",
-        "OUTER",
-        "OVERLAPS",
-        "PLACING",
-        "PRIMARY",
-        "REFERENCES",
-        "RETURNING",
-        "RIGHT",
-        "SELECT",
-        "SESSION_USER",
-        "SIMILAR",
-        "SOME",
-        "SYMMETRIC",
-        "TABLE",
-        "TABLESAMPLE",
-        "THEN",
-        "TO",
-        "TRAILING",
-        "TRUE",
-        "UNION",
-        "UNIQUE",
-        "USER",
-        "USING",
-        "VARIADIC",
-        "VERBOSE",
-        "WHEN",
-        "WHERE",
-        "WINDOW",
-        "WITH",
-    ];
-
-    // Read SQL template from file
-    let sql_template = T010_SQL;
-
-    // Create keyword check conditions
-    let keyword_conditions_tables: Vec<String> = reserved_keywords
-        .iter()
-        .map(|kw| format!("UPPER(table_name) = '{kw}'"))
-        .collect();
-    let keyword_conditions_columns: Vec<String> = reserved_keywords
-        .iter()
-        .map(|kw| format!("UPPER(column_name) = '{kw}'"))
-        .collect();
-
-    let keyword_clause_tables = keyword_conditions_tables.join(" OR ");
-    let keyword_clause_columns = keyword_conditions_columns.join(" OR ");
-
-    let reserved_keyword_query = sql_template
-        .replace("{KEYWORD_CONDITIONS_TABLES}", &keyword_clause_tables)
-        .replace("{KEYWORD_CONDITIONS_COLUMNS}", &keyword_clause_columns);
-
-    let result: Result<Option<RuleResult>, spi::SpiError> = Spi::connect(|client| {
-        let mut count = 0i64;
-        let mut violations = Vec::new();
-
-        for row in client.select(&reserved_keyword_query, None, &[])? {
-            let schema: String = row.get(1)?.unwrap_or_default();
-            let table: String = row.get(2)?.unwrap_or_default();
-            let object_type: String = row.get(3)?.unwrap_or_default();
-            violations.push(format!("{schema}.{table} ({object_type})"));
-            count += 1;
-        }
-
-        if count > 0 {
-            return Ok(Some(RuleResult {
-                ruleid: "T010".to_string(),
-                level: "error".to_string(),
-                message: format!(
-                    "Found {count} database objects using reserved keywords: {}",
-                    violations.join(", ")
-                ),
-                count: Some(count),
-            }));
-        }
-
-        Ok(None)
-    });
-
-    match result {
-        Ok(res) => Ok(res),
-        Err(e) => Err(format!("Database error: {e}")),
-    }
-}
-
-fn execute_t011_rule() -> Result<Option<RuleResult>, String> {
-    // T011: Tables with uppercase names/columns (similar to B006 but table-specific)
-    let result: Result<Option<RuleResult>, spi::SpiError> = Spi::connect(|client| {
-        let mut count = 0i64;
-        let mut objects = Vec::new();
-
-        for row in client.select(T011_SQL, None, &[])? {
-            let schema: String = row.get(1)?.unwrap_or_default();
-            let table: String = row.get(2)?.unwrap_or_default();
-            let object_type: String = row.get(3)?.unwrap_or_default();
-            objects.push(format!("{schema}.{table} ({object_type})"));
-            count += 1;
-        }
-
-        if count > 0 {
-            return Ok(Some(RuleResult {
-                ruleid: "T011".to_string(),
-                level: "warning".to_string(),
-                message: format!(
-                    "Found {count} database objects with uppercase letters: {}",
-                    objects.join(", ")
-                ),
-                count: Some(count),
-            }));
-        }
-
-        Ok(None)
-    });
-
-    match result {
-        Ok(res) => Ok(res),
-        Err(e) => Err(format!("Database error: {e}")),
-    }
-}
-
-fn execute_t012_rule() -> Result<Option<RuleResult>, String> {
-    // T012: Tables with sensitive columns (requires anon extension)
-
-    // First check if anon extension is available
-    let check_anon_query = "
-        SELECT count(*) as ext_count
-        FROM pg_extension
-        WHERE extname = 'anon'";
-
-    let result: Result<Option<RuleResult>, spi::SpiError> = Spi::connect(|client| {
-        let anon_count: i64 = client
-            .select(check_anon_query, None, &[])?
+        pgrx::debug1!(
+            "execute_q1_q2_rule_dynamic; Executing total count for {}",
+            ruleid
+        );
+        let q1: i64 = client
+            .select(q1, None, &[])?
             .first()
             .get::<i64>(1)?
             .unwrap_or(0);
 
-        if anon_count == 0 {
-            return Ok(Some(RuleResult {
-                ruleid: "T012".to_string(),
-                level: "info".to_string(),
-                message: "Anon extension not found. Install postgresql-anonymizer to detect sensitive columns".to_string(),
-                count: Some(0),
-            }));
-        }
+        pgrx::debug1!(
+            "execute_q1_q2_rule_dynamic; total count result for {}: {}",
+            ruleid,
+            q1
+        );
 
-        // If anon extension is available, try to detect sensitive columns
-        let mut count = 0i64;
-        let mut sensitive_data = Vec::new();
+        pgrx::debug1!(
+            "execute_q1_q2_rule_dynamic; Executing problem count for {}",
+            ruleid
+        );
+        let q2: i64 = client
+            .select(q2, None, &[])?
+            .first()
+            .get::<i64>(1)?
+            .unwrap_or(0);
 
-        for row in client.select(T012_SQL, None, &[])? {
-            let schema: String = row.get(1)?.unwrap_or_default();
-            let table: String = row.get(2)?.unwrap_or_default();
-            let column: String = row.get(3)?.unwrap_or_default();
-            let category: String = row.get(4)?.unwrap_or_default();
-            sensitive_data.push(format!("{schema}.{table}.{column} ({category})"));
-            count += 1;
-        }
+        pgrx::debug1!(
+            "execute_q1_q2_rule_dynamic; problem count result for {}: {}",
+            ruleid,
+            q2
+        );
 
-        if count > 0 {
-            return Ok(Some(RuleResult {
-                ruleid: "T012".to_string(),
-                level: "warning".to_string(),
-                message: format!(
-                    "Found {count} potentially sensitive columns: {}",
-                    sensitive_data.join(", ")
-                ),
-                count: Some(count),
-            }));
+        if q1 > 0 {
+            let percentage = (q2 * 100) / q1;
+
+            pgrx::debug1!("execute_q1_q2_rule_dynamic; Calculated percentage for {}: {}% (total: {}, problem: {})",
+                        ruleid, percentage, q1, q2);
+
+            // Check error threshold first (higher severity)
+            if percentage >= error_threshold {
+                pgrx::debug1!(
+                    "execute_rule_dynamic; {} triggered ERROR threshold ({}% >= {}%)",
+                    ruleid,
+                    percentage,
+                    error_threshold
+                );
+
+                // Replace placeholders in rule message
+                let formatted_message = rule_message
+                    .replace("{0}", &q2.to_string())
+                    .replace("{1}", &q1.to_string())
+                    .replace("{2}", "error")
+                    .replace("{3}", &percentage.to_string());
+
+                pgrx::debug1!(
+                    "execute_q1_q2_rule_dynamic; {} message template '{}' -> '{}'",
+                    ruleid,
+                    rule_message,
+                    formatted_message
+                );
+
+                return Ok(Some(RuleResult {
+                    ruleid: ruleid.to_string(),
+                    level: "error".to_string(),
+                    message: formatted_message,
+                    count: Some(q2),
+                }));
+            }
+            // Check warning threshold
+            else if percentage >= warning_threshold {
+                pgrx::debug1!(
+                    "execute_q1_q2_rule_dynamic; {} triggered WARNING threshold ({}% >= {}%)",
+                    ruleid,
+                    percentage,
+                    warning_threshold
+                );
+
+                // Replace placeholders in rule message
+                let formatted_message = rule_message
+                    .replace("{0}", &q2.to_string())
+                    .replace("{1}", &q1.to_string())
+                    .replace("{2}", "warning")
+                    .replace("{3}", &percentage.to_string());
+
+                pgrx::debug1!(
+                    "execute_q1_q2_rule_dynamic; {} message template '{}' -> '{}'",
+                    ruleid,
+                    rule_message,
+                    formatted_message
+                );
+
+                return Ok(Some(RuleResult {
+                    ruleid: ruleid.to_string(),
+                    level: "warning".to_string(),
+                    message: formatted_message,
+                    count: Some(q2),
+                }));
+            } else {
+                pgrx::debug1!(
+                    "execute_q1_q2_rule_dynamic; {} passed all thresholds ({}% < warning {}%)",
+                    ruleid,
+                    percentage,
+                    warning_threshold
+                );
+            }
+        } else {
+            pgrx::debug1!(
+                "execute_q1_q2_rule_dynamic; {} skipped - no data found (total = 0)",
+                ruleid
+            );
         }
 
         Ok(None)
     });
 
     match result {
-        Ok(res) => Ok(res),
-        Err(_e) => {
-            // If there's an error, it might be because anon functions don't exist
-            // Return an info message instead of failing
-            Ok(Some(RuleResult {
-                ruleid: "T012".to_string(),
-                level: "info".to_string(),
-                message: "Could not check for sensitive columns. Ensure anon extension is properly configured".to_string(),
-                count: Some(0),
-            }))
+        Ok(res) => {
+            pgrx::debug1!(
+                "execute_q1_q2_rule_dynamic; {} completed successfully",
+                ruleid
+            );
+            Ok(res)
+        }
+        Err(e) => {
+            pgrx::debug1!(
+                "execute_q1_q2_rule_dynamic; {} failed with database error: {}",
+                ruleid,
+                e
+            );
+            Err(format!("Database error: {e}"))
         }
     }
 }
 
-fn execute_s001_rule() -> Result<Option<RuleResult>, String> {
-    // S001: Schemas without default role grants
-    let result: Result<Option<RuleResult>, spi::SpiError> = Spi::connect(|client| {
-        let mut count = 0i64;
-        let mut schemas = Vec::new();
+/// Execute all BASE scope rules regardless of q2 null status
+/// This function combines the logic from execute_q1_q2_rules and execute_q1_rules
+/// but filters for BASE scope rules only
+pub fn execute_rules(scope: &str) -> Result<Vec<RuleResult>, String> {
+    pgrx::debug1!("execute_rule; Starting execution of all {} rules", scope);
+    let mut results = Vec::new();
 
-        for row in client.select(S001_SQL, None, &[])? {
-            let schema: String = row.get(1)?.unwrap_or_default();
-            schemas.push(schema);
-            count += 1;
+    // Query to get all enabled BASE rules with their SQL queries
+    let rules_query = "
+        SELECT code, name, q1, q2, scope
+        FROM pglinter.rules
+        WHERE enable = true
+        AND scope = $1
+        AND q1 IS NOT NULL
+        ORDER BY code";
+
+    let rule_result: Result<Vec<RuleData>, spi::SpiError> = Spi::connect(|client| {
+        let mut rules = Vec::new();
+
+        for row in client.select(rules_query, None, &[scope.into()])? {
+            let code: String = row.get(1)?.unwrap_or_default();
+            let q1: String = row.get(3)?.unwrap_or_default();
+            let q2: Option<String> = row.get(4)?;
+            let scope: String = row.get(5)?.unwrap_or_default();
+
+            rules.push(RuleData {
+                code,
+                q1,
+                q2,
+                scope,
+            });
         }
 
-        if count > 0 {
-            return Ok(Some(RuleResult {
-                ruleid: "S001".to_string(),
-                level: "warning".to_string(),
-                message: format!(
-                    "Found {count} schemas without default role grants: {}",
-                    schemas.join(", ")
-                ),
-                count: Some(count),
-            }));
-        }
-
-        Ok(None)
+        Ok(rules)
     });
 
-    match result {
-        Ok(res) => Ok(res),
-        Err(e) => Err(format!("Database error: {e}")),
-    }
-}
+    match rule_result {
+        Ok(rules) => {
+            pgrx::debug1!(
+                "execute_rule; Found {} {} rules to execute",
+                rules.len(),
+                scope
+            );
 
-fn execute_s002_rule() -> Result<Option<RuleResult>, String> {
-    // S002: Schemas prefixed/suffixed with environment names
-    let environment_keywords = vec![
-        "staging",
-        "stg",
-        "preprod",
-        "prod",
-        "production",
-        "dev",
-        "development",
-        "test",
-        "testing",
-        "sandbox",
-        "sbox",
-        "demo",
-        "uat",
-        "qa",
-    ];
+            for rule in rules {
+                // Check if rule is enabled before executing
+                if is_rule_enabled(&rule.code)? {
+                    pgrx::debug1!("execute_rule; Processing BASE rule: {}", rule.code);
 
-    // Read SQL template from file
-    let sql_template = S002_SQL;
-
-    // Build the query conditions for environment patterns
-    let prefix_conditions: Vec<String> = environment_keywords
-        .iter()
-        .map(|env| format!("nspname ILIKE '{env}_%'"))
-        .collect();
-    let suffix_conditions: Vec<String> = environment_keywords
-        .iter()
-        .map(|env| format!("nspname ILIKE '%_{env}'"))
-        .collect();
-
-    let all_conditions = [prefix_conditions, suffix_conditions].concat();
-    let condition_clause = all_conditions.join(" OR ");
-
-    let environment_schema_query =
-        sql_template.replace("{ENVIRONMENT_CONDITIONS}", &condition_clause);
-
-    let result: Result<Option<RuleResult>, spi::SpiError> = Spi::connect(|client| {
-        let mut count = 0i64;
-        let mut schemas = Vec::new();
-
-        for row in client.select(&environment_schema_query, None, &[])? {
-            let schema: String = row.get(1)?.unwrap_or_default();
-            schemas.push(schema);
-            count += 1;
+                    // Determine execution pattern based on q2 presence
+                    match &rule.q2 {
+                        Some(q2) => {
+                            // Execute as q1+q2 rule (with thresholds)
+                            pgrx::debug1!("execute_rule; Executing {} as Q1+Q2 rule", rule.code);
+                            match execute_q1_q2_rule_dynamic(&rule.code, &rule.q1, q2) {
+                                Ok(Some(result)) => {
+                                    pgrx::debug1!(
+                                        "execute_rule; {} produced result: {} - {}",
+                                        rule.code,
+                                        result.level,
+                                        result.message
+                                    );
+                                    results.push(result);
+                                }
+                                Ok(None) => {
+                                    pgrx::debug1!(
+                                        "execute_rule; {} passed thresholds - no issues",
+                                        rule.code
+                                    );
+                                }
+                                Err(e) => {
+                                    pgrx::debug1!(
+                                        "execute_rule; {} failed with error: {}",
+                                        rule.code,
+                                        e
+                                    );
+                                    return Err(format!(
+                                        "Failed to execute rule {}: {}",
+                                        rule.code, e
+                                    ));
+                                }
+                            }
+                        }
+                        None => {
+                            // Execute as q1-only rule (direct warning)
+                            pgrx::debug1!("execute_rule; Executing {} as Q1-only rule", rule.code);
+                            match execute_q1_rule_dynamic(&rule.scope, &rule.code, &rule.q1) {
+                                Ok(Some(result)) => {
+                                    pgrx::debug1!(
+                                        "execute_rule; {} produced result: {} - {}",
+                                        rule.code,
+                                        result.level,
+                                        result.message
+                                    );
+                                    results.push(result);
+                                }
+                                Ok(None) => {
+                                    pgrx::debug1!("execute_rule; {} found no issues", rule.code);
+                                }
+                                Err(e) => {
+                                    pgrx::debug1!(
+                                        "execute_rule; {} failed with error: {}",
+                                        rule.code,
+                                        e
+                                    );
+                                    return Err(format!(
+                                        "Failed to execute rule {}: {}",
+                                        rule.code, e
+                                    ));
+                                }
+                            }
+                        }
+                    }
+                } else {
+                    pgrx::debug1!("execute_rule; Skipping disabled rule: {}", rule.code);
+                }
+            }
         }
-
-        if count > 0 {
-            return Ok(Some(RuleResult {
-                ruleid: "S002".to_string(),
-                level: "warning".to_string(),
-                message: format!(
-                    "Found {count} schemas with environment prefixes/suffixes: {}",
-                    schemas.join(", ")
-                ),
-                count: Some(count),
-            }));
+        Err(e) => {
+            pgrx::debug1!("execute_rule; Database error while fetching rules: {}", e);
+            return Err(format!("Database error: {e}"));
         }
-
-        Ok(None)
-    });
-
-    match result {
-        Ok(res) => Ok(res),
-        Err(e) => Err(format!("Database error: {e}")),
     }
+
+    pgrx::debug1!(
+        "execute_rule; Completed execution of rules, found {} issues",
+        results.len()
+    );
+
+    Ok(results)
 }
 
 // Output and SARIF functions

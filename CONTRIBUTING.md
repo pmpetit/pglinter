@@ -119,38 +119,86 @@ Adding new linting rules
 
 To add a new linting rule to pglinter, follow these steps:
 
-- find the level of the rule (Base, Table, Schema, Cluster), and if level are required.
-- give a code to the rule.
-- add the rule definition to the table pglinter.rules in sql/rules.sql
-- create the SQL code in sql/ folder
+1. **Design Your Rule**
 
-1. **Create the Rule Logic:**
-   - In `src/execute_rules.rs`, add a new function for your rule. For example see [b001](https://github.com/pmpetit/pglinter/blob/9a10fb02639937bd3e187b486ea54303afc28abe/src/execute_rules.rs) rule
+   - **Determine the scope**: Choose from BASE, CLUSTER, SCHEMA, or TABLE
+     - BASE: Database-wide analysis (e.g., overall table statistics)
+     - CLUSTER: PostgreSQL cluster configuration (e.g., security settings)
+     - SCHEMA: Schema-level checks (e.g., permissions, ownership)
+     - TABLE: Individual table analysis (e.g., indexes, foreign keys)
+   - **Assign a rule code**: Follow the pattern `[B|C|S|T][XXX]` (e.g., B003, T007)
+   - **Set thresholds**: Define warning_level and error_level percentages or counts
 
-2. **Register the Rule for Execution:**
-   - Add your rule to the appropriate execution function (e.g., `execute_table_rules`, `execute_base_rules`, etc.):
+2. **Add Rule Definition**
 
-     ```rust
-     if is_rule_enabled("B003").unwrap_or(true) {
-         match execute_my_rule() {
-             Ok(Some(result)) => results.push(result),
-             Ok(None) => {},
-             Err(e) => return Err(format!("T013 failed: {}", e)),
-         }
-     }
-     ```
+   Add your rule to the `pglinter.rules` table in `sql/rules.sql`:
 
-3. **Add SQL for the Rule:**
-   - The SQL code for your rule must be placed in the `sql/` directory, in a file named with the rule ID (e.g., `sql/t013.sql`).
-   - Embed the SQL in your Rust code using `include_str!` if needed.
+   ```sql
+   (
+       rule_id, 'RuleName', 'B999', warning_level, error_level, 'BASE',
+       'Description of what this rule checks for.',
+       'Message template with {0}, {1} placeholders for dynamic values.',
+       ARRAY['suggested fix 1', 'suggested fix 2']
+   ),
+   ```
 
-4. **Update the Rules Table:**
-   - Add your rule to the `pglinter.rules` table with its code, description, and configuration.
+3. **Write Rule SQL Queries**
 
-5. **Test Your Rule:**
-   - Add a test SQL file in `tests/sql/`, run `make installcheck`, and verify the output.
+   Rules use one or two SQL queries stored in the `q1` and `q2` columns:
 
-This process ensures your new rule is properly integrated and testable within the pglinter extension.
+   - **Single Query Rules (q1 only)**: For direct warnings/errors
+     - Query should return rows representing issues found
+     - Each row triggers a warning/error message
+
+   - **Threshold Rules (q1 + q2)**: For percentage-based analysis
+     - `q1`: Query returning total count (denominator)
+     - `q2`: Query returning problem count (numerator)
+     - Calculates percentage: (q2/q1) * 100
+
+   Update the rule definition in `sql/rules.sql` with your queries:
+
+   ```sql
+   UPDATE pglinter.rules SET
+   q1 = 'SELECT count(*) FROM pg_tables WHERE schemaname != ''information_schema''',
+   q2 = 'SELECT count(*) FROM pg_tables t WHERE NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conrelid = t.oid AND contype = ''p'')'
+   WHERE code = 'B999';
+   ```
+
+4. **Test Your Rule**
+
+   - Create a test file in `tests/sql/` (e.g., `b999_my_new_rule.sql`)
+   - Include test cases that trigger your rule's warning/error conditions
+   - Run the test: `make installcheck REGRESS=b999_my_new_rule`
+   - Verify the output matches expected behavior
+
+5. **Rule Execution Flow**
+
+   The pglinter engine automatically:
+   - Fetches enabled rules from `pglinter.rules` table
+   - Executes appropriate SQL queries based on scope
+   - Applies threshold logic for q1+q2 rules
+   - Generates SARIF output or console messages
+
+   No additional Rust code is required - the engine handles rule execution dynamically.
+
+Example: Adding Rule B999
+-------------------------
+
+```sql
+-- Add to sql/rules.sql
+INSERT INTO pglinter.rules (
+    id, name, code, warning_level, error_level, scope, description, message, fixes, q1, q2
+) VALUES (
+    999, 'TablesWithoutComments', 'B999', 30, 70, 'BASE',
+    'Tables should have descriptive comments for documentation.',
+    '{0}/{1} tables without comments exceed {2} threshold: {3}%.',
+    ARRAY['Add comments using: COMMENT ON TABLE table_name IS ''description'''],
+    'SELECT count(*) FROM pg_tables WHERE schemaname NOT IN (''information_schema'', ''pg_catalog'')',
+    'SELECT count(*) FROM pg_tables t LEFT JOIN pg_description d ON d.objoid = t.oid WHERE d.description IS NULL AND t.schemaname NOT IN (''information_schema'', ''pg_catalog'')'
+);
+```
+
+This process leverages pglinter's dynamic rule execution system - no Rust code changes needed!
 
 Adding new tests
 -------------------------------------------------------------------------------

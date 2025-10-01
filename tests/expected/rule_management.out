@@ -1,12 +1,10 @@
 -- Test for pglinter rule management functionality
+CREATE EXTENSION pglinter;
 BEGIN;
-DROP EXTENSION IF EXISTS pglinter CASCADE;
-NOTICE:  extension "pglinter" does not exist, skipping
 CREATE TABLE IF NOT EXISTS test_table_for_rules (
     id INT,
     name TEXT
 );
-CREATE EXTENSION IF NOT EXISTS pglinter;
 -- Show initial rule status
 SELECT pglinter.show_rules();
 NOTICE:  📋 pglinter Rule Status:
@@ -18,25 +16,24 @@ NOTICE:  B002   ✅ ON     HowManyRedudantIndex
 NOTICE:  B003   ✅ ON     HowManyTableWithoutIndexOnFk            
 NOTICE:  B004   ✅ ON     HowManyUnusedIndex                      
 NOTICE:  B005   ✅ ON     UnsecuredPublicSchema                   
-NOTICE:  B006   ✅ ON     HowManyTablesWithUppercase              
-NOTICE:  C001   ✅ ON     MaxConnectionsByWorkMemIsNotLargerThanMemory
+NOTICE:  B006   ✅ ON     HowManyObjectsWithUppercase             
+NOTICE:  B007   ✅ ON     HowManyTablesNeverSelected              
+NOTICE:  B008   ✅ ON     HowManyTablesWithFkOutsideSchema        
 NOTICE:  C002   ✅ ON     PgHbaEntriesWithMethodTrustOrPasswordShouldNotExists
 NOTICE:  S001   ✅ ON     SchemaWithDefaultRoleNotGranted         
 NOTICE:  S002   ✅ ON     SchemaPrefixedOrSuffixedWithEnvt        
 NOTICE:  T001   ✅ ON     TableWithoutPrimaryKey                  
-NOTICE:  T002   ✅ ON     TableWithoutIndex                       
-NOTICE:  T003   ✅ ON     TableWithRedundantIndex                 
-NOTICE:  T004   ✅ ON     TableWithFkNotIndexed                   
-NOTICE:  T005   ✅ ON     TableWithPotentialMissingIdx            
-NOTICE:  T006   ✅ ON     TableWithFkOutsideSchema                
-NOTICE:  T007   ✅ ON     TableWithUnusedIndex                    
-NOTICE:  T008   ✅ ON     TableWithFkMismatch                     
-NOTICE:  T009   ✅ ON     TableWithRoleNotGranted                 
-NOTICE:  T010   ✅ ON     ReservedKeyWord                         
-NOTICE:  T011   ✅ ON     TableWithUppercase                      
-NOTICE:  T012   ✅ ON     TableWithSensibleColumn                 
+NOTICE:  T002   ✅ ON     TableWithRedundantIndex                 
+NOTICE:  T003   ✅ ON     TableWithFkNotIndexed                   
+NOTICE:  T004   ✅ ON     TableWithPotentialMissingIdx            
+NOTICE:  T005   ✅ ON     TableWithFkOutsideSchema                
+NOTICE:  T006   ✅ ON     TableWithUnusedIndex                    
+NOTICE:  T007   ✅ ON     TableWithFkMismatch                     
+NOTICE:  T008   ✅ ON     TableWithRoleNotGranted                 
+NOTICE:  T009   ✅ ON     ReservedKeyWord                         
+NOTICE:  T010   🔴 OFF    TableWithSensibleColumn                 
 NOTICE:  ============================================================
-NOTICE:  📊 Summary: 22 enabled, 0 disabled
+NOTICE:  📊 Summary: 20 enabled, 1 disabled
  show_rules 
 ------------
  t
@@ -66,11 +63,14 @@ SELECT pglinter.is_rule_enabled('B001') AS b001_after_disable;
 
 -- Run base check (should skip B001)
 SELECT pglinter.perform_base_check();
-NOTICE:  🔍 pglinter found 1 issue(s):
+NOTICE:  🔍 pglinter found 4 issue(s):
 NOTICE:  ==================================================
-NOTICE:  ❌ [B005] ERROR: Public schema allows CREATE privilege for all users - security risk
+NOTICE:  ⚠️  [B002] WARNING: 4/15 redundant(s) index exceed the warning threshold: 26%.
+NOTICE:  ❌ [B004] ERROR: 5/5 unused index exceed the error threshold: 100%
+NOTICE:  ⚠️  [B005] WARNING: 1/3 schemas are unsecured, schemas where all users can create objects in, exceed the warning threshold: 33%.
+NOTICE:  ⚠️  [B006] WARNING: 34/105 object(s) using uppercase for name or columns exceed the warning threshold: 32%.
 NOTICE:  ==================================================
-NOTICE:  📊 Summary: 1 error(s), 0 warning(s), 0 info
+NOTICE:  📊 Summary: 1 error(s), 3 warning(s), 0 info
 NOTICE:  🔴 Critical issues found - please review and fix errors
  perform_base_check 
 --------------------
@@ -111,28 +111,28 @@ NOTICE:  B002   ✅ ON     HowManyRedudantIndex
 NOTICE:  B003   ✅ ON     HowManyTableWithoutIndexOnFk            
 NOTICE:  B004   ✅ ON     HowManyUnusedIndex                      
 NOTICE:  B005   ✅ ON     UnsecuredPublicSchema                   
-NOTICE:  B006   ✅ ON     HowManyTablesWithUppercase              
-NOTICE:  C001   ✅ ON     MaxConnectionsByWorkMemIsNotLargerThanMemory
+NOTICE:  B006   ✅ ON     HowManyObjectsWithUppercase             
+NOTICE:  B007   ✅ ON     HowManyTablesNeverSelected              
+NOTICE:  B008   ✅ ON     HowManyTablesWithFkOutsideSchema        
 NOTICE:  C002   ✅ ON     PgHbaEntriesWithMethodTrustOrPasswordShouldNotExists
 NOTICE:  S001   ✅ ON     SchemaWithDefaultRoleNotGranted         
 NOTICE:  S002   ✅ ON     SchemaPrefixedOrSuffixedWithEnvt        
 NOTICE:  T001   ✅ ON     TableWithoutPrimaryKey                  
-NOTICE:  T002   ✅ ON     TableWithoutIndex                       
-NOTICE:  T003   ✅ ON     TableWithRedundantIndex                 
-NOTICE:  T004   ✅ ON     TableWithFkNotIndexed                   
-NOTICE:  T005   ✅ ON     TableWithPotentialMissingIdx            
-NOTICE:  T006   ✅ ON     TableWithFkOutsideSchema                
-NOTICE:  T007   ✅ ON     TableWithUnusedIndex                    
-NOTICE:  T008   ✅ ON     TableWithFkMismatch                     
-NOTICE:  T009   ✅ ON     TableWithRoleNotGranted                 
-NOTICE:  T010   ✅ ON     ReservedKeyWord                         
-NOTICE:  T011   ✅ ON     TableWithUppercase                      
-NOTICE:  T012   ✅ ON     TableWithSensibleColumn                 
+NOTICE:  T002   ✅ ON     TableWithRedundantIndex                 
+NOTICE:  T003   ✅ ON     TableWithFkNotIndexed                   
+NOTICE:  T004   ✅ ON     TableWithPotentialMissingIdx            
+NOTICE:  T005   ✅ ON     TableWithFkOutsideSchema                
+NOTICE:  T006   ✅ ON     TableWithUnusedIndex                    
+NOTICE:  T007   ✅ ON     TableWithFkMismatch                     
+NOTICE:  T008   ✅ ON     TableWithRoleNotGranted                 
+NOTICE:  T009   ✅ ON     ReservedKeyWord                         
+NOTICE:  T010   🔴 OFF    TableWithSensibleColumn                 
 NOTICE:  ============================================================
-NOTICE:  📊 Summary: 22 enabled, 0 disabled
+NOTICE:  📊 Summary: 20 enabled, 1 disabled
  show_rules 
 ------------
  t
 (1 row)
 
 ROLLBACK;
+DROP EXTENSION pglinter CASCADE;

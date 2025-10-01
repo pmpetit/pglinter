@@ -1,14 +1,17 @@
 -- Demo script for the new rule level management functions
 -- This script demonstrates how to get and update warning_level and error_level for rules
+CREATE EXTENSION pglinter;
 \echo 'Testing rule level management functions...'
 Testing rule level management functions...
 -- First, let's see the current levels for T005
 \echo 'Current T005 rule levels:'
 Current T005 rule levels:
 SELECT pglinter.get_rule_levels('T005') as current_levels;
-ERROR:  schema "pglinter" does not exist
-LINE 1: SELECT pglinter.get_rule_levels('T005') as current_levels;
-               ^
+         current_levels         
+--------------------------------
+ warning_level=1, error_level=1
+(1 row)
+
 -- Let's also check a few other rules
 \echo 'Current levels for some rules:'
 Current levels for some rules:
@@ -16,81 +19,93 @@ SELECT
     code,
     pglinter.get_rule_levels(code) as levels
 FROM pglinter.list_rules()
-WHERE code IN ('B001', 'T001', 'T005', 'C001')
+WHERE code IN ('B001', 'T001', 'T005', 'C002')
 ORDER BY code;
-ERROR:  schema "pglinter" does not exist
-LINE 4: FROM pglinter.list_rules()
-             ^
+ERROR:  column "code" does not exist
+LINE 2:     code,
+            ^
 -- Update T005 to have different thresholds
 \echo 'Updating T005 warning level to 25 and error level to 75:'
 Updating T005 warning level to 25 and error level to 75:
 SELECT pglinter.update_rule_levels('T005', 25, 75) as update_success;
-ERROR:  schema "pglinter" does not exist
-LINE 1: SELECT pglinter.update_rule_levels('T005', 25, 75) as update...
-               ^
+NOTICE:  ✅ Updated rule T005 levels: warning=25, error=75
+ update_success 
+----------------
+ t
+(1 row)
+
 -- Verify the update
 \echo 'T005 levels after update:'
 T005 levels after update:
 SELECT pglinter.get_rule_levels('T005') as updated_levels;
-ERROR:  schema "pglinter" does not exist
-LINE 1: SELECT pglinter.get_rule_levels('T005') as updated_levels;
-               ^
+          updated_levels          
+----------------------------------
+ warning_level=25, error_level=75
+(1 row)
+
 -- Update only the warning level of B001
 \echo 'Updating only B001 warning level to 5:'
 Updating only B001 warning level to 5:
 SELECT pglinter.update_rule_levels('B001', 5, NULL) as update_success;
-ERROR:  schema "pglinter" does not exist
-LINE 1: SELECT pglinter.update_rule_levels('B001', 5, NULL) as updat...
-               ^
+NOTICE:  ✅ Updated rule B001 levels: warning=5, error=80
+ update_success 
+----------------
+ t
+(1 row)
+
 -- Verify B001 update
 \echo 'B001 levels after warning level update:'
 B001 levels after warning level update:
 SELECT pglinter.get_rule_levels('B001') as updated_levels;
-ERROR:  schema "pglinter" does not exist
-LINE 1: SELECT pglinter.get_rule_levels('B001') as updated_levels;
-               ^
+         updated_levels          
+---------------------------------
+ warning_level=5, error_level=80
+(1 row)
+
 -- Update only the error level of T001
 \echo 'Updating only T001 error level to 3:'
 Updating only T001 error level to 3:
 SELECT pglinter.update_rule_levels('T001', NULL, 3) as update_success;
-ERROR:  schema "pglinter" does not exist
-LINE 1: SELECT pglinter.update_rule_levels('T001', NULL, 3) as updat...
-               ^
+NOTICE:  ✅ Updated rule T001 levels: warning=1, error=3
+ update_success 
+----------------
+ t
+(1 row)
+
 -- Verify T001 update
 \echo 'T001 levels after error level update:'
 T001 levels after error level update:
 SELECT pglinter.get_rule_levels('T001') as updated_levels;
-ERROR:  schema "pglinter" does not exist
-LINE 1: SELECT pglinter.get_rule_levels('T001') as updated_levels;
-               ^
+         updated_levels         
+--------------------------------
+ warning_level=1, error_level=3
+(1 row)
+
 -- Try to update a non-existent rule
 \echo 'Trying to update non-existent rule (should return false):'
 Trying to update non-existent rule (should return false):
 SELECT pglinter.update_rule_levels('NONEXISTENT', 10, 20) as should_be_false;
-ERROR:  schema "pglinter" does not exist
-LINE 1: SELECT pglinter.update_rule_levels('NONEXISTENT', 10, 20) as...
-               ^
--- Show all updated levels
-\echo 'All rule levels after updates:'
-All rule levels after updates:
-SELECT
-    code,
-    pglinter.get_rule_levels(code) as levels
-FROM pglinter.list_rules()
-ORDER BY code;
-ERROR:  schema "pglinter" does not exist
-LINE 4: FROM pglinter.list_rules()
-             ^
+WARNING:  ⚠️  Rule NONEXISTENT not found
+ should_be_false 
+-----------------
+ f
+(1 row)
+
 -- You can also query the rules table directly to see the raw values
 \echo 'Raw warning_level and error_level from rules table:'
 Raw warning_level and error_level from rules table:
 SELECT code, name, warning_level, error_level, enable
 FROM pglinter.rules
-WHERE code IN ('B001', 'T001', 'T005', 'C001')
+WHERE code IN ('B001', 'T001', 'T005', 'C002')
 ORDER BY code;
-ERROR:  relation "pglinter.rules" does not exist
-LINE 2: FROM pglinter.rules
-             ^
+ code |                         name                         | warning_level | error_level | enable 
+------+------------------------------------------------------+---------------+-------------+--------
+ B001 | HowManyTableWithoutPrimaryKey                        |             5 |          80 | t
+ C002 | PgHbaEntriesWithMethodTrustOrPasswordShouldNotExists |            20 |          80 | t
+ T001 | TableWithoutPrimaryKey                               |             1 |           3 | t
+ T005 | TableWithFkOutsideSchema                             |            25 |          75 | t
+(4 rows)
+
 \echo 'Rule level management demo completed!'
 Rule level management demo completed!
 \echo ''
@@ -109,3 +124,4 @@ Usage Summary:
 
 \echo 'Note: Changes affect rule behavior immediately. Higher values mean more permissive thresholds.'
 Note: Changes affect rule behavior immediately. Higher values mean more permissive thresholds.
+DROP EXTENSION pglinter CASCADE;

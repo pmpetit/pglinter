@@ -1,5 +1,6 @@
 -- Demo script for the new rule level management functions
 -- This script demonstrates how to get and update warning_level and error_level for rules
+CREATE EXTENSION pglinter;
 
 \echo 'Testing rule level management functions...'
 
@@ -13,7 +14,7 @@ SELECT
     code,
     pglinter.get_rule_levels(code) as levels
 FROM pglinter.list_rules()
-WHERE code IN ('B001', 'T001', 'T005', 'C001')
+WHERE code IN ('B001', 'T001', 'T005', 'C002')
 ORDER BY code;
 
 -- Update T005 to have different thresholds
@@ -44,19 +45,11 @@ SELECT pglinter.get_rule_levels('T001') as updated_levels;
 \echo 'Trying to update non-existent rule (should return false):'
 SELECT pglinter.update_rule_levels('NONEXISTENT', 10, 20) as should_be_false;
 
--- Show all updated levels
-\echo 'All rule levels after updates:'
-SELECT
-    code,
-    pglinter.get_rule_levels(code) as levels
-FROM pglinter.list_rules()
-ORDER BY code;
-
 -- You can also query the rules table directly to see the raw values
 \echo 'Raw warning_level and error_level from rules table:'
 SELECT code, name, warning_level, error_level, enable
 FROM pglinter.rules
-WHERE code IN ('B001', 'T001', 'T005', 'C001')
+WHERE code IN ('B001', 'T001', 'T005', 'C002')
 ORDER BY code;
 
 \echo 'Rule level management demo completed!'
@@ -68,3 +61,5 @@ ORDER BY code;
 \echo '  - Update error only: SELECT pglinter.update_rule_levels(''RULE_CODE'', NULL, error);'
 \echo ''
 \echo 'Note: Changes affect rule behavior immediately. Higher values mean more permissive thresholds.'
+
+DROP EXTENSION pglinter CASCADE;

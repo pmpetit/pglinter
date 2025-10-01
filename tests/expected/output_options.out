@@ -1,5 +1,3 @@
--- Test for output_file parameter being optional - both file and prompt output
-BEGIN;
 DROP EXTENSION IF EXISTS pglinter CASCADE;
 NOTICE:  extension "pglinter" does not exist, skipping
 -- Create test data that will trigger multiple rules
@@ -8,8 +6,8 @@ CREATE TABLE table_without_pk (
     name TEXT
 );
 -- Create redundant indexes
-CREATE INDEX idx_name_1 ON table_without_pk(name);
-CREATE INDEX idx_name_2 ON table_without_pk(name);
+CREATE INDEX idx_name_1 ON table_without_pk (name);
+CREATE INDEX idx_name_2 ON table_without_pk (name);
 -- Create table with uppercase (triggers B006 and T011)
 CREATE TABLE "UPPERCASE_TABLE" (
     id SERIAL PRIMARY KEY,
@@ -19,7 +17,7 @@ CREATE TABLE "UPPERCASE_TABLE" (
 CREATE SCHEMA prod_testing;
 CREATE EXTENSION IF NOT EXISTS pglinter;
 -- Test 1: Output to prompt (no file parameter)
-SELECT 'Testing output to prompt...' as test_info;
+SELECT 'Testing output to prompt...' AS test_info;
           test_info          
 -----------------------------
  Testing output to prompt...
@@ -28,11 +26,11 @@ SELECT 'Testing output to prompt...' as test_info;
 SELECT pglinter.perform_base_check();
 NOTICE:  🔍 pglinter found 5 issue(s):
 NOTICE:  ==================================================
-NOTICE:  ⚠️  [B001] WARNING: 50% tables without primary key exceed the warning threshold: 20%
-NOTICE:  ⚠️  [B002] WARNING: 66% redundant indexes exceed the warning threshold: 20%
-NOTICE:  ⚠️  [B004] WARNING: Found 3 potentially unused indexes
-NOTICE:  ❌ [B005] ERROR: Public schema allows CREATE privilege for all users - security risk
-NOTICE:  ⚠️  [B006] WARNING: Found 2 database objects with uppercase letters
+NOTICE:  ⚠️  [B001] WARNING: 1/2 table(s) without primary key exceed the warning threshold: 50%.
+NOTICE:  ⚠️  [B002] WARNING: 2/3 redundant(s) index exceed the warning threshold: 66%.
+NOTICE:  ❌ [B004] ERROR: 2/2 unused index exceed the error threshold: 100%
+NOTICE:  ⚠️  [B005] WARNING: 1/2 schemas are unsecured, schemas where all users can create objects in, exceed the warning threshold: 50%.
+NOTICE:  ⚠️  [B006] WARNING: 4/13 object(s) using uppercase for name or columns exceed the warning threshold: 30%.
 NOTICE:  ==================================================
 NOTICE:  📊 Summary: 1 error(s), 4 warning(s), 0 info
 NOTICE:  🔴 Critical issues found - please review and fix errors
@@ -42,66 +40,343 @@ NOTICE:  🔴 Critical issues found - please review and fix errors
 (1 row)
 
 SELECT pglinter.perform_table_check();
-ERROR:  relation "public.uppercase_table" does not exist
-CONTEXT:  SQL statement "SELECT pt.schemaname::text, pt.tablename::text
-FROM pg_tables pt
-WHERE schemaname NOT IN ('pg_toast', 'pg_catalog', 'information_schema', 'pglinter')
-AND NOT EXISTS (
-    SELECT 1
-    FROM pg_constraint pc
-    WHERE pc.conrelid = (pt.schemaname||'.'||pt.tablename)::regclass
-    AND pc.contype = 'p'
-)
-"
+NOTICE:  🔍 pglinter found 3 issue(s):
+NOTICE:  ==================================================
+NOTICE:  ⚠️  [T001] WARNING: TABLE no primary key on table(s) 1 : 
+public.table_without_pk 
+
+NOTICE:  ⚠️  [T002] WARNING: TABLE duplicated index 2 : 
+public.table_without_pk idx idx_name_1 columns (name) is a subset of idx idx_name_2 columns (name)
+public.table_without_pk idx idx_name_2 columns (name) is a subset of idx idx_name_1 columns (name) 
+
+NOTICE:  ⚠️  [T004] WARNING: TABLE table with potential missing index 2 : 
+public.table_without_pk:100 % of seq scan
+public.UPPERCASE_TABLE:100 % of seq scan 
+
+NOTICE:  ==================================================
+NOTICE:  📊 Summary: 0 error(s), 3 warning(s), 0 info
+NOTICE:  🟡 Some warnings found - consider reviewing for optimization
+ perform_table_check 
+---------------------
+ t
+(1 row)
+
 SELECT pglinter.perform_schema_check();
-ERROR:  current transaction is aborted, commands ignored until end of transaction block
+NOTICE:  🔍 pglinter found 2 issue(s):
+NOTICE:  ==================================================
+NOTICE:  ⚠️  [S001] WARNING: SCHEMA No default role grantee on schema {0}.{1}. It means that each time a table is created, you must grant it to roles. 1 : 
+prod_testing 
+
+NOTICE:  ⚠️  [S002] WARNING: SCHEMA You should not prefix or suffix the schema name with {0}. You may have difficulties when refreshing environments. Prefer prefix or suffix the database name. 1 : 
+prod_testing 
+
+NOTICE:  ==================================================
+NOTICE:  📊 Summary: 0 error(s), 2 warning(s), 0 info
+NOTICE:  🟡 Some warnings found - consider reviewing for optimization
+ perform_schema_check 
+----------------------
+ t
+(1 row)
+
 -- Test 2: Output to prompt (NULL file parameter)
-SELECT 'Testing output to prompt with NULL...' as test_info;
-ERROR:  current transaction is aborted, commands ignored until end of transaction block
+SELECT 'Testing output to prompt with NULL...' AS test_info;
+               test_info               
+---------------------------------------
+ Testing output to prompt with NULL...
+(1 row)
+
 SELECT pglinter.perform_base_check(NULL);
-ERROR:  current transaction is aborted, commands ignored until end of transaction block
+NOTICE:  🔍 pglinter found 5 issue(s):
+NOTICE:  ==================================================
+NOTICE:  ⚠️  [B001] WARNING: 1/2 table(s) without primary key exceed the warning threshold: 50%.
+NOTICE:  ⚠️  [B002] WARNING: 2/3 redundant(s) index exceed the warning threshold: 66%.
+NOTICE:  ❌ [B004] ERROR: 2/2 unused index exceed the error threshold: 100%
+NOTICE:  ⚠️  [B005] WARNING: 1/2 schemas are unsecured, schemas where all users can create objects in, exceed the warning threshold: 50%.
+NOTICE:  ⚠️  [B006] WARNING: 4/13 object(s) using uppercase for name or columns exceed the warning threshold: 30%.
+NOTICE:  ==================================================
+NOTICE:  📊 Summary: 1 error(s), 4 warning(s), 0 info
+NOTICE:  🔴 Critical issues found - please review and fix errors
+ perform_base_check 
+--------------------
+ t
+(1 row)
+
 SELECT pglinter.perform_table_check(NULL);
-ERROR:  current transaction is aborted, commands ignored until end of transaction block
+NOTICE:  🔍 pglinter found 3 issue(s):
+NOTICE:  ==================================================
+NOTICE:  ⚠️  [T001] WARNING: TABLE no primary key on table(s) 1 : 
+public.table_without_pk 
+
+NOTICE:  ⚠️  [T002] WARNING: TABLE duplicated index 2 : 
+public.table_without_pk idx idx_name_1 columns (name) is a subset of idx idx_name_2 columns (name)
+public.table_without_pk idx idx_name_2 columns (name) is a subset of idx idx_name_1 columns (name) 
+
+NOTICE:  ⚠️  [T004] WARNING: TABLE table with potential missing index 2 : 
+public.table_without_pk:100 % of seq scan
+public.UPPERCASE_TABLE:100 % of seq scan 
+
+NOTICE:  ==================================================
+NOTICE:  📊 Summary: 0 error(s), 3 warning(s), 0 info
+NOTICE:  🟡 Some warnings found - consider reviewing for optimization
+ perform_table_check 
+---------------------
+ t
+(1 row)
+
 SELECT pglinter.perform_schema_check(NULL);
-ERROR:  current transaction is aborted, commands ignored until end of transaction block
+NOTICE:  🔍 pglinter found 2 issue(s):
+NOTICE:  ==================================================
+NOTICE:  ⚠️  [S001] WARNING: SCHEMA No default role grantee on schema {0}.{1}. It means that each time a table is created, you must grant it to roles. 1 : 
+prod_testing 
+
+NOTICE:  ⚠️  [S002] WARNING: SCHEMA You should not prefix or suffix the schema name with {0}. You may have difficulties when refreshing environments. Prefer prefix or suffix the database name. 1 : 
+prod_testing 
+
+NOTICE:  ==================================================
+NOTICE:  📊 Summary: 0 error(s), 2 warning(s), 0 info
+NOTICE:  🟡 Some warnings found - consider reviewing for optimization
+ perform_schema_check 
+----------------------
+ t
+(1 row)
+
 -- Test 3: Output to file
-SELECT 'Testing output to file...' as test_info;
-ERROR:  current transaction is aborted, commands ignored until end of transaction block
+SELECT 'Testing output to file...' AS test_info;
+         test_info         
+---------------------------
+ Testing output to file...
+(1 row)
+
 SELECT pglinter.perform_base_check('/tmp/test_base_output.sarif');
-ERROR:  current transaction is aborted, commands ignored until end of transaction block
+ perform_base_check 
+--------------------
+ t
+(1 row)
+
 SELECT pglinter.perform_table_check('/tmp/test_table_output.sarif');
-ERROR:  current transaction is aborted, commands ignored until end of transaction block
+ perform_table_check 
+---------------------
+ t
+(1 row)
+
 SELECT pglinter.perform_schema_check('/tmp/test_schema_output.sarif');
-ERROR:  current transaction is aborted, commands ignored until end of transaction block
+ perform_schema_check 
+----------------------
+ t
+(1 row)
+
 -- Test 4: Comprehensive check with different output options
-SELECT 'Testing comprehensive check - to prompt...' as test_info;
-ERROR:  current transaction is aborted, commands ignored until end of transaction block
+SELECT 'Testing comprehensive check - to prompt...' AS test_info;
+                 test_info                  
+--------------------------------------------
+ Testing comprehensive check - to prompt...
+(1 row)
+
 SELECT pglinter.check_all();
-ERROR:  current transaction is aborted, commands ignored until end of transaction block
+NOTICE:  🔍 Running comprehensive pglinter check...
+NOTICE:  
+NOTICE:  📋 BASE CHECKS:
+NOTICE:  🔍 pglinter found 5 issue(s):
+NOTICE:  ==================================================
+NOTICE:  ⚠️  [B001] WARNING: 1/2 table(s) without primary key exceed the warning threshold: 50%.
+NOTICE:  ⚠️  [B002] WARNING: 2/3 redundant(s) index exceed the warning threshold: 66%.
+NOTICE:  ❌ [B004] ERROR: 2/2 unused index exceed the error threshold: 100%
+NOTICE:  ⚠️  [B005] WARNING: 1/2 schemas are unsecured, schemas where all users can create objects in, exceed the warning threshold: 50%.
+NOTICE:  ⚠️  [B006] WARNING: 4/13 object(s) using uppercase for name or columns exceed the warning threshold: 30%.
+NOTICE:  ==================================================
+NOTICE:  📊 Summary: 1 error(s), 4 warning(s), 0 info
+NOTICE:  🔴 Critical issues found - please review and fix errors
+NOTICE:  
+NOTICE:  🖥️  CLUSTER CHECKS:
+NOTICE:  🔍 pglinter found 1 issue(s):
+NOTICE:  ==================================================
+NOTICE:  ❌ [C002] ERROR: 6 entries in pg_hba.conf with trust or password authentication method exceed the warning threshold: 6.
+NOTICE:  ==================================================
+NOTICE:  📊 Summary: 1 error(s), 0 warning(s), 0 info
+NOTICE:  🔴 Critical issues found - please review and fix errors
+NOTICE:  
+NOTICE:  📊 TABLE CHECKS:
+NOTICE:  🔍 pglinter found 3 issue(s):
+NOTICE:  ==================================================
+NOTICE:  ⚠️  [T001] WARNING: TABLE no primary key on table(s) 1 : 
+public.table_without_pk 
+
+NOTICE:  ⚠️  [T002] WARNING: TABLE duplicated index 2 : 
+public.table_without_pk idx idx_name_1 columns (name) is a subset of idx idx_name_2 columns (name)
+public.table_without_pk idx idx_name_2 columns (name) is a subset of idx idx_name_1 columns (name) 
+
+NOTICE:  ⚠️  [T004] WARNING: TABLE table with potential missing index 2 : 
+public.table_without_pk:100 % of seq scan
+public.UPPERCASE_TABLE:100 % of seq scan 
+
+NOTICE:  ==================================================
+NOTICE:  📊 Summary: 0 error(s), 3 warning(s), 0 info
+NOTICE:  🟡 Some warnings found - consider reviewing for optimization
+NOTICE:  
+NOTICE:  🗂️  SCHEMA CHECKS:
+NOTICE:  🔍 pglinter found 2 issue(s):
+NOTICE:  ==================================================
+NOTICE:  ⚠️  [S001] WARNING: SCHEMA No default role grantee on schema {0}.{1}. It means that each time a table is created, you must grant it to roles. 1 : 
+prod_testing 
+
+NOTICE:  ⚠️  [S002] WARNING: SCHEMA You should not prefix or suffix the schema name with {0}. You may have difficulties when refreshing environments. Prefer prefix or suffix the database name. 1 : 
+prod_testing 
+
+NOTICE:  ==================================================
+NOTICE:  📊 Summary: 0 error(s), 2 warning(s), 0 info
+NOTICE:  🟡 Some warnings found - consider reviewing for optimization
+NOTICE:  
+NOTICE:  🎉 All pglinter checks completed successfully!
+ check_all 
+-----------
+ t
+(1 row)
+
 -- Test 5: Individual rule testing
 SELECT pglinter.explain_rule('B001');
-ERROR:  current transaction is aborted, commands ignored until end of transaction block
+NOTICE:  📖 Rule Explanation for B001
+============================================================
+
+🎯 Rule Name: HowManyTableWithoutPrimaryKey
+📋 Scope: BASE
+
+📝 Description:
+Count number of tables without primary key.
+
+⚠️  Message Template:
+{0}/{1} table(s) without primary key exceed the {2} threshold: {3}%.
+
+🔧 How to Fix:
+   1. create a primary key or change warning/error threshold
+============================================================
+ explain_rule 
+--------------
+ t
+(1 row)
+
 SELECT pglinter.explain_rule('T003');
-ERROR:  current transaction is aborted, commands ignored until end of transaction block
+NOTICE:  📖 Rule Explanation for T003
+============================================================
+
+🎯 Rule Name: TableWithFkNotIndexed
+📋 Scope: TABLE
+
+📝 Description:
+When you delete or update a row in the parent table, the database must check the child table to ensure there are no orphaned records. An index on the foreign key allows for a rapid lookup, ensuring that these checks don't negatively impact performance.
+
+⚠️  Message Template:
+unindexed constraint
+
+🔧 How to Fix:
+   1. create an index on the child table fk.
+============================================================
+ explain_rule 
+--------------
+ t
+(1 row)
+
 SELECT pglinter.explain_rule('S002');
-ERROR:  current transaction is aborted, commands ignored until end of transaction block
+NOTICE:  📖 Rule Explanation for S002
+============================================================
+
+🎯 Rule Name: SchemaPrefixedOrSuffixedWithEnvt
+📋 Scope: SCHEMA
+
+📝 Description:
+The schema is prefixed with one of staging,stg,preprod,prod,sandbox,sbox string. Means that when you refresh your preprod, staging environments from production, you have to rename the target schema from prod_ to stg_ or something like. It is possible, but it is never easy.
+
+⚠️  Message Template:
+You should not prefix or suffix the schema name with {0}. You may have difficulties when refreshing environments. Prefer prefix or suffix the database name.
+
+🔧 How to Fix:
+   1. Keep the same schema name across environments. Prefer prefix or suffix the database name
+============================================================
+ explain_rule 
+--------------
+ t
+(1 row)
+
 -- Test 6: Rule management
 SELECT pglinter.show_rules();
-ERROR:  current transaction is aborted, commands ignored until end of transaction block
+NOTICE:  📋 pglinter Rule Status:
+NOTICE:  ============================================================
+NOTICE:  Code   Status   Name                                    
+NOTICE:  ------------------------------------------------------------
+NOTICE:  B001   ✅ ON     HowManyTableWithoutPrimaryKey           
+NOTICE:  B002   ✅ ON     HowManyRedudantIndex                    
+NOTICE:  B003   ✅ ON     HowManyTableWithoutIndexOnFk            
+NOTICE:  B004   ✅ ON     HowManyUnusedIndex                      
+NOTICE:  B005   ✅ ON     UnsecuredPublicSchema                   
+NOTICE:  B006   ✅ ON     HowManyObjectsWithUppercase             
+NOTICE:  B007   ✅ ON     HowManyTablesNeverSelected              
+NOTICE:  B008   ✅ ON     HowManyTablesWithFkOutsideSchema        
+NOTICE:  C002   ✅ ON     PgHbaEntriesWithMethodTrustOrPasswordShouldNotExists
+NOTICE:  S001   ✅ ON     SchemaWithDefaultRoleNotGranted         
+NOTICE:  S002   ✅ ON     SchemaPrefixedOrSuffixedWithEnvt        
+NOTICE:  T001   ✅ ON     TableWithoutPrimaryKey                  
+NOTICE:  T002   ✅ ON     TableWithRedundantIndex                 
+NOTICE:  T003   ✅ ON     TableWithFkNotIndexed                   
+NOTICE:  T004   ✅ ON     TableWithPotentialMissingIdx            
+NOTICE:  T005   ✅ ON     TableWithFkOutsideSchema                
+NOTICE:  T006   ✅ ON     TableWithUnusedIndex                    
+NOTICE:  T007   ✅ ON     TableWithFkMismatch                     
+NOTICE:  T008   ✅ ON     TableWithRoleNotGranted                 
+NOTICE:  T009   ✅ ON     ReservedKeyWord                         
+NOTICE:  T010   🔴 OFF    TableWithSensibleColumn                 
+NOTICE:  ============================================================
+NOTICE:  📊 Summary: 20 enabled, 1 disabled
+ show_rules 
+------------
+ t
+(1 row)
+
 -- Test 7: Rule enable/disable functionality
 SELECT pglinter.disable_rule('B006');
-ERROR:  current transaction is aborted, commands ignored until end of transaction block
+NOTICE:  🔴 Rule B006 has been disabled
+ disable_rule 
+--------------
+ t
+(1 row)
+
 SELECT pglinter.perform_base_check(); -- Should skip B006
-ERROR:  current transaction is aborted, commands ignored until end of transaction block
+NOTICE:  🔍 pglinter found 4 issue(s):
+NOTICE:  ==================================================
+NOTICE:  ⚠️  [B001] WARNING: 1/2 table(s) without primary key exceed the warning threshold: 50%.
+NOTICE:  ⚠️  [B002] WARNING: 2/3 redundant(s) index exceed the warning threshold: 66%.
+NOTICE:  ❌ [B004] ERROR: 2/2 unused index exceed the error threshold: 100%
+NOTICE:  ⚠️  [B005] WARNING: 1/2 schemas are unsecured, schemas where all users can create objects in, exceed the warning threshold: 50%.
+NOTICE:  ==================================================
+NOTICE:  📊 Summary: 1 error(s), 3 warning(s), 0 info
+NOTICE:  🔴 Critical issues found - please review and fix errors
+ perform_base_check 
+--------------------
+ t
+(1 row)
+
 SELECT pglinter.enable_rule('B006');
-ERROR:  current transaction is aborted, commands ignored until end of transaction block
+NOTICE:  ✅ Rule B006 has been enabled
+ enable_rule 
+-------------
+ t
+(1 row)
+
 SELECT pglinter.perform_base_check(); -- Should include B006 again
-ERROR:  current transaction is aborted, commands ignored until end of transaction block
+NOTICE:  🔍 pglinter found 5 issue(s):
+NOTICE:  ==================================================
+NOTICE:  ⚠️  [B001] WARNING: 1/2 table(s) without primary key exceed the warning threshold: 50%.
+NOTICE:  ⚠️  [B002] WARNING: 2/3 redundant(s) index exceed the warning threshold: 66%.
+NOTICE:  ❌ [B004] ERROR: 2/2 unused index exceed the error threshold: 100%
+NOTICE:  ⚠️  [B005] WARNING: 1/2 schemas are unsecured, schemas where all users can create objects in, exceed the warning threshold: 50%.
+NOTICE:  ⚠️  [B006] WARNING: 4/13 object(s) using uppercase for name or columns exceed the warning threshold: 30%.
+NOTICE:  ==================================================
+NOTICE:  📊 Summary: 1 error(s), 4 warning(s), 0 info
+NOTICE:  🔴 Critical issues found - please review and fix errors
+ perform_base_check 
+--------------------
+ t
+(1 row)
+
 -- Clean up
 DROP SCHEMA prod_testing CASCADE;
-ERROR:  current transaction is aborted, commands ignored until end of transaction block
 DROP TABLE "UPPERCASE_TABLE" CASCADE;
-ERROR:  current transaction is aborted, commands ignored until end of transaction block
 DROP TABLE table_without_pk CASCADE;
-ERROR:  current transaction is aborted, commands ignored until end of transaction block
-ROLLBACK;

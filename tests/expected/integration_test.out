@@ -1,8 +1,7 @@
 -- Comprehensive integration test for pglinter
 -- Tests multiple rules across all categories (B, C, T, S series)
+CREATE EXTENSION pglinter;
 BEGIN;
-DROP EXTENSION IF EXISTS pglinter CASCADE;
-NOTICE:  extension "pglinter" does not exist, skipping
 -- Create various test scenarios to trigger multiple rules
 -- 1. Tables without primary keys (B001, T001)
 CREATE TABLE users_no_pk (
@@ -17,10 +16,10 @@ CREATE TABLE products (
     category TEXT,
     price NUMERIC
 );
-CREATE INDEX idx_name_1 ON products(name);
-CREATE INDEX idx_name_2 ON products(name); -- redundant
-CREATE INDEX idx_composite_1 ON products(category, price);
-CREATE INDEX idx_composite_2 ON products(category, price); -- redundant
+CREATE INDEX idx_name_1 ON products (name);
+CREATE INDEX idx_name_2 ON products (name); -- redundant
+CREATE INDEX idx_composite_1 ON products (category, price);
+CREATE INDEX idx_composite_2 ON products (category, price); -- redundant
 -- 3. Foreign keys without indexes (B003, T004)
 CREATE TABLE orders (
     id SERIAL PRIMARY KEY,
@@ -30,10 +29,10 @@ CREATE TABLE orders (
 );
 -- Add foreign keys without creating indexes
 ALTER TABLE orders ADD CONSTRAINT fk_user
-    FOREIGN KEY (user_id) REFERENCES users_no_pk(id);
+FOREIGN KEY (user_id) REFERENCES users_no_pk (id);
 ERROR:  there is no unique constraint matching given keys for referenced table "users_no_pk"
 ALTER TABLE orders ADD CONSTRAINT fk_product
-    FOREIGN KEY (product_id) REFERENCES products(id);
+FOREIGN KEY (product_id) REFERENCES products (id);
 ERROR:  current transaction is aborted, commands ignored until end of transaction block
 -- 4. Tables with uppercase names/columns (B006, T011)
 CREATE TABLE "UPPERCASE_ISSUES" (
@@ -69,35 +68,33 @@ CREATE TABLE dev_reports.summaries (
 );
 ERROR:  current transaction is aborted, commands ignored until end of transaction block
 -- Create extension
-CREATE EXTENSION IF NOT EXISTS pglinter;
-ERROR:  current transaction is aborted, commands ignored until end of transaction block
 -- Run comprehensive analysis
-SELECT '=== COMPREHENSIVE pglinter ANALYSIS ===' as info;
+SELECT '=== COMPREHENSIVE pglinter ANALYSIS ===' AS info;
 ERROR:  current transaction is aborted, commands ignored until end of transaction block
 -- Test all rule categories
-SELECT 'BASE RULES:' as category;
+SELECT 'BASE RULES:' AS category;
 ERROR:  current transaction is aborted, commands ignored until end of transaction block
 SELECT pglinter.perform_base_check();
 ERROR:  current transaction is aborted, commands ignored until end of transaction block
-SELECT 'TABLE RULES:' as category;
+SELECT 'TABLE RULES:' AS category;
 ERROR:  current transaction is aborted, commands ignored until end of transaction block
 SELECT pglinter.perform_table_check();
 ERROR:  current transaction is aborted, commands ignored until end of transaction block
-SELECT 'SCHEMA RULES:' as category;
+SELECT 'SCHEMA RULES:' AS category;
 ERROR:  current transaction is aborted, commands ignored until end of transaction block
 SELECT pglinter.perform_schema_check();
 ERROR:  current transaction is aborted, commands ignored until end of transaction block
-SELECT 'CLUSTER RULES:' as category;
+SELECT 'CLUSTER RULES:' AS category;
 ERROR:  current transaction is aborted, commands ignored until end of transaction block
 SELECT pglinter.perform_cluster_check();
 ERROR:  current transaction is aborted, commands ignored until end of transaction block
 -- Test comprehensive check
-SELECT 'COMPREHENSIVE CHECK:' as category;
+SELECT 'COMPREHENSIVE CHECK:' AS category;
 ERROR:  current transaction is aborted, commands ignored until end of transaction block
 SELECT pglinter.check_all();
 ERROR:  current transaction is aborted, commands ignored until end of transaction block
 -- Test rule management features
-SELECT '=== RULE MANAGEMENT ===' as info;
+SELECT '=== RULE MANAGEMENT ===' AS info;
 ERROR:  current transaction is aborted, commands ignored until end of transaction block
 -- Show all rules
 SELECT pglinter.show_rules();
@@ -110,7 +107,7 @@ ERROR:  current transaction is aborted, commands ignored until end of transactio
 SELECT pglinter.explain_rule('S002');
 ERROR:  current transaction is aborted, commands ignored until end of transaction block
 -- Test output to file functionality
-SELECT '=== OUTPUT TO FILE TEST ===' as info;
+SELECT '=== OUTPUT TO FILE TEST ===' AS info;
 ERROR:  current transaction is aborted, commands ignored until end of transaction block
 SELECT pglinter.perform_base_check('/tmp/integration_base.sarif');
 ERROR:  current transaction is aborted, commands ignored until end of transaction block
@@ -119,7 +116,7 @@ ERROR:  current transaction is aborted, commands ignored until end of transactio
 SELECT pglinter.perform_schema_check('/tmp/integration_schema.sarif');
 ERROR:  current transaction is aborted, commands ignored until end of transaction block
 -- Test rule disable/enable functionality
-SELECT '=== RULE TOGGLE TEST ===' as info;
+SELECT '=== RULE TOGGLE TEST ===' AS info;
 ERROR:  current transaction is aborted, commands ignored until end of transaction block
 -- Disable some rules
 SELECT pglinter.disable_rule('B001');
@@ -157,3 +154,4 @@ ERROR:  current transaction is aborted, commands ignored until end of transactio
 DROP TABLE users_no_pk CASCADE;
 ERROR:  current transaction is aborted, commands ignored until end of transaction block
 ROLLBACK;
+DROP EXTENSION pglinter CASCADE;

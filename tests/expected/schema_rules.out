@@ -1,7 +1,7 @@
--- Test for S001 and S002 schema rules
+-- Test for pglinter schema-level rules
+-- This script demonstrates schema-level checks and rule management
+CREATE EXTENSION pglinter;
 BEGIN;
-DROP EXTENSION IF EXISTS pglinter CASCADE;
-NOTICE:  extension "pglinter" does not exist, skipping
 -- Create test schemas that should trigger S002 (environment prefixes/suffixes)
 CREATE SCHEMA prod_sales;
 CREATE SCHEMA dev_analytics;
@@ -23,22 +23,39 @@ CREATE TABLE business_logic.rules (
     id SERIAL PRIMARY KEY,
     rule_name TEXT NOT NULL
 );
-CREATE EXTENSION IF NOT EXISTS pglinter;
+-- Enable only S002
+SELECT pglinter.disable_all_rules();
+NOTICE:  🔴 Disabled 20 rule(s)
+ disable_all_rules 
+-------------------
+                20
+(1 row)
+
+SELECT pglinter.enable_rule('S002');
+NOTICE:  ✅ Rule S002 has been enabled
+ enable_rule 
+-------------
+ t
+(1 row)
+
 -- Test the schema rules
-SELECT 'Testing schema rules S001 and S002...' as test_info;
-               test_info               
----------------------------------------
- Testing schema rules S001 and S002...
+SELECT 'Testing schema rules S002...' as test_info;
+          test_info           
+------------------------------
+ Testing schema rules S002...
 (1 row)
 
 -- Run schema check to detect environment-named schemas and default privilege issues
 SELECT pglinter.perform_schema_check();
-NOTICE:  🔍 pglinter found 2 issue(s):
+NOTICE:  🔍 pglinter found 1 issue(s):
 NOTICE:  ==================================================
-NOTICE:  ⚠️  [S001] WARNING: Found 6 schemas without default role grants: business_logic, dev_analytics, prod_sales, reports_staging, testing_data, tests
-NOTICE:  ⚠️  [S002] WARNING: Found 5 schemas with environment prefixes/suffixes: prod_sales, dev_analytics, testing_data, reports_staging, tests
+NOTICE:  ⚠️  [S002] WARNING: SCHEMA You should not prefix or suffix the schema name with {0}. You may have difficulties when refreshing environments. Prefer prefix or suffix the database name. 3 : 
+prod_sales
+dev_analytics
+reports_staging 
+
 NOTICE:  ==================================================
-NOTICE:  📊 Summary: 0 error(s), 2 warning(s), 0 info
+NOTICE:  📊 Summary: 0 error(s), 1 warning(s), 0 info
 NOTICE:  🟡 Some warnings found - consider reviewing for optimization
  perform_schema_check 
 ----------------------
@@ -46,27 +63,6 @@ NOTICE:  🟡 Some warnings found - consider reviewing for optimization
 (1 row)
 
 -- Test individual schema rules
-SELECT pglinter.explain_rule('S001');
-NOTICE:  📖 Rule Explanation for S001
-============================================================
-
-🎯 Rule Name: SchemaWithDefaultRoleNotGranted
-📋 Scope: SCHEMA
-
-📝 Description:
-The schema ha no default role. Means that futur table will not be granted through a role. So you will have to re-execute grants on it.
-
-⚠️  Message Template:
-No default role grantee on schema {0}.{1}. It means that each time a table is created, you must grant it to roles.
-
-🔧 How to Fix:
-   1. add a default privilege=> ALTER DEFAULT PRIVILEGES IN SCHEMA <schema> for user <schema's owner>
-============================================================
- explain_rule 
---------------
- t
-(1 row)
-
 SELECT pglinter.explain_rule('S002');
 NOTICE:  📖 Rule Explanation for S002
 ============================================================
@@ -89,12 +85,6 @@ You should not prefix or suffix the schema name with {0}. You may have difficult
 (1 row)
 
 -- Test rule management for schema rules
-SELECT pglinter.is_rule_enabled('S001') AS s001_enabled;
- s001_enabled 
---------------
- t
-(1 row)
-
 SELECT pglinter.is_rule_enabled('S002') AS s002_enabled;
  s002_enabled 
 --------------
@@ -110,12 +100,7 @@ NOTICE:  🔴 Rule S002 has been disabled
 (1 row)
 
 SELECT pglinter.perform_schema_check(); -- Should skip S002
-NOTICE:  🔍 pglinter found 1 issue(s):
-NOTICE:  ==================================================
-NOTICE:  ⚠️  [S001] WARNING: Found 6 schemas without default role grants: business_logic, dev_analytics, prod_sales, reports_staging, testing_data, tests
-NOTICE:  ==================================================
-NOTICE:  📊 Summary: 0 error(s), 1 warning(s), 0 info
-NOTICE:  🟡 Some warnings found - consider reviewing for optimization
+NOTICE:  ✅ No issues found - database schema looks good!
  perform_schema_check 
 ----------------------
  t
@@ -130,12 +115,15 @@ NOTICE:  ✅ Rule S002 has been enabled
 (1 row)
 
 SELECT pglinter.perform_schema_check(); -- Should include S002 again
-NOTICE:  🔍 pglinter found 2 issue(s):
+NOTICE:  🔍 pglinter found 1 issue(s):
 NOTICE:  ==================================================
-NOTICE:  ⚠️  [S001] WARNING: Found 6 schemas without default role grants: business_logic, dev_analytics, prod_sales, reports_staging, testing_data, tests
-NOTICE:  ⚠️  [S002] WARNING: Found 5 schemas with environment prefixes/suffixes: prod_sales, dev_analytics, testing_data, reports_staging, tests
+NOTICE:  ⚠️  [S002] WARNING: SCHEMA You should not prefix or suffix the schema name with {0}. You may have difficulties when refreshing environments. Prefer prefix or suffix the database name. 3 : 
+prod_sales
+dev_analytics
+reports_staging 
+
 NOTICE:  ==================================================
-NOTICE:  📊 Summary: 0 error(s), 2 warning(s), 0 info
+NOTICE:  📊 Summary: 0 error(s), 1 warning(s), 0 info
 NOTICE:  🟡 Some warnings found - consider reviewing for optimization
  perform_schema_check 
 ----------------------
@@ -147,38 +135,24 @@ SELECT pglinter.check_all();
 NOTICE:  🔍 Running comprehensive pglinter check...
 NOTICE:  
 NOTICE:  📋 BASE CHECKS:
-NOTICE:  🔍 pglinter found 2 issue(s):
-NOTICE:  ==================================================
-NOTICE:  ⚠️  [B004] WARNING: Found 3 potentially unused indexes
-NOTICE:  ❌ [B005] ERROR: Public schema allows CREATE privilege for all users - security risk
-NOTICE:  ==================================================
-NOTICE:  📊 Summary: 1 error(s), 1 warning(s), 0 info
-NOTICE:  🔴 Critical issues found - please review and fix errors
+NOTICE:  ✅ No issues found - database schema looks good!
 NOTICE:  
 NOTICE:  🖥️  CLUSTER CHECKS:
-NOTICE:  🔍 pglinter found 1 issue(s):
-NOTICE:  ==================================================
-NOTICE:  ℹ️  [C002] INFO: Please manually check pg_hba.conf for insecure trust/password methods
-NOTICE:  ==================================================
-NOTICE:  📊 Summary: 0 error(s), 0 warning(s), 1 info
-NOTICE:  🟢 Only informational messages - good job!
+NOTICE:  ✅ No issues found - database schema looks good!
 NOTICE:  
 NOTICE:  📊 TABLE CHECKS:
-NOTICE:  🔍 pglinter found 2 issue(s):
-NOTICE:  ==================================================
-NOTICE:  ⚠️  [T009] WARNING: Found 4 tables without role grants: prod_sales.customers, dev_analytics.metrics, business_logic.rules, pglinter.rules
-NOTICE:  ℹ️  [T012] INFO: Anon extension not found. Install postgresql-anonymizer to detect sensitive columns
-NOTICE:  ==================================================
-NOTICE:  📊 Summary: 0 error(s), 1 warning(s), 1 info
-NOTICE:  🟡 Some warnings found - consider reviewing for optimization
+NOTICE:  ✅ No issues found - database schema looks good!
 NOTICE:  
 NOTICE:  🗂️  SCHEMA CHECKS:
-NOTICE:  🔍 pglinter found 2 issue(s):
+NOTICE:  🔍 pglinter found 1 issue(s):
 NOTICE:  ==================================================
-NOTICE:  ⚠️  [S001] WARNING: Found 6 schemas without default role grants: business_logic, dev_analytics, prod_sales, reports_staging, testing_data, tests
-NOTICE:  ⚠️  [S002] WARNING: Found 5 schemas with environment prefixes/suffixes: prod_sales, dev_analytics, testing_data, reports_staging, tests
+NOTICE:  ⚠️  [S002] WARNING: SCHEMA You should not prefix or suffix the schema name with {0}. You may have difficulties when refreshing environments. Prefer prefix or suffix the database name. 3 : 
+prod_sales
+dev_analytics
+reports_staging 
+
 NOTICE:  ==================================================
-NOTICE:  📊 Summary: 0 error(s), 2 warning(s), 0 info
+NOTICE:  📊 Summary: 0 error(s), 1 warning(s), 0 info
 NOTICE:  🟡 Some warnings found - consider reviewing for optimization
 NOTICE:  
 NOTICE:  🎉 All pglinter checks completed successfully!
@@ -187,13 +161,5 @@ NOTICE:  🎉 All pglinter checks completed successfully!
  t
 (1 row)
 
--- Clean up schemas
-DROP SCHEMA prod_sales CASCADE;
-NOTICE:  drop cascades to table prod_sales.customers
-DROP SCHEMA dev_analytics CASCADE;
-NOTICE:  drop cascades to table dev_analytics.metrics
-DROP SCHEMA testing_data CASCADE;
-DROP SCHEMA reports_staging CASCADE;
-DROP SCHEMA business_logic CASCADE;
-NOTICE:  drop cascades to table business_logic.rules
 ROLLBACK;
+DROP EXTENSION pglinter CASCADE;

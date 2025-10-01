@@ -1,4 +1,6 @@
 -- Test for pglinter B002 rule: No Redundant indexes exists, no warning should be raised.
+CREATE EXTENSION pglinter;
+
 BEGIN;
 
 -- Create test tables with redundant indexes
@@ -29,8 +31,6 @@ CREATE TABLE IF NOT EXISTS orders_table (
     amount DECIMAL(10, 2)
 );
 
-CREATE EXTENSION IF NOT EXISTS pglinter;
-
 -- First, disable all rules to isolate B001 testing
 SELECT pglinter.disable_all_rules() AS all_rules_disabled;
 
@@ -57,3 +57,5 @@ SELECT pglinter.disable_rule('B002') AS b002_disabled;
 SELECT pglinter.perform_base_check();
 
 ROLLBACK;
+
+DROP EXTENSION pglinter CASCADE;

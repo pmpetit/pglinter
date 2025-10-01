@@ -1,8 +1,5 @@
 -- Quick demonstration of the new rule level management functions
 -- Run this in PostgreSQL after installing the updated pglinter extension
-
--- Create extension (if not already created)
-DROP EXTENSION IF EXISTS pglinter CASCADE;
 CREATE EXTENSION pglinter;
 
 \echo '=== Rule Level Management Demo ==='
@@ -44,3 +41,5 @@ SELECT pglinter.get_rule_levels('B001') as b001_levels;
 \echo '  - pglinter.update_rule_levels(rule_code, warning_level, error_level)'
 \echo ''
 \echo 'Use NULL for warning_level or error_level to keep current value unchanged.'
+
+DROP EXTENSION pglinter CASCADE;
