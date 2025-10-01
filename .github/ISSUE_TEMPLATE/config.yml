@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Discussion Forum
+    url: https://github.com/pmpetit/pglinter/discussions
+    about: Ask questions and discuss ideas with the community
+  - name: Documentation
+    url: https://github.com/pmpetit/pglinter/blob/main/README.md
+    about: Read the project documentation
