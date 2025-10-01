@@ -1,12 +1,9 @@
 -- Regression test for B005 rule: Schemas with public CREATE privileges
 -- Tests the percentage-based detection of schemas allowing CREATE for public role
 -- versus total schemas in the database
+CREATE EXTENSION pglinter;
 
 BEGIN;
-
--- Create the extension
-DROP EXTENSION IF EXISTS pglinter CASCADE;
-CREATE EXTENSION IF NOT EXISTS pglinter;
 
 SELECT 'B005 Regression Test: Schemas with public CREATE privileges' AS test_header;
 
@@ -95,3 +92,5 @@ SELECT 'B005 rule explanation:' AS rule_explanation;
 SELECT pglinter.explain_rule('B005');
 
 ROLLBACK;
+
+DROP EXTENSION pglinter CASCADE;

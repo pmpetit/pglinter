@@ -34,9 +34,7 @@
 \! echo "      - \"Second file fix\"" >> /tmp/test_rules_import.yaml
 \! echo "    q1: \"SELECT 2 as count\"" >> /tmp/test_rules_import.yaml
 \! echo "    q2: \"SELECT 1 as problems\"" >> /tmp/test_rules_import.yaml
-
-DROP EXTENSION IF EXISTS pglinter CASCADE;
-CREATE EXTENSION IF NOT EXISTS pglinter;
+CREATE EXTENSION pglinter;
 
 -- Test 1: Import rules from file
 SELECT pglinter.import_rules_from_file('/tmp/test_rules_import.yaml') AS file_import_result;
@@ -78,3 +76,5 @@ DELETE FROM pglinter.rules WHERE code LIKE 'TEST_FILE_%';
 SELECT COUNT(*) AS remaining_file_test_rules
 FROM pglinter.rules
 WHERE code LIKE 'TEST_FILE_%';
+
+DROP EXTENSION pglinter CASCADE;

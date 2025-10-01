@@ -1,8 +1,7 @@
 -- Test import_rules_from_yaml function
 -- This test validates the YAML import functionality
-\pset pager off
-DROP EXTENSION IF EXISTS pglinter;
 CREATE EXTENSION pglinter;
+\pset pager off
 -- Clean up any existing test rules
 DELETE FROM pglinter.rules WHERE code IN ('TEST_YAML_001', 'TEST_YAML_002');
 -- Test 1: Valid YAML import with new rules
@@ -227,3 +226,4 @@ WHERE code LIKE 'TEST_YAML_%';
                     0
 (1 row)
 
+DROP EXTENSION pglinter CASCADE;

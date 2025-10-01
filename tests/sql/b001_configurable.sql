@@ -1,4 +1,6 @@
 -- Quick test to verify B001 rule uses configurable thresholds
+CREATE EXTENSION pglinter;
+
 BEGIN;
 
 -- Create a table without primary key
@@ -12,11 +14,6 @@ CREATE TABLE test_with_pk (
     id INTEGER PRIMARY KEY,
     name TEXT
 );
-
--- Drop extension if exists to reset state
-DROP EXTENSION IF EXISTS pglinter;
--- Create extension
-CREATE EXTENSION IF NOT EXISTS pglinter;
 
 -- First, disable all rules to isolate B001 testing
 SELECT pglinter.disable_all_rules() AS all_rules_disabled;
@@ -47,3 +44,5 @@ SELECT pglinter.update_rule_levels('B001', 60, 80);
 
 
 ROLLBACK;
+
+DROP EXTENSION pglinter CASCADE;

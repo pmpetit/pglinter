@@ -1,7 +1,7 @@
 -- Comprehensive integration test for pglinter
 -- Tests multiple rules across all categories (B, C, T, S series)
+CREATE EXTENSION pglinter;
 BEGIN;
-DROP EXTENSION IF EXISTS pglinter CASCADE;
 -- Create various test scenarios to trigger multiple rules
 -- 1. Tables without primary keys (B001, T001)
 CREATE TABLE users_no_pk (
@@ -68,8 +68,6 @@ CREATE TABLE dev_reports.summaries (
 );
 ERROR:  current transaction is aborted, commands ignored until end of transaction block
 -- Create extension
-CREATE EXTENSION IF NOT EXISTS pglinter;
-ERROR:  current transaction is aborted, commands ignored until end of transaction block
 -- Run comprehensive analysis
 SELECT '=== COMPREHENSIVE pglinter ANALYSIS ===' AS info;
 ERROR:  current transaction is aborted, commands ignored until end of transaction block
@@ -156,3 +154,4 @@ ERROR:  current transaction is aborted, commands ignored until end of transactio
 DROP TABLE users_no_pk CASCADE;
 ERROR:  current transaction is aborted, commands ignored until end of transaction block
 ROLLBACK;
+DROP EXTENSION pglinter CASCADE;

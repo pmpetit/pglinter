@@ -1,6 +1,7 @@
 -- Simple example to demonstrate foreign keys referencing tables in other schemas (T005 rule)
 -- This script creates tables with foreign keys that reference tables outside their schema
 -- and shows how the T005 rule detects this cross-schema dependency issue.
+CREATE EXTENSION pglinter;
 BEGIN;
 \pset pager off
 -- Create the main/public schema tables (referenced tables)
@@ -151,8 +152,6 @@ ANALYZE sales_schema.sales_reports;
 ANALYZE inventory_schema.product_stock;
 ANALYZE inventory_schema.stock_movements;
 ANALYZE audit_schema.user_activity_log;
-DROP EXTENSION IF EXISTS pglinter CASCADE;
-CREATE EXTENSION IF NOT EXISTS pglinter;
 -- Disable all rules first to isolate T005 testing
 SELECT 'Disabling all rules to test T005 specifically...' as status;
                       status                      
@@ -161,10 +160,10 @@ SELECT 'Disabling all rules to test T005 specifically...' as status;
 (1 row)
 
 SELECT pglinter.disable_all_rules() AS all_rules_disabled;
-NOTICE:  🔴 Disabled 21 rule(s)
+NOTICE:  🔴 Disabled 20 rule(s)
  all_rules_disabled 
 --------------------
-                 21
+                 20
 (1 row)
 
 -- Run table check (should show no results since all rules are disabled)
@@ -309,3 +308,4 @@ NOTICE:  🟡 Some warnings found - consider reviewing for optimization
 (1 row)
 
 ROLLBACK;
+DROP EXTENSION pglinter CASCADE;

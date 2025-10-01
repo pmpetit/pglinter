@@ -1,9 +1,9 @@
 -- Test for B008 rule - Tables with foreign keys outside their schema (Base level)
 -- This test creates tables with foreign keys crossing schema boundaries
 -- and verifies that B008 correctly counts the percentage at database level
+CREATE EXTENSION pglinter;
 BEGIN;
 \pset pager off
-DROP EXTENSION IF EXISTS pglinter CASCADE;
 -- Create test schemas
 CREATE SCHEMA public_schema;
 CREATE SCHEMA sales_schema;
@@ -143,7 +143,6 @@ INSERT INTO clean_schema.employees (first_name, last_name, email, department_id,
 ('Bob', 'Salesman', 'bob@company.com', 2, 65000.00),
 ('Carol', 'HR Manager', 'carol@company.com', 3, 75000.00);
 -- Create the pglinter extension
-CREATE EXTENSION IF NOT EXISTS pglinter;
 -- Test B008 rule execution
 SELECT 'Testing B008 rule - Tables with foreign keys outside schema...' AS test_info;
                            test_info                            
@@ -270,10 +269,10 @@ SELECT 'Testing B008 in isolation...' AS test_step;
 (1 row)
 
 SELECT pglinter.disable_all_rules() AS all_disabled;
-NOTICE:  🔴 Disabled 21 rule(s)
+NOTICE:  🔴 Disabled 20 rule(s)
  all_disabled 
 --------------
-           21
+           20
 (1 row)
 
 SELECT pglinter.enable_rule('B008') AS b008_only_enabled;
@@ -379,3 +378,4 @@ NOTICE:  ✅ Updated rule B008 levels: warning=20, error=80
 (1 row)
 
 ROLLBACK;
+DROP EXTENSION pglinter CASCADE;

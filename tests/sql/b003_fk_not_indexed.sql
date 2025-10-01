@@ -1,6 +1,7 @@
 -- Test for pglinter B003 rule: Foreign keys without indexes
 -- This script creates tables with foreign keys where only some have proper indexes
 -- to demonstrate the B003 rule detection of foreign keys lacking supporting indexes
+CREATE EXTENSION pglinter;
 
 BEGIN;
 
@@ -120,10 +121,6 @@ ANALYZE orders_with_index;
 ANALYZE reviews_no_index;
 ANALYZE inventory_no_index;
 
--- Create the extension and test B003 rule
-DROP EXTENSION IF EXISTS pglinter CASCADE;
-CREATE EXTENSION IF NOT EXISTS pglinter;
-
 SELECT 'Testing B003 rule - Foreign keys without indexes detection...' AS test_info;
 
 -- First, disable all rules to isolate B003 testing
@@ -181,3 +178,5 @@ SELECT pglinter.perform_base_check('/tmp/pglinter_b003_results.sarif');
 \! md5sum /tmp/pglinter_b003_results.sarif
 
 ROLLBACK;
+
+DROP EXTENSION pglinter CASCADE;

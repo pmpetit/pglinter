@@ -3,6 +3,7 @@
 -- - Some tables that are regularly queried (both index and sequential scans)
 -- - Some tables that are never selected from (neither idx_scan nor seq_scan)
 -- to demonstrate the B007 rule detection of unused tables
+CREATE EXTENSION pglinter;
 
 \pset pager off
 
@@ -143,8 +144,7 @@ VACUUM ANALYZE completely_unused_table;
 select pg_sleep(2);
 
 -- Create the extension and test B007 rule
-DROP EXTENSION IF EXISTS pglinter CASCADE;
-CREATE EXTENSION IF NOT EXISTS pglinter;
+
 
 SELECT 'Testing B007 rule - Tables never selected detection...' as test_info;
 
@@ -161,8 +161,9 @@ SELECT pglinter.perform_base_check();
 
 -- Test with file output
 SELECT pglinter.perform_base_check('/tmp/pglinter_b007_results.sarif');
--- Test if file exists and show checksum
 \! md5sum /tmp/pglinter_b007_results.sarif
+
+
 
 -- Now simulate realistic usage patterns:
 
@@ -216,3 +217,7 @@ DROP TABLE IF EXISTS frequently_accessed_table CASCADE;
 DROP TABLE IF EXISTS completely_unused_table CASCADE;
 
 SELECT 'B007 comprehensive test completed successfully!' as test_result;
+
+ROLLBACK;
+
+DROP EXTENSION pglinter CASCADE;

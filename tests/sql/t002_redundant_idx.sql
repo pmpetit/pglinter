@@ -1,13 +1,9 @@
 -- Test for pglinter T002 rule: Tables with redundant indexes
+CREATE EXTENSION pglinter;
 
 \pset pager off
 
 BEGIN;
-
--- Drop extension if exists to reset state
-DROP EXTENSION IF EXISTS pglinter;
--- Create extension
-CREATE EXTENSION IF NOT EXISTS pglinter;
 
 -- First, disable all rules to isolate B001 testing
 SELECT pglinter.disable_all_rules() AS all_rules_disabled;
@@ -124,3 +120,5 @@ SELECT pglinter.enable_rule('T002') AS t002_re_enabled;
 SELECT pglinter.perform_table_check();
 
 ROLLBACK;
+
+DROP EXTENSION pglinter CASCADE;

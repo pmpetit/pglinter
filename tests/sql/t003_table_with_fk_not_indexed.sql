@@ -1,4 +1,5 @@
 -- Example to demonstrate missing index on foreign key and T003 rule detection
+CREATE EXTENSION pglinter;
 
 BEGIN;
 
@@ -27,8 +28,7 @@ INSERT INTO child (child_id, parent_id, value) VALUES (10, 1, 'foo'), (11, 2, 'b
 ANALYZE parent;
 ANALYZE child;
 
-DROP EXTENSION IF EXISTS pglinter CASCADE;
-CREATE EXTENSION IF NOT EXISTS pglinter;
+
 
 -- Disable all rules first to isolate T004 testing
 SELECT pglinter.disable_all_rules() AS all_rules_disabled;
@@ -49,3 +49,5 @@ ANALYZE child;
 SELECT pglinter.perform_table_check();
 
 ROLLBACK;
+
+DROP EXTENSION pglinter CASCADE;

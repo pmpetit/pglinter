@@ -1,4 +1,7 @@
--- Test for S001 and S002 schema rules
+-- Test for pglinter schema-level rules
+-- This script demonstrates schema-level checks and rule management
+CREATE EXTENSION pglinter;
+
 BEGIN;
 
 -- Create test schemas that should trigger S002 (environment prefixes/suffixes)
@@ -27,8 +30,7 @@ CREATE TABLE business_logic.rules (
     rule_name TEXT NOT NULL
 );
 
-DROP EXTENSION IF EXISTS pglinter CASCADE;
-CREATE EXTENSION IF NOT EXISTS pglinter;
+
 
 -- Enable only S002
 SELECT pglinter.disable_all_rules();
@@ -58,3 +60,5 @@ SELECT pglinter.perform_schema_check(); -- Should include S002 again
 SELECT pglinter.check_all();
 
 ROLLBACK;
+
+DROP EXTENSION pglinter CASCADE;

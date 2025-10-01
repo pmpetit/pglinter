@@ -1,6 +1,7 @@
 -- Simple example to demonstrate foreign key type mismatch detection (T007 rule)
 -- This script creates tables with foreign keys that have mismatched data types
 -- and shows how the T007 rule detects these type inconsistencies.
+CREATE EXTENSION pglinter;
 
 BEGIN;
 
@@ -207,8 +208,7 @@ ANALYZE test_user_profiles_correct;
 ANALYZE test_category_stats_correct;
 ANALYZE test_product_details_correct;
 
-DROP EXTENSION IF EXISTS pglinter CASCADE;
-CREATE EXTENSION IF NOT EXISTS pglinter;
+
 
 -- Disable all rules first to isolate T007 testing
 SELECT 'Disabling all rules to test T007 specifically...' AS status;
@@ -231,3 +231,5 @@ SELECT pglinter.perform_table_check(); -- Should include T007 again
 
 
 ROLLBACK;
+
+DROP EXTENSION pglinter CASCADE;

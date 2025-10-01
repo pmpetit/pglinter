@@ -1,7 +1,6 @@
 -- Demo script for the new rule level management functions
 -- This script demonstrates how to get and update warning_level and error_level for rules
-DROP EXTENSION IF EXISTS pglinter CASCADE;
-CREATE EXTENSION IF NOT EXISTS pglinter;
+CREATE EXTENSION pglinter;
 \echo 'Testing rule level management functions...'
 Testing rule level management functions...
 -- First, let's see the current levels for T005
@@ -22,10 +21,9 @@ SELECT
 FROM pglinter.list_rules()
 WHERE code IN ('B001', 'T001', 'T005', 'C002')
 ORDER BY code;
-ERROR:  function pglinter.list_rules() does not exist
-LINE 4: FROM pglinter.list_rules()
-             ^
-HINT:  No function matches the given name and argument types. You might need to add explicit type casts.
+ERROR:  column "code" does not exist
+LINE 2:     code,
+            ^
 -- Update T005 to have different thresholds
 \echo 'Updating T005 warning level to 25 and error level to 75:'
 Updating T005 warning level to 25 and error level to 75:
@@ -126,3 +124,4 @@ Usage Summary:
 
 \echo 'Note: Changes affect rule behavior immediately. Higher values mean more permissive thresholds.'
 Note: Changes affect rule behavior immediately. Higher values mean more permissive thresholds.
+DROP EXTENSION pglinter CASCADE;

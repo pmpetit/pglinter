@@ -1,6 +1,7 @@
 -- Simple example to demonstrate unused indexes detection (T006 rule)
 -- This script creates tables with indexes, some of which will be unused,
 -- and shows how the T006 rule detects unused indexes.
+CREATE EXTENSION pglinter;
 
 
 \pset pager off
@@ -291,8 +292,7 @@ ANALYZE test_customers;
 -- Give some time for statistics to be updated
 SELECT PG_SLEEP(2);
 
-DROP EXTENSION IF EXISTS pglinter CASCADE;
-CREATE EXTENSION IF NOT EXISTS pglinter;
+
 
 -- Disable all rules first to isolate T006 testing
 SELECT 'Disabling all rules to test T006 specifically...' AS status;
@@ -329,3 +329,5 @@ SELECT pglinter.update_rule_levels('T006', 200, 500) AS t006_levels_restored;
 DROP TABLE IF EXISTS test_orders CASCADE;
 DROP TABLE IF EXISTS test_products CASCADE;
 DROP TABLE IF EXISTS test_customers CASCADE;
+
+DROP EXTENSION pglinter CASCADE;

@@ -1,6 +1,7 @@
 -- Test for pglinter B006 rule: Database objects with uppercase names
 -- This script creates various database objects with uppercase names to test
 -- the comprehensive B006 rule detection across all PostgreSQL object types
+CREATE EXTENSION pglinter;
 
 BEGIN;
 -- Create a test schema for our objects
@@ -86,9 +87,7 @@ INSERT INTO test_b006_schema."CUSTOMERS_TABLE" ("FIRST_NAME", last_name, "EMAIL_
 ('Jane', 'Smith', 'jane.smith@example.com', '555-5678'),
 ('Bob', 'Johnson', 'bob.johnson@example.com', '555-9012');
 
--- Create the extension and test B006 rule
-DROP EXTENSION IF EXISTS pglinter CASCADE;
-CREATE EXTENSION IF NOT EXISTS pglinter;
+-- Test B006 rule
 
 SELECT 'Testing B006 rule - Comprehensive uppercase object detection...' AS test_info;
 
@@ -116,3 +115,5 @@ SELECT 'Testing B006 rule management...' AS test_section;
 SELECT pglinter.explain_rule('B006');
 
 ROLLBACK;
+
+DROP EXTENSION pglinter CASCADE;

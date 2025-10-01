@@ -1,11 +1,10 @@
 -- Test for pglinter rule management functionality
+CREATE EXTENSION pglinter;
 BEGIN;
-DROP EXTENSION IF EXISTS pglinter CASCADE;
 CREATE TABLE IF NOT EXISTS test_table_for_rules (
     id INT,
     name TEXT
 );
-CREATE EXTENSION IF NOT EXISTS pglinter;
 -- Show initial rule status
 SELECT pglinter.show_rules();
 NOTICE:  📋 pglinter Rule Status:
@@ -32,9 +31,9 @@ NOTICE:  T006   ✅ ON     TableWithUnusedIndex
 NOTICE:  T007   ✅ ON     TableWithFkMismatch                     
 NOTICE:  T008   ✅ ON     TableWithRoleNotGranted                 
 NOTICE:  T009   ✅ ON     ReservedKeyWord                         
-NOTICE:  T010   ✅ ON     TableWithSensibleColumn                 
+NOTICE:  T010   🔴 OFF    TableWithSensibleColumn                 
 NOTICE:  ============================================================
-NOTICE:  📊 Summary: 21 enabled, 0 disabled
+NOTICE:  📊 Summary: 20 enabled, 1 disabled
  show_rules 
 ------------
  t
@@ -127,12 +126,13 @@ NOTICE:  T006   ✅ ON     TableWithUnusedIndex
 NOTICE:  T007   ✅ ON     TableWithFkMismatch                     
 NOTICE:  T008   ✅ ON     TableWithRoleNotGranted                 
 NOTICE:  T009   ✅ ON     ReservedKeyWord                         
-NOTICE:  T010   ✅ ON     TableWithSensibleColumn                 
+NOTICE:  T010   🔴 OFF    TableWithSensibleColumn                 
 NOTICE:  ============================================================
-NOTICE:  📊 Summary: 21 enabled, 0 disabled
+NOTICE:  📊 Summary: 20 enabled, 1 disabled
  show_rules 
 ------------
  t
 (1 row)
 
 ROLLBACK;
+DROP EXTENSION pglinter CASCADE;

@@ -1,5 +1,6 @@
 -- Simple example to demonstrate missing primary keys and T001 rule detection
 -- This script creates tables without primary keys and shows how the T001 rule detects this issue.
+CREATE EXTENSION pglinter;
 
 BEGIN;
 
@@ -98,8 +99,6 @@ ANALYZE user_sessions;
 ANALYZE inventory_logs;
 ANALYZE good_table_with_pk;
 
-CREATE EXTENSION IF NOT EXISTS pglinter;
-
 -- Disable all rules first to isolate T001 testing
 SELECT 'Disabling all rules to test T001 specifically...' as status;
 SELECT pglinter.disable_all_rules() AS all_rules_disabled;
@@ -151,3 +150,5 @@ SELECT 'Running T001 check after adding primary keys (should show no issues):' a
 SELECT pglinter.perform_table_check();
 
 ROLLBACK;
+
+DROP EXTENSION pglinter CASCADE;

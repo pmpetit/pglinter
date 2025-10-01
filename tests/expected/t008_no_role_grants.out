@@ -1,6 +1,7 @@
 -- Simple example to demonstrate tables without role grants detection (T008 rule)
 -- This script creates tables in custom schemas and shows how the T008 rule
 -- detects tables that don't have role permissions granted to non-login roles.
+CREATE EXTENSION pglinter;
 BEGIN;
 \pset pager off
 -- Create custom schemas (tables in these schemas should be checked by T008)
@@ -123,8 +124,6 @@ ANALYZE test_app_schema.orders_with_grants;
 ANALYZE test_reports_schema.monthly_reports_with_grants;
 ANALYZE test_data_schema.processed_events_with_grants;
 ANALYZE public.public_table_test;
-DROP EXTENSION IF EXISTS pglinter CASCADE;
-CREATE EXTENSION IF NOT EXISTS pglinter;
 -- Disable all rules first to isolate T008 testing
 SELECT 'Disabling all rules to test T008 specifically...' AS status;
                       status                      
@@ -133,10 +132,10 @@ SELECT 'Disabling all rules to test T008 specifically...' AS status;
 (1 row)
 
 SELECT pglinter.disable_all_rules() AS all_rules_disabled;
-NOTICE:  🔴 Disabled 21 rule(s)
+NOTICE:  🔴 Disabled 20 rule(s)
  all_rules_disabled 
 --------------------
-                 21
+                 20
 (1 row)
 
 SELECT pglinter.enable_rule('T008') AS t008_enabled;
@@ -217,3 +216,4 @@ NOTICE:  🟡 Some warnings found - consider reviewing for optimization
 (1 row)
 
 ROLLBACK;
+DROP EXTENSION pglinter CASCADE;

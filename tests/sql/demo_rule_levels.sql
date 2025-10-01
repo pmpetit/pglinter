@@ -1,8 +1,6 @@
 -- Demo script for the new rule level management functions
 -- This script demonstrates how to get and update warning_level and error_level for rules
-
-DROP EXTENSION IF EXISTS pglinter CASCADE;
-CREATE EXTENSION IF NOT EXISTS pglinter;
+CREATE EXTENSION pglinter;
 
 \echo 'Testing rule level management functions...'
 
@@ -63,3 +61,5 @@ ORDER BY code;
 \echo '  - Update error only: SELECT pglinter.update_rule_levels(''RULE_CODE'', NULL, error);'
 \echo ''
 \echo 'Note: Changes affect rule behavior immediately. Higher values mean more permissive thresholds.'
+
+DROP EXTENSION pglinter CASCADE;

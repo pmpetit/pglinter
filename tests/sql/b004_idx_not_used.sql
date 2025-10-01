@@ -1,6 +1,7 @@
 -- Test for pglinter B004 rule: Unused indexes detection
 -- This script creates tables with both used and unused indexes
 -- to demonstrate the B004 rule detection of indexes that are never scanned
+CREATE EXTENSION pglinter;
 
 -- Table : table_with_mixed_index_usage
 
@@ -90,10 +91,6 @@ ANALYZE customer_analytics;
 -- Give some time....
 SELECT PG_SLEEP(2);
 
--- Create the extension and test B004 rule
-DROP EXTENSION IF EXISTS pglinter CASCADE;
-CREATE EXTENSION IF NOT EXISTS pglinter;
-
 SELECT 'Testing B004 rule - Unused indexes detection...' AS test_info;
 
 -- First, disable all rules to isolate B004 testing
@@ -140,3 +137,5 @@ SELECT 'Final B004 (base check) - Shows percentage-based unused index analysis:'
 SELECT pglinter.perform_base_check();
 
 DROP TABLE customer_analytics;
+
+DROP EXTENSION pglinter CASCADE;

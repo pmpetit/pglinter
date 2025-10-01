@@ -44,19 +44,19 @@ fn get_rule_config(rule_code: &str) -> Result<(i64, i64, String), String> {
     }
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub enum RuleScope {
-    Base,
-    Cluster,
-    Table,
-    Schema,
-}
+// #[derive(Debug, Clone, Serialize, Deserialize)]
+// pub enum RuleScope {
+//     Base,
+//     Cluster,
+//     Table,
+//     Schema,
+// }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct RuleParam {
-    pub key: String,
-    pub value: String,
-}
+// #[derive(Debug, Clone, Serialize, Deserialize)]
+// pub struct RuleParam {
+//     pub key: String,
+//     pub value: String,
+// }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct RuleResult {

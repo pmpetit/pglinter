@@ -1,6 +1,7 @@
 -- Simple example to demonstrate missing indexes and T004 rule detection
 -- This script creates a table, generates data, performs queries that cause sequential scans,
 -- and then shows how the T004 rule would detect this issue.
+CREATE EXTENSION pglinter;
 
 -- Clean up
 DROP TABLE IF EXISTS user_activities CASCADE;
@@ -85,8 +86,7 @@ ANALYZE user_activities;
 
 SELECT PG_SLEEP(5);
 
-DROP EXTENSION IF EXISTS pglinter CASCADE;
-CREATE EXTENSION IF NOT EXISTS pglinter;
+
 
 -- Disable all rules first
 SELECT pglinter.disable_all_rules() AS all_rules_disabled;
@@ -202,3 +202,5 @@ SELECT pglinter.perform_table_check(); -- Should include T004
 
 -- Cleanup
 DROP TABLE IF EXISTS indexed_user_activities CASCADE;
+
+DROP EXTENSION pglinter CASCADE;

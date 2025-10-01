@@ -3,6 +3,7 @@
 -- - Some tables that are regularly queried (both index and sequential scans)
 -- - Some tables that are never selected from (neither idx_scan nor seq_scan)
 -- to demonstrate the B007 rule detection of unused tables
+CREATE EXTENSION pglinter;
 \pset pager off
 SELECT pg_stat_reset();
  pg_stat_reset 
@@ -138,8 +139,6 @@ select pg_sleep(2);
 (1 row)
 
 -- Create the extension and test B007 rule
-DROP EXTENSION IF EXISTS pglinter CASCADE;
-CREATE EXTENSION IF NOT EXISTS pglinter;
 SELECT 'Testing B007 rule - Tables never selected detection...' as test_info;
                        test_info                        
 --------------------------------------------------------
@@ -148,10 +147,10 @@ SELECT 'Testing B007 rule - Tables never selected detection...' as test_info;
 
 -- First, disable all rules to isolate B007 testing
 SELECT pglinter.disable_all_rules() AS all_rules_disabled;
-NOTICE:  🔴 Disabled 21 rule(s)
+NOTICE:  🔴 Disabled 20 rule(s)
  all_rules_disabled 
 --------------------
-                 21
+                 20
 (1 row)
 
 -- Enable only B007 for focused testing
@@ -188,7 +187,6 @@ SELECT pglinter.perform_base_check('/tmp/pglinter_b007_results.sarif');
  t
 (1 row)
 
--- Test if file exists and show checksum
 \! md5sum /tmp/pglinter_b007_results.sarif
 07c7fae6d1a34f5827365eafe09daf7d  /tmp/pglinter_b007_results.sarif
 -- Now simulate realistic usage patterns:
@@ -508,3 +506,6 @@ SELECT 'B007 comprehensive test completed successfully!' as test_result;
  B007 comprehensive test completed successfully!
 (1 row)
 
+ROLLBACK;
+WARNING:  there is no transaction in progress
+DROP EXTENSION pglinter CASCADE;

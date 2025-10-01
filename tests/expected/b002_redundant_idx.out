@@ -1,4 +1,5 @@
 -- Test for pglinter B002 rule: Redundant indexes
+CREATE EXTENSION pglinter;
 BEGIN;
 -- Create test tables with redundant indexes
 CREATE TABLE IF NOT EXISTS test_table_with_redundant_indexes (
@@ -47,13 +48,12 @@ CREATE INDEX idx_customer_2 ON orders_table (customer_id, order_id);
 -- Case 4: Composite index redundancy
 CREATE INDEX idx_customer_date_1 ON orders_table (product_name, order_date);
 CREATE INDEX idx_customer_date_2 ON orders_table (product_name, order_date);
-CREATE EXTENSION IF NOT EXISTS pglinter;
 -- First, disable all rules to isolate B001 testing
 SELECT pglinter.disable_all_rules() AS all_rules_disabled;
-NOTICE:  🔴 Disabled 21 rule(s)
+NOTICE:  🔴 Disabled 20 rule(s)
  all_rules_disabled 
 --------------------
-                 21
+                 20
 (1 row)
 
 -- Enable only B002 for focused testing
@@ -132,3 +132,4 @@ NOTICE:  ✅ No issues found - database schema looks good!
 (1 row)
 
 ROLLBACK;
+DROP EXTENSION pglinter CASCADE;

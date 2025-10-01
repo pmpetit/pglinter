@@ -1,5 +1,6 @@
 -- Simple example to demonstrate database-wide primary key analysis and B001 rule detection
 -- This script creates multiple tables with and without primary keys to test the B001 percentage-based rule
+CREATE EXTENSION pglinter;
 
 BEGIN;
 
@@ -142,9 +143,7 @@ ANALYZE categories_with_pk;
 ANALYZE users_with_pk;
 ANALYZE settings_with_pk;
 
--- Create the extension and test B001 rule
-DROP EXTENSION IF EXISTS pglinter CASCADE;
-CREATE EXTENSION IF NOT EXISTS pglinter;
+-- Test B001 rule
 
 SELECT 'Testing B001 rule - Database-wide primary key percentage analysis...' AS test_info;
 
@@ -200,3 +199,5 @@ SELECT pglinter.perform_base_check('/tmp/pglinter_b001_results.sarif');
 \! md5sum /tmp/pglinter_b001_results.sarif
 
 ROLLBACK;
+
+DROP EXTENSION pglinter CASCADE;REATE EXTENSION pglinter;

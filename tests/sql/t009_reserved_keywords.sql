@@ -1,8 +1,8 @@
 -- Simple example to demonstrate reserved keywords in object names detection (T009 rule)
 -- This script creates database objects using reserved keywords as names
 -- and shows how the T009 rule detects these naming violations.
+CREATE EXTENSION pglinter;
 
--- BEGIN;
 
 \pset pager off
 
@@ -209,8 +209,7 @@ ANALYZE test_naming_schema.users_with_bad_columns;
 ANALYZE test_keywords_schema.good_products;
 ANALYZE test_naming_schema.good_users;
 
-DROP EXTENSION IF EXISTS pglinter CASCADE;
-CREATE EXTENSION IF NOT EXISTS pglinter;
+
 
 -- Disable all rules first to isolate T009 testing
 SELECT 'Disabling all rules to test T009 specifically...' AS status;
@@ -231,3 +230,5 @@ SELECT pglinter.enable_rule('T009') AS t009_re_enabled;
 SELECT pglinter.perform_table_check(); -- Should include T009 again
 
 -- ROLLBACK;
+
+DROP EXTENSION pglinter CASCADE;

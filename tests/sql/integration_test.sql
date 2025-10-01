@@ -1,8 +1,8 @@
 -- Comprehensive integration test for pglinter
 -- Tests multiple rules across all categories (B, C, T, S series)
-BEGIN;
+CREATE EXTENSION pglinter;
 
-DROP EXTENSION IF EXISTS pglinter CASCADE;
+BEGIN;
 
 -- Create various test scenarios to trigger multiple rules
 
@@ -72,7 +72,7 @@ CREATE TABLE dev_reports.summaries (
 );
 
 -- Create extension
-CREATE EXTENSION IF NOT EXISTS pglinter;
+
 
 -- Run comprehensive analysis
 SELECT '=== COMPREHENSIVE pglinter ANALYSIS ===' AS info;
@@ -140,3 +140,5 @@ DROP TABLE products CASCADE;
 DROP TABLE users_no_pk CASCADE;
 
 ROLLBACK;
+
+DROP EXTENSION pglinter CASCADE;

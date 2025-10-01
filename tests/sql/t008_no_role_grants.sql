@@ -2,6 +2,8 @@
 -- This script creates tables in custom schemas and shows how the T008 rule
 -- detects tables that don't have role permissions granted to non-login roles.
 
+CREATE EXTENSION pglinter;
+
 BEGIN;
 
 \pset pager off
@@ -146,9 +148,6 @@ ANALYZE test_reports_schema.monthly_reports_with_grants;
 ANALYZE test_data_schema.processed_events_with_grants;
 ANALYZE public.public_table_test;
 
-DROP EXTENSION IF EXISTS pglinter CASCADE;
-CREATE EXTENSION IF NOT EXISTS pglinter;
-
 -- Disable all rules first to isolate T008 testing
 SELECT 'Disabling all rules to test T008 specifically...' AS status;
 SELECT pglinter.disable_all_rules() AS all_rules_disabled;
@@ -168,3 +167,5 @@ SELECT pglinter.enable_rule('T008') AS t008_re_enabled;
 SELECT pglinter.perform_table_check(); -- Should include T008 again
 
 ROLLBACK;
+
+DROP EXTENSION pglinter CASCADE;

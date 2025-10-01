@@ -1,4 +1,5 @@
 -- Test for pglinter B001 rule with file output
+CREATE EXTENSION pglinter;
 BEGIN;
 CREATE TABLE IF NOT EXISTS my_table_without_pk (
     id INT,
@@ -10,13 +11,12 @@ CREATE TABLE IF NOT EXISTS my_table_without_pk (
     error_level INT,
     scope TEXT
 );
-CREATE EXTENSION IF NOT EXISTS pglinter;
 -- Disable all rules first
 SELECT pglinter.disable_all_rules() AS all_rules_disabled;
-NOTICE:  🔴 Disabled 21 rule(s)
+NOTICE:  🔴 Disabled 20 rule(s)
  all_rules_disabled 
 --------------------
-                 21
+                 20
 (1 row)
 
 -- Run table check to detect tables without PK
@@ -100,3 +100,4 @@ SELECT pglinter.perform_base_check('/tmp/pglinter_base_results.sarif');
 \! md5sum /tmp/pglinter_base_results.sarif
 7cd6073b52ee9a1173c05c016e2458f4  /tmp/pglinter_base_results.sarif
 ROLLBACK;
+DROP EXTENSION pglinter CASCADE;
