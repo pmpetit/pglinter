@@ -9,6 +9,11 @@ on:
   push:
     tags:
       - "[0-9]+.[0-9]+.[0-9]+"
+    paths-ignore:
+      - 'docs/**'
+      - '*.md'
+      - 'README.md'
+      - 'mkdocs.yml'
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}

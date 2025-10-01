@@ -1,16 +1,24 @@
 ---
 name: Feature request
+about: Suggest an idea for this project
+title: '[FEATURE] '
+labels: enhancement
+assignees: ''
 ---
 
-<!-- Thanks for filing an issue! Before hitting the button. It's helpful to search the existing GitHub issues first. It's likely that another user has already reported the issue you're facing, or it's a known issue that we're already aware of.
+<!-- Thanks for filing a feature request! Before submitting, please search existing GitHub issues to see if your request has already been made. -->
 
-Describe *in detail* the feature you'd like to see.
--->
+**Is your feature request related to a problem? Please describe.**
+A clear and concise description of what the problem is. Ex. I'm always frustrated when [...]
 
-# Description
+**Describe the solution you'd like**
+A clear and concise description of what you want to happen.
 
-## Feature Definition
+**Describe alternatives you've considered**
+A clear and concise description of any alternative solutions or features you've considered.
 
-### Describe the solution you'd like
+**Use case**
+Describe the specific use case for this feature and how it would benefit users.
 
-A description of what you want to happen.
+**Additional context**
+Add any other context, screenshots, or examples about the feature request here.

@@ -6,6 +6,10 @@ on:
       - opened
       - edited
       - reopened
+    paths-ignore:
+      - 'docs/**'
+      - '*.md'
+      - 'README.md'
 
 permissions:
   pull-requests: write

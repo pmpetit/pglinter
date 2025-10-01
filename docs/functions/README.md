@@ -45,7 +45,9 @@ SELECT pglinter.perform_base_check(
 - B003: Tables without indexes on foreign keys
 - B004: Unused indexes
 - B005: Unsecured public schema
-- B006: Tables with uppercase names/columns
+- B006: Objects with uppercase names
+- B007: Tables never selected
+- B008: Tables with foreign keys outside their schema
 
 ---
 
@@ -80,7 +82,6 @@ SELECT pglinter.perform_cluster_check('/tmp/cluster_analysis.sarif');
 
 ## Rule Coverage
 
-- C001: Memory configuration issues
 - C002: Insecure pg_hba.conf entries
 
 ---
@@ -116,18 +117,16 @@ SELECT pglinter.perform_table_check('/tmp/table_analysis.sarif');
 
 ## Rule Coverage
 
-- T001: Individual tables without primary keys
-- T002: Tables without any indexes
-- T003: Tables with redundant indexes
-- T004: Tables with foreign keys not indexed
-- T005: Tables with potential missing indexes (percentage-based sequential scan analysis)
-- T006: Tables with foreign keys referencing other schemas
-- T007: Tables with unused indexes
-- T008: Tables with foreign key type mismatches
-- T009: Tables with no roles granted
-- T010: Tables using reserved keywords
-- T011: Tables with uppercase names/columns
-- T012: Tables with sensitive columns
+- T001: Table without primary key
+- T002: Table with redundant indexes
+- T003: Table with foreign keys not indexed
+- T004: Table with potential missing indexes
+- T005: Table with foreign keys outside schema
+- T006: Table with unused indexes
+- T007: Table with foreign key type mismatch
+- T008: Table with no roles granted
+- T009: Reserved keywords in object names
+- T010: Table with sensitive columns
 
 ---
 
@@ -162,8 +161,7 @@ SELECT pglinter.perform_schema_check('/tmp/schema_analysis.sarif');
 
 ## Rule Coverage
 
-- S001: Schemas without proper privileges
-- S002: Schemas with public privileges
+- S001: Schema with no default role granted
 
 ---
 
