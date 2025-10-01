@@ -5,6 +5,10 @@ on:
   pull_request:
     branches:
       - main  # Optional: specify branches for the pull request to merge into
+    paths-ignore:
+      - 'docs/**'
+      - '*.md'
+      - 'README.md'
   workflow_dispatch:
     # inputs:
     #   pgver:
