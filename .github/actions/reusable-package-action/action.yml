@@ -37,7 +37,7 @@ runs:
         su - postgres -c "cd $GITHUB_WORKSPACE && make rpm"
       shell: bash
       env:
-        PGVER=${{ inputs.pgver }}
+        PGVER: ${{ inputs.pgver }}
 
     - name: 'RPM package for $[[ inputs.pgver ]] (x64_64)'
       uses: actions/upload-artifact@v4
