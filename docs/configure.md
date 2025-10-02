@@ -2,7 +2,7 @@
 
 pglinter provides several configuration options to customize the analysis behavior for your specific environment and requirements.
 
-## Rule Management
+## Rules Management
 
 ### Viewing Rules
 
@@ -31,7 +31,7 @@ SELECT pglinter.disable_rule('B004');
 SELECT pglinter.disable_rule('T007');
 ```
 
-### Rule Categories
+### Rules Categories
 
 You can manage rules by category:
 
@@ -47,46 +47,239 @@ FROM pglinter.show_rules()
 WHERE rule_code LIKE 'T%';
 ```
 
-## Threshold Configuration
+### Export/Import Rules
 
-Many rules have configurable thresholds. These are stored in the `pglinter.rules` table:
+pglinter supports exporting and importing rule configurations in YAML format, making it easy to version control, share, and modify rule settings across different environments.
 
-### Viewing Current Thresholds
+#### Exporting Rules to YAML
 
 ```sql
--- View rule configuration
-SELECT rule_code, description, enabled, fixes
+-- Export all current rules to YAML format
+SELECT pglinter.export_rules_to_yaml();
+```
+
+This will output a complete YAML structure containing:
+- Metadata (export timestamp, total rules, format version)
+- All rules with their current configuration (enabled status, thresholds, descriptions, etc.)
+
+#### Saving Export to File
+
+To save the export to a file for editing:
+
+```bash
+# Export rules and save to file
+psql -d mydb -t -c "SELECT pglinter.export_rules_to_yaml();" > rules_config.yaml
+
+# Or using the built-in file export function (if available)
+# SELECT pglinter.export_rules_to_file('/tmp/rules_config.yaml');
+```
+
+#### YAML Structure
+
+The exported YAML follows this structure:
+
+```yaml
+metadata:
+  export_timestamp: "2024-01-01T12:00:00Z"
+  total_rules: 25
+  format_version: "1.0"
+rules:
+  - id: 1
+    name: "Tables Without Primary Key"
+    code: "B001"
+    enable: true
+    warning_level: 20
+    error_level: 80
+    scope: "BASE"
+    description: "Detects tables without primary keys"
+    message: "Found {0} tables without primary keys"
+    fixes:
+      - "Add primary key constraints to tables"
+      - "Consider surrogate keys for tables without natural keys"
+    q1: "SELECT COUNT(*) FROM ... WHERE ..."
+    q2: null
+  - id: 2
+    name: "Redundant Indexes"
+    code: "B002"
+    enable: false
+    warning_level: 15
+    error_level: 50
+    # ... more rule properties
+```
+
+#### Modifying Rules Configuration
+
+Edit the exported YAML file to customize rules for your environment:
+
+```yaml
+# Example modifications:
+
+# 1. Disable a rule
+- id: 2
+  code: "B002"
+  enable: false  # Disable redundant index checking
+
+# 2. Adjust thresholds
+- id: 4
+  code: "B004"
+  warning_level: 30  # More lenient threshold
+  error_level: 70    # Higher error threshold
+
+# 3. Modify rule description
+- id: 1
+  code: "B001"
+  description: "Custom description for primary key check"
+  message: "Custom message: Found {0} tables needing primary keys"
+
+# 4. Update fix suggestions
+- id: 3
+  code: "B003"
+  fixes:
+    - "Add indexes to foreign key columns"
+    - "Consider composite indexes for multi-column FKs"
+    - "Custom fix suggestion for your environment"
+```
+
+#### Importing Modified Rules
+
+After editing the YAML file, import it back:
+
+```sql
+-- Import rules from YAML content (inline)
+SELECT pglinter.import_rules_from_yaml('
+metadata:
+  export_timestamp: "2024-01-01T12:00:00Z"
+  total_rules: 2
+  format_version: "1.0"
+rules:
+  - id: 1
+    name: "Tables Without Primary Key"
+    code: "B001"
+    enable: true
+    warning_level: 30
+    error_level: 70
+    scope: "BASE"
+    description: "Modified description"
+    message: "Found {0} tables without primary keys"
+    fixes:
+      - "Add primary key constraints"
+    q1: "SELECT COUNT(*) FROM information_schema.tables..."
+    q2: null
+');
+
+-- Import rules from file
+SELECT pglinter.import_rules_from_file('/path/to/modified_rules.yaml');
+```
+
+#### Environment-Specific Rule Sets
+
+Create different YAML files for different environments:
+
+```bash
+# Development environment - more permissive
+rules_dev.yaml:
+- Most rules enabled but with higher thresholds
+- Disable strict naming conventions
+- Focus on structural issues
+
+# Staging environment - moderate settings
+rules_staging.yaml:
+- All rules enabled with standard thresholds
+- Test performance rules
+- Validate before production
+
+# Production environment - strict settings
+rules_production.yaml:
+- All critical rules enabled
+- Low thresholds for early detection
+- Focus on security and performance
+```
+
+#### Version Control Integration
+
+Store rule configurations in version control:
+
+```bash
+# Initialize rule configuration in git
+git add rules_production.yaml rules_staging.yaml rules_dev.yaml
+git commit -m "Add pglinter rule configurations"
+
+# Deploy environment-specific rules
+psql -d production_db -c "SELECT pglinter.import_rules_from_file('/deploy/rules_production.yaml');"
+psql -d staging_db -c "SELECT pglinter.import_rules_from_file('/deploy/rules_staging.yaml');"
+```
+
+#### Backup and Restore Workflow
+
+```bash
+# 1. Backup current configuration
+psql -d mydb -t -c "SELECT pglinter.export_rules_to_yaml();" > backup_$(date +%Y%m%d).yaml
+
+# 2. Modify rules as needed
+# Edit the YAML file with your preferred editor
+
+# 3. Test import in development first
+psql -d dev_db -c "SELECT pglinter.import_rules_from_file('modified_rules.yaml');"
+
+# 4. Validate configuration works
+psql -d dev_db -c "SELECT pglinter.check_all();"
+
+# 5. Apply to production
+psql -d prod_db -c "SELECT pglinter.import_rules_from_file('modified_rules.yaml');"
+```
+
+#### Common Use Cases
+
+**Customize thresholds for your database size:**
+```yaml
+# For large databases, increase thresholds
+- code: "B004"
+  warning_level: 50  # Higher threshold for seq scans
+  error_level: 80
+
+# For small databases, decrease thresholds
+- code: "B001"
+  warning_level: 10  # Stricter primary key checking
+  error_level: 30
+```
+
+**Disable rules not applicable to your use case:**
+```yaml
+# Disable uppercase naming rules for legacy systems
+- code: "B005"
+  enable: false
+- code: "B006"
+  enable: false
+
+# Disable cross-schema FK rules for multi-tenant systems
+- code: "B008"
+  enable: false
+```
+
+**Add custom fix suggestions:**
+```yaml
+- code: "B001"
+  fixes:
+    - "Run migration script: add_missing_primary_keys.sql"
+    - "Contact DBA team for legacy table primary keys"
+    - "See company wiki: Primary Key Standards"
+```
+
+#### Validation and Testing
+
+Always validate imported configurations:
+
+```sql
+-- Verify rules were imported correctly
+SELECT code, enable, warning_level, error_level
 FROM pglinter.rules
-WHERE rule_code = 'B001';
-```
+WHERE code IN ('B001', 'B002', 'B003')
+ORDER BY code;
 
-### Common Threshold Adjustments
+-- Test rule execution
+SELECT pglinter.perform_base_check();
 
-#### B001: Tables without primary keys
-
-Default threshold: 10% of tables without primary keys triggers warning
-
-```sql
--- The threshold is currently hardcoded in the rule implementation
--- Future versions will support configurable thresholds
-```
-
-#### T005: High sequential scan usage
-
-Default threshold: 10,000 average tuples read per sequential scan
-
-```sql
--- This threshold is currently hardcoded
--- Contact support for custom threshold requirements
-```
-
-#### T007: Unused indexes
-
-Default threshold: 1MB minimum size to consider an index "unused"
-
-```sql
--- Size threshold is currently hardcoded
--- Future versions will support configuration
+-- Check for any import errors in PostgreSQL logs
 ```
 
 ## Output Configuration
