@@ -83,10 +83,12 @@ jobs:
     if: startsWith(github.ref, 'refs/tags/')
 
     steps:
-    - name: Create Release with Artifacts
-      uses: ./.github/actions/reusable-release-action
-      with:
-        tag: ${{ github.ref_name }}
-        github-token: ${{ secrets.GITHUB_TOKEN }}
-        prerelease: false
-        draft: false
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Create Release with Artifacts
+        uses: ./.github/actions/reusable-release-action
+        with:
+          tag: ${{ github.ref_name }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          prerelease: false
+          draft: false
