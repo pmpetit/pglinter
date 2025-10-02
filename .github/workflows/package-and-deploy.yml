@@ -15,6 +15,33 @@ on:
       - 'README.md'
       - 'mkdocs.yml'
 
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to release (e.g., 0.0.17)'
+        required: true
+        type: string
+      pgversions:
+        description: 'PostgreSQL versions to build (comma-separated: pg13,pg14,pg15,pg16,pg17,pg18)'
+        required: false
+        default: 'pg13,pg14,pg15,pg16,pg17,pg18'
+        type: string
+      create_release:
+        description: 'Create GitHub release'
+        required: false
+        default: true
+        type: boolean
+      prerelease:
+        description: 'Mark as prerelease'
+        required: false
+        default: false
+        type: boolean
+      draft:
+        description: 'Create as draft'
+        required: false
+        default: false
+        type: boolean
+
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
@@ -49,3 +76,23 @@ jobs:
         with:
           pgver: ${{ matrix.pgver }}
           tag: ${{ github.ref_name }}
+
+  create-release:
+    needs: [build]
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/')
+
+    permissions:
+      contents: write
+      packages: read
+      
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Create Release with Artifacts
+        uses: ./.github/actions/reusable-release-action
+        with:
+          tag: ${{ github.ref_name }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          prerelease: false
+          draft: false
