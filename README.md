@@ -49,6 +49,57 @@ This extension is built with **pgrx 0.16.0** and supports:
 - PostgreSQL 13-18 development packages
 - cargo-pgrx 0.16.0
 
+### Install from package
+
+**Debian/Ubuntu Systems:**
+
+```bash
+# Download and install (replace XX with your PG version: 13, 14, 15, 16, 17, 18)
+wget https://github.com/pmpetit/pglinter/releases/download/${{ inputs.tag }}/pglinter-pgXX-${{ inputs.tag }}.deb
+sudo dpkg -i pglinter-pgXX-${{ inputs.tag }}.deb
+
+# Fix dependencies if needed
+sudo apt-get install -f
+```
+
+**RHEL/CentOS/Fedora Systems:**
+
+```bash
+# Download and install (replace XX with your PG version: 13, 14, 15, 16, 17, 18)
+wget https://github.com/pmpetit/pglinter/releases/download/${{ inputs.tag }}/pglinter-pgXX-${{ inputs.tag }}.rpm
+sudo rpm -i pglinter-pgXX-${{ inputs.tag }}.rpm
+# or
+sudo yum localinstall pglinter-pgXX-${{ inputs.tag }}.rpm
+```
+
+#### 💻 Usage
+
+After installation, enable the extension in your PostgreSQL database:
+
+```sql
+-- Connect to your database
+\c your_database
+
+-- Create the extension
+CREATE EXTENSION pglinter;
+
+-- Run a basic check
+SELECT pglinter.perform_base_check();
+
+-- Check specific rules
+SELECT pglinter.check_rule('B001');  -- Tables without primary keys
+SELECT pglinter.check_rule('B002');  -- Redundant indexes
+```
+
+#### 📋 Available Rules
+
+- **B001-B008**: Base database rules (primary keys, indexes, schemas, etc.)
+- **C002**: Cluster security rules
+- **T001-T010**: Individual table rules
+- **S001**: Schema rules
+
+For complete documentation, visit: https://github.com/pmpetit/pglinter/blob/main/docs/functions/README.md
+
 ### Build and Install
 
 ```bash
