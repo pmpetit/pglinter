@@ -29,12 +29,13 @@ runs:
         VERSION=$(grep '^version = ' Cargo.toml | awk -F'"' '{print $2}')
         echo "Extracted version: $VERSION"
         echo "PGLINTER_MINOR_VERSION=$VERSION" >> $GITHUB_ENV
+        echo "PGVER=${{ inputs.pgver }}" >> $GITHUB_ENV
       shell: bash
 
     - name: Build packages
       run: |
-        su - postgres -c "cd $GITHUB_WORKSPACE && PGVER=${{ inputs.pgver }} && make deb"
-        su - postgres -c "cd $GITHUB_WORKSPACE && PGVER=${{ inputs.pgver }} && make rpm"
+        su - postgres -c "cd $GITHUB_WORKSPACE && make deb"
+        su - postgres -c "cd $GITHUB_WORKSPACE && make rpm"
       shell: bash
 
     - name: 'RPM package for $[[ inputs.pgver ]] (x64_64)'
