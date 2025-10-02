@@ -35,11 +35,11 @@ runs:
 
     - name: Build packages
       run: |
-        su - postgres -c "cd $GITHUB_WORKSPACE && make deb"
-        su - postgres -c "cd $GITHUB_WORKSPACE && make rpm"
+        su - postgres -c "cd $GITHUB_WORKSPACE && PGVER=${{ inputs.pgver }} make deb"
+        su - postgres -c "cd $GITHUB_WORKSPACE && PGVER=${{ inputs.pgver }} make rpm"
       shell: bash
       env:
-        PGVER: ${{ env.PGVER }}
+        PGVER: ${{ inputs.pgver }}
 
     - name: 'RPM package for $[[ inputs.pgver ]] (x64_64)'
       uses: actions/upload-artifact@v4
