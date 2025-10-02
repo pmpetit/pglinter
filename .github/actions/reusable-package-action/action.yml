@@ -31,20 +31,13 @@ runs:
         echo "PGLINTER_MINOR_VERSION=$VERSION" >> $GITHUB_ENV
       shell: bash
 
-    - name: Set PostgreSQL version variables
-      run: |
-        # Extract numeric version from pgver (e.g., pg16 -> 16)
-        PG_MAJOR_VERSION=$(echo "${{ inputs.pgver }}" | sed 's/pg//')
-        echo "PG_MAJOR_VERSION=$PG_MAJOR_VERSION" >> $GITHUB_ENV
-        echo "PGVER=${{ inputs.pgver }}" >> $GITHUB_ENV
-        echo "PostgreSQL Major Version: $PG_MAJOR_VERSION"
-      shell: bash
-
     - name: Build packages
       run: |
         su - postgres -c "cd $GITHUB_WORKSPACE && make deb"
         su - postgres -c "cd $GITHUB_WORKSPACE && make rpm"
       shell: bash
+      env:
+        PGVER=${{ inputs.pgver }}
 
     - name: 'RPM package for $[[ inputs.pgver ]] (x64_64)'
       uses: actions/upload-artifact@v4
