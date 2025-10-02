@@ -15,6 +15,33 @@ on:
       - 'README.md'
       - 'mkdocs.yml'
 
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to release (e.g., 0.0.17)'
+        required: true
+        type: string
+      pgversions:
+        description: 'PostgreSQL versions to build (comma-separated: pg13,pg14,pg15,pg16,pg17,pg18)'
+        required: false
+        default: 'pg13,pg14,pg15,pg16,pg17,pg18'
+        type: string
+      create_release:
+        description: 'Create GitHub release'
+        required: false
+        default: true
+        type: boolean
+      prerelease:
+        description: 'Mark as prerelease'
+        required: false
+        default: false
+        type: boolean
+      draft:
+        description: 'Create as draft'
+        required: false
+        default: false
+        type: boolean
+
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
