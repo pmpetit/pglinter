@@ -1,0 +1,131 @@
+name: 'Create GitHub Release'
+
+description: 'Downloads artifacts and creates a GitHub release with all packages'
+
+inputs:
+  tag:
+    description: 'The tag/version for the release'
+    required: true
+  github-token:
+    description: 'GitHub token for creating releases'
+    required: true
+  prerelease:
+    description: 'Mark as prerelease'
+    required: false
+    default: 'false'
+  draft:
+    description: 'Create as draft'
+    required: false
+    default: 'false'
+
+runs:
+  using: "composite"
+  steps:
+    - name: Download all artifacts
+      uses: actions/download-artifact@v4
+      with:
+        path: ./artifacts
+        merge-multiple: true
+
+    - name: Display downloaded artifacts
+      run: |
+        echo "Downloaded artifacts:"
+        find ./artifacts -name "*.rpm" -o -name "*.deb" | sort
+        echo ""
+        echo "Artifact count:"
+        find ./artifacts -name "*.rpm" -o -name "*.deb" | wc -l
+      shell: bash
+
+    - name: Validate artifacts
+      run: |
+        rpm_count=$(find ./artifacts -name "*.rpm" | wc -l)
+        deb_count=$(find ./artifacts -name "*.deb" | wc -l)
+
+        echo "Found $rpm_count RPM packages"
+        echo "Found $deb_count DEB packages"
+
+        if [ "$rpm_count" -eq 0 ] && [ "$deb_count" -eq 0 ]; then
+          echo "ERROR: No packages found to release!"
+          exit 1
+        fi
+      shell: bash
+
+    - name: Create Release
+      id: create_release
+      uses: softprops/action-gh-release@v1
+      env:
+        GITHUB_TOKEN: ${{ inputs.github-token }}
+      with:
+        tag_name: ${{ inputs.tag }}
+        name: pglinter v${{ inputs.tag }}
+        draft: ${{ inputs.draft }}
+        prerelease: ${{ inputs.prerelease }}
+        body: |
+          ## pglinter v${{ inputs.tag }}
+
+          PostgreSQL extension for database linting and analysis.
+
+          ### 📦 Available Packages
+
+          This release includes packages for PostgreSQL versions 13, 14, 15, 16, 17, and 18.
+
+          ### 🚀 Installation
+
+          **Debian/Ubuntu Systems:**
+          ```bash
+          # Download and install (replace XX with your PG version: 13, 14, 15, 16, 17, 18)
+          wget https://github.com/pmpetit/pglinter/releases/download/${{ inputs.tag }}/pglinter-pgXX-${{ inputs.tag }}.deb
+          sudo dpkg -i pglinter-pgXX-${{ inputs.tag }}.deb
+
+          # Fix dependencies if needed
+          sudo apt-get install -f
+          ```
+
+          **RHEL/CentOS/Fedora Systems:**
+          ```bash
+          # Download and install (replace XX with your PG version: 13, 14, 15, 16, 17, 18)
+          wget https://github.com/pmpetit/pglinter/releases/download/${{ inputs.tag }}/pglinter-pgXX-${{ inputs.tag }}.rpm
+          sudo rpm -i pglinter-pgXX-${{ inputs.tag }}.rpm
+          # or
+          sudo yum localinstall pglinter-pgXX-${{ inputs.tag }}.rpm
+          ```
+
+          ### 💻 Usage
+
+          After installation, enable the extension in your PostgreSQL database:
+
+          ```sql
+          -- Connect to your database
+          \c your_database
+
+          -- Create the extension
+          CREATE EXTENSION pglinter;
+
+          -- Run a basic check
+          SELECT pglinter.perform_base_check();
+
+          -- Check specific rules
+          SELECT pglinter.check_rule('B001');  -- Tables without primary keys
+          SELECT pglinter.check_rule('B002');  -- Redundant indexes
+          ```
+
+          ### 📋 Available Rules
+
+          - **B001-B008**: Base database rules (primary keys, indexes, schemas, etc.)
+          - **C002**: Cluster security rules
+          - **T001-T010**: Individual table rules
+          - **S001**: Schema rules
+
+          For complete documentation, visit: https://github.com/pmpetit/pglinter/blob/main/docs/functions/README.md
+        files: |
+          ./artifacts/*.rpm
+          ./artifacts/*.deb
+
+    - name: List release assets
+      run: |
+        echo "Release created successfully!"
+        echo "Release URL: ${{ steps.create_release.outputs.url }}"
+        echo ""
+        echo "Uploaded files:"
+        find ./artifacts -name "*.rpm" -o -name "*.deb" -exec basename {} \; | sort
+      shell: bash

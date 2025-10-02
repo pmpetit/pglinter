@@ -56,55 +56,10 @@ jobs:
     if: startsWith(github.ref, 'refs/tags/')
 
     steps:
-    - name: Download all artifacts
-      uses: actions/download-artifact@v4
+    - name: Create Release with Artifacts
+      uses: ./.github/actions/create-release-action
       with:
-        path: ./artifacts
-        merge-multiple: true
-
-    - name: Display downloaded artifacts
-      run: |
-        echo "Downloaded artifacts:"
-        find ./artifacts -name "*.rpm" -o -name "*.deb" | sort
-
-    - name: Create Release
-      id: create_release
-      uses: actions/create-release@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        tag_name: ${{ github.ref_name }}
-        release_name: pglinter v${{ github.ref_name }}
-        body: |
-          ## pglinter v${{ github.ref_name }}
-
-          PostgreSQL extension for database linting and analysis.
-
-          ### Installation
-
-          Download the appropriate package for your PostgreSQL version:
-          - **Debian/Ubuntu**: Download the `.deb` file and install with `sudo dpkg -i pglinter-pgXX-${{ github.ref_name }}.deb`
-          - **RHEL/CentOS/Fedora**: Download the `.rpm` file and install with `sudo rpm -i pglinter-pgXX-${{ github.ref_name }}.rpm`
-
-          Replace `XX` with your PostgreSQL major version (13, 14, 15, 16, 17, 18).
-
-          ### Usage
-
-          ```sql
-          CREATE EXTENSION pglinter;
-          SELECT pglinter.perform_base_check();
-          ```
-        draft: false
+        tag: ${{ github.ref_name }}
+        github-token: ${{ secrets.GITHUB_TOKEN }}
         prerelease: false
-
-    - name: Upload Release Assets
-      run: |
-        for file in ./artifacts/*.rpm ./artifacts/*.deb; do
-          if [ -f "$file" ]; then
-            filename=$(basename "$file")
-            echo "Uploading $filename"
-            gh release upload ${{ github.ref_name }} "$file" --clobber
-          fi
-        done
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        draft: false
