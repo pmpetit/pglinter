@@ -28,9 +28,7 @@ runs:
       run: |
         VERSION=$(grep '^version = ' Cargo.toml | awk -F'"' '{print $2}')
         echo "Extracted version: $VERSION"
-        echo "input pgver is : ${{ inputs.pgver }}"
         echo "PGLINTER_MINOR_VERSION=$VERSION" >> $GITHUB_ENV
-        echo "PGVER=${{ inputs.pgver }}" >> $GITHUB_ENV
       shell: bash
 
     - name: Build packages
@@ -38,8 +36,6 @@ runs:
         su - postgres -c "cd $GITHUB_WORKSPACE && PGVER=${{ inputs.pgver }} make deb"
         su - postgres -c "cd $GITHUB_WORKSPACE && PGVER=${{ inputs.pgver }} make rpm"
       shell: bash
-      env:
-        PGVER: ${{ inputs.pgver }}
 
     - name: 'RPM package for $[[ inputs.pgver ]] (x64_64)'
       uses: actions/upload-artifact@v4
