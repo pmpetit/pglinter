@@ -84,7 +84,7 @@ jobs:
 
     steps:
     - name: Create Release with Artifacts
-      uses: ./.github/actions/create-release-action
+      uses: ./.github/actions/reusable-release-action
       with:
         tag: ${{ github.ref_name }}
         github-token: ${{ secrets.GITHUB_TOKEN }}
