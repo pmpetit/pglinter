@@ -2,6 +2,15 @@
 
 This guide provides step-by-step examples of using pglinter's YAML export/import functionality to manage rule configurations.
 
+## Rule Structure with Embedded Queries
+
+Starting with pglinter 0.0.17, each rule includes its own SQL queries (`q1` and `q2`) that define how the rule analyzes your database:
+
+- **q1**: The primary analysis query that identifies issues or counts problems
+- **q2**: Optional secondary query for additional validation or threshold calculations
+
+This means rules are completely self-contained and can be easily exported, modified, and shared between environments.
+
 ## Quick Start Example
 
 ### 1. Export Current Rules
@@ -30,8 +39,8 @@ Make your modifications (examples below), then save the file.
 SELECT pglinter.import_rules_from_file('/tmp/my_rules.yaml');
 
 -- Verify the changes were applied
-SELECT rule_code, enabled, warning_level, error_level 
-FROM pglinter.show_rules() 
+SELECT rule_code, enabled, warning_level, error_level
+FROM pglinter.show_rules()
 WHERE rule_code IN ('B001', 'B003', 'B005')
 ORDER BY rule_code;
 ```
@@ -53,6 +62,8 @@ rules:
     description: "Count number of tables without primary key."
     message: "{0}/{1} table(s) without primary key exceed the {2} threshold: {3}%."
     fixes: ["create a primary key or change warning/error threshold"]
+    q1: "SELECT COUNT(*) FROM b001_tables_with_pk WHERE has_pk = false"
+    q2: "SELECT COUNT(*) FROM b001_total_tables"
 ```
 
 Modified for development (more lenient):
@@ -68,6 +79,8 @@ rules:
     description: "Count number of tables without primary key (dev mode)."
     message: "DEV: {0}/{1} table(s) without primary key exceed the {2} threshold: {3}%. Consider adding before production."
     fixes: ["create a primary key or change warning/error threshold"]
+    q1: "SELECT COUNT(*) FROM b001_tables_with_pk WHERE has_pk = false"  # Same queries as original
+    q2: "SELECT COUNT(*) FROM b001_total_tables"
 ```
 
 ### Example 2: Disable Security Rules for Testing
@@ -85,6 +98,8 @@ rules:
     description: "Only authorized users should be allowed to create objects."
     message: "{0}/{1} schemas are unsecured, schemas where all users can create objects in, exceed the {2} threshold: {3}%."
     fixes: ["REVOKE CREATE ON SCHEMA <schema_name> FROM PUBLIC"]
+    q1: "SELECT COUNT(*) FROM information_schema.schemata WHERE schema_name NOT IN ('information_schema', 'pg_catalog', 'pg_toast') AND has_schema_privilege('public', schema_name, 'CREATE')"
+    q2: "SELECT COUNT(*) FROM information_schema.schemata WHERE schema_name NOT IN ('information_schema', 'pg_catalog', 'pg_toast')"
 ```
 
 ### Example 3: Custom Thresholds for Large Databases
@@ -102,6 +117,8 @@ rules:
     description: "Count number of tables without index on foreign key."
     message: "CRITICAL: {0}/{1} table(s) without index on foreign key exceed the {2} threshold: {3}%."
     fixes: ["create a index on foreign key or change warning/error threshold"]
+    q1: "SELECT COUNT(DISTINCT schemaname||'.'||tablename) FROM b003 WHERE has_index = false"
+    q2: "SELECT COUNT(DISTINCT schemaname||'.'||tablename) FROM b003"
 ```
 
 ## Complete Workflow Examples
@@ -200,6 +217,62 @@ SELECT pglinter.import_rules_from_file('/etc/pglinter/versions/v1.1.yaml');
 SELECT pglinter.import_rules_from_file('/etc/pglinter/versions/v1.0.yaml');
 ```
 
+## Understanding and Modifying Rule Queries
+
+### Query Structure (q1 and q2)
+
+Each rule contains SQL queries that define its analysis logic:
+
+- **q1 (Primary Query)**: Returns the count or data that triggers the rule
+- **q2 (Secondary Query)**: Usually returns the total count for percentage calculations
+- **null values**: When q2 is null, the rule uses q1 results directly without percentage calculations
+
+### Example: Modifying Query Logic
+
+You can customize how rules analyze your database by modifying their queries:
+
+```yaml
+rules:
+  - id: 1
+    code: "B001"
+    name: "Custom Primary Key Check"
+    # Original q1: Check all tables without primary keys
+    q1: "SELECT COUNT(*) FROM b001_tables_with_pk WHERE has_pk = false"
+    # Original q2: Count total tables
+    q2: "SELECT COUNT(*) FROM b001_total_tables"
+
+    # Modified to exclude specific schemas:
+    q1: "SELECT COUNT(*) FROM b001_tables_with_pk WHERE has_pk = false AND schemaname NOT IN ('temp', 'staging')"
+    q2: "SELECT COUNT(*) FROM b001_total_tables WHERE schemaname NOT IN ('temp', 'staging')"
+```
+
+### Common Query Modifications
+
+**1. Exclude Specific Schemas:**
+```yaml
+# Modify any rule to ignore certain schemas
+q1: "SELECT COUNT(*) FROM your_analysis_view WHERE schemaname NOT IN ('temp', 'test', 'backup')"
+```
+
+**2. Filter by Table Patterns:**
+```yaml
+# Only analyze tables matching certain patterns
+q1: "SELECT COUNT(*) FROM your_analysis WHERE tablename LIKE 'app_%' OR tablename LIKE 'user_%'"
+```
+
+**3. Add Time-Based Filtering:**
+```yaml
+# Only check recently modified tables
+q1: "SELECT COUNT(*) FROM your_analysis a JOIN pg_stat_user_tables s ON a.schemaname = s.schemaname AND a.tablename = s.relname WHERE s.last_autoanalyze > NOW() - INTERVAL '7 days'"
+```
+
+**4. Custom Thresholds in Queries:**
+```yaml
+# Build thresholds directly into the query
+q1: "SELECT COUNT(*) FROM pg_stat_user_tables WHERE seq_scan > 1000 AND idx_scan < 100"  # Tables with poor index usage
+q2: "SELECT COUNT(*) FROM pg_stat_user_tables"
+```
+
 ## Advanced YAML Techniques
 
 ### Custom Rule Creation via YAML
@@ -235,7 +308,7 @@ rules:
   - {code: "B001", enable: false}  # Disable PK checks during migration
   - {code: "B003", warning_level: 80, error_level: 95}  # Relax FK index rules
 
-# /etc/pglinter/scenarios/production.yaml - Production monitoring  
+# /etc/pglinter/scenarios/production.yaml - Production monitoring
 rules:
   - {code: "B001", enable: true, warning_level: 5, error_level: 10}
   - {code: "B003", enable: true, warning_level: 10, error_level: 25}
@@ -283,9 +356,9 @@ Always verify your changes after import:
 
 ```sql
 -- Check specific rules were updated
-SELECT rule_code, enabled, warning_level, error_level, 
+SELECT rule_code, enabled, warning_level, error_level,
        LEFT(message, 50) || '...' as message_preview
-FROM pglinter.show_rules() 
+FROM pglinter.show_rules()
 WHERE rule_code IN ('B001', 'B003', 'B005');
 
 -- Test rule execution
