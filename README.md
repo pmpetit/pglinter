@@ -16,14 +16,14 @@ pglinter is a PostgreSQL linter that analyzes your database for potential issues
 
 ## PostgreSQL Compatibility
 
-This extension is built with **pgrx 0.16.0** and supports:
+This extension is built with **pgrx 0.16.1** and supports:
 
 - PostgreSQL 13
 - PostgreSQL 14
 - PostgreSQL 15
 - PostgreSQL 16
 - PostgreSQL 17
-- PostgreSQL 18beta2 ✨ (latest with pgrx 0.16.0)
+- PostgreSQL 18beta2 ✨ (latest with pgrx 0.16.1)
 
 ## Architecture
 
@@ -45,9 +45,9 @@ This extension is built with **pgrx 0.16.0** and supports:
 
 ### Requirements
 
-- Rust 1.88.0+ (required for pgrx 0.16.0)
+- Rust 1.88.0+ (required for pgrx 0.16.1)
 - PostgreSQL 13-18 development packages
-- cargo-pgrx 0.16.0
+- cargo-pgrx 0.16.1
 
 ### Install from package
 
@@ -271,6 +271,10 @@ cargo pgrx run
 # Package for distribution
 cargo pgrx package
 ```
+
+## Documentation
+
+Documentation https://pglinter.readthedocs.io/en/latest/
 
 ## Contributing
 
