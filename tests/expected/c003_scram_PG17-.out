@@ -127,10 +127,10 @@ SELECT '=== Test 1: C003 Rule Execution with Current Setting ===' AS test_sectio
 (1 row)
 
 SELECT pglinter.perform_cluster_check();
-WARNING:  pglinter cluster check failed: Failed to execute rule C003: Database error: Datum error: Postgres type bigint (Oid(20)) is not compatible with the Rust type alloc::string::String (Oid(25))
+NOTICE:  ✅ No issues found - database schema looks good!
  perform_cluster_check 
 -----------------------
- f
+ t
 (1 row)
 
 -- Test 2: Manual execution of C003 query

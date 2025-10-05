@@ -365,4 +365,6 @@ NOTICE:  🟡 Some warnings found - consider reviewing for optimization
 
 -- Cleanup
 DROP TABLE IF EXISTS indexed_user_activities CASCADE;
+DROP TABLE IF EXISTS user_activities CASCADE;
+NOTICE:  table "user_activities" does not exist, skipping
 DROP EXTENSION pglinter CASCADE;

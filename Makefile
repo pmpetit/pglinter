@@ -96,7 +96,11 @@ REGRESS_TESTS+= schema_rules
 # * the _PG15+ suffix means PostgreSQL 15 and all the major versions after
 # * the _PG13- suffix means PostgreSQL 13 and all the major versions below
 
-# REGRESS_TESTS_PG17 = c003_md5_pwd_not_18_PG17- c003_scram_not_18_PG17-
+REGRESS_TESTS_PG13 = c003_md5_pwd_PG17- c003_scram_PG17-
+REGRESS_TESTS_PG14 = c003_md5_pwd_PG17- c003_scram_PG17-
+REGRESS_TESTS_PG15 = c003_md5_pwd_PG17- c003_scram_PG17-
+REGRESS_TESTS_PG16 = c003_md5_pwd_PG17- c003_scram_PG17-
+REGRESS_TESTS_PG17 = c003_md5_pwd_PG17- c003_scram_PG17-
 
 # REGRESS_TESTS_PG13 = elevation_via_rule_PG15- elevation_via_security_definer_function_PG14-
 # REGRESS_TESTS_PG14 = elevation_via_rule_PG15- elevation_via_security_definer_function_PG14-

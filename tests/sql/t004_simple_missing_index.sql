@@ -202,5 +202,6 @@ SELECT pglinter.perform_table_check(); -- Should include T004
 
 -- Cleanup
 DROP TABLE IF EXISTS indexed_user_activities CASCADE;
+DROP TABLE IF EXISTS user_activities CASCADE;
 
 DROP EXTENSION pglinter CASCADE;

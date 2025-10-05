@@ -67,10 +67,15 @@ SELECT '=== Test 2: C003 Rule Execution ===' AS test_section;
 (1 row)
 
 SELECT pglinter.perform_cluster_check();
-WARNING:  pglinter cluster check failed: Failed to execute rule C003: Database error: Datum error: Postgres type bigint (Oid(20)) is not compatible with the Rust type alloc::string::String (Oid(25))
+NOTICE:  🔍 pglinter found 1 issue(s):
+NOTICE:  ==================================================
+NOTICE:  ❌ [C003] ERROR: 1 password(s) encrypted with MD5 exceed the warning threshold: 1.
+NOTICE:  ==================================================
+NOTICE:  📊 Summary: 1 error(s), 0 warning(s), 0 info
+NOTICE:  🔴 Critical issues found - please review and fix errors
  perform_cluster_check 
 -----------------------
- f
+ t
 (1 row)
 
 -- Test 3: Rule explanation
@@ -126,12 +131,12 @@ SELECT '=== Test 5: C003 Query Details ===' AS test_section;
 SELECT code, q1 as query
 FROM pglinter.rules
 WHERE code = 'C003';
- code |                       query                        
-------+----------------------------------------------------
- C003 |                                                   +
-      | SELECT count(*) FROM                              +
-      | pg_catalog.pg_settings                            +
-      | WHERE name='password_encryption' AND setting='md5'+
+ code |              query               
+------+----------------------------------
+ C003 |                                 +
+      | SELECT count(*) FROM            +
+      | pg_catalog.pg_settings          +
+      | WHERE name='password_encryption'+
       | 
 (1 row)
 
