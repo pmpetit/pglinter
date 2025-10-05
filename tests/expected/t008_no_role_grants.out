@@ -2,7 +2,6 @@
 -- This script creates tables in custom schemas and shows how the T008 rule
 -- detects tables that don't have role permissions granted to non-login roles.
 CREATE EXTENSION pglinter;
-BEGIN;
 \pset pager off
 -- Create custom schemas (tables in these schemas should be checked by T008)
 CREATE SCHEMA test_app_schema;
@@ -132,10 +131,10 @@ SELECT 'Disabling all rules to test T008 specifically...' AS status;
 (1 row)
 
 SELECT pglinter.disable_all_rules() AS all_rules_disabled;
-NOTICE:  🔴 Disabled 20 rule(s)
+NOTICE:  🔴 Disabled 21 rule(s)
  all_rules_disabled 
 --------------------
-                 20
+                 21
 (1 row)
 
 SELECT pglinter.enable_rule('T008') AS t008_enabled;
@@ -155,11 +154,17 @@ SELECT 'Running table check with only T008 enabled:' AS test_info;
 SELECT pglinter.perform_table_check();
 NOTICE:  🔍 pglinter found 1 issue(s):
 NOTICE:  ==================================================
-NOTICE:  ⚠️  [T008] WARNING: TABLE No role grantee on table. it means that except owner, users will need a direct grant on this table, not through a role. Prefer RBAC access if possible. 4 : 
-test_app_schema.users_no_grants as no role granted
+NOTICE:  ⚠️  [T008] WARNING: TABLE No role grantee on table. it means that except owner, users will need a direct grant on this table, not through a role. Prefer RBAC access if possible. 10 : 
+audit_schema.user_activity_log as no role granted
+inventory_schema.product_stock as no role granted
+inventory_schema.stock_movements as no role granted
+sales_schema.order_items as no role granted
+sales_schema.orders as no role granted
+sales_schema.sales_reports as no role granted
 test_app_schema.products_no_grants as no role granted
-test_reports_schema.sales_data_no_grants as no role granted
-test_data_schema.analytics_no_grants as no role granted 
+test_app_schema.users_no_grants as no role granted
+test_data_schema.analytics_no_grants as no role granted
+test_reports_schema.sales_data_no_grants as no role granted 
 
 NOTICE:  ==================================================
 NOTICE:  📊 Summary: 0 error(s), 1 warning(s), 0 info
@@ -201,11 +206,17 @@ NOTICE:  ✅ Rule T008 has been enabled
 SELECT pglinter.perform_table_check(); -- Should include T008 again
 NOTICE:  🔍 pglinter found 1 issue(s):
 NOTICE:  ==================================================
-NOTICE:  ⚠️  [T008] WARNING: TABLE No role grantee on table. it means that except owner, users will need a direct grant on this table, not through a role. Prefer RBAC access if possible. 4 : 
-test_app_schema.users_no_grants as no role granted
+NOTICE:  ⚠️  [T008] WARNING: TABLE No role grantee on table. it means that except owner, users will need a direct grant on this table, not through a role. Prefer RBAC access if possible. 10 : 
+audit_schema.user_activity_log as no role granted
+inventory_schema.product_stock as no role granted
+inventory_schema.stock_movements as no role granted
+sales_schema.order_items as no role granted
+sales_schema.orders as no role granted
+sales_schema.sales_reports as no role granted
 test_app_schema.products_no_grants as no role granted
-test_reports_schema.sales_data_no_grants as no role granted
-test_data_schema.analytics_no_grants as no role granted 
+test_app_schema.users_no_grants as no role granted
+test_data_schema.analytics_no_grants as no role granted
+test_reports_schema.sales_data_no_grants as no role granted 
 
 NOTICE:  ==================================================
 NOTICE:  📊 Summary: 0 error(s), 1 warning(s), 0 info
@@ -215,5 +226,18 @@ NOTICE:  🟡 Some warnings found - consider reviewing for optimization
  t
 (1 row)
 
-ROLLBACK;
+DROP TABLE  public.public_table_test CASCADE;
+DROP TABLE  test_app_schema.users_no_grants CASCADE;
+DROP TABLE  test_app_schema.products_no_grants CASCADE;
+DROP TABLE  test_reports_schema.sales_data_no_grants CASCADE;
+DROP TABLE  test_data_schema.analytics_no_grants CASCADE;
+DROP TABLE  test_app_schema.orders_with_grants CASCADE;
+DROP TABLE  test_reports_schema.monthly_reports_with_grants CASCADE;
+DROP TABLE  test_data_schema.processed_events_with_grants CASCADE;
+DROP ROLE test_app_role;
+DROP ROLE test_reports_role;
+DROP ROLE test_readonly_role;
+DROP SCHEMA test_app_schema CASCADE;
+DROP SCHEMA test_reports_schema CASCADE;
+DROP SCHEMA test_data_schema CASCADE;
 DROP EXTENSION pglinter CASCADE;

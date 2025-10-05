@@ -3,9 +3,6 @@
 -- and then shows how the T004 rule would detect this issue.
 CREATE EXTENSION pglinter;
 
--- Clean up
-DROP TABLE IF EXISTS user_activities CASCADE;
-
 -- Create a table without proper indexes (except primary key)
 CREATE TABLE user_activities (
     id SERIAL PRIMARY KEY,
@@ -202,5 +199,6 @@ SELECT pglinter.perform_table_check(); -- Should include T004
 
 -- Cleanup
 DROP TABLE IF EXISTS indexed_user_activities CASCADE;
+DROP TABLE IF EXISTS user_activities CASCADE;
 
 DROP EXTENSION pglinter CASCADE;

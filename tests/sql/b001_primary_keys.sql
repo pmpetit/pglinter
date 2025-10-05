@@ -2,8 +2,6 @@
 -- This script creates multiple tables with and without primary keys to test the B001 percentage-based rule
 CREATE EXTENSION pglinter;
 
-BEGIN;
-
 -- Create tables WITHOUT primary keys to trigger B001 rule (need enough to exceed 20% threshold)
 -- These tables will contribute to the "tables without primary key" count
 
@@ -198,6 +196,15 @@ SELECT pglinter.perform_base_check();
 SELECT pglinter.perform_base_check('/tmp/pglinter_b001_results.sarif');
 \! md5sum /tmp/pglinter_b001_results.sarif
 
-ROLLBACK;
+DROP TABLE orders_no_pk CASCADE;
+DROP TABLE customers_no_pk CASCADE;
+DROP TABLE products_no_pk CASCADE;
+DROP TABLE reviews_no_pk CASCADE;
+DROP TABLE inventory_no_pk CASCADE;
+DROP TABLE shipments_no_pk CASCADE;
+DROP TABLE payments_no_pk CASCADE;
+DROP TABLE categories_with_pk CASCADE;
+DROP TABLE users_with_pk CASCADE;
+DROP TABLE settings_with_pk CASCADE;
 
-DROP EXTENSION pglinter CASCADE;REATE EXTENSION pglinter;
+DROP EXTENSION pglinter CASCADE;

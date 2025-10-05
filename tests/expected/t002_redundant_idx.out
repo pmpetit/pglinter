@@ -1,13 +1,12 @@
 -- Test for pglinter T002 rule: Tables with redundant indexes
 CREATE EXTENSION pglinter;
 \pset pager off
-BEGIN;
 -- First, disable all rules to isolate B001 testing
 SELECT pglinter.disable_all_rules() AS all_rules_disabled;
-NOTICE:  🔴 Disabled 20 rule(s)
+NOTICE:  🔴 Disabled 21 rule(s)
  all_rules_disabled 
 --------------------
-                 20
+                 21
 (1 row)
 
 -- Enable only B001 for focused testing
@@ -19,7 +18,7 @@ NOTICE:  ✅ Rule T002 has been enabled
 (1 row)
 
 -- Create test tables with redundant indexes for T002 testing
-CREATE TABLE IF NOT EXISTS customers_with_redundant_idx (
+CREATE TABLE customers_with_redundant_idx (
     customer_id INT PRIMARY KEY,
     first_name VARCHAR(100),
     last_name VARCHAR(100),
@@ -29,7 +28,7 @@ CREATE TABLE IF NOT EXISTS customers_with_redundant_idx (
     updated_at TIMESTAMP DEFAULT NOW()
 );
 -- Create another table for more redundant index scenarios
-CREATE TABLE IF NOT EXISTS products_with_redundant_idx (
+CREATE TABLE products_with_redundant_idx (
     product_id SERIAL PRIMARY KEY,
     sku VARCHAR(50),
     name VARCHAR(255),
@@ -39,7 +38,7 @@ CREATE TABLE IF NOT EXISTS products_with_redundant_idx (
     is_active BOOLEAN DEFAULT TRUE
 );
 -- Create a third table to test multiple tables with redundant indexes
-CREATE TABLE IF NOT EXISTS orders_with_redundant_idx (
+CREATE TABLE orders_with_redundant_idx (
     order_id SERIAL PRIMARY KEY,
     customer_id INT,
     product_id INT,
@@ -241,5 +240,7 @@ NOTICE:  🟡 Some warnings found - consider reviewing for optimization
  t
 (1 row)
 
-ROLLBACK;
+DROP TABLE orders_with_redundant_idx CASCADE;
+DROP TABLE products_with_redundant_idx CASCADE;
+DROP TABLE customers_with_redundant_idx CASCADE;
 DROP EXTENSION pglinter CASCADE;

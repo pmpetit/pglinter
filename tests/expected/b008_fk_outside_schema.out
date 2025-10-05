@@ -2,7 +2,6 @@
 -- This test creates tables with foreign keys crossing schema boundaries
 -- and verifies that B008 correctly counts the percentage at database level
 CREATE EXTENSION pglinter;
-BEGIN;
 \pset pager off
 -- Create test schemas
 CREATE SCHEMA public_schema;
@@ -269,10 +268,10 @@ SELECT 'Testing B008 in isolation...' AS test_step;
 (1 row)
 
 SELECT pglinter.disable_all_rules() AS all_disabled;
-NOTICE:  🔴 Disabled 20 rule(s)
+NOTICE:  🔴 Disabled 21 rule(s)
  all_disabled 
 --------------
-           20
+           21
 (1 row)
 
 SELECT pglinter.enable_rule('B008') AS b008_only_enabled;
@@ -377,5 +376,27 @@ NOTICE:  ✅ Updated rule B008 levels: warning=20, error=80
  t
 (1 row)
 
-ROLLBACK;
+DROP SCHEMA public_schema CASCADE;
+NOTICE:  drop cascades to 8 other objects
+DETAIL:  drop cascades to table public_schema.customers
+drop cascades to constraint orders_customer_id_fkey on table sales_schema.orders
+drop cascades to table public_schema.products
+drop cascades to constraint order_items_product_id_fkey on table sales_schema.order_items
+drop cascades to constraint stock_movements_product_id_fkey on table inventory_schema.stock_movements
+drop cascades to table public_schema.users
+drop cascades to constraint user_actions_user_id_fkey on table audit_schema.user_actions
+drop cascades to table public_schema.customer_addresses
+DROP SCHEMA sales_schema CASCADE;
+NOTICE:  drop cascades to 2 other objects
+DETAIL:  drop cascades to table sales_schema.orders
+drop cascades to table sales_schema.order_items
+DROP SCHEMA inventory_schema CASCADE;
+NOTICE:  drop cascades to table inventory_schema.stock_movements
+DROP SCHEMA audit_schema CASCADE;
+NOTICE:  drop cascades to table audit_schema.user_actions
+DROP SCHEMA clean_schema CASCADE;
+NOTICE:  drop cascades to 3 other objects
+DETAIL:  drop cascades to table clean_schema.departments
+drop cascades to table clean_schema.employees
+drop cascades to table clean_schema.company_settings
 DROP EXTENSION pglinter CASCADE;

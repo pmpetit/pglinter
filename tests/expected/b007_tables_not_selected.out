@@ -11,17 +11,6 @@ SELECT pg_stat_reset();
  
 (1 row)
 
--- Clean up any existing test tables
-DROP TABLE IF EXISTS active_users_table CASCADE;
-NOTICE:  table "active_users_table" does not exist, skipping
-DROP TABLE IF EXISTS dormant_logs_table CASCADE;
-NOTICE:  table "dormant_logs_table" does not exist, skipping
-DROP TABLE IF EXISTS unused_config_table CASCADE;
-NOTICE:  table "unused_config_table" does not exist, skipping
-DROP TABLE IF EXISTS frequently_accessed_table CASCADE;
-NOTICE:  table "frequently_accessed_table" does not exist, skipping
-DROP TABLE IF EXISTS completely_unused_table CASCADE;
-NOTICE:  table "completely_unused_table" does not exist, skipping
 -- Table 1: Active users table (will be frequently accessed)
 CREATE TABLE active_users_table (
     id SERIAL PRIMARY KEY,
@@ -147,10 +136,10 @@ SELECT 'Testing B007 rule - Tables never selected detection...' as test_info;
 
 -- First, disable all rules to isolate B007 testing
 SELECT pglinter.disable_all_rules() AS all_rules_disabled;
-NOTICE:  🔴 Disabled 20 rule(s)
+NOTICE:  🔴 Disabled 21 rule(s)
  all_rules_disabled 
 --------------------
-                 20
+                 21
 (1 row)
 
 -- Enable only B007 for focused testing
@@ -494,18 +483,16 @@ NOTICE:  🟡 Some warnings found - consider reviewing for optimization
  t
 (1 row)
 
--- Clean up test tables
-DROP TABLE IF EXISTS active_users_table CASCADE;
-DROP TABLE IF EXISTS dormant_logs_table CASCADE;
-DROP TABLE IF EXISTS unused_config_table CASCADE;
-DROP TABLE IF EXISTS frequently_accessed_table CASCADE;
-DROP TABLE IF EXISTS completely_unused_table CASCADE;
 SELECT 'B007 comprehensive test completed successfully!' as test_result;
                    test_result                   
 -------------------------------------------------
  B007 comprehensive test completed successfully!
 (1 row)
 
-ROLLBACK;
-WARNING:  there is no transaction in progress
+-- Clean up test tables
+DROP TABLE active_users_table CASCADE;
+DROP TABLE dormant_logs_table CASCADE;
+DROP TABLE unused_config_table CASCADE;
+DROP TABLE frequently_accessed_table CASCADE;
+DROP TABLE completely_unused_table CASCADE;
 DROP EXTENSION pglinter CASCADE;

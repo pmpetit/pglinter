@@ -1,8 +1,7 @@
 -- Test for pglinter B002 rule: Redundant indexes
 CREATE EXTENSION pglinter;
-BEGIN;
 -- Create test tables with redundant indexes
-CREATE TABLE IF NOT EXISTS test_table_with_redundant_indexes (
+CREATE TABLE test_table_with_redundant_indexes (
     id INT PRIMARY KEY,
     name TEXT,
     email VARCHAR(255),
@@ -10,7 +9,7 @@ CREATE TABLE IF NOT EXISTS test_table_with_redundant_indexes (
     created_at TIMESTAMP DEFAULT NOW()
 );
 -- Create table with one index and a unique constrainte on the same column
-CREATE TABLE IF NOT EXISTS orders_table_with_constraint (
+CREATE TABLE orders_table_with_constraint (
     order_id SERIAL PRIMARY KEY,
     customer_id INT UNIQUE,
     product_name VARCHAR(255),
@@ -20,7 +19,7 @@ CREATE TABLE IF NOT EXISTS orders_table_with_constraint (
 -- Create an index that is redundant with the unique constraint
 CREATE INDEX my_idx_customer ON orders_table_with_constraint (customer_id);
 -- Create another table for more redundant index scenarios
-CREATE TABLE IF NOT EXISTS orders_table (
+CREATE TABLE orders_table (
     order_id SERIAL PRIMARY KEY,
     customer_id INT,
     product_name VARCHAR(255),
@@ -50,10 +49,10 @@ CREATE INDEX idx_customer_date_1 ON orders_table (product_name, order_date);
 CREATE INDEX idx_customer_date_2 ON orders_table (product_name, order_date);
 -- First, disable all rules to isolate B001 testing
 SELECT pglinter.disable_all_rules() AS all_rules_disabled;
-NOTICE:  🔴 Disabled 20 rule(s)
+NOTICE:  🔴 Disabled 21 rule(s)
  all_rules_disabled 
 --------------------
-                 20
+                 21
 (1 row)
 
 -- Enable only B002 for focused testing
@@ -131,5 +130,7 @@ NOTICE:  ✅ No issues found - database schema looks good!
  t
 (1 row)
 
-ROLLBACK;
+DROP TABLE orders_table CASCADE;
+DROP TABLE orders_table_with_constraint CASCADE;
+DROP TABLE test_table_with_redundant_indexes CASCADE;
 DROP EXTENSION pglinter CASCADE;

@@ -2,7 +2,6 @@
 -- This script creates tables with foreign keys that have mismatched data types
 -- and shows how the T007 rule detects these type inconsistencies.
 CREATE EXTENSION pglinter;
-BEGIN;
 \pset pager off
 -- Create parent tables with various data types for primary keys
 CREATE TABLE test_users_bigint (
@@ -186,10 +185,10 @@ SELECT 'Disabling all rules to test T007 specifically...' AS status;
 (1 row)
 
 SELECT pglinter.disable_all_rules() AS all_rules_disabled;
-NOTICE:  🔴 Disabled 20 rule(s)
+NOTICE:  🔴 Disabled 21 rule(s)
  all_rules_disabled 
 --------------------
-                 20
+                 21
 (1 row)
 
 SELECT pglinter.enable_rule('T007') AS t007_enabled;
@@ -210,11 +209,11 @@ SELECT pglinter.perform_table_check();
 NOTICE:  🔍 pglinter found 1 issue(s):
 NOTICE:  ==================================================
 NOTICE:  ⚠️  [T007] WARNING: TABLE Table with fk type mismatch. 5 : 
+public.test_discounts_smallint_to_int constraint test_discounts_smallint_to_int_category_id_fkey column category_id type is smallint buttest_categories_integer.category_id type is integer
+public.test_inventory_int_to_smallint constraint test_inventory_int_to_smallint_product_id_fkey column product_id type is integer buttest_products_smallint.product_id type is smallint
 public.test_orders_int_to_bigint constraint test_orders_int_to_bigint_user_id_fkey column user_id type is integer buttest_users_bigint.user_id type is bigint
 public.test_reviews_bigint_to_int constraint test_reviews_bigint_to_int_category_id_fkey column category_id type is bigint buttest_categories_integer.category_id type is integer
-public.test_inventory_int_to_smallint constraint test_inventory_int_to_smallint_product_id_fkey column product_id type is integer buttest_products_smallint.product_id type is smallint
-public.test_stores_varchar_to_text constraint test_stores_varchar_to_text_region_code_fkey column region_code type is character varying buttest_regions_text.region_code type is text
-public.test_discounts_smallint_to_int constraint test_discounts_smallint_to_int_category_id_fkey column category_id type is smallint buttest_categories_integer.category_id type is integer 
+public.test_stores_varchar_to_text constraint test_stores_varchar_to_text_region_code_fkey column region_code type is character varying buttest_regions_text.region_code type is text 
 
 NOTICE:  ==================================================
 NOTICE:  📊 Summary: 0 error(s), 1 warning(s), 0 info
@@ -257,11 +256,11 @@ SELECT pglinter.perform_table_check(); -- Should include T007 again
 NOTICE:  🔍 pglinter found 1 issue(s):
 NOTICE:  ==================================================
 NOTICE:  ⚠️  [T007] WARNING: TABLE Table with fk type mismatch. 5 : 
+public.test_discounts_smallint_to_int constraint test_discounts_smallint_to_int_category_id_fkey column category_id type is smallint buttest_categories_integer.category_id type is integer
+public.test_inventory_int_to_smallint constraint test_inventory_int_to_smallint_product_id_fkey column product_id type is integer buttest_products_smallint.product_id type is smallint
 public.test_orders_int_to_bigint constraint test_orders_int_to_bigint_user_id_fkey column user_id type is integer buttest_users_bigint.user_id type is bigint
 public.test_reviews_bigint_to_int constraint test_reviews_bigint_to_int_category_id_fkey column category_id type is bigint buttest_categories_integer.category_id type is integer
-public.test_inventory_int_to_smallint constraint test_inventory_int_to_smallint_product_id_fkey column product_id type is integer buttest_products_smallint.product_id type is smallint
-public.test_stores_varchar_to_text constraint test_stores_varchar_to_text_region_code_fkey column region_code type is character varying buttest_regions_text.region_code type is text
-public.test_discounts_smallint_to_int constraint test_discounts_smallint_to_int_category_id_fkey column category_id type is smallint buttest_categories_integer.category_id type is integer 
+public.test_stores_varchar_to_text constraint test_stores_varchar_to_text_region_code_fkey column region_code type is character varying buttest_regions_text.region_code type is text 
 
 NOTICE:  ==================================================
 NOTICE:  📊 Summary: 0 error(s), 1 warning(s), 0 info
@@ -271,5 +270,16 @@ NOTICE:  🟡 Some warnings found - consider reviewing for optimization
  t
 (1 row)
 
-ROLLBACK;
+DROP TABLE test_orders_int_to_bigint CASCADE;
+DROP TABLE test_reviews_bigint_to_int CASCADE;
+DROP TABLE test_inventory_int_to_smallint CASCADE;
+DROP TABLE test_stores_varchar_to_text CASCADE;
+DROP TABLE test_discounts_smallint_to_int CASCADE;
+DROP TABLE test_user_profiles_correct CASCADE;
+DROP TABLE test_category_stats_correct CASCADE;
+DROP TABLE test_product_details_correct CASCADE;
+DROP TABLE test_users_bigint CASCADE;
+DROP TABLE test_categories_integer CASCADE;
+DROP TABLE test_products_smallint CASCADE;
+DROP TABLE test_regions_text CASCADE;
 DROP EXTENSION pglinter CASCADE;

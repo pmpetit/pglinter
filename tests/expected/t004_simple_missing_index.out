@@ -2,9 +2,6 @@
 -- This script creates a table, generates data, performs queries that cause sequential scans,
 -- and then shows how the T004 rule would detect this issue.
 CREATE EXTENSION pglinter;
--- Clean up
-DROP TABLE IF EXISTS user_activities CASCADE;
-NOTICE:  table "user_activities" does not exist, skipping
 -- Create a table without proper indexes (except primary key)
 CREATE TABLE user_activities (
     id SERIAL PRIMARY KEY,
@@ -133,10 +130,10 @@ SELECT PG_SLEEP(5);
 
 -- Disable all rules first
 SELECT pglinter.disable_all_rules() AS all_rules_disabled;
-NOTICE:  🔴 Disabled 20 rule(s)
+NOTICE:  🔴 Disabled 21 rule(s)
  all_rules_disabled 
 --------------------
-                 20
+                 21
 (1 row)
 
 -- enable T004
@@ -150,8 +147,13 @@ NOTICE:  ✅ Rule T004 has been enabled
 SELECT pglinter.perform_table_check(); -- Should include T004
 NOTICE:  🔍 pglinter found 1 issue(s):
 NOTICE:  ==================================================
-NOTICE:  ⚠️  [T004] WARNING: TABLE table with potential missing index 1 : 
-public.user_activities:100 % of seq scan 
+NOTICE:  ⚠️  [T004] WARNING: TABLE table with potential missing index 6 : 
+public.customer_orders:100 % of seq scan
+public.good_table_with_pk:100 % of seq scan
+public.inventory_logs:100 % of seq scan
+public.product_reviews:100 % of seq scan
+public.user_activities:100 % of seq scan
+public.user_sessions:100 % of seq scan 
 
 NOTICE:  ==================================================
 NOTICE:  📊 Summary: 0 error(s), 1 warning(s), 0 info
@@ -352,8 +354,13 @@ NOTICE:  ✅ Rule T004 has been enabled
 SELECT pglinter.perform_table_check(); -- Should include T004
 NOTICE:  🔍 pglinter found 1 issue(s):
 NOTICE:  ==================================================
-NOTICE:  ⚠️  [T004] WARNING: TABLE table with potential missing index 1 : 
-public.indexed_user_activities:69 % of seq scan 
+NOTICE:  ⚠️  [T004] WARNING: TABLE table with potential missing index 6 : 
+public.customer_orders:100 % of seq scan
+public.good_table_with_pk:100 % of seq scan
+public.indexed_user_activities:69 % of seq scan
+public.inventory_logs:100 % of seq scan
+public.product_reviews:100 % of seq scan
+public.user_sessions:100 % of seq scan 
 
 NOTICE:  ==================================================
 NOTICE:  📊 Summary: 0 error(s), 1 warning(s), 0 info
@@ -365,4 +372,6 @@ NOTICE:  🟡 Some warnings found - consider reviewing for optimization
 
 -- Cleanup
 DROP TABLE IF EXISTS indexed_user_activities CASCADE;
+DROP TABLE IF EXISTS user_activities CASCADE;
+NOTICE:  table "user_activities" does not exist, skipping
 DROP EXTENSION pglinter CASCADE;

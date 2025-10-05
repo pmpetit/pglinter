@@ -183,10 +183,10 @@ SELECT 'Disabling all rules to test T009 specifically...' AS status;
 (1 row)
 
 SELECT pglinter.disable_all_rules() AS all_rules_disabled;
-NOTICE:  🔴 Disabled 20 rule(s)
+NOTICE:  🔴 Disabled 21 rule(s)
  all_rules_disabled 
 --------------------
-                 20
+                 21
 (1 row)
 
 SELECT pglinter.enable_rule('T009') AS t009_enabled;
@@ -207,21 +207,21 @@ SELECT pglinter.perform_table_check();
 NOTICE:  🔍 pglinter found 1 issue(s):
 NOTICE:  ==================================================
 NOTICE:  ⚠️  [T009] WARNING: TABLE Reserved keywords in object. 15 : 
-table:test_keywords_schema.SELECT is a reserved keyword.
-column:test_naming_schema.users_with_bad_columns.LIMIT is a reserved keyword.
-table:test_keywords_schema.DISTINCT is a reserved keyword.
-column:test_naming_schema.users_with_bad_columns.OFFSET is a reserved keyword.
-column:test_keywords_schema.products_with_bad_columns.UNION is a reserved keyword.
-column:test_keywords_schema.products_with_bad_columns.HAVING is a reserved keyword.
-table:test_naming_schema.ORDER is a reserved keyword.
 column:test_keywords_schema.products_with_bad_columns.GROUP is a reserved keyword.
+column:test_keywords_schema.products_with_bad_columns.HAVING is a reserved keyword.
+column:test_keywords_schema.products_with_bad_columns.UNION is a reserved keyword.
 column:test_naming_schema.users_with_bad_columns.JOIN is a reserved keyword.
-index:test_naming_schema.UNIQUE is a reserved keyword.
-table:test_naming_schema.INNER is a reserved keyword.
+column:test_naming_schema.users_with_bad_columns.LIMIT is a reserved keyword.
+column:test_naming_schema.users_with_bad_columns.OFFSET is a reserved keyword.
 index:test_keywords_schema.FOREIGN is a reserved keyword.
+index:test_keywords_schema.PRIMARY is a reserved keyword.
+index:test_naming_schema.UNIQUE is a reserved keyword.
+table:test_keywords_schema.DISTINCT is a reserved keyword.
 table:test_keywords_schema.FROM is a reserved keyword.
-table:test_naming_schema.WHERE is a reserved keyword.
-index:test_keywords_schema.PRIMARY is a reserved keyword. 
+table:test_keywords_schema.SELECT is a reserved keyword.
+table:test_naming_schema.INNER is a reserved keyword.
+table:test_naming_schema.ORDER is a reserved keyword.
+table:test_naming_schema.WHERE is a reserved keyword. 
 
 NOTICE:  ==================================================
 NOTICE:  📊 Summary: 0 error(s), 1 warning(s), 0 info
@@ -264,21 +264,21 @@ SELECT pglinter.perform_table_check(); -- Should include T009 again
 NOTICE:  🔍 pglinter found 1 issue(s):
 NOTICE:  ==================================================
 NOTICE:  ⚠️  [T009] WARNING: TABLE Reserved keywords in object. 15 : 
-table:test_keywords_schema.SELECT is a reserved keyword.
-column:test_naming_schema.users_with_bad_columns.LIMIT is a reserved keyword.
-table:test_keywords_schema.DISTINCT is a reserved keyword.
-column:test_naming_schema.users_with_bad_columns.OFFSET is a reserved keyword.
-column:test_keywords_schema.products_with_bad_columns.UNION is a reserved keyword.
-column:test_keywords_schema.products_with_bad_columns.HAVING is a reserved keyword.
-table:test_naming_schema.ORDER is a reserved keyword.
 column:test_keywords_schema.products_with_bad_columns.GROUP is a reserved keyword.
+column:test_keywords_schema.products_with_bad_columns.HAVING is a reserved keyword.
+column:test_keywords_schema.products_with_bad_columns.UNION is a reserved keyword.
 column:test_naming_schema.users_with_bad_columns.JOIN is a reserved keyword.
-index:test_naming_schema.UNIQUE is a reserved keyword.
-table:test_naming_schema.INNER is a reserved keyword.
+column:test_naming_schema.users_with_bad_columns.LIMIT is a reserved keyword.
+column:test_naming_schema.users_with_bad_columns.OFFSET is a reserved keyword.
 index:test_keywords_schema.FOREIGN is a reserved keyword.
+index:test_keywords_schema.PRIMARY is a reserved keyword.
+index:test_naming_schema.UNIQUE is a reserved keyword.
+table:test_keywords_schema.DISTINCT is a reserved keyword.
 table:test_keywords_schema.FROM is a reserved keyword.
-table:test_naming_schema.WHERE is a reserved keyword.
-index:test_keywords_schema.PRIMARY is a reserved keyword. 
+table:test_keywords_schema.SELECT is a reserved keyword.
+table:test_naming_schema.INNER is a reserved keyword.
+table:test_naming_schema.ORDER is a reserved keyword.
+table:test_naming_schema.WHERE is a reserved keyword. 
 
 NOTICE:  ==================================================
 NOTICE:  📊 Summary: 0 error(s), 1 warning(s), 0 info
@@ -289,4 +289,51 @@ NOTICE:  🟡 Some warnings found - consider reviewing for optimization
 (1 row)
 
 -- ROLLBACK;
+DROP TABLE test_keywords_schema."SELECT" CASCADE;
+DROP TABLE test_keywords_schema."FROM" CASCADE;
+DROP TABLE test_naming_schema."WHERE" CASCADE;
+DROP TABLE test_naming_schema."ORDER" CASCADE;
+DROP TABLE test_keywords_schema.products_with_bad_columns CASCADE;
+NOTICE:  drop cascades to view test_keywords_schema."DISTINCT"
+DROP TABLE test_naming_schema.users_with_bad_columns CASCADE;
+NOTICE:  drop cascades to view test_naming_schema."INNER"
+DROP TABLE test_keywords_schema.good_products CASCADE;
+NOTICE:  drop cascades to view test_keywords_schema.active_products
+DROP TABLE test_naming_schema.good_users CASCADE;
+DROP VIEW test_keywords_schema."DISTINCT" CASCADE;
+ERROR:  view "DISTINCT" does not exist
+DROP VIEW test_naming_schema."INNER" CASCADE;
+ERROR:  view "INNER" does not exist
+DROP VIEW test_keywords_schema.active_products CASCADE;
+ERROR:  view "active_products" does not exist
+DROP SEQUENCE test_keywords_schema."NULL" CASCADE;
+DROP SEQUENCE test_naming_schema."TRUE" CASCADE;
+DROP SEQUENCE test_keywords_schema."FALSE" CASCADE;
+DROP SEQUENCE test_naming_schema.user_id_seq CASCADE;
+DROP INDEX test_keywords_schema."PRIMARY" CASCADE;
+ERROR:  index "PRIMARY" does not exist
+DROP INDEX test_naming_schema."UNIQUE" CASCADE;
+ERROR:  index "UNIQUE" does not exist
+DROP INDEX test_keywords_schema."FOREIGN" CASCADE;
+ERROR:  index "FOREIGN" does not exist
+DROP INDEX test_keywords_schema.idx_product_name CASCADE;
+ERROR:  index "idx_product_name" does not exist
+DROP INDEX test_naming_schema.idx_username CASCADE;
+ERROR:  index "idx_username" does not exist
+DROP FUNCTION test_keywords_schema."AND"(INTEGER, INTEGER) CASCADE;
+DROP FUNCTION test_naming_schema."OR"(TEXT, TEXT) CASCADE;
+DROP TYPE test_keywords_schema."CASE" CASCADE;
+DROP TYPE test_naming_schema."WHEN" CASCADE;
+DROP TRIGGER test_keywords_schema."ELSE" ON test_keywords_schema.products_with_bad_columns CASCADE;
+ERROR:  syntax error at or near "."
+LINE 1: DROP TRIGGER test_keywords_schema."ELSE" ON test_keywords_sc...
+                                         ^
+DROP FUNCTION test_keywords_schema."THEN"() CASCADE;
+DROP TRIGGER test_naming_schema."BINARY" ON test_naming_schema.users_with_bad_columns CASCADE;
+ERROR:  syntax error at or near "."
+LINE 1: DROP TRIGGER test_naming_schema."BINARY" ON test_naming_sche...
+                                       ^
+DROP FUNCTION test_naming_schema."END"() CASCADE;
+DROP SCHEMA test_keywords_schema CASCADE;
+DROP SCHEMA test_naming_schema CASCADE;
 DROP EXTENSION pglinter CASCADE;

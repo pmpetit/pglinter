@@ -132,6 +132,19 @@ INSERT INTO pglinter.rules (
     ARRAY['change trust or password method in pg_hba.conf']
 ),
 
+(
+    12,
+    'PasswordEncryptionIsMd5',
+    'C003',
+    20,
+    80,
+    'CLUSTER',
+    'This configuration is not secure anymore and will prevent an upgrade to Postgres 18. Warning, you will need to reset all passwords after this is changed to scram-sha-256.',
+    '{0} password(s) encrypted with MD5 exceed the warning threshold: {1}.',
+    ARRAY['change password_encryption parameter to scram-sha-256. Warning, you will need to reset all passwords after this parameter is updated.']
+),
+
+
 -- Table Rules (T series)
 (
     20, 'TableWithoutPrimaryKey', 'T001', 1, 1, 'TABLE',
@@ -238,7 +251,7 @@ INSERT INTO pglinter.rules (
 -- B001 - Tables Without Primary Key
 UPDATE pglinter.rules
 SET q1 = $$
-SELECT count(*)
+SELECT count(*) AS total_tables
 FROM pg_catalog.pg_tables
 WHERE
     schemaname NOT IN (
@@ -249,7 +262,7 @@ WHERE code = 'B001';
 
 UPDATE pglinter.rules
 SET q2 = $$
-SELECT count(DISTINCT pg_class.relname)
+SELECT count(DISTINCT pg_class.relname) AS total_indexes
 FROM pg_index, pg_class, pg_attribute, pg_namespace
 WHERE
     indrelid = pg_class.oid
@@ -343,6 +356,7 @@ WHERE
             )
             AND pc.contype = 'p'
     )
+ORDER BY 1
 $$
 WHERE code = 'T001';
 
@@ -363,6 +377,7 @@ WHERE
             da.defaclnamespace = n.oid
             AND da.defaclrole != n.nspowner
     )
+ORDER BY 1
 $$
 WHERE code = 'S001';
 
@@ -389,6 +404,7 @@ WHERE
     AND ccu.table_schema NOT IN (
         'pg_toast', 'pg_catalog', 'information_schema', 'pglinter'
     )
+ORDER BY 1
 $$
 WHERE code = 'T005';
 
@@ -397,7 +413,7 @@ WHERE code = 'T005';
 -- =============================================================================
 UPDATE pglinter.rules
 SET q1 = $$
-SELECT count(DISTINCT tc.table_name)
+SELECT count(DISTINCT tc.table_name)::INT AS total_tables
 FROM
     information_schema.table_constraints AS tc
 WHERE
@@ -413,7 +429,7 @@ WHERE code = 'B003';
 -- =============================================================================
 UPDATE pglinter.rules
 SET q2 = $$
-SELECT COUNT(DISTINCT c.relname) AS tables_with_unindexed_foreign_keys
+SELECT COUNT(DISTINCT c.relname)::INT AS tables_with_unindexed_foreign_keys
 FROM pg_constraint con
 JOIN pg_class c ON c.oid = con.conrelid
 JOIN pg_namespace n ON n.oid = c.relnamespace
@@ -469,6 +485,7 @@ WHERE
         OR nspname ILIKE 'sandbox_%' OR nspname ILIKE '%_sandbox'
         OR nspname ILIKE 'sbox_%' OR nspname ILIKE '%_sbox'
     )
+ORDER BY 1
 $$
 WHERE code = 'S002';
 
@@ -498,6 +515,7 @@ WHERE
             AND pi.tablename = tc.table_name
             AND pi.indexdef LIKE '%' || kcu.column_name || '%'
     )
+ORDER BY 1
 $$
 WHERE code = 'T003';
 
@@ -521,6 +539,7 @@ WHERE
             AND rtg.table_name = t.table_name
             AND pr.rolcanlogin = false
     )
+ORDER BY 1
 $$
 WHERE code = 'T008';
 
@@ -644,6 +663,7 @@ WHERE
     schemaname NOT IN (
         'pg_toast', 'pg_catalog', 'information_schema', 'pglinter'
     )
+ORDER BY 1
 $$
 WHERE code = 'T004';
 
@@ -669,6 +689,7 @@ WHERE
         'pg_toast', 'pg_catalog', 'information_schema', 'pglinter'
     )
     AND pg_relation_size(indexrelid) > $1
+ORDER BY 1
 $$
 WHERE code = 'T006';
 
@@ -1065,6 +1086,7 @@ WHERE
         'pg_toast', 'pg_catalog', 'information_schema', 'pglinter'
     )
     AND col1.data_type != col2.data_type
+ORDER BY 1
 $$
 WHERE code = 'T007';
 
@@ -1139,5 +1161,28 @@ FROM (
         )
         AND UPPER(indexname) = keyword
 ) reserved_objects
+ORDER BY 1
 $$
 WHERE code = 'T009';
+
+-- =============================================================================
+-- C003 - MD5 encrypted Passwords (Total Settings)
+-- =============================================================================
+UPDATE pglinter.rules
+SET q1 = $$
+SELECT count(*) FROM
+pg_catalog.pg_settings
+WHERE name='password_encryption'
+$$
+WHERE code = 'C003';
+
+-- =============================================================================
+-- C003 - MD5 encrypted Passwords (Problems)
+-- =============================================================================
+UPDATE pglinter.rules
+SET q2 = $$
+SELECT count(*) FROM
+pg_catalog.pg_settings
+WHERE name='password_encryption' AND setting='md5'
+$$
+WHERE code = 'C003';

@@ -2,7 +2,6 @@
 -- This script creates various database objects with uppercase names to test
 -- the comprehensive B006 rule detection across all PostgreSQL object types
 CREATE EXTENSION pglinter;
-BEGIN;
 -- Create a test schema for our objects
 CREATE SCHEMA test_b006_schema;
 -- Create test objects with UPPERCASE names (should trigger B006)
@@ -79,10 +78,10 @@ SELECT 'Testing B006 rule - Comprehensive uppercase object detection...' AS test
 
 -- First, disable all rules to isolate B006 testing
 SELECT pglinter.disable_all_rules() AS all_rules_disabled;
-NOTICE:  🔴 Disabled 20 rule(s)
+NOTICE:  🔴 Disabled 21 rule(s)
  all_rules_disabled 
 --------------------
-                 20
+                 21
 (1 row)
 
 -- Enable only B006 for focused testing
@@ -158,5 +157,15 @@ Count number of objects with uppercase in name or in columns.
  t
 (1 row)
 
-ROLLBACK;
+DROP SCHEMA test_b006_schema CASCADE;
+NOTICE:  drop cascades to 8 other objects
+DETAIL:  drop cascades to table test_b006_schema."CUSTOMERS_TABLE"
+drop cascades to view test_b006_schema."ACTIVE_CUSTOMERS"
+drop cascades to sequence test_b006_schema."CUSTOMER_ID_SEQ"
+drop cascades to function test_b006_schema."GET_CUSTOMER_COUNT"()
+drop cascades to function test_b006_schema.get_customer_by_id(integer)
+drop cascades to function test_b006_schema.update_timestamp()
+drop cascades to type test_b006_schema."CUSTOMER_STATUS"
+drop cascades to type test_b006_schema."EMAIL_DOMAIN"
+DROP SCHEMA "TEST_UPPERCASE_SCHEMA" CASCADE;
 DROP EXTENSION pglinter CASCADE;

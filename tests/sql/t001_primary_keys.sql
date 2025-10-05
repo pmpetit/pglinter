@@ -2,7 +2,6 @@
 -- This script creates tables without primary keys and shows how the T001 rule detects this issue.
 CREATE EXTENSION pglinter;
 
-BEGIN;
 
 \pset pager off
 
@@ -149,6 +148,13 @@ ANALYZE inventory_logs;
 SELECT 'Running T001 check after adding primary keys (should show no issues):' as test_info;
 SELECT pglinter.perform_table_check();
 
-ROLLBACK;
+DROP TABLE test_app_schema.users_no_grants CASCADE;
+DROP TABLE test_app_schema.products_no_grants CASCADE;
+DROP TABLE test_reports_schema.sales_data_no_grants CASCADE;
+DROP TABLE test_data_schema.analytics_no_grants CASCADE;
+DROP TABLE test_app_schema.orders_with_grants CASCADE;
+DROP TABLE test_reports_schema.monthly_reports_with_grants CASCADE;
+DROP TABLE test_data_schema.processed_events_with_grants CASCADE;
+DROP TABLE public.public_table_test CASCADE;
 
 DROP EXTENSION pglinter CASCADE;

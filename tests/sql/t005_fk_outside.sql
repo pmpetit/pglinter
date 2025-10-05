@@ -3,8 +3,6 @@
 -- and shows how the T005 rule detects this cross-schema dependency issue.
 CREATE EXTENSION pglinter;
 
-BEGIN;
-
 \pset pager off
 
 -- Create the main/public schema tables (referenced tables)
@@ -207,6 +205,16 @@ SELECT pglinter.perform_table_check(); -- Should skip T005
 SELECT pglinter.enable_rule('T005') AS t005_re_enabled;
 SELECT pglinter.perform_table_check(); -- Should include T005 again
 
-ROLLBACK;
+
+DROP TABLE IF EXISTS public.customers CASCADE;
+DROP TABLE IF EXISTS public.products CASCADE;
+DROP TABLE IF EXISTS public.users CASCADE;
+DROP TABLE IF EXISTS test_app_schema.users_no_grants CASCADE;
+DROP TABLE IF EXISTS test_app_schema.products_no_grants CASCADE;
+DROP TABLE IF EXISTS test_reports_schema.sales_data_no_grants CASCADE;
+DROP TABLE IF EXISTS test_data_schema.analytics_no_grants CASCADE;
+DROP TABLE IF EXISTS test_app_schema.orders_with_grants CASCADE;
+DROP TABLE IF EXISTS test_reports_schema.monthly_reports_with_grants CASCADE;
+DROP TABLE IF EXISTS test_data_schema.processed_events_with_grants CASCADE;
 
 DROP EXTENSION pglinter CASCADE;

@@ -1,6 +1,5 @@
 -- Example to demonstrate missing index on foreign key and T003 rule detection
 CREATE EXTENSION pglinter;
-BEGIN;
 \pset pager off
 -- Create tables: parent with PK, child with FK but no index on FK
 CREATE TABLE parent (
@@ -22,10 +21,10 @@ ANALYZE parent;
 ANALYZE child;
 -- Disable all rules first to isolate T004 testing
 SELECT pglinter.disable_all_rules() AS all_rules_disabled;
-NOTICE:  🔴 Disabled 20 rule(s)
+NOTICE:  🔴 Disabled 21 rule(s)
  all_rules_disabled 
 --------------------
-                 20
+                 21
 (1 row)
 
 -- Enable T003 specifically
@@ -63,5 +62,6 @@ NOTICE:  ✅ No issues found - database schema looks good!
  t
 (1 row)
 
-ROLLBACK;
+DROP TABLE child CASCADE;
+DROP TABLE parent CASCADE;
 DROP EXTENSION pglinter CASCADE;

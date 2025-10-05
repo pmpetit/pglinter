@@ -3,8 +3,6 @@
 -- and verifies that B008 correctly counts the percentage at database level
 CREATE EXTENSION pglinter;
 
-BEGIN;
-
 \pset pager off
 
 -- Create test schemas
@@ -217,6 +215,10 @@ SELECT pglinter.perform_base_check('/tmp/pglinter_b008_results.sarif');
 -- Reset to original levels
 SELECT pglinter.update_rule_levels('B008', 20, 80) AS b008_reset_levels;
 
-ROLLBACK;
+DROP SCHEMA public_schema CASCADE;
+DROP SCHEMA sales_schema CASCADE;
+DROP SCHEMA inventory_schema CASCADE;
+DROP SCHEMA audit_schema CASCADE;
+DROP SCHEMA clean_schema CASCADE;
 
 DROP EXTENSION pglinter CASCADE;

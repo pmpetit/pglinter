@@ -231,4 +231,35 @@ SELECT pglinter.perform_table_check(); -- Should include T009 again
 
 -- ROLLBACK;
 
+DROP TABLE test_keywords_schema."SELECT" CASCADE;
+DROP TABLE test_keywords_schema."FROM" CASCADE;
+DROP TABLE test_naming_schema."WHERE" CASCADE;
+DROP TABLE test_naming_schema."ORDER" CASCADE;
+DROP TABLE test_keywords_schema.products_with_bad_columns CASCADE;
+DROP TABLE test_naming_schema.users_with_bad_columns CASCADE;
+DROP TABLE test_keywords_schema.good_products CASCADE;
+DROP TABLE test_naming_schema.good_users CASCADE;
+DROP VIEW test_keywords_schema."DISTINCT" CASCADE;
+DROP VIEW test_naming_schema."INNER" CASCADE;
+DROP VIEW test_keywords_schema.active_products CASCADE;
+DROP SEQUENCE test_keywords_schema."NULL" CASCADE;
+DROP SEQUENCE test_naming_schema."TRUE" CASCADE;
+DROP SEQUENCE test_keywords_schema."FALSE" CASCADE;
+DROP SEQUENCE test_naming_schema.user_id_seq CASCADE;
+DROP INDEX test_keywords_schema."PRIMARY" CASCADE;
+DROP INDEX test_naming_schema."UNIQUE" CASCADE;
+DROP INDEX test_keywords_schema."FOREIGN" CASCADE;
+DROP INDEX test_keywords_schema.idx_product_name CASCADE;
+DROP INDEX test_naming_schema.idx_username CASCADE;
+DROP FUNCTION test_keywords_schema."AND"(INTEGER, INTEGER) CASCADE;
+DROP FUNCTION test_naming_schema."OR"(TEXT, TEXT) CASCADE;
+DROP TYPE test_keywords_schema."CASE" CASCADE;
+DROP TYPE test_naming_schema."WHEN" CASCADE;
+DROP TRIGGER test_keywords_schema."ELSE" ON test_keywords_schema.products_with_bad_columns CASCADE;
+DROP FUNCTION test_keywords_schema."THEN"() CASCADE;
+DROP TRIGGER test_naming_schema."BINARY" ON test_naming_schema.users_with_bad_columns CASCADE;
+DROP FUNCTION test_naming_schema."END"() CASCADE;
+DROP SCHEMA test_keywords_schema CASCADE;
+DROP SCHEMA test_naming_schema CASCADE;
+
 DROP EXTENSION pglinter CASCADE;

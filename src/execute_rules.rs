@@ -123,7 +123,11 @@ fn execute_q1_rule_dynamic(
         let mut details = Vec::new();
 
         for row in client.select(q1, None, &[])? {
-            let message: String = row.get(1)?.unwrap_or_default();
+            // Try to get the first column as message, fallback to empty string if not available
+            let message: String = row.get::<&str>(1)
+                .unwrap_or(None)
+                .map(|s| s.to_string())
+                .unwrap_or_else(|| format!("Row {}", count + 1));
             details.push(message);
             count += 1;
         }
@@ -188,7 +192,11 @@ fn execute_q1_rule_with_params(
         };
 
         for row in rows {
-            let message: String = row.get(1)?.unwrap_or_default();
+            // Try to get the first column as message, fallback to empty string if not available
+            let message: String = row.get::<&str>(0)
+                .unwrap_or(None)
+                .map(|s| s.to_string())
+                .unwrap_or_else(|| format!("Row {}", count + 1));
             details.push(message);
             count += 1;
         }
@@ -415,7 +423,7 @@ pub fn execute_rules(scope: &str) -> Result<Vec<RuleResult>, String> {
 
     // Query to get all enabled BASE rules with their SQL queries
     let rules_query = "
-        SELECT code, name, q1, q2, scope
+        SELECT code, q1, q2, scope
         FROM pglinter.rules
         WHERE enable = true
         AND scope = $1
@@ -425,11 +433,17 @@ pub fn execute_rules(scope: &str) -> Result<Vec<RuleResult>, String> {
     let rule_result: Result<Vec<RuleData>, spi::SpiError> = Spi::connect(|client| {
         let mut rules = Vec::new();
 
+        // Fetch all enabled rules for the specified scope
+        pgrx::debug1!(
+            "execute_rule; Fetching all enabled {} rules from database",
+            scope
+        );
+
         for row in client.select(rules_query, None, &[scope.into()])? {
             let code: String = row.get(1)?.unwrap_or_default();
-            let q1: String = row.get(3)?.unwrap_or_default();
-            let q2: Option<String> = row.get(4)?;
-            let scope: String = row.get(5)?.unwrap_or_default();
+            let q1: String = row.get(2)?.unwrap_or_default();
+            let q2: Option<String> = row.get(3)?;
+            let scope: String = row.get(4)?.unwrap_or_default();
 
             rules.push(RuleData {
                 code,
@@ -483,7 +497,7 @@ pub fn execute_rules(scope: &str) -> Result<Vec<RuleResult>, String> {
                                         e
                                     );
                                     return Err(format!(
-                                        "Failed to execute rule {}: {}",
+                                        "Failed to execute q2 rule {}: {}",
                                         rule.code, e
                                     ));
                                 }

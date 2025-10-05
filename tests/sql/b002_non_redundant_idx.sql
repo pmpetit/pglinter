@@ -1,10 +1,8 @@
 -- Test for pglinter B002 rule: No Redundant indexes exists, no warning should be raised.
 CREATE EXTENSION pglinter;
 
-BEGIN;
-
 -- Create test tables with redundant indexes
-CREATE TABLE IF NOT EXISTS test_table_without_redundant_indexes (
+CREATE TABLE test_table_without_redundant_indexes (
     id INT PRIMARY KEY,
     name TEXT,
     email VARCHAR(255),
@@ -14,7 +12,7 @@ CREATE TABLE IF NOT EXISTS test_table_without_redundant_indexes (
 
 
 -- Create table with one index and a unique constrainte on the same column
-CREATE TABLE IF NOT EXISTS orders_table_with_constraint (
+CREATE TABLE orders_table_with_constraint (
     order_id SERIAL PRIMARY KEY,
     customer_id INT UNIQUE,
     product_name VARCHAR(255),
@@ -23,7 +21,7 @@ CREATE TABLE IF NOT EXISTS orders_table_with_constraint (
 );
 
 -- Create another table for more redundant index scenarios
-CREATE TABLE IF NOT EXISTS orders_table (
+CREATE TABLE orders_table (
     order_id SERIAL PRIMARY KEY,
     customer_id INT,
     product_name VARCHAR(255),
@@ -56,6 +54,8 @@ SELECT pglinter.is_rule_enabled('B002') AS b002_enabled;
 SELECT pglinter.disable_rule('B002') AS b002_disabled;
 SELECT pglinter.perform_base_check();
 
-ROLLBACK;
+DROP TABLE orders_table CASCADE;
+DROP TABLE orders_table_with_constraint CASCADE;
+DROP TABLE test_table_without_redundant_indexes CASCADE;
 
 DROP EXTENSION pglinter CASCADE;

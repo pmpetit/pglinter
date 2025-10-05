@@ -4,8 +4,6 @@
 
 CREATE EXTENSION pglinter;
 
-BEGIN;
-
 \pset pager off
 
 -- Create custom schemas (tables in these schemas should be checked by T008)
@@ -166,6 +164,21 @@ SELECT pglinter.perform_table_check(); -- Should skip T008
 SELECT pglinter.enable_rule('T008') AS t008_re_enabled;
 SELECT pglinter.perform_table_check(); -- Should include T008 again
 
-ROLLBACK;
+
+DROP TABLE  public.public_table_test CASCADE;
+DROP TABLE  test_app_schema.users_no_grants CASCADE;
+DROP TABLE  test_app_schema.products_no_grants CASCADE;
+DROP TABLE  test_reports_schema.sales_data_no_grants CASCADE;
+DROP TABLE  test_data_schema.analytics_no_grants CASCADE;
+DROP TABLE  test_app_schema.orders_with_grants CASCADE;
+DROP TABLE  test_reports_schema.monthly_reports_with_grants CASCADE;
+DROP TABLE  test_data_schema.processed_events_with_grants CASCADE;
+
+DROP ROLE test_app_role;
+DROP ROLE test_reports_role;
+DROP ROLE test_readonly_role;
+DROP SCHEMA test_app_schema CASCADE;
+DROP SCHEMA test_reports_schema CASCADE;
+DROP SCHEMA test_data_schema CASCADE;
 
 DROP EXTENSION pglinter CASCADE;
