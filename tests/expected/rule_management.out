@@ -20,6 +20,7 @@ NOTICE:  B006   ✅ ON     HowManyObjectsWithUppercase
 NOTICE:  B007   ✅ ON     HowManyTablesNeverSelected              
 NOTICE:  B008   ✅ ON     HowManyTablesWithFkOutsideSchema        
 NOTICE:  C002   ✅ ON     PgHbaEntriesWithMethodTrustOrPasswordShouldNotExists
+NOTICE:  C003   ✅ ON     PasswordEncryptionIsMd5                 
 NOTICE:  S001   ✅ ON     SchemaWithDefaultRoleNotGranted         
 NOTICE:  S002   ✅ ON     SchemaPrefixedOrSuffixedWithEnvt        
 NOTICE:  T001   ✅ ON     TableWithoutPrimaryKey                  
@@ -33,7 +34,7 @@ NOTICE:  T008   ✅ ON     TableWithRoleNotGranted
 NOTICE:  T009   ✅ ON     ReservedKeyWord                         
 NOTICE:  T010   🔴 OFF    TableWithSensibleColumn                 
 NOTICE:  ============================================================
-NOTICE:  📊 Summary: 20 enabled, 1 disabled
+NOTICE:  📊 Summary: 21 enabled, 1 disabled
  show_rules 
 ------------
  t
@@ -115,6 +116,7 @@ NOTICE:  B006   ✅ ON     HowManyObjectsWithUppercase
 NOTICE:  B007   ✅ ON     HowManyTablesNeverSelected              
 NOTICE:  B008   ✅ ON     HowManyTablesWithFkOutsideSchema        
 NOTICE:  C002   ✅ ON     PgHbaEntriesWithMethodTrustOrPasswordShouldNotExists
+NOTICE:  C003   ✅ ON     PasswordEncryptionIsMd5                 
 NOTICE:  S001   ✅ ON     SchemaWithDefaultRoleNotGranted         
 NOTICE:  S002   ✅ ON     SchemaPrefixedOrSuffixedWithEnvt        
 NOTICE:  T001   ✅ ON     TableWithoutPrimaryKey                  
@@ -128,7 +130,7 @@ NOTICE:  T008   ✅ ON     TableWithRoleNotGranted
 NOTICE:  T009   ✅ ON     ReservedKeyWord                         
 NOTICE:  T010   🔴 OFF    TableWithSensibleColumn                 
 NOTICE:  ============================================================
-NOTICE:  📊 Summary: 20 enabled, 1 disabled
+NOTICE:  📊 Summary: 21 enabled, 1 disabled
  show_rules 
 ------------
  t

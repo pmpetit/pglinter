@@ -17,10 +17,10 @@ CREATE INDEX idx_name_3 ON test_redundant (first_name,last_name,tel);
 CREATE INDEX idx_name_4 ON test_redundant (tel,last_name);
 -- Enable only T002
 SELECT pglinter.disable_all_rules();
-NOTICE:  🔴 Disabled 20 rule(s)
+NOTICE:  🔴 Disabled 21 rule(s)
  disable_all_rules 
 -------------------
-                20
+                21
 (1 row)
 
 SELECT pglinter.enable_rule('T002');

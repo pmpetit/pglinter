@@ -183,10 +183,10 @@ SELECT 'Disabling all rules to test T009 specifically...' AS status;
 (1 row)
 
 SELECT pglinter.disable_all_rules() AS all_rules_disabled;
-NOTICE:  🔴 Disabled 20 rule(s)
+NOTICE:  🔴 Disabled 21 rule(s)
  all_rules_disabled 
 --------------------
-                 20
+                 21
 (1 row)
 
 SELECT pglinter.enable_rule('T009') AS t009_enabled;
@@ -211,15 +211,15 @@ table:test_keywords_schema.SELECT is a reserved keyword.
 column:test_naming_schema.users_with_bad_columns.LIMIT is a reserved keyword.
 table:test_keywords_schema.DISTINCT is a reserved keyword.
 column:test_naming_schema.users_with_bad_columns.OFFSET is a reserved keyword.
-column:test_keywords_schema.products_with_bad_columns.UNION is a reserved keyword.
-column:test_keywords_schema.products_with_bad_columns.HAVING is a reserved keyword.
 table:test_naming_schema.ORDER is a reserved keyword.
-column:test_keywords_schema.products_with_bad_columns.GROUP is a reserved keyword.
 column:test_naming_schema.users_with_bad_columns.JOIN is a reserved keyword.
 index:test_naming_schema.UNIQUE is a reserved keyword.
 table:test_naming_schema.INNER is a reserved keyword.
 index:test_keywords_schema.FOREIGN is a reserved keyword.
 table:test_keywords_schema.FROM is a reserved keyword.
+column:test_keywords_schema.products_with_bad_columns.UNION is a reserved keyword.
+column:test_keywords_schema.products_with_bad_columns.HAVING is a reserved keyword.
+column:test_keywords_schema.products_with_bad_columns.GROUP is a reserved keyword.
 table:test_naming_schema.WHERE is a reserved keyword.
 index:test_keywords_schema.PRIMARY is a reserved keyword. 
 
@@ -268,15 +268,15 @@ table:test_keywords_schema.SELECT is a reserved keyword.
 column:test_naming_schema.users_with_bad_columns.LIMIT is a reserved keyword.
 table:test_keywords_schema.DISTINCT is a reserved keyword.
 column:test_naming_schema.users_with_bad_columns.OFFSET is a reserved keyword.
-column:test_keywords_schema.products_with_bad_columns.UNION is a reserved keyword.
-column:test_keywords_schema.products_with_bad_columns.HAVING is a reserved keyword.
 table:test_naming_schema.ORDER is a reserved keyword.
-column:test_keywords_schema.products_with_bad_columns.GROUP is a reserved keyword.
 column:test_naming_schema.users_with_bad_columns.JOIN is a reserved keyword.
 index:test_naming_schema.UNIQUE is a reserved keyword.
 table:test_naming_schema.INNER is a reserved keyword.
 index:test_keywords_schema.FOREIGN is a reserved keyword.
 table:test_keywords_schema.FROM is a reserved keyword.
+column:test_keywords_schema.products_with_bad_columns.UNION is a reserved keyword.
+column:test_keywords_schema.products_with_bad_columns.HAVING is a reserved keyword.
+column:test_keywords_schema.products_with_bad_columns.GROUP is a reserved keyword.
 table:test_naming_schema.WHERE is a reserved keyword.
 index:test_keywords_schema.PRIMARY is a reserved keyword. 
 

@@ -132,6 +132,19 @@ INSERT INTO pglinter.rules (
     ARRAY['change trust or password method in pg_hba.conf']
 ),
 
+(
+    12,
+    'PasswordEncryptionIsMd5',
+    'C003',
+    20,
+    80,
+    'CLUSTER',
+    'This configuration is not secure anymore and will prevent an upgrade to Postgres 18. Warning, you will need to reset all passwords after this is changed to scram-sha-256.',
+    '{0} password(s) encrypted with MD5 exceed the warning threshold: {1}.',
+    ARRAY['change password_encryption parameter to scram-sha-256. Warning, you will need to reset all passwords after this parameter is updated.']
+),
+
+
 -- Table Rules (T series)
 (
     20, 'TableWithoutPrimaryKey', 'T001', 1, 1, 'TABLE',
@@ -1141,3 +1154,14 @@ FROM (
 ) reserved_objects
 $$
 WHERE code = 'T009';
+
+-- =============================================================================
+-- C003 - MD5 encrypted Passwords
+-- =============================================================================
+UPDATE pglinter.rules
+SET q1 = $$
+SELECT count(*) FROM
+pg_catalog.pg_settings
+WHERE name='password_encryption' AND setting='md5'
+$$
+WHERE code = 'C003';

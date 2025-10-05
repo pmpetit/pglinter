@@ -93,10 +93,10 @@ SELECT 'Disabling all rules to test T001 specifically...' as status;
 (1 row)
 
 SELECT pglinter.disable_all_rules() AS all_rules_disabled;
-NOTICE:  🔴 Disabled 20 rule(s)
+NOTICE:  🔴 Disabled 21 rule(s)
  all_rules_disabled 
 --------------------
-                 20
+                 21
 (1 row)
 
 -- Run table check (should show no results since all rules are disabled)
@@ -178,10 +178,10 @@ SELECT pglinter.perform_table_check(); -- Should include T001 results
 NOTICE:  🔍 pglinter found 1 issue(s):
 NOTICE:  ==================================================
 NOTICE:  ⚠️  [T001] WARNING: TABLE no primary key on table(s) 4 : 
+public.inventory_logs
 public.customer_orders
 public.product_reviews
-public.user_sessions
-public.inventory_logs 
+public.user_sessions 
 
 NOTICE:  ==================================================
 NOTICE:  📊 Summary: 0 error(s), 1 warning(s), 0 info
@@ -224,10 +224,10 @@ SELECT pglinter.perform_table_check(); -- Should include T001 again
 NOTICE:  🔍 pglinter found 1 issue(s):
 NOTICE:  ==================================================
 NOTICE:  ⚠️  [T001] WARNING: TABLE no primary key on table(s) 4 : 
+public.inventory_logs
 public.customer_orders
 public.product_reviews
-public.user_sessions
-public.inventory_logs 
+public.user_sessions 
 
 NOTICE:  ==================================================
 NOTICE:  📊 Summary: 0 error(s), 1 warning(s), 0 info
