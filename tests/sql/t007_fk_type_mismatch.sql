@@ -3,8 +3,6 @@
 -- and shows how the T007 rule detects these type inconsistencies.
 CREATE EXTENSION pglinter;
 
-BEGIN;
-
 \pset pager off
 
 -- Create parent tables with various data types for primary keys
@@ -230,6 +228,17 @@ SELECT pglinter.perform_table_check(); -- Should include T007 again
 
 
 
-ROLLBACK;
+DROP TABLE test_orders_int_to_bigint CASCADE;
+DROP TABLE test_reviews_bigint_to_int CASCADE;
+DROP TABLE test_inventory_int_to_smallint CASCADE;
+DROP TABLE test_stores_varchar_to_text CASCADE;
+DROP TABLE test_discounts_smallint_to_int CASCADE;
+DROP TABLE test_user_profiles_correct CASCADE;
+DROP TABLE test_category_stats_correct CASCADE;
+DROP TABLE test_product_details_correct CASCADE;
+DROP TABLE test_users_bigint CASCADE;
+DROP TABLE test_categories_integer CASCADE;
+DROP TABLE test_products_smallint CASCADE;
+DROP TABLE test_regions_text CASCADE;
 
 DROP EXTENSION pglinter CASCADE;

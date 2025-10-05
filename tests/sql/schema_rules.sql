@@ -2,8 +2,6 @@
 -- This script demonstrates schema-level checks and rule management
 CREATE EXTENSION pglinter;
 
-BEGIN;
-
 -- Create test schemas that should trigger S002 (environment prefixes/suffixes)
 CREATE SCHEMA prod_sales;
 CREATE SCHEMA dev_analytics;
@@ -59,6 +57,10 @@ SELECT pglinter.perform_schema_check(); -- Should include S002 again
 -- Test the comprehensive check including schemas
 SELECT pglinter.check_all();
 
-ROLLBACK;
+DROP SCHEMA prod_sales CASCADE;
+DROP SCHEMA dev_analytics CASCADE;
+DROP SCHEMA testing_data CASCADE;
+DROP SCHEMA reports_staging CASCADE;
+DROP SCHEMA business_logic CASCADE;
 
 DROP EXTENSION pglinter CASCADE;

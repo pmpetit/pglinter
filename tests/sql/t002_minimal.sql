@@ -3,8 +3,6 @@ CREATE EXTENSION pglinter;
 
 \pset pager off
 
-DROP TABLE IF EXISTS test_redundant;
-
 -- Create one simple test table
 CREATE TABLE test_redundant (
     id INT PRIMARY KEY,
@@ -28,7 +26,5 @@ SELECT pglinter.perform_table_check();
 
 -- Cleanup
 DROP TABLE test_redundant CASCADE;
-
---ROLLBACK;
 
 DROP EXTENSION pglinter CASCADE;

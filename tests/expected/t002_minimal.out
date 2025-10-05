@@ -1,8 +1,6 @@
 -- Test for pglinter T002 rule: Tables with redundant indexes (minimal test)
 CREATE EXTENSION pglinter;
 \pset pager off
-DROP TABLE IF EXISTS test_redundant;
-NOTICE:  table "test_redundant" does not exist, skipping
 -- Create one simple test table
 CREATE TABLE test_redundant (
     id INT PRIMARY KEY,
@@ -49,5 +47,4 @@ NOTICE:  🟡 Some warnings found - consider reviewing for optimization
 
 -- Cleanup
 DROP TABLE test_redundant CASCADE;
---ROLLBACK;
 DROP EXTENSION pglinter CASCADE;

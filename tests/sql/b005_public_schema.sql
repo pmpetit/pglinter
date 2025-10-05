@@ -3,8 +3,6 @@
 -- versus total schemas in the database
 CREATE EXTENSION pglinter;
 
-BEGIN;
-
 SELECT 'B005 Regression Test: Schemas with public CREATE privileges' AS test_header;
 
 -- Setup B005 rule for testing
@@ -91,6 +89,16 @@ SELECT 'PART 6: Direct verification of B005 SQL queries' AS sql_verification;
 SELECT 'B005 rule explanation:' AS rule_explanation;
 SELECT pglinter.explain_rule('B005');
 
-ROLLBACK;
+DROP SCHEMA test_secure_schema CASCADE;
+DROP SCHEMA test_secure_schema_1 CASCADE;
+DROP SCHEMA test_secure_schema_2 CASCADE;
+DROP SCHEMA test_secure_schema_3 CASCADE;
+DROP SCHEMA test_secure_schema_4 CASCADE;
+DROP SCHEMA test_secure_schema_5 CASCADE;
+DROP SCHEMA test_secure_schema_6 CASCADE;
+DROP SCHEMA test_secure_schema_7 CASCADE;
+DROP SCHEMA test_secure_schema_8 CASCADE;
+DROP SCHEMA test_insecure_schema_1 CASCADE;
+DROP SCHEMA test_insecure_schema_2 CASCADE;
 
 DROP EXTENSION pglinter CASCADE;

@@ -1,7 +1,6 @@
 -- Simple example to demonstrate missing primary keys and T001 rule detection
 -- This script creates tables without primary keys and shows how the T001 rule detects this issue.
 CREATE EXTENSION pglinter;
-BEGIN;
 \pset pager off
 -- Create tables without primary keys (should trigger T001)
 CREATE TABLE customer_orders (
@@ -179,9 +178,9 @@ NOTICE:  🔍 pglinter found 1 issue(s):
 NOTICE:  ==================================================
 NOTICE:  ⚠️  [T001] WARNING: TABLE no primary key on table(s) 4 : 
 public.customer_orders
+public.inventory_logs
 public.product_reviews
-public.user_sessions
-public.inventory_logs 
+public.user_sessions 
 
 NOTICE:  ==================================================
 NOTICE:  📊 Summary: 0 error(s), 1 warning(s), 0 info
@@ -225,9 +224,9 @@ NOTICE:  🔍 pglinter found 1 issue(s):
 NOTICE:  ==================================================
 NOTICE:  ⚠️  [T001] WARNING: TABLE no primary key on table(s) 4 : 
 public.customer_orders
+public.inventory_logs
 public.product_reviews
-public.user_sessions
-public.inventory_logs 
+public.user_sessions 
 
 NOTICE:  ==================================================
 NOTICE:  📊 Summary: 0 error(s), 1 warning(s), 0 info
@@ -268,5 +267,20 @@ NOTICE:  ✅ No issues found - database schema looks good!
  t
 (1 row)
 
-ROLLBACK;
+DROP TABLE test_app_schema.users_no_grants CASCADE;
+ERROR:  schema "test_app_schema" does not exist
+DROP TABLE test_app_schema.products_no_grants CASCADE;
+ERROR:  schema "test_app_schema" does not exist
+DROP TABLE test_reports_schema.sales_data_no_grants CASCADE;
+ERROR:  schema "test_reports_schema" does not exist
+DROP TABLE test_data_schema.analytics_no_grants CASCADE;
+ERROR:  schema "test_data_schema" does not exist
+DROP TABLE test_app_schema.orders_with_grants CASCADE;
+ERROR:  schema "test_app_schema" does not exist
+DROP TABLE test_reports_schema.monthly_reports_with_grants CASCADE;
+ERROR:  schema "test_reports_schema" does not exist
+DROP TABLE test_data_schema.processed_events_with_grants CASCADE;
+ERROR:  schema "test_data_schema" does not exist
+DROP TABLE public.public_table_test CASCADE;
+ERROR:  table "public_table_test" does not exist
 DROP EXTENSION pglinter CASCADE;

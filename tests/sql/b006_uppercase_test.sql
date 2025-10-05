@@ -3,7 +3,6 @@
 -- the comprehensive B006 rule detection across all PostgreSQL object types
 CREATE EXTENSION pglinter;
 
-BEGIN;
 -- Create a test schema for our objects
 CREATE SCHEMA test_b006_schema;
 
@@ -114,6 +113,7 @@ SELECT pglinter.perform_base_check('/tmp/pglinter_b006_results.sarif');
 SELECT 'Testing B006 rule management...' AS test_section;
 SELECT pglinter.explain_rule('B006');
 
-ROLLBACK;
+DROP SCHEMA test_b006_schema CASCADE;
+DROP SCHEMA "TEST_UPPERCASE_SCHEMA" CASCADE;
 
 DROP EXTENSION pglinter CASCADE;

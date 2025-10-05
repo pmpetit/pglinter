@@ -1,7 +1,6 @@
 -- Comprehensive test for pglinter C002 rule: Insecure pg_hba.conf entries
 -- This script tests the detection of insecure authentication methods in pg_hba.conf
 CREATE EXTENSION pglinter;
-BEGIN;
 \pset pager off
 SELECT 'Testing C002 rule - pg_hba.conf security checks...' AS test_info;
                      test_info                      
@@ -88,5 +87,4 @@ This configuration is extremely insecure and should only be used in a controlled
  t
 (1 row)
 
-ROLLBACK;
 DROP EXTENSION pglinter CASCADE;

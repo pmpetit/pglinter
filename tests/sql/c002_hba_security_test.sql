@@ -2,7 +2,6 @@
 -- This script tests the detection of insecure authentication methods in pg_hba.conf
 CREATE EXTENSION pglinter;
 
-BEGIN;
 
 \pset pager off
 
@@ -30,7 +29,5 @@ SELECT pglinter.perform_base_check('/tmp/pglinter_c002_results.sarif');
 SELECT 'C002 rule explanation:' AS explanation_info;
 SELECT pglinter.explain_rule('C002') AS rule_explanation;
 
-
-ROLLBACK;
 
 DROP EXTENSION pglinter CASCADE;

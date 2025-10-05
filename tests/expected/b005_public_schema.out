@@ -2,7 +2,6 @@
 -- Tests the percentage-based detection of schemas allowing CREATE for public role
 -- versus total schemas in the database
 CREATE EXTENSION pglinter;
-BEGIN;
 SELECT 'B005 Regression Test: Schemas with public CREATE privileges' AS test_header;
                          test_header                         
 -------------------------------------------------------------
@@ -176,5 +175,15 @@ Only authorized users should be allowed to create objects.
  t
 (1 row)
 
-ROLLBACK;
+DROP SCHEMA test_secure_schema CASCADE;
+DROP SCHEMA test_secure_schema_1 CASCADE;
+DROP SCHEMA test_secure_schema_2 CASCADE;
+DROP SCHEMA test_secure_schema_3 CASCADE;
+DROP SCHEMA test_secure_schema_4 CASCADE;
+DROP SCHEMA test_secure_schema_5 CASCADE;
+DROP SCHEMA test_secure_schema_6 CASCADE;
+DROP SCHEMA test_secure_schema_7 CASCADE;
+DROP SCHEMA test_secure_schema_8 CASCADE;
+DROP SCHEMA test_insecure_schema_1 CASCADE;
+DROP SCHEMA test_insecure_schema_2 CASCADE;
 DROP EXTENSION pglinter CASCADE;

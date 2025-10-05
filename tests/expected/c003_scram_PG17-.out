@@ -1,19 +1,7 @@
 -- Comprehensive test for pglinter C003 rule: SCRAM-SHA-256 encrypted passwords
 -- This script tests the C003 rule when password encryption is set to secure SCRAM-SHA-256
 -- Note: MD5 password encryption was removed in PostgreSQL 18
--- Check PostgreSQL version and exit if version 18 or higher
-\set pg_version_num `psql -t -A -c "SELECT current_setting('server_version_num')::integer;"`
-psql: error: FATAL:  database "pmp" does not exist
-\if :pg_version_num >= 180000
-unrecognized value " >= 180000" for "\if expression": Boolean expected
-    \echo 'NOTICE: Skipping C003 test - MD5 password encryption is not supported in PostgreSQL 18+'
-    \echo 'NOTICE: Current PostgreSQL version:' `psql -t -A -c "SELECT version();"`
-    \q
-\endif
-\echo 'NOTICE: PostgreSQL version supports password encryption changes - proceeding with C003 SCRAM test'
-NOTICE: PostgreSQL version supports password encryption changes - proceeding with C003 SCRAM test
 CREATE EXTENSION pglinter;
-BEGIN;
 \pset pager off
 SELECT 'Testing C003 rule with SCRAM-SHA-256 password encryption...' AS test_info;
                           test_info                          
@@ -277,5 +265,6 @@ BEGIN
 END
 $$;
 NOTICE:  Restored password_encryption to original value: md5
-ROLLBACK;
+DROP TABLE original_settings;
+DROP TABLE setting_change_status;
 DROP EXTENSION pglinter CASCADE;

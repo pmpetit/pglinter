@@ -1,6 +1,6 @@
 -- Quick test to verify B001 rule uses configurable thresholds
 CREATE EXTENSION pglinter;
-BEGIN;
+\pset pager off
 -- Create a table without primary key
 CREATE TABLE test_no_pk (
     id INTEGER,
@@ -83,5 +83,6 @@ NOTICE:  ✅ Updated rule B001 levels: warning=60, error=80
  t
 (1 row)
 
-ROLLBACK;
+DROP TABLE test_no_pk CASCADE;
+DROP TABLE test_with_pk CASCADE;
 DROP EXTENSION pglinter CASCADE;

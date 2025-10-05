@@ -1,9 +1,7 @@
 -- Test for pglinter rule management functionality
 CREATE EXTENSION pglinter;
 
-BEGIN;
-
-CREATE TABLE IF NOT EXISTS test_table_for_rules (
+CREATE TABLE test_table_for_rules (
     id INT,
     name TEXT
 );
@@ -35,6 +33,6 @@ SELECT pglinter.disable_rule('NONEXISTENT') AS nonexistent_disable;
 -- Show final rule status
 SELECT pglinter.show_rules();
 
-ROLLBACK;
+DROP TABLE test_table_for_rules CASCADE;
 
 DROP EXTENSION pglinter CASCADE;

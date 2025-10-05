@@ -3,8 +3,6 @@ CREATE EXTENSION pglinter;
 
 \pset pager off
 
-BEGIN;
-
 -- First, disable all rules to isolate B001 testing
 SELECT pglinter.disable_all_rules() AS all_rules_disabled;
 
@@ -13,7 +11,7 @@ SELECT pglinter.enable_rule('T002') AS b001_enabled;
 
 
 -- Create test tables with redundant indexes for T002 testing
-CREATE TABLE IF NOT EXISTS customers_with_redundant_idx (
+CREATE TABLE customers_with_redundant_idx (
     customer_id INT PRIMARY KEY,
     first_name VARCHAR(100),
     last_name VARCHAR(100),
@@ -24,7 +22,7 @@ CREATE TABLE IF NOT EXISTS customers_with_redundant_idx (
 );
 
 -- Create another table for more redundant index scenarios
-CREATE TABLE IF NOT EXISTS products_with_redundant_idx (
+CREATE TABLE products_with_redundant_idx (
     product_id SERIAL PRIMARY KEY,
     sku VARCHAR(50),
     name VARCHAR(255),
@@ -35,7 +33,7 @@ CREATE TABLE IF NOT EXISTS products_with_redundant_idx (
 );
 
 -- Create a third table to test multiple tables with redundant indexes
-CREATE TABLE IF NOT EXISTS orders_with_redundant_idx (
+CREATE TABLE orders_with_redundant_idx (
     order_id SERIAL PRIMARY KEY,
     customer_id INT,
     product_id INT,
@@ -119,6 +117,9 @@ SELECT pglinter.perform_table_check();
 SELECT pglinter.enable_rule('T002') AS t002_re_enabled;
 SELECT pglinter.perform_table_check();
 
-ROLLBACK;
+
+DROP TABLE orders_with_redundant_idx CASCADE;
+DROP TABLE products_with_redundant_idx CASCADE;
+DROP TABLE customers_with_redundant_idx CASCADE;
 
 DROP EXTENSION pglinter CASCADE;

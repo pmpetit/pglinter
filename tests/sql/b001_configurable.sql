@@ -1,7 +1,7 @@
 -- Quick test to verify B001 rule uses configurable thresholds
 CREATE EXTENSION pglinter;
 
-BEGIN;
+\pset pager off
 
 -- Create a table without primary key
 CREATE TABLE test_no_pk (
@@ -43,6 +43,7 @@ SELECT pglinter.perform_base_check();
 SELECT pglinter.update_rule_levels('B001', 60, 80);
 
 
-ROLLBACK;
+DROP TABLE test_no_pk CASCADE;
+DROP TABLE test_with_pk CASCADE;
 
 DROP EXTENSION pglinter CASCADE;

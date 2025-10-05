@@ -3,8 +3,6 @@
 -- to demonstrate the B003 rule detection of foreign keys lacking supporting indexes
 CREATE EXTENSION pglinter;
 
-BEGIN;
-
 -- Create parent tables with primary keys
 CREATE TABLE customers (
     id SERIAL PRIMARY KEY,
@@ -177,6 +175,11 @@ SELECT pglinter.perform_base_check('/tmp/pglinter_b003_results.sarif');
 -- Test if file exists and show checksum
 \! md5sum /tmp/pglinter_b003_results.sarif
 
-ROLLBACK;
+DROP TABLE orders_with_index CASCADE;
+DROP TABLE reviews_no_index CASCADE;
+DROP TABLE inventory_no_index CASCADE;
+DROP TABLE customers CASCADE;
+DROP TABLE products CASCADE;
+DROP TABLE categories CASCADE;
 
 DROP EXTENSION pglinter CASCADE;

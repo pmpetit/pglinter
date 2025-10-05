@@ -2,20 +2,7 @@
 -- This script tests the detection of MD5 password encryption which is deprecated and insecure
 -- Note: MD5 password encryption was removed in PostgreSQL 18
 
--- Check PostgreSQL version and exit if version 18 or higher
-\set pg_version_num `psql -t -A -c "SELECT current_setting('server_version_num')::integer;"`
-
-\if :pg_version_num >= 180000
-    \echo 'NOTICE: Skipping C003 test - MD5 password encryption is not supported in PostgreSQL 18+'
-    \echo 'NOTICE: Current PostgreSQL version:' `psql -t -A -c "SELECT version();"`
-    \q
-\endif
-
-\echo 'NOTICE: PostgreSQL version supports MD5 - proceeding with C003 test'
-
 CREATE EXTENSION pglinter;
-
-BEGIN;
 
 \pset pager off
 
@@ -69,6 +56,5 @@ SELECT pglinter.perform_base_check('/tmp/pglinter_c003_results.sarif');
 -- Show checksum of generated file if it exists
 \! test -f /tmp/pglinter_c003_results.sarif && md5sum /tmp/pglinter_c003_results.sarif || echo "SARIF file not generated"
 
-ROLLBACK;
 
 DROP EXTENSION pglinter CASCADE;

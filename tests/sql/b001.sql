@@ -1,9 +1,7 @@
 -- Test for pglinter B001 rule with file output
 CREATE EXTENSION pglinter;
 
-BEGIN;
-
-CREATE TABLE IF NOT EXISTS my_table_without_pk (
+CREATE TABLE my_table_without_pk (
     id INT,
     name TEXT,
     code TEXT,
@@ -45,6 +43,6 @@ SELECT pglinter.perform_base_check('/tmp/pglinter_base_results.sarif');
 -- Test if file exists
 \! md5sum /tmp/pglinter_base_results.sarif
 
-ROLLBACK;
+DROP TABLE my_table_without_pk CASCADE;
 
 DROP EXTENSION pglinter CASCADE;

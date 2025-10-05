@@ -356,6 +356,7 @@ WHERE
             )
             AND pc.contype = 'p'
     )
+ORDER BY 1
 $$
 WHERE code = 'T001';
 
@@ -376,6 +377,7 @@ WHERE
             da.defaclnamespace = n.oid
             AND da.defaclrole != n.nspowner
     )
+ORDER BY 1
 $$
 WHERE code = 'S001';
 
@@ -402,6 +404,7 @@ WHERE
     AND ccu.table_schema NOT IN (
         'pg_toast', 'pg_catalog', 'information_schema', 'pglinter'
     )
+ORDER BY 1
 $$
 WHERE code = 'T005';
 
@@ -482,6 +485,7 @@ WHERE
         OR nspname ILIKE 'sandbox_%' OR nspname ILIKE '%_sandbox'
         OR nspname ILIKE 'sbox_%' OR nspname ILIKE '%_sbox'
     )
+ORDER BY 1
 $$
 WHERE code = 'S002';
 
@@ -511,6 +515,7 @@ WHERE
             AND pi.tablename = tc.table_name
             AND pi.indexdef LIKE '%' || kcu.column_name || '%'
     )
+ORDER BY 1
 $$
 WHERE code = 'T003';
 
@@ -534,6 +539,7 @@ WHERE
             AND rtg.table_name = t.table_name
             AND pr.rolcanlogin = false
     )
+ORDER BY 1
 $$
 WHERE code = 'T008';
 
@@ -657,6 +663,7 @@ WHERE
     schemaname NOT IN (
         'pg_toast', 'pg_catalog', 'information_schema', 'pglinter'
     )
+ORDER BY 1
 $$
 WHERE code = 'T004';
 
@@ -682,6 +689,7 @@ WHERE
         'pg_toast', 'pg_catalog', 'information_schema', 'pglinter'
     )
     AND pg_relation_size(indexrelid) > $1
+ORDER BY 1
 $$
 WHERE code = 'T006';
 
@@ -1078,6 +1086,7 @@ WHERE
         'pg_toast', 'pg_catalog', 'information_schema', 'pglinter'
     )
     AND col1.data_type != col2.data_type
+ORDER BY 1
 $$
 WHERE code = 'T007';
 
@@ -1152,6 +1161,7 @@ FROM (
         )
         AND UPPER(indexname) = keyword
 ) reserved_objects
+ORDER BY 1
 $$
 WHERE code = 'T009';
 

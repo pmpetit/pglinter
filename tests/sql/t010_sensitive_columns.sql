@@ -1,9 +1,8 @@
 -- Test for T010 rule - Tables with sensitive columns (requires anon extension)
 CREATE EXTENSION pglinter;
 
-BEGIN;
 
-\\pset pager off\n\n-- First, check if anon extension is available
+\pset pager off  -- First, check if anon extension is available
 
 SELECT 'Testing T010 rule - Sensitive columns detection...' AS test_info;
 
@@ -124,5 +123,6 @@ SELECT
         ELSE 'T010 skipped - anon extension not available'
     END AS execution_result;
 
---ROLLBACK;
+DROP SCHEMA test_sensitive_schema CASCADE;
+
 DROP EXTENSION pglinter CASCADE;

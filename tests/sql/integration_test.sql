@@ -2,8 +2,6 @@
 -- Tests multiple rules across all categories (B, C, T, S series)
 CREATE EXTENSION pglinter;
 
-BEGIN;
-
 -- Create various test scenarios to trigger multiple rules
 
 -- 1. Tables without primary keys (B001, T001)
@@ -139,6 +137,5 @@ DROP TABLE orders CASCADE;
 DROP TABLE products CASCADE;
 DROP TABLE users_no_pk CASCADE;
 
-ROLLBACK;
 
 DROP EXTENSION pglinter CASCADE;

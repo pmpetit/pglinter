@@ -1,8 +1,6 @@
 -- Example to demonstrate missing index on foreign key and T003 rule detection
 CREATE EXTENSION pglinter;
 
-BEGIN;
-
 \pset pager off
 
 -- Create tables: parent with PK, child with FK but no index on FK
@@ -48,6 +46,8 @@ ANALYZE child;
 -- Run T004 check again (should show no issues now)
 SELECT pglinter.perform_table_check();
 
-ROLLBACK;
+
+DROP TABLE child CASCADE;
+DROP TABLE parent CASCADE;
 
 DROP EXTENSION pglinter CASCADE;

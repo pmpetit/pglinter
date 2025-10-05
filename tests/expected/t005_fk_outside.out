@@ -2,7 +2,6 @@
 -- This script creates tables with foreign keys that reference tables outside their schema
 -- and shows how the T005 rule detects this cross-schema dependency issue.
 CREATE EXTENSION pglinter;
-BEGIN;
 \pset pager off
 -- Create the main/public schema tables (referenced tables)
 CREATE TABLE public.customers (
@@ -246,11 +245,11 @@ SELECT pglinter.perform_table_check(); -- Should include T005 results
 NOTICE:  🔍 pglinter found 1 issue(s):
 NOTICE:  ==================================================
 NOTICE:  ⚠️  [T005] WARNING: TABLE foreign key outside schema 5 : 
-sales_schema.orders fk orders_customer_id_fkey reference public.customers
-sales_schema.order_items fk order_items_product_id_fkey reference public.products
+audit_schema.user_activity_log fk user_activity_log_user_id_fkey reference public.users
 inventory_schema.product_stock fk product_stock_product_id_fkey reference public.products
 inventory_schema.stock_movements fk stock_movements_created_by_fkey reference public.users
-audit_schema.user_activity_log fk user_activity_log_user_id_fkey reference public.users 
+sales_schema.order_items fk order_items_product_id_fkey reference public.products
+sales_schema.orders fk orders_customer_id_fkey reference public.customers 
 
 NOTICE:  ==================================================
 NOTICE:  📊 Summary: 0 error(s), 1 warning(s), 0 info
@@ -293,11 +292,11 @@ SELECT pglinter.perform_table_check(); -- Should include T005 again
 NOTICE:  🔍 pglinter found 1 issue(s):
 NOTICE:  ==================================================
 NOTICE:  ⚠️  [T005] WARNING: TABLE foreign key outside schema 5 : 
-sales_schema.orders fk orders_customer_id_fkey reference public.customers
-sales_schema.order_items fk order_items_product_id_fkey reference public.products
+audit_schema.user_activity_log fk user_activity_log_user_id_fkey reference public.users
 inventory_schema.product_stock fk product_stock_product_id_fkey reference public.products
 inventory_schema.stock_movements fk stock_movements_created_by_fkey reference public.users
-audit_schema.user_activity_log fk user_activity_log_user_id_fkey reference public.users 
+sales_schema.order_items fk order_items_product_id_fkey reference public.products
+sales_schema.orders fk orders_customer_id_fkey reference public.customers 
 
 NOTICE:  ==================================================
 NOTICE:  📊 Summary: 0 error(s), 1 warning(s), 0 info
@@ -307,5 +306,28 @@ NOTICE:  🟡 Some warnings found - consider reviewing for optimization
  t
 (1 row)
 
-ROLLBACK;
+DROP TABLE IF EXISTS public.customers CASCADE;
+NOTICE:  drop cascades to constraint orders_customer_id_fkey on table sales_schema.orders
+DROP TABLE IF EXISTS public.products CASCADE;
+NOTICE:  drop cascades to 2 other objects
+DETAIL:  drop cascades to constraint order_items_product_id_fkey on table sales_schema.order_items
+drop cascades to constraint product_stock_product_id_fkey on table inventory_schema.product_stock
+DROP TABLE IF EXISTS public.users CASCADE;
+NOTICE:  drop cascades to 2 other objects
+DETAIL:  drop cascades to constraint stock_movements_created_by_fkey on table inventory_schema.stock_movements
+drop cascades to constraint user_activity_log_user_id_fkey on table audit_schema.user_activity_log
+DROP TABLE IF EXISTS test_app_schema.users_no_grants CASCADE;
+NOTICE:  schema "test_app_schema" does not exist, skipping
+DROP TABLE IF EXISTS test_app_schema.products_no_grants CASCADE;
+NOTICE:  schema "test_app_schema" does not exist, skipping
+DROP TABLE IF EXISTS test_reports_schema.sales_data_no_grants CASCADE;
+NOTICE:  schema "test_reports_schema" does not exist, skipping
+DROP TABLE IF EXISTS test_data_schema.analytics_no_grants CASCADE;
+NOTICE:  schema "test_data_schema" does not exist, skipping
+DROP TABLE IF EXISTS test_app_schema.orders_with_grants CASCADE;
+NOTICE:  schema "test_app_schema" does not exist, skipping
+DROP TABLE IF EXISTS test_reports_schema.monthly_reports_with_grants CASCADE;
+NOTICE:  schema "test_reports_schema" does not exist, skipping
+DROP TABLE IF EXISTS test_data_schema.processed_events_with_grants CASCADE;
+NOTICE:  schema "test_data_schema" does not exist, skipping
 DROP EXTENSION pglinter CASCADE;

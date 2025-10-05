@@ -1,7 +1,6 @@
 -- Test for pglinter rule management functionality
 CREATE EXTENSION pglinter;
-BEGIN;
-CREATE TABLE IF NOT EXISTS test_table_for_rules (
+CREATE TABLE test_table_for_rules (
     id INT,
     name TEXT
 );
@@ -64,14 +63,12 @@ SELECT pglinter.is_rule_enabled('B001') AS b001_after_disable;
 
 -- Run base check (should skip B001)
 SELECT pglinter.perform_base_check();
-NOTICE:  🔍 pglinter found 4 issue(s):
+NOTICE:  🔍 pglinter found 2 issue(s):
 NOTICE:  ==================================================
-NOTICE:  ⚠️  [B002] WARNING: 4/15 redundant(s) index exceed the warning threshold: 26%.
-NOTICE:  ❌ [B004] ERROR: 5/5 unused index exceed the error threshold: 100%
-NOTICE:  ⚠️  [B005] WARNING: 1/3 schemas are unsecured, schemas where all users can create objects in, exceed the warning threshold: 33%.
-NOTICE:  ⚠️  [B006] WARNING: 34/105 object(s) using uppercase for name or columns exceed the warning threshold: 32%.
+NOTICE:  ❌ [B003] ERROR: 2/2 table(s) without index on foreign key exceed the error threshold: 100%.
+NOTICE:  ⚠️  [B005] WARNING: 1/4 schemas are unsecured, schemas where all users can create objects in, exceed the warning threshold: 25%.
 NOTICE:  ==================================================
-NOTICE:  📊 Summary: 1 error(s), 3 warning(s), 0 info
+NOTICE:  📊 Summary: 1 error(s), 1 warning(s), 0 info
 NOTICE:  🔴 Critical issues found - please review and fix errors
  perform_base_check 
 --------------------
@@ -136,5 +133,5 @@ NOTICE:  📊 Summary: 21 enabled, 1 disabled
  t
 (1 row)
 
-ROLLBACK;
+DROP TABLE test_table_for_rules CASCADE;
 DROP EXTENSION pglinter CASCADE;

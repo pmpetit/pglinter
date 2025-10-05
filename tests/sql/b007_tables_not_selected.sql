@@ -9,13 +9,6 @@ CREATE EXTENSION pglinter;
 
 SELECT pg_stat_reset();
 
--- Clean up any existing test tables
-DROP TABLE IF EXISTS active_users_table CASCADE;
-DROP TABLE IF EXISTS dormant_logs_table CASCADE;
-DROP TABLE IF EXISTS unused_config_table CASCADE;
-DROP TABLE IF EXISTS frequently_accessed_table CASCADE;
-DROP TABLE IF EXISTS completely_unused_table CASCADE;
-
 -- Table 1: Active users table (will be frequently accessed)
 CREATE TABLE active_users_table (
     id SERIAL PRIMARY KEY,
@@ -209,15 +202,14 @@ SELECT 'Running base check to detect B007 violations (tables never selected)...'
 SELECT pglinter.perform_base_check();
 
 
--- Clean up test tables
-DROP TABLE IF EXISTS active_users_table CASCADE;
-DROP TABLE IF EXISTS dormant_logs_table CASCADE;
-DROP TABLE IF EXISTS unused_config_table CASCADE;
-DROP TABLE IF EXISTS frequently_accessed_table CASCADE;
-DROP TABLE IF EXISTS completely_unused_table CASCADE;
-
 SELECT 'B007 comprehensive test completed successfully!' as test_result;
 
-ROLLBACK;
+-- Clean up test tables
+DROP TABLE active_users_table CASCADE;
+DROP TABLE dormant_logs_table CASCADE;
+DROP TABLE unused_config_table CASCADE;
+DROP TABLE frequently_accessed_table CASCADE;
+DROP TABLE completely_unused_table CASCADE;
+
 
 DROP EXTENSION pglinter CASCADE;
