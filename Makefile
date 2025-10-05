@@ -57,8 +57,6 @@ REGRESS_TESTS+= b006_uppercase_test
 REGRESS_TESTS+= b007_tables_not_selected
 REGRESS_TESTS+= b008_fk_outside_schema
 REGRESS_TESTS+= c002_hba_security_test
-REGRESS_TESTS+= c003_md5_pwd_not_18
-REGRESS_TESTS+= c003_scram_not_18
 REGRESS_TESTS+= t001_primary_keys
 REGRESS_TESTS+= t002_minimal
 REGRESS_TESTS+= t002_redundant_idx
@@ -76,6 +74,8 @@ REGRESS_TESTS+= integration_test
 REGRESS_TESTS+= quick_demo_levels
 REGRESS_TESTS+= rule_management
 REGRESS_TESTS+= schema_rules
+REGRESS_TESTS+= c003_md5_pwd
+REGRESS_TESTS+= c003_scram_not_18
 
 # REGRESS_TESTS+= b001
 # REGRESS_TESTS+= cluster_rules
@@ -97,6 +97,8 @@ REGRESS_TESTS+= schema_rules
 # naming rules:
 # * the _PG15+ suffix means PostgreSQL 15 and all the major versions after
 # * the _PG13- suffix means PostgreSQL 13 and all the major versions below
+
+REGRESS_TESTS_PG17 = c003_md5_pwd_not_18_PG17- c003_scram_not_18_PG17-
 
 # REGRESS_TESTS_PG13 = elevation_via_rule_PG15- elevation_via_security_definer_function_PG14-
 # REGRESS_TESTS_PG14 = elevation_via_rule_PG15- elevation_via_security_definer_function_PG14-

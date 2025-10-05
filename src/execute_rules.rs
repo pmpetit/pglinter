@@ -279,7 +279,7 @@ fn execute_q1_q2_rule_dynamic(
         let q1: i64 = client
             .select(q1, None, &[])?
             .first()
-            .get::<i64>(1)?
+            .get::<i64>(0)?
             .unwrap_or(0);
 
         pgrx::debug1!(
@@ -295,7 +295,7 @@ fn execute_q1_q2_rule_dynamic(
         let q2: i64 = client
             .select(q2, None, &[])?
             .first()
-            .get::<i64>(1)?
+            .get::<i64>(0)?
             .unwrap_or(0);
 
         pgrx::debug1!(
@@ -426,10 +426,10 @@ pub fn execute_rules(scope: &str) -> Result<Vec<RuleResult>, String> {
         let mut rules = Vec::new();
 
         for row in client.select(rules_query, None, &[scope.into()])? {
-            let code: String = row.get(1)?.unwrap_or_default();
-            let q1: String = row.get(3)?.unwrap_or_default();
-            let q2: Option<String> = row.get(4)?;
-            let scope: String = row.get(5)?.unwrap_or_default();
+            let code: String = row.get(0)?.unwrap_or_default();
+            let q1: String = row.get(2)?.unwrap_or_default();
+            let q2: Option<String> = row.get(3)?;
+            let scope: String = row.get(4)?.unwrap_or_default();
 
             rules.push(RuleData {
                 code,

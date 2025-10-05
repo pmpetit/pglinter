@@ -251,7 +251,7 @@ INSERT INTO pglinter.rules (
 -- B001 - Tables Without Primary Key
 UPDATE pglinter.rules
 SET q1 = $$
-SELECT count(*)
+SELECT count(*) AS total_tables
 FROM pg_catalog.pg_tables
 WHERE
     schemaname NOT IN (
@@ -262,7 +262,7 @@ WHERE code = 'B001';
 
 UPDATE pglinter.rules
 SET q2 = $$
-SELECT count(DISTINCT pg_class.relname)
+SELECT count(DISTINCT pg_class.relname) AS total_indexes
 FROM pg_index, pg_class, pg_attribute, pg_namespace
 WHERE
     indrelid = pg_class.oid
@@ -410,7 +410,7 @@ WHERE code = 'T005';
 -- =============================================================================
 UPDATE pglinter.rules
 SET q1 = $$
-SELECT count(DISTINCT tc.table_name)
+SELECT count(DISTINCT tc.table_name)::INT AS total_tables
 FROM
     information_schema.table_constraints AS tc
 WHERE
@@ -426,7 +426,7 @@ WHERE code = 'B003';
 -- =============================================================================
 UPDATE pglinter.rules
 SET q2 = $$
-SELECT COUNT(DISTINCT c.relname) AS tables_with_unindexed_foreign_keys
+SELECT COUNT(DISTINCT c.relname)::INT AS tables_with_unindexed_foreign_keys
 FROM pg_constraint con
 JOIN pg_class c ON c.oid = con.conrelid
 JOIN pg_namespace n ON n.oid = c.relnamespace
@@ -1156,10 +1156,21 @@ $$
 WHERE code = 'T009';
 
 -- =============================================================================
--- C003 - MD5 encrypted Passwords
+-- C003 - MD5 encrypted Passwords (Total Settings)
 -- =============================================================================
 UPDATE pglinter.rules
 SET q1 = $$
+SELECT count(*) FROM
+pg_catalog.pg_settings
+WHERE name='password_encryption'
+$$
+WHERE code = 'C003';
+
+-- =============================================================================
+-- C003 - MD5 encrypted Passwords (Problems)
+-- =============================================================================
+UPDATE pglinter.rules
+SET q2 = $$
 SELECT count(*) FROM
 pg_catalog.pg_settings
 WHERE name='password_encryption' AND setting='md5'
