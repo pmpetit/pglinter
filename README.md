@@ -1,6 +1,6 @@
 # pglinter - PostgreSQL Extension (Rust/pgrx)
 
-This is a conversion of the original Python [pglinter](https://github.com/decathlon/pglinter) to a PostgreSQL extension written in Rust using pgrx.
+This is a conversion of the original Python [dblinter](https://github.com/decathlon/dblinter) to a PostgreSQL extension written in Rust using pgrx.
 
 ## Overview
 
