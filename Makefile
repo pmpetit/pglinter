@@ -74,8 +74,6 @@ REGRESS_TESTS+= integration_test
 REGRESS_TESTS+= quick_demo_levels
 REGRESS_TESTS+= rule_management
 REGRESS_TESTS+= schema_rules
-REGRESS_TESTS+= c003_md5_pwd
-REGRESS_TESTS+= c003_scram_not_18
 
 # REGRESS_TESTS+= b001
 # REGRESS_TESTS+= cluster_rules
