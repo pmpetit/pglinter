@@ -178,10 +178,10 @@ SELECT pglinter.perform_table_check(); -- Should include T001 results
 NOTICE:  🔍 pglinter found 1 issue(s):
 NOTICE:  ==================================================
 NOTICE:  ⚠️  [T001] WARNING: TABLE no primary key on table(s) 4 : 
-public.inventory_logs
 public.customer_orders
 public.product_reviews
-public.user_sessions 
+public.user_sessions
+public.inventory_logs 
 
 NOTICE:  ==================================================
 NOTICE:  📊 Summary: 0 error(s), 1 warning(s), 0 info
@@ -224,10 +224,10 @@ SELECT pglinter.perform_table_check(); -- Should include T001 again
 NOTICE:  🔍 pglinter found 1 issue(s):
 NOTICE:  ==================================================
 NOTICE:  ⚠️  [T001] WARNING: TABLE no primary key on table(s) 4 : 
-public.inventory_logs
 public.customer_orders
 public.product_reviews
-public.user_sessions 
+public.user_sessions
+public.inventory_logs 
 
 NOTICE:  ==================================================
 NOTICE:  📊 Summary: 0 error(s), 1 warning(s), 0 info

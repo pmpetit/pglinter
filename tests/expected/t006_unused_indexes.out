@@ -383,11 +383,11 @@ SELECT pglinter.perform_table_check();
 NOTICE:  🔍 pglinter found 1 issue(s):
 NOTICE:  ==================================================
 NOTICE:  ⚠️  [T006] WARNING: TABLE Index (larger than threshold) seems to be unused. 5 : 
-public.test_products idx idx_products_unused_description size 101 MB
-public.test_products idx idx_products_unused_price size 2384 kB
-public.test_orders idx idx_orders_unused_notes size 98 MB
-public.test_customers idx idx_customers_unused_zip size 1112 kB
-public.test_orders idx idx_orders_unused_quantity size 1296 kB 
+Row 1
+Row 2
+Row 3
+Row 4
+Row 5 
 
 NOTICE:  ==================================================
 NOTICE:  📊 Summary: 0 error(s), 1 warning(s), 0 info

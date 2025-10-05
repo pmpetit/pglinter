@@ -1339,25 +1339,21 @@ mod tests {
         // Ensure B001 rule is enabled (tables without primary keys)
         let _ = Spi::run("UPDATE pglinter.rules SET enable = true WHERE code = 'B001'");
 
-        // Perform base check via SQL interface
-        // Note: In test environment, the SPI client might have issues, so we'll accept both success and failure
+        // Perform base check via SQL interface - should return true (check completed successfully)
+        // Note: The function returns true even if violations are found, false only on error
         let result = Spi::get_one::<bool>("SELECT pglinter.perform_base_check()");
-        match result {
-            Ok(Some(success)) => {
-                notice!("Base check completed with result: {}", success);
-                // In test environment, we might get false due to SPI client limitations
-                // The important thing is that the function returns a valid boolean
-                assert!(success == true || success == false);
-            },
-            Ok(None) => {
-                notice!("Base check returned None");
-                panic!("Expected base check to return a boolean value");
-            },
-            Err(e) => {
-                notice!("Base check failed with error: {:?}", e);
-                panic!("Base check should not fail with this error: {:?}", e);
-            }
-        }
+        assert!(result.is_ok());
+        let check_result = result.unwrap();
+        assert!(check_result.is_some());
+        assert_eq!(check_result.unwrap(), true);
+
+        // Test with output file parameter via SQL
+        let result_with_file =
+            Spi::get_one::<bool>("SELECT pglinter.perform_base_check('/tmp/test_output.sarif')");
+        assert!(result_with_file.is_ok());
+        let check_result_with_file = result_with_file.unwrap();
+        assert!(check_result_with_file.is_some());
+        assert_eq!(check_result_with_file.unwrap(), true);
 
         // Cleanup test tables
         fixtures::cleanup_test_tables();
@@ -1365,25 +1361,25 @@ mod tests {
 
     #[pg_test]
     fn test_perform_cluster_check() {
-        // Perform cluster check via SQL interface
-        // Note: In test environment, the SPI client might have issues, so we'll accept both success and failure
+        // Ensure C002 rule is enabled (pg_hba.conf authentication methods)
+        let _ = Spi::run("UPDATE pglinter.rules SET enable = true WHERE code = 'C002'");
+
+        // Perform cluster check via SQL interface - should return true (check completed successfully)
+        // Note: The function returns true even if violations are found, false only on error
         let result = Spi::get_one::<bool>("SELECT pglinter.perform_cluster_check()");
-        match result {
-            Ok(Some(success)) => {
-                notice!("Cluster check completed with result: {}", success);
-                // In test environment, we might get false due to SPI client limitations
-                // The important thing is that the function returns a valid boolean
-                assert!(success == true || success == false);
-            },
-            Ok(None) => {
-                notice!("Cluster check returned None");
-                panic!("Expected cluster check to return a boolean value");
-            },
-            Err(e) => {
-                notice!("Cluster check failed with error: {:?}", e);
-                panic!("Cluster check should not fail with this error: {:?}", e);
-            }
-        }
+        assert!(result.is_ok());
+        let check_result = result.unwrap();
+        assert!(check_result.is_some());
+        assert_eq!(check_result.unwrap(), true);
+
+        // Test with output file parameter via SQL
+        let result_with_file = Spi::get_one::<bool>(
+            "SELECT pglinter.perform_cluster_check('/tmp/test_cluster_output.sarif')",
+        );
+        assert!(result_with_file.is_ok());
+        let check_result_with_file = result_with_file.unwrap();
+        assert!(check_result_with_file.is_some());
+        assert_eq!(check_result_with_file.unwrap(), true);
     }
 
     #[pg_test]
@@ -1394,45 +1390,22 @@ mod tests {
         // Ensure T001 rule is enabled (tables without primary keys)
         let _ = Spi::run("UPDATE pglinter.rules SET enable = true WHERE code = 'T001'");
 
-        // Perform table check via SQL interface
-        // Note: In test environment, SPI client might have limitations, so we accept both success/failure
+        // Perform table check via SQL interface - should return true (check completed successfully)
+        // Note: The function returns true even if violations are found, false only on error
         let result = Spi::get_one::<bool>("SELECT pglinter.perform_table_check()");
-        match result {
-            Ok(Some(success)) => {
-                notice!("Table check completed with result: {}", success);
-                // In test environment, we might get false due to SPI client limitations
-                // The important thing is that the function returns a valid boolean
-                assert!(success == true || success == false);
-            },
-            Ok(None) => {
-                notice!("Table check returned None");
-                panic!("Expected table check to return a boolean value");
-            },
-            Err(e) => {
-                notice!("Table check failed with error: {:?}", e);
-                panic!("Table check should not fail with this error: {:?}", e);
-            }
-        }
+        assert!(result.is_ok());
+        let check_result = result.unwrap();
+        assert!(check_result.is_some());
+        assert_eq!(check_result.unwrap(), true);
 
         // Test with output file parameter via SQL
         let result_with_file = Spi::get_one::<bool>(
             "SELECT pglinter.perform_table_check('/tmp/test_table_output.sarif')",
         );
-        match result_with_file {
-            Ok(Some(success)) => {
-                notice!("Table check with file output completed with result: {}", success);
-                // Accept both success and failure in test environment
-                assert!(success == true || success == false);
-            },
-            Ok(None) => {
-                notice!("Table check with file output returned None");
-                panic!("Expected table check with file output to return a boolean value");
-            },
-            Err(e) => {
-                notice!("Table check with file output failed with error: {:?}", e);
-                panic!("Table check with file output should not fail with this error: {:?}", e);
-            }
-        }
+        assert!(result_with_file.is_ok());
+        let check_result_with_file = result_with_file.unwrap();
+        assert!(check_result_with_file.is_some());
+        assert_eq!(check_result_with_file.unwrap(), true);
 
         // Cleanup test tables
         fixtures::cleanup_test_tables();
@@ -1443,25 +1416,22 @@ mod tests {
         // Ensure S001 rule is enabled (schema with default role not granted)
         let _ = Spi::run("UPDATE pglinter.rules SET enable = true WHERE code = 'S001'");
 
-        // Perform schema check via SQL interface
-        // Note: In test environment, the SPI client might have issues, so we'll accept both success and failure
+        // Perform schema check via SQL interface - should return true (check completed successfully)
+        // Note: The function returns true even if violations are found, false only on error
         let result = Spi::get_one::<bool>("SELECT pglinter.perform_schema_check()");
-        match result {
-            Ok(Some(success)) => {
-                notice!("Schema check completed with result: {}", success);
-                // In test environment, we might get false due to SPI client limitations
-                // The important thing is that the function returns a valid boolean
-                assert!(success == true || success == false);
-            },
-            Ok(None) => {
-                notice!("Schema check returned None");
-                panic!("Expected schema check to return a boolean value");
-            },
-            Err(e) => {
-                notice!("Schema check failed with error: {:?}", e);
-                panic!("Schema check should not fail with this error: {:?}", e);
-            }
-        }
+        assert!(result.is_ok());
+        let check_result = result.unwrap();
+        assert!(check_result.is_some());
+        assert_eq!(check_result.unwrap(), true);
+
+        // Test with output file parameter via SQL
+        let result_with_file = Spi::get_one::<bool>(
+            "SELECT pglinter.perform_schema_check('/tmp/test_schema_output.sarif')",
+        );
+        assert!(result_with_file.is_ok());
+        let check_result_with_file = result_with_file.unwrap();
+        assert!(check_result_with_file.is_some());
+        assert_eq!(check_result_with_file.unwrap(), true);
     }
 
     #[pg_test]
@@ -1475,39 +1445,40 @@ mod tests {
         let _ = Spi::run("UPDATE pglinter.rules SET enable = true WHERE code = 'T001'"); // Table check
         let _ = Spi::run("UPDATE pglinter.rules SET enable = true WHERE code = 'S001'"); // Schema check
 
-        // Test check_all() via SQL interface
-        // Note: In test environment, SPI client might have limitations, so we accept any valid result
+        // Test check_all() via SQL interface - should return true (all checks completed successfully)
+        // Note: The function returns true even if violations are found in individual checks,
+        // false only if any individual check function returns false due to errors
         let result = Spi::get_one::<bool>("SELECT pglinter.check_all()");
-        match result {
-            Ok(Some(success)) => {
-                notice!("Check all completed with result: {}", success);
-                // The important thing is that the function executes and returns a valid boolean
-                assert!(success == true || success == false);
-            },
-            Ok(None) => {
-                notice!("Check all returned None");
-                panic!("Expected check_all to return a boolean value");
-            },
-            Err(e) => {
-                notice!("Check all failed with error: {:?}", e);
-                panic!("Check all should not fail with this error: {:?}", e);
-            }
-        }
+        assert!(result.is_ok());
+        let check_result = result.unwrap();
+        assert!(check_result.is_some());
+        assert_eq!(check_result.unwrap(), true);
 
         // Test the individual convenience functions that check_all() relies on
-        // These may also have SPI issues in test environment, so we'll be lenient
-        let _base_result = Spi::get_one::<bool>("SELECT pglinter.check_base()");
-        let _cluster_result = Spi::get_one::<bool>("SELECT pglinter.check_cluster()");
-        let _table_result = Spi::get_one::<bool>("SELECT pglinter.check_table()");
-        let _schema_result = Spi::get_one::<bool>("SELECT pglinter.check_schema()");
+        let base_result = Spi::get_one::<bool>("SELECT pglinter.check_base()");
+        assert!(base_result.is_ok());
+        assert_eq!(base_result.unwrap().unwrap(), true);
 
-        // If we reach here, the functions at least execute without crashing
+        let cluster_result = Spi::get_one::<bool>("SELECT pglinter.check_cluster()");
+        assert!(cluster_result.is_ok());
+        assert_eq!(cluster_result.unwrap().unwrap(), true);
+
+        let table_result = Spi::get_one::<bool>("SELECT pglinter.check_table()");
+        assert!(table_result.is_ok());
+        assert_eq!(table_result.unwrap().unwrap(), true);
+
+        let schema_result = Spi::get_one::<bool>("SELECT pglinter.check_schema()");
+        assert!(schema_result.is_ok());
+        assert_eq!(schema_result.unwrap().unwrap(), true);
 
         // Test scenario where all rules are disabled (should still complete successfully)
         let _ = Spi::run("UPDATE pglinter.rules SET enable = false WHERE code IN ('B001', 'C002', 'T001', 'S001')");
 
-        let _result_disabled = Spi::get_one::<bool>("SELECT pglinter.check_all()");
-        // If we reach here, the function executes without crashing even with disabled rules
+        let result_disabled = Spi::get_one::<bool>("SELECT pglinter.check_all()");
+        assert!(result_disabled.is_ok());
+        let check_result_disabled = result_disabled.unwrap();
+        assert!(check_result_disabled.is_some());
+        assert_eq!(check_result_disabled.unwrap(), true);
 
         // Re-enable rules for cleanup
         let _ = Spi::run("UPDATE pglinter.rules SET enable = true WHERE code IN ('B001', 'C002', 'T001', 'S001')");
@@ -1732,83 +1703,54 @@ mod tests {
         let result_with_file = Spi::get_one::<bool>(&format!(
             "SELECT pglinter.perform_table_check('{}')",
             sarif_file_path
-        ));
+        ))
+        .unwrap();
+        assert!(result_with_file.is_some());
+        assert_eq!(result_with_file.unwrap(), true);
 
-        // In test environment, SPI might have issues, so we'll be lenient
-        match result_with_file {
-            Ok(Some(success)) => {
-                notice!("Table check with SARIF output completed with result: {}", success);
-                // The important thing is that the function executes
-                assert!(success == true || success == false);
-            },
-            Ok(None) => {
-                notice!("Table check returned None");
-                return; // Skip the rest of the test if basic functionality doesn't work
-            },
-            Err(e) => {
-                notice!("Table check failed with error: {:?}", e);
-                return; // Skip the rest of the test if basic functionality doesn't work
-            }
-        }
+        // Verify SARIF file was created
+        assert!(
+            std::fs::metadata(sarif_file_path).is_ok(),
+            "SARIF file should be created"
+        );
 
-        // Verify SARIF file was created (only if table check succeeded)
-        if std::fs::metadata(sarif_file_path).is_ok() {
-            // Read and verify SARIF file content
-            let sarif_content =
-                std::fs::read_to_string(sarif_file_path).expect("Failed to read SARIF file");
+        // Read and verify SARIF file content
+        let sarif_content =
+            std::fs::read_to_string(sarif_file_path).expect("Failed to read SARIF file");
 
-            // Basic content checks
-            assert!(!sarif_content.is_empty(), "SARIF file should not be empty");
-            assert!(
-                sarif_content.contains("version"),
-                "SARIF should contain version"
-            );
-            assert!(sarif_content.contains("runs"), "SARIF should contain runs");
+        // Basic content checks
+        assert!(!sarif_content.is_empty(), "SARIF file should not be empty");
+        assert!(
+            sarif_content.contains("version"),
+            "SARIF should contain version"
+        );
+        assert!(sarif_content.contains("runs"), "SARIF should contain runs");
 
-            // Try to parse as JSON (basic validation)
-            let _sarif_json: serde_json::Value =
-                serde_json::from_str(&sarif_content).expect("SARIF output should be valid JSON");
-
-            notice!("SARIF file verification completed successfully");
-        } else {
-            notice!("SARIF file was not created (likely due to SPI limitations in test environment)");
-        }
+        // Try to parse as JSON (basic validation)
+        let _sarif_json: serde_json::Value =
+            serde_json::from_str(&sarif_content).expect("SARIF output should be valid JSON");
 
         // Test 2: Test without file output (should not create file)
-        // Note: This might fail in test environment due to SPI limitations, so we'll be lenient
-        let _result_no_file = Spi::get_one::<bool>("SELECT pglinter.perform_table_check()");
-        // We don't assert on this result since SPI might have issues in test environment
+        let result_no_file = Spi::get_one::<bool>("SELECT pglinter.perform_table_check()").unwrap();
+        assert!(result_no_file.is_some());
+        assert_eq!(result_no_file.unwrap(), true);
 
-        // Test 3: Test with different rule scope (BASE check is more resilient than TABLE check)
+        // Test 3: Test with different rule scope
         let sarif_file_path_2 = "/tmp/pglinter_test_sarif_2.json";
         let _ = Spi::run("UPDATE pglinter.rules SET enable = true WHERE code = 'B001'");
-
-        // BASE check is generally more resilient in test environment
         let result_base = Spi::get_one::<bool>(&format!(
             "SELECT pglinter.perform_base_check('{}')",
             sarif_file_path_2
-        ));
+        ))
+        .unwrap();
+        assert!(result_base.is_some());
+        assert_eq!(result_base.unwrap(), true);
 
-        match result_base {
-            Ok(Some(success)) => {
-                notice!("Base check with SARIF output completed with result: {}", success);
-            },
-            Ok(None) => {
-                notice!("Base check returned None");
-            },
-            Err(e) => {
-                notice!("Base check failed with error: {:?}", e);
-            }
-        }
-
-        // Verify second SARIF file exists (only if BASE check succeeded)
+        // Verify second SARIF file exists
         if std::fs::metadata(sarif_file_path_2).is_ok() {
             let sarif_content_2 = std::fs::read_to_string(sarif_file_path_2)
                 .expect("Failed to read second SARIF file");
             assert!(!sarif_content_2.is_empty());
-            notice!("Second SARIF file verification completed successfully");
-        } else {
-            notice!("Second SARIF file was not created (likely due to SPI limitations in test environment)");
         }
 
         // Cleanup files and test data
@@ -1834,58 +1776,19 @@ mod tests {
 
         // Execute table check which internally uses execute_q1_rule_with_params
         // This should trigger violations from our test tables without primary keys
-        // Note: In test environment, SPI client might have limitations, so we accept both success/failure
-        let result = Spi::get_one::<bool>("SELECT pglinter.perform_table_check()");
-        match result {
-            Ok(Some(success)) => {
-                notice!("Table check completed with result: {}", success);
-                // In test environment, we might get false due to SPI client limitations
-                // The important thing is that the function returns a valid boolean
-                assert!(success == true || success == false);
-            },
-            Ok(None) => {
-                notice!("Table check returned None");
-                // Skip the rest of the test if basic functionality doesn't work
-                fixtures::cleanup_test_tables();
-                let _ = Spi::run("UPDATE pglinter.rules SET enable = false WHERE code = 'T001'");
-                return;
-            },
-            Err(e) => {
-                notice!("Table check failed with error: {:?}", e);
-                // Skip the rest of the test if basic functionality doesn't work
-                fixtures::cleanup_test_tables();
-                let _ = Spi::run("UPDATE pglinter.rules SET enable = false WHERE code = 'T001'");
-                return;
-            }
-        }
+        let result = Spi::get_one::<bool>("SELECT pglinter.perform_table_check()").unwrap();
+        assert!(result.is_some());
+        assert_eq!(result.unwrap(), true);
 
         // Test with SARIF output to verify the warning message format
         let test_sarif_file = "/tmp/test_q1_warning.json";
         let result_sarif = Spi::get_one::<bool>(&format!(
             "SELECT pglinter.perform_table_check('{}')",
             test_sarif_file
-        ));
-        match result_sarif {
-            Ok(Some(success)) => {
-                notice!("Table check with SARIF output completed with result: {}", success);
-                // Accept both success and failure in test environment
-                assert!(success == true || success == false);
-            },
-            Ok(None) => {
-                notice!("Table check with SARIF returned None");
-                // Skip SARIF verification if basic functionality doesn't work
-                fixtures::cleanup_test_tables();
-                let _ = Spi::run("UPDATE pglinter.rules SET enable = false WHERE code = 'T001'");
-                return;
-            },
-            Err(e) => {
-                notice!("Table check with SARIF failed with error: {:?}", e);
-                // Skip SARIF verification if basic functionality doesn't work
-                fixtures::cleanup_test_tables();
-                let _ = Spi::run("UPDATE pglinter.rules SET enable = false WHERE code = 'T001'");
-                return;
-            }
-        }
+        ))
+        .unwrap();
+        assert!(result_sarif.is_some());
+        assert_eq!(result_sarif.unwrap(), true);
 
         // Verify SARIF file was created and contains results
         if std::fs::metadata(test_sarif_file).is_ok() {
@@ -1968,48 +1871,20 @@ mod tests {
 
         // Execute table check which will trigger execute_q1_rule_with_params for T001
         // This should create a warning-level RuleResult using the format on lines 171-177
-        // Note: In test environment, SPI client might have limitations, so we accept both success/failure
         let test_sarif_file = "/tmp/test_warning_format.json";
         let result = Spi::get_one::<bool>(&format!(
             "SELECT pglinter.perform_table_check('{}')",
             test_sarif_file
-        ));
-
-        match result {
-            Ok(Some(success)) => {
-                notice!("Table check for warning format test completed with result: {}", success);
-                // In test environment, we might get false due to SPI client limitations
-                // The important thing is that the function returns a valid boolean
-                assert!(success == true || success == false);
-            },
-            Ok(None) => {
-                notice!("Table check for warning format test returned None");
-                // Skip the rest of the test if basic functionality doesn't work
-                let _ = std::fs::remove_file(test_sarif_file);
-                fixtures::cleanup_test_tables();
-                let _ = Spi::run("UPDATE pglinter.rules SET enable = false WHERE code = 'T001'");
-                return;
-            },
-            Err(e) => {
-                notice!("Table check for warning format test failed with error: {:?}", e);
-                // Skip the rest of the test if basic functionality doesn't work
-                let _ = std::fs::remove_file(test_sarif_file);
-                fixtures::cleanup_test_tables();
-                let _ = Spi::run("UPDATE pglinter.rules SET enable = false WHERE code = 'T001'");
-                return;
-            }
-        }
+        ))
+        .unwrap();
+        assert!(result.is_some());
+        assert_eq!(result.unwrap(), true);
 
         // Verify the SARIF output contains the exact message format from execute_q1_rule_with_params
-        // Only proceed if SARIF file was actually created
-        if !std::fs::metadata(test_sarif_file).is_ok() {
-            notice!("SARIF file was not created (likely due to SPI limitations in test environment)");
-            // Skip SARIF content verification but consider test successful since function executed
-            let _ = std::fs::remove_file(test_sarif_file);
-            fixtures::cleanup_test_tables();
-            let _ = Spi::run("UPDATE pglinter.rules SET enable = false WHERE code = 'T001'");
-            return;
-        }
+        assert!(
+            std::fs::metadata(test_sarif_file).is_ok(),
+            "SARIF file should be created"
+        );
 
         let sarif_content =
             std::fs::read_to_string(test_sarif_file).expect("Failed to read SARIF file");
@@ -2101,3 +1976,4 @@ pub mod pg_test {
         vec![]
     }
 }
+
