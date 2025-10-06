@@ -140,8 +140,8 @@ INSERT INTO pglinter.rules (
     80,
     'CLUSTER',
     'This configuration is not secure anymore and will prevent an upgrade to Postgres 18. Warning, you will need to reset all passwords after this is changed to scram-sha-256.',
-    '{0} password(s) encrypted with MD5 exceed the warning threshold: {1}.',
-    ARRAY['change password_encryption parameter to scram-sha-256. Warning, you will need to reset all passwords after this parameter is updated.']
+    'Encrypted passwords with MD5.',
+    ARRAY['change password_encryption parameter to scram-sha-256 (ALTER SYSTEM SET password_encryption = ''scram-sha-256'' ). Warning, you will need to reset all passwords after this parameter is updated.']
 ),
 
 
@@ -1166,22 +1166,11 @@ $$
 WHERE code = 'T009';
 
 -- =============================================================================
--- C003 - MD5 encrypted Passwords (Total Settings)
--- =============================================================================
-UPDATE pglinter.rules
-SET q1 = $$
-SELECT count(*) FROM
-pg_catalog.pg_settings
-WHERE name='password_encryption'
-$$
-WHERE code = 'C003';
-
--- =============================================================================
 -- C003 - MD5 encrypted Passwords (Problems)
 -- =============================================================================
 UPDATE pglinter.rules
-SET q2 = $$
-SELECT count(*) FROM
+SET q1 = $$
+SELECT 'password_encryption is ' || setting FROM
 pg_catalog.pg_settings
 WHERE name='password_encryption' AND setting='md5'
 $$
