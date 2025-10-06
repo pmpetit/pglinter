@@ -50,6 +50,7 @@ PostgreSQL cluster configuration checks:
 
 * **C001**: Memory configuration issues (max_connections * work_mem > available RAM)
 * **C002**: Insecure pg_hba.conf entries
+* **C003**: MD5 password encryption (deprecated, blocks PG18+ upgrades)
 
 ### Table Rules (T-series)
 

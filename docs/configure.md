@@ -334,6 +334,7 @@ SELECT pglinter.enable_rule('B004'); -- Unused indexes
 SELECT pglinter.enable_rule('B005'); -- Schema security
 SELECT pglinter.enable_rule('C001'); -- Memory configuration
 SELECT pglinter.enable_rule('C002'); -- pg_hba security
+SELECT pglinter.enable_rule('C003'); -- MD5 password encryption
 ```
 
 ## Advanced Configuration

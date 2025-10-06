@@ -316,6 +316,78 @@ host    all    all    0.0.0.0/0    scram-sha-256
 
 ---
 
+### C003: MD5 Password Encryption
+
+**Rule Code**: C003
+**Name**: PasswordEncryptionIsMd5
+**Severity**: Warning at 20%, Error at 80%
+**Scope**: CLUSTER
+
+**Description**: This configuration is not secure anymore and will prevent an upgrade to Postgres 18. Warning, you will need to reset all passwords after this is changed to scram-sha-256.
+
+**Message Template**: ``
+
+**Why This Matters**:
+
+- MD5 password encryption is deprecated and insecure
+- PostgreSQL 18+ will not support MD5 password encryption
+- MD5 hashing is cryptographically weak and vulnerable to attacks
+- Prevents database upgrades to newer PostgreSQL versions
+- Security compliance requirements often prohibit MD5
+
+**How to Fix**:
+
+1. **Change password_encryption parameter to scram-sha-256**
+2. **Reset all existing user passwords** (required after parameter change)
+3. **Update application connection strings** if needed
+4. **Test all connections** thoroughly before deploying
+
+**SQL Example**:
+
+```sql
+-- Check current password encryption setting
+SHOW password_encryption;
+
+-- Change to SCRAM-SHA-256 (requires superuser)
+ALTER SYSTEM SET password_encryption = 'scram-sha-256';
+SELECT pg_reload_conf();
+
+-- Reset user passwords (each user password must be reset)
+ALTER USER myuser PASSWORD 'new_secure_password';
+
+-- Verify the change
+SELECT rolname, rolcanlogin
+FROM pg_roles
+WHERE rolcanlogin = true;
+```
+
+**Configuration Steps**:
+
+```sql
+-- 1. Change the global setting
+ALTER SYSTEM SET password_encryption = 'scram-sha-256';
+SELECT pg_reload_conf();
+
+-- 2. Reset all user passwords
+-- (This must be done for each user individually)
+ALTER USER app_user PASSWORD 'reset_password_123';
+ALTER USER readonly_user PASSWORD 'reset_password_456';
+
+-- 3. Update pg_hba.conf if using md5 auth method
+-- Change: host all all 0.0.0.0/0 md5
+-- To:     host all all 0.0.0.0/0 scram-sha-256
+```
+
+**⚠️ Important Warnings**:
+
+- **All existing passwords become invalid** after changing password_encryption
+- **Applications will fail to connect** until passwords are reset
+- **Plan maintenance window** for this change
+- **Test thoroughly** in non-production environment first
+- **Update application configurations** to use new auth method
+
+---
+
 ## Schema Rules (S-series)
 
 Schema-level checks for organization and security.

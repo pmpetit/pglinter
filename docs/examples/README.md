@@ -44,6 +44,7 @@ SELECT pglinter.is_rule_enabled('B002');
 -- Disable strict rules for development
 SELECT pglinter.disable_rule('B005'); -- Public schema
 SELECT pglinter.disable_rule('C002'); -- pg_hba security
+SELECT pglinter.disable_rule('C003'); -- MD5 password encryption
 SELECT pglinter.disable_rule('T009'); -- Role grants
 SELECT pglinter.disable_rule('T010'); -- Reserved keywords
 
@@ -217,7 +218,7 @@ Common modifications you can make to the YAML file:
    ```yaml
    # Make B001 more sensitive (lower thresholds)
    - id: 1
-     name: "HowManyTableWithoutPrimaryKey" 
+     name: "HowManyTableWithoutPrimaryKey"
      code: "B001"
      warning_level: 10  # Changed from 20
      error_level: 50    # Changed from 80
@@ -243,7 +244,7 @@ Common modifications you can make to the YAML file:
    ```yaml
    # Modify B001 to exclude specific schemas
    - id: 1
-     code: "B001" 
+     code: "B001"
      q1: "SELECT count(*) FROM pg_tables WHERE schemaname NOT IN ('information_schema', 'pg_catalog', 'staging', 'temp')"
      q2: "SELECT count(*) FROM pg_tables t WHERE NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conrelid = t.oid AND contype = 'p') AND t.schemaname NOT IN ('information_schema', 'pg_catalog', 'staging', 'temp')"
    ```
@@ -302,7 +303,7 @@ rules:
     fixes: ["Add primary key: ALTER TABLE table_name ADD PRIMARY KEY (id)"]
     q1: "SELECT count(*) FROM pg_tables WHERE schemaname NOT IN ('information_schema', 'pg_catalog')"
     q2: "SELECT count(*) FROM pg_tables t WHERE NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conrelid = t.oid AND contype = 'p') AND t.schemaname NOT IN ('information_schema', 'pg_catalog')"
-    
+
   # Disable public schema security in dev
   - id: 5
     name: "UnsecuredPublicSchema"
@@ -314,7 +315,7 @@ rules:
     description: "Public schema security (disabled in dev)."
     message: "Public schema allows object creation by all users."
     fixes: ["REVOKE CREATE ON SCHEMA public FROM PUBLIC"]
-    
+
   # Keep FK indexing rule active
   - id: 3
     name: "HowManyTableWithoutIndexOnFk"
@@ -335,9 +336,9 @@ psql -d myapp_dev -c "SELECT pglinter.import_rules_from_file('/tmp/rules_dev.yam
 # Step 4: Verify changes
 echo "✅ Verifying rule changes..."
 psql -d myapp_dev -c "
-SELECT rule_code, enabled, warning_level, error_level, 
+SELECT rule_code, enabled, warning_level, error_level,
        CASE WHEN enabled THEN '✅' ELSE '❌' END as status
-FROM pglinter.show_rules() 
+FROM pglinter.show_rules()
 WHERE rule_code IN ('B001', 'B005', 'B003')
 ORDER BY rule_code;
 "
@@ -368,7 +369,7 @@ rules:
   - {code: "B005", enable: true, warning_level: 0, error_level: 1}
 EOF
 
-# Development: Relaxed rules  
+# Development: Relaxed rules
 cat > /etc/pglinter/environments/development.yaml << 'EOF'
 metadata:
   format_version: "1.0"
