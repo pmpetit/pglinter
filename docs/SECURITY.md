@@ -79,6 +79,29 @@ Identifies potentially insecure authentication configurations:
 - Limit host ranges to specific networks
 - Require SSL for remote connections
 
+### C003: MD5 Password Encryption
+
+Detects deprecated MD5 password encryption which prevents upgrades to PostgreSQL 18+:
+
+```sql
+-- This rule checks for:
+-- - password_encryption = 'md5' setting
+-- - Users with MD5-encrypted passwords
+```
+
+**Security Concerns**:
+
+- MD5 is cryptographically weak and vulnerable to attacks
+- Prevents database upgrades to PostgreSQL 18 and later
+- Does not meet modern security compliance requirements
+
+**Recommendations**:
+
+- Change `password_encryption` to `scram-sha-256`
+- Reset all user passwords after the change
+- Update application connection strings accordingly
+- Plan maintenance window for the transition
+
 ### T009: Tables with No Role Grants
 
 Identifies tables without proper access controls:
