@@ -1,9 +1,8 @@
 # context
 
-In this section, i will create a new rule.
+In this section, i will create a new paitr of rules (B015/T015).
 
-Let say we want to fix issue [#19](https://github.com/pmpetit/pglinter/issues/19), ab
-out odd triggers
+Let say we want to fix issue [#19](https://github.com/pmpetit/pglinter/issues/19), about odd triggers.
 
 here is a trigger definition i saw few time ago
 
@@ -134,8 +133,8 @@ $function$
 According to me this is not a good approach because:
 
 - Versions are complicated to manage (for example v1 is for table T1, if you want to add a new table T2 you must create a version 2 that has no sense with T1.)
-- A team will have deal with conflict resolution, each dev will work on the same file.
-- Hard to read
+- You will have to deal with conflict resolution, each dev will work on the same file.
+- Hard to read.
 
 ## Create the rules B015 and T015
 
@@ -149,8 +148,8 @@ This base checking will be use later to create a global indicator of the databas
 
 The concept is to compare all tables that have trigger with tables that have the same triggering function.
 
-q1: will count all tables with trigger.
-q2: will count all tables with the same triggering function.
+- q1: will count all tables with trigger.
+- q2: will count all tables with the same triggering function.
 
 Then we will compare them to calculate a ratio, and raise warning/critical error message if the ratio is over.
 
@@ -190,9 +189,9 @@ HAVING
     COUNT(DISTINCT t.event_object_table) > 1
 ```
 
-#### update rules.sql fir B015
+#### update rules.sql for B015
 
-goto sql/rules.sql and add
+go to sql/rules.sql and add
 
 ```sql
 INSERT INTO pglinter.rules (
@@ -395,7 +394,7 @@ tests/sql/b015_trigger_sharing.sql
   - 3 of them with the same trigger function.
   - 2 without any trigger.
 
-edit the Makefile, add the test:
+edit the Makefile, to add the test:
 
 ```bash
 (...)
