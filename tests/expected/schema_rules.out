@@ -24,10 +24,10 @@ CREATE TABLE business_logic.rules (
 );
 -- Enable only S002
 SELECT pglinter.disable_all_rules();
-NOTICE:  🔴 Disabled 21 rule(s)
+NOTICE:  🔴 Disabled 23 rule(s)
  disable_all_rules 
 -------------------
-                21
+                23
 (1 row)
 
 SELECT pglinter.enable_rule('S002');

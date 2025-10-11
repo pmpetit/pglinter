@@ -136,10 +136,10 @@ SELECT 'Testing B007 rule - Tables never selected detection...' as test_info;
 
 -- First, disable all rules to isolate B007 testing
 SELECT pglinter.disable_all_rules() AS all_rules_disabled;
-NOTICE:  🔴 Disabled 21 rule(s)
+NOTICE:  🔴 Disabled 23 rule(s)
  all_rules_disabled 
 --------------------
-                 21
+                 23
 (1 row)
 
 -- Enable only B007 for focused testing
