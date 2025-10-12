@@ -3,20 +3,24 @@
    "abstract": "PostgreSQL Database Linting and Analysis Extension",
    "description": "A comprehensive PostgreSQL extension for analyzing databases to identify potential issues, performance problems, and best practice violations. Originally based on the Python pglinter, this Rust implementation provides better performance, deep PostgreSQL integration, SARIF output support, and YAML-based rule configuration management.",
    "version": "0.0.17",
+   "date": "2025-10-03T08:23:43Z",
    "maintainer": [
       "Pierre-Marie Petit <pmpetit@users.noreply.github.com>"
    ],
+   "release_status": "stable",
+   "user": "pm",
+   "sha1": "73bf29ef3e53d3642b142606a76f8704ca3ea948",
    "license": "postgresql",
    "prereqs": {
-      "runtime": {
+      "build": {
          "requires": {
             "PostgreSQL": "13.0.0"
-         },
-         "recommends": {
-            "PostgreSQL": "17.0.0"
          }
       },
-      "build": {
+      "runtime": {
+         "recommends": {
+            "PostgreSQL": "17.0.0"
+         },
          "requires": {
             "PostgreSQL": "13.0.0"
          }
@@ -34,49 +38,29 @@
          "version": "0.0.17"
       }
    },
+   "tags": ["analysis", "linting", "database quality", "performance", "best practices", "sarif", "yaml", "configuration management", "rule management", "rust", "pgrx", "postgresql extension", "database health", "schema analysis", "index optimization", "foreign keys", "primary keys", "import export"],
    "resources": {
-      "homepage": "https://github.com/pmpetit/pglinter",
       "bugtracker": {
          "web": "https://github.com/pmpetit/pglinter/issues"
       },
+      "homepage": "https://github.com/pmpetit/pglinter",
       "repository": {
+         "type": "git",
          "url": "git://github.com/pmpetit/pglinter.git",
-         "web": "https://github.com/pmpetit/pglinter",
-         "type": "git"
+         "web": "https://github.com/pmpetit/pglinter"
       }
    },
-   "generated_by": "Pierre-Marie Petit",
-   "meta-spec": {
-      "version": "1.0.0",
-      "url": "https://pgxn.org/meta/spec.txt"
-   },
-   "tags": [
-      "analysis",
-      "linting",
-      "database quality",
-      "performance",
-      "best practices",
-      "sarif",
-      "yaml",
-      "configuration management",
-      "rule management",
-      "rust",
-      "pgrx",
-      "postgresql extension",
-      "database health",
-      "schema analysis",
-      "index optimization",
-      "foreign keys",
-      "primary keys",
-      "import export"
-    ],
-    "no_index": {
-      "file":      [ "src/rules.sql" ],
-      "directory": [ "src/private",      "target/",
-      "docs/dev/",
-      "sql/test/",
-      "tests/expected/",
-      "coverage/"]
-    },
-    "release_status": "stable"
+   "no_index": {
+      "directory": [
+         "src/private",
+         "target/",
+         "docs/dev/",
+         "sql/test/",
+         "tests/expected/",
+         "coverage/"
+      ],
+      "file": [
+         "src/rules.sql"
+      ]
+   }
 }
