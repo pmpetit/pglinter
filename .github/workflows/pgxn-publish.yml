@@ -1,0 +1,306 @@
+name: 'Publish to PGXN'
+
+on:
+  # Trigger on new releases
+  release:
+    types: [published]
+
+  # Manual trigger
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to publish (e.g., 0.0.17)'
+        required: true
+        type: string
+      force_publish:
+        description: 'Force publish even if version already exists on PGXN'
+        required: false
+        default: false
+        type: boolean
+
+env:
+  EXTENSION_NAME: pglinter
+
+jobs:
+  pgxn-publish:
+    name: 'Publish to PGXN'
+    runs-on: ubuntu-latest
+
+    # Use the official PGXN tools container
+    container:
+      image: pgxn/pgxn-tools:latest
+      options: --user root
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Determine version
+        id: version
+        run: |
+          if [ "${{ github.event_name }}" = "release" ]; then
+            VERSION="${{ github.event.release.tag_name }}"
+          else
+            VERSION="${{ inputs.version }}"
+          fi
+          echo "version=${VERSION}" >> $GITHUB_OUTPUT
+          echo "Publishing version: ${VERSION}"
+        shell: bash
+
+      - name: Validate extension files
+        run: |
+          echo "Validating pglinter extension files..."
+
+          # Check META.json exists
+          if [ ! -f "META.json" ]; then
+            echo "ERROR: META.json file not found"
+            exit 1
+          fi
+
+          # Check control file exists
+          if [ ! -f "pglinter.control" ]; then
+            echo "ERROR: pglinter.control file not found"
+            exit 1
+          fi
+
+          # Validate META.json structure
+          if ! jq empty META.json 2>/dev/null; then
+            echo "ERROR: META.json is not valid JSON"
+            exit 1
+          fi
+
+          # Check required META.json fields
+          required_fields=("name" "version" "abstract" "maintainer" "license")
+          for field in "${required_fields[@]}"; do
+            if ! jq -e ".${field}" META.json > /dev/null; then
+              echo "ERROR: Missing required field '${field}' in META.json"
+              exit 1
+            fi
+          done
+
+          # Get version from META.json
+          meta_version=$(jq -r '.version' META.json)
+          expected_version="${{ steps.version.outputs.version }}"
+
+          if [ "$meta_version" != "$expected_version" ]; then
+            echo "WARNING: Version mismatch detected"
+            echo "META.json version: $meta_version"
+            echo "Expected version: $expected_version"
+            echo "Updating META.json to match expected version..."
+
+            # Update META.json with correct version
+            jq --arg version "$expected_version" \
+               '.version = $version |
+                .provides.pglinter.version = $version |
+                .provides.pglinter.file = ("sql/pglinter--" + $version + ".sql")' \
+               META.json > META.json.tmp && mv META.json.tmp META.json
+
+            echo "META.json updated successfully"
+          fi
+
+          # Check if main SQL file exists
+          sql_file="sql/pglinter--${expected_version}.sql"
+          if [ ! -f "$sql_file" ]; then
+            echo "ERROR: Required SQL file not found: $sql_file"
+            echo "Available SQL files:"
+            find sql/ -name "*.sql" -type f 2>/dev/null || echo "No SQL files found"
+            exit 1
+          fi
+
+          echo "✅ Extension validation passed"
+        shell: bash
+
+      - name: Prepare PGXN distribution
+        run: |
+          echo "Preparing PGXN distribution for pglinter v${{ steps.version.outputs.version }}"
+
+          # Create distribution directory
+          DIST_DIR="pglinter-${{ steps.version.outputs.version }}"
+          mkdir -p "$DIST_DIR"
+
+          # Copy essential files
+          cp META.json "$DIST_DIR/"
+          cp pglinter.control "$DIST_DIR/"
+          cp README.md "$DIST_DIR/"
+
+          # Copy license files if they exist
+          for license_file in LICENSE LICENSE.md LICENSE.txt COPYING; do
+            if [ -f "$license_file" ]; then
+              cp "$license_file" "$DIST_DIR/"
+              break
+            fi
+          done
+
+          # Copy changelog if it exists
+          for changelog_file in CHANGELOG CHANGELOG.md CHANGELOG.txt NEWS NEWS.md; do
+            if [ -f "$changelog_file" ]; then
+              cp "$changelog_file" "$DIST_DIR/"
+              break
+            fi
+          done
+
+          # Copy SQL files
+          mkdir -p "$DIST_DIR/sql"
+          if [ -d "sql" ]; then
+            cp sql/*.sql "$DIST_DIR/sql/" 2>/dev/null || true
+          fi
+
+          # Copy documentation if it exists
+          if [ -d "docs" ]; then
+            cp -r docs "$DIST_DIR/"
+          fi
+
+          # Copy test files if they exist (optional for PGXN)
+          if [ -d "test" ]; then
+            cp -r test "$DIST_DIR/"
+          elif [ -d "tests" ]; then
+            mkdir -p "$DIST_DIR/test"
+            # Copy SQL test files
+            if [ -d "tests/sql" ]; then
+              cp -r tests/sql "$DIST_DIR/test/"
+            fi
+            if [ -d "tests/expected" ]; then
+              cp -r tests/expected "$DIST_DIR/test/"
+            fi
+          fi
+
+          # Create Makefile if it doesn't exist (PGXN expects it)
+          if [ ! -f "$DIST_DIR/Makefile" ] && [ -f "Makefile" ]; then
+            cp Makefile "$DIST_DIR/"
+          fi
+
+          echo "Distribution prepared in: $DIST_DIR"
+          echo "Contents:"
+          find "$DIST_DIR" -type f | head -20
+        shell: bash
+
+      - name: Test PGXN distribution
+        run: |
+          echo "Testing PGXN distribution..."
+
+          DIST_DIR="pglinter-${{ steps.version.outputs.version }}"
+          cd "$DIST_DIR"
+
+          # Validate with pgxn-utils if available
+          if command -v pgxn-bundle >/dev/null 2>&1; then
+            echo "Validating distribution with pgxn-bundle..."
+            pgxn-bundle --verbose
+          else
+            echo "pgxn-bundle not available, performing basic validation..."
+
+            # Basic validation
+            if [ ! -f "META.json" ]; then
+              echo "ERROR: META.json missing from distribution"
+              exit 1
+            fi
+
+            if [ ! -f "pglinter.control" ]; then
+              echo "ERROR: Control file missing from distribution"
+              exit 1
+            fi
+
+            echo "✅ Basic distribution validation passed"
+          fi
+        shell: bash
+
+      - name: Create distribution archive
+        run: |
+          DIST_DIR="pglinter-${{ steps.version.outputs.version }}"
+          ARCHIVE_NAME="${DIST_DIR}.tar.gz"
+
+          echo "Creating distribution archive: $ARCHIVE_NAME"
+          tar -czf "$ARCHIVE_NAME" "$DIST_DIR"
+
+          echo "Archive created successfully"
+          echo "Archive size: $(du -h "$ARCHIVE_NAME" | cut -f1)"
+          echo "Archive contents:"
+          tar -tzf "$ARCHIVE_NAME" | head -10
+
+          # Make archive available for upload
+          echo "ARCHIVE_PATH=$PWD/$ARCHIVE_NAME" >> $GITHUB_ENV
+        shell: bash
+
+      - name: Publish to PGXN
+        env:
+          PGXN_USERNAME: ${{ secrets.PGXN_USERNAME }}
+          PGXN_PASSWORD: ${{ secrets.PGXN_PASSWORD }}
+        run: |
+          echo "Publishing pglinter v${{ steps.version.outputs.version }} to PGXN..."
+
+          # Check if credentials are available
+          if [ -z "$PGXN_USERNAME" ] || [ -z "$PGXN_PASSWORD" ]; then
+            echo "❌ PGXN credentials not configured"
+            echo "Please configure PGXN_USERNAME and PGXN_PASSWORD secrets in repository settings"
+            exit 1
+          fi
+
+          # Configure PGXN client
+          mkdir -p ~/.pgxn
+          cat > ~/.pgxn/client.conf << EOF
+          [server]
+          url = https://manager.pgxn.org/
+
+          [client]
+          username = $PGXN_USERNAME
+          password = $PGXN_PASSWORD
+          EOF
+
+          # Upload to PGXN
+          if command -v pgxn-upload >/dev/null 2>&1; then
+            echo "Using pgxn-upload..."
+            pgxn-upload "$ARCHIVE_PATH"
+          elif command -v pgxn >/dev/null 2>&1; then
+            echo "Using pgxn client..."
+            pgxn upload "$ARCHIVE_PATH"
+          else
+            echo "❌ No PGXN upload tool found in container"
+            echo "Available commands:"
+            ls -la /usr/local/bin/ | grep pgxn || echo "No pgxn tools found"
+            exit 1
+          fi
+
+          echo "✅ Successfully published pglinter v${{ steps.version.outputs.version }} to PGXN!"
+        shell: bash
+
+      - name: Verify PGXN publication
+        run: |
+          echo "Verifying PGXN publication..."
+
+          # Wait a moment for PGXN to process the upload
+          sleep 10
+
+          # Try to fetch extension info from PGXN API
+          VERSION="${{ steps.version.outputs.version }}"
+          API_URL="https://api.pgxn.org/dist/pglinter/$VERSION.json"
+
+          echo "Checking PGXN API: $API_URL"
+
+          if command -v curl >/dev/null 2>&1; then
+            if curl -f -s "$API_URL" > /dev/null; then
+              echo "✅ Extension verified on PGXN API"
+            else
+              echo "⚠️  Extension not yet available on PGXN API (may take a few minutes)"
+            fi
+          else
+            echo "curl not available, skipping API verification"
+          fi
+
+          echo ""
+          echo "🎉 PGXN Publication Summary"
+          echo "=========================="
+          echo "Extension: pglinter"
+          echo "Version: $VERSION"
+          echo "PGXN URL: https://pgxn.org/dist/pglinter/"
+          echo "API URL: https://api.pgxn.org/dist/pglinter/"
+          echo ""
+          echo "Users can now install with:"
+          echo "  pgxn install pglinter"
+          echo "  pgxn load -d database_name pglinter"
+        shell: bash
+
+      - name: Upload distribution artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: pgxn-distribution-${{ steps.version.outputs.version }}
+          path: pglinter-${{ steps.version.outputs.version }}.tar.gz
+          retention-days: 30

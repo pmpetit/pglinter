@@ -2,6 +2,9 @@
 # So in main only validated PR are accepted.
 # So build and test were run during the merge request process.
 # So don't need to run twice the build and test workflow when releasing...
+#
+# Note: PGXN publishing is handled by a separate workflow (pgxn-publish.yml)
+# which automatically triggers when a release is published.
 
 name: 'Package and deploy pglinter.'
 
@@ -85,7 +88,7 @@ jobs:
     permissions:
       contents: write
       packages: read
-      
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
