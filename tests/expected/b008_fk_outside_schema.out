@@ -157,10 +157,17 @@ SELECT 'Running base check to test B008 rule:' AS test_step;
 (1 row)
 
 SELECT pglinter.perform_base_check();
-WARNING:  pglinter base check failed: Failed to execute q2 rule B015: Database error: SpiTupleTable positioned before the start or after the end
+NOTICE:  🔍 pglinter found 3 issue(s):
+NOTICE:  ==================================================
+NOTICE:  ❌ [B001] ERROR: 11/11 table(s) without primary key exceed the error threshold: 100%.
+NOTICE:  ❌ [B003] ERROR: 6/6 table(s) without index on foreign key exceed the error threshold: 100%.
+NOTICE:  ⚠️  [B008] WARNING: 4/11 table(s) with foreign keys outside schema exceed the warning threshold: 36%.
+NOTICE:  ==================================================
+NOTICE:  📊 Summary: 2 error(s), 1 warning(s), 0 info
+NOTICE:  🔴 Critical issues found - please review and fix errors
  perform_base_check 
 --------------------
- f
+ t
 (1 row)
 
 -- Test rule management for B008
@@ -213,10 +220,16 @@ NOTICE:  🔴 Rule B008 has been disabled
 (1 row)
 
 SELECT pglinter.perform_base_check(); -- Should skip B008
-WARNING:  pglinter base check failed: Failed to execute q2 rule B015: Database error: SpiTupleTable positioned before the start or after the end
+NOTICE:  🔍 pglinter found 2 issue(s):
+NOTICE:  ==================================================
+NOTICE:  ❌ [B001] ERROR: 11/11 table(s) without primary key exceed the error threshold: 100%.
+NOTICE:  ❌ [B003] ERROR: 6/6 table(s) without index on foreign key exceed the error threshold: 100%.
+NOTICE:  ==================================================
+NOTICE:  📊 Summary: 2 error(s), 0 warning(s), 0 info
+NOTICE:  🔴 Critical issues found - please review and fix errors
  perform_base_check 
 --------------------
- f
+ t
 (1 row)
 
 -- Re-enable B008
@@ -234,10 +247,17 @@ NOTICE:  ✅ Rule B008 has been enabled
 (1 row)
 
 SELECT pglinter.perform_base_check(); -- Should include B008 again
-WARNING:  pglinter base check failed: Failed to execute q2 rule B015: Database error: SpiTupleTable positioned before the start or after the end
+NOTICE:  🔍 pglinter found 3 issue(s):
+NOTICE:  ==================================================
+NOTICE:  ❌ [B001] ERROR: 11/11 table(s) without primary key exceed the error threshold: 100%.
+NOTICE:  ❌ [B003] ERROR: 6/6 table(s) without index on foreign key exceed the error threshold: 100%.
+NOTICE:  ⚠️  [B008] WARNING: 4/11 table(s) with foreign keys outside schema exceed the warning threshold: 36%.
+NOTICE:  ==================================================
+NOTICE:  📊 Summary: 2 error(s), 1 warning(s), 0 info
+NOTICE:  🔴 Critical issues found - please review and fix errors
  perform_base_check 
 --------------------
- f
+ t
 (1 row)
 
 -- Test with only B008 enabled

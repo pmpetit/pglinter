@@ -74,10 +74,17 @@ SELECT 'BASE RULES:' AS category;
 (1 row)
 
 SELECT pglinter.perform_base_check();
-WARNING:  pglinter base check failed: Failed to execute q2 rule B015: Database error: SpiTupleTable positioned before the start or after the end
+NOTICE:  🔍 pglinter found 3 issue(s):
+NOTICE:  ==================================================
+NOTICE:  ❌ [B001] ERROR: 16/18 table(s) without primary key exceed the error threshold: 88%.
+NOTICE:  ❌ [B003] ERROR: 3/3 table(s) without index on foreign key exceed the error threshold: 100%.
+NOTICE:  ❌ [B004] ERROR: 4/4 unused index exceed the error threshold: 100%
+NOTICE:  ==================================================
+NOTICE:  📊 Summary: 3 error(s), 0 warning(s), 0 info
+NOTICE:  🔴 Critical issues found - please review and fix errors
  perform_base_check 
 --------------------
- f
+ t
 (1 row)
 
 SELECT 'TABLE RULES:' AS category;
@@ -207,7 +214,14 @@ SELECT pglinter.check_all();
 NOTICE:  🔍 Running comprehensive pglinter check...
 NOTICE:  
 NOTICE:  📋 BASE CHECKS:
-WARNING:  pglinter base check failed: Failed to execute q2 rule B015: Database error: SpiTupleTable positioned before the start or after the end
+NOTICE:  🔍 pglinter found 3 issue(s):
+NOTICE:  ==================================================
+NOTICE:  ❌ [B001] ERROR: 16/18 table(s) without primary key exceed the error threshold: 88%.
+NOTICE:  ❌ [B003] ERROR: 3/3 table(s) without index on foreign key exceed the error threshold: 100%.
+NOTICE:  ❌ [B004] ERROR: 4/4 unused index exceed the error threshold: 100%
+NOTICE:  ==================================================
+NOTICE:  📊 Summary: 3 error(s), 0 warning(s), 0 info
+NOTICE:  🔴 Critical issues found - please review and fix errors
 NOTICE:  
 NOTICE:  🖥️  CLUSTER CHECKS:
 NOTICE:  🔍 pglinter found 2 issue(s):
@@ -295,10 +309,10 @@ NOTICE:  ==================================================
 NOTICE:  📊 Summary: 0 error(s), 2 warning(s), 0 info
 NOTICE:  🟡 Some warnings found - consider reviewing for optimization
 NOTICE:  
-NOTICE:  ⚠️  Some pglinter checks found issues - please review above
+NOTICE:  🎉 All pglinter checks completed successfully!
  check_all 
 -----------
- f
+ t
 (1 row)
 
 -- Test rule management features
@@ -417,10 +431,9 @@ SELECT '=== OUTPUT TO FILE TEST ===' AS info;
 (1 row)
 
 SELECT pglinter.perform_base_check('/tmp/integration_base.sarif');
-WARNING:  pglinter base check failed: Failed to execute q2 rule B015: Database error: SpiTupleTable positioned before the start or after the end
  perform_base_check 
 --------------------
- f
+ t
 (1 row)
 
 SELECT pglinter.perform_table_check('/tmp/integration_table.sarif');
@@ -459,10 +472,16 @@ NOTICE:  🔴 Rule T003 has been disabled
 
 -- Run checks (should skip disabled rules)
 SELECT pglinter.perform_base_check();
-WARNING:  pglinter base check failed: Failed to execute q2 rule B015: Database error: SpiTupleTable positioned before the start or after the end
+NOTICE:  🔍 pglinter found 2 issue(s):
+NOTICE:  ==================================================
+NOTICE:  ❌ [B003] ERROR: 3/3 table(s) without index on foreign key exceed the error threshold: 100%.
+NOTICE:  ❌ [B004] ERROR: 4/4 unused index exceed the error threshold: 100%
+NOTICE:  ==================================================
+NOTICE:  📊 Summary: 2 error(s), 0 warning(s), 0 info
+NOTICE:  🔴 Critical issues found - please review and fix errors
  perform_base_check 
 --------------------
- f
+ t
 (1 row)
 
 SELECT pglinter.perform_table_check();
@@ -539,7 +558,14 @@ SELECT pglinter.check_all();
 NOTICE:  🔍 Running comprehensive pglinter check...
 NOTICE:  
 NOTICE:  📋 BASE CHECKS:
-WARNING:  pglinter base check failed: Failed to execute q2 rule B015: Database error: SpiTupleTable positioned before the start or after the end
+NOTICE:  🔍 pglinter found 3 issue(s):
+NOTICE:  ==================================================
+NOTICE:  ❌ [B001] ERROR: 16/18 table(s) without primary key exceed the error threshold: 88%.
+NOTICE:  ❌ [B003] ERROR: 3/3 table(s) without index on foreign key exceed the error threshold: 100%.
+NOTICE:  ❌ [B004] ERROR: 4/4 unused index exceed the error threshold: 100%
+NOTICE:  ==================================================
+NOTICE:  📊 Summary: 3 error(s), 0 warning(s), 0 info
+NOTICE:  🔴 Critical issues found - please review and fix errors
 NOTICE:  
 NOTICE:  🖥️  CLUSTER CHECKS:
 NOTICE:  🔍 pglinter found 2 issue(s):
@@ -627,10 +653,10 @@ NOTICE:  ==================================================
 NOTICE:  📊 Summary: 0 error(s), 2 warning(s), 0 info
 NOTICE:  🟡 Some warnings found - consider reviewing for optimization
 NOTICE:  
-NOTICE:  ⚠️  Some pglinter checks found issues - please review above
+NOTICE:  🎉 All pglinter checks completed successfully!
  check_all 
 -----------
- f
+ t
 (1 row)
 
 -- Clean up
