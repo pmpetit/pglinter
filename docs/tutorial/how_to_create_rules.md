@@ -221,25 +221,7 @@ INSERT INTO pglinter.rules (
 UPDATE pglinter.rules
 SET q1 = $$
 SELECT
-    COUNT(DISTINCT event_object_table) as table_using_trigger
-FROM
-    information_schema.triggers
-WHERE
-    t.trigger_schema NOT IN (
-    'pg_toast', 'pg_catalog', 'information_schema', 'pglinter'
-)
-$$
-WHERE code = 'B015';
-```
-
-```sql
--- =============================================================================
--- B015 - Tables With same trigger
--- =============================================================================
-UPDATE pglinter.rules
-SET q1 = $$
-SELECT
-    COUNT(DISTINCT event_object_table) as table_using_trigger
+    COALESCE(COUNT(DISTINCT event_object_table), 0)::BIGINT as table_using_trigger
 FROM
     information_schema.triggers t
 WHERE
@@ -255,25 +237,30 @@ WHERE code = 'B015';
 UPDATE pglinter.rules
 SET q2 = $$
 SELECT
-    COUNT(DISTINCT t.event_object_table) AS table_using_same_trigger
+    COALESCE(SUM(shared_table_count), 0)::BIGINT AS table_using_same_trigger
 FROM (
     SELECT
-        t.event_object_table ,
-        -- Extracts the function name from the action_statement (e.g., 'public.my_func()')
-        SUBSTRING(t.action_statement FROM 'EXECUTE FUNCTION ([^()]+)') AS trigger_function_name
-    FROM
-        information_schema.triggers t
-    WHERE
-        t.trigger_schema NOT IN (
-        'pg_toast', 'pg_catalog', 'information_schema', 'pglinter'
-    )
-) t
-GROUP BY
-    t.trigger_function_name
-HAVING
-    COUNT(DISTINCT t.event_object_table) > 1
+        COUNT(DISTINCT t.event_object_table) AS shared_table_count
+    FROM (
+        SELECT
+            t.event_object_table,
+            -- Extracts the function name from the action_statement (e.g., 'public.my_func()')
+            SUBSTRING(t.action_statement FROM 'EXECUTE FUNCTION ([^()]+)') AS trigger_function_name
+        FROM
+            information_schema.triggers t
+        WHERE
+            t.trigger_schema NOT IN (
+            'pg_toast', 'pg_catalog', 'information_schema', 'pglinter'
+        )
+    ) t
+    GROUP BY
+        t.trigger_function_name
+    HAVING
+        COUNT(DISTINCT t.event_object_table) > 1
+) shared_triggers
 $$
 WHERE code = 'B015';
+
 ```
 
 ### T015
