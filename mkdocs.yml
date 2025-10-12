@@ -24,6 +24,8 @@ nav:
     - 'Functions': functions/README.md
   - Rules Reference:
     - 'Rules': rules/README.md
+  - Tutorial:
+    - 'Create rules': tutorial/how_to_create_rules.md
   - Examples:
     - 'Usage Examples': examples/README.md
     - 'Rules level management': examples/rule_level_management.md

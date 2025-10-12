@@ -117,6 +117,8 @@ make installcheck
 Adding new linting rules
 -------------------------------------------------------------------------------
 
+📖 **Tutorial Available**: For a comprehensive step-by-step guide on creating rules, see the [How to Create Rules Tutorial](docs/tutorial/how_to_create_rules.md) in the documentation.
+
 To add a new linting rule to pglinter, follow these steps:
 
 1. **Design Your Rule**

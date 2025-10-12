@@ -21,10 +21,10 @@ ANALYZE parent;
 ANALYZE child;
 -- Disable all rules first to isolate T004 testing
 SELECT pglinter.disable_all_rules() AS all_rules_disabled;
-NOTICE:  🔴 Disabled 21 rule(s)
+NOTICE:  🔴 Disabled 23 rule(s)
  all_rules_disabled 
 --------------------
-                 21
+                 23
 (1 row)
 
 -- Enable T003 specifically

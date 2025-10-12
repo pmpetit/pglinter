@@ -13,10 +13,10 @@ CREATE TABLE test_with_pk (
 );
 -- First, disable all rules to isolate B001 testing
 SELECT pglinter.disable_all_rules() AS all_rules_disabled;
-NOTICE:  🔴 Disabled 21 rule(s)
+NOTICE:  🔴 Disabled 23 rule(s)
  all_rules_disabled 
 --------------------
-                 21
+                 23
 (1 row)
 
 -- Enable only B001 for focused testing

@@ -220,6 +220,15 @@ INSERT INTO pglinter.rules (
     '{0} have column {1} (category {2}) that can be consider has sensitive. It should be masked for non data-operator users.',
     ARRAY['Install extension anon, and create some masking rules on']
 ),
+(
+    32, 'TableSharingSameTrigger', 'T015', 1, 1, 'TABLE',
+    'Table shares the same trigger function with other tables.',
+    'Table shares trigger function with other tables.',
+    ARRAY[
+        'For more readability and other considerations use one trigger function per table.',
+        'Sharing the same trigger function add more complexity.'
+    ]
+),
 
 -- Schema Rules (S series)
 (
@@ -237,6 +246,15 @@ INSERT INTO pglinter.rules (
     'You should not prefix or suffix the schema name with {0}. You may have difficulties when refreshing environments. Prefer prefix or suffix the database name.',
     ARRAY[
         'Keep the same schema name across environments. Prefer prefix or suffix the database name'
+    ]
+),
+(
+    45, 'HowManyTableSharingSameTrigger', 'B015', 20, 80, 'BASE',
+    'Count number of table that use the same trigger vs nb table with their own triggers.',
+    '{0}/{1} table(s) using the same trigger function exceed the {2} threshold: {3}%.',
+    ARRAY[
+        'For more readability and other considerations use one trigger function per table.',
+        'Sharing the same trigger function add more complexity.'
     ]
 );
 
@@ -1175,3 +1193,90 @@ pg_catalog.pg_settings
 WHERE name='password_encryption' AND setting='md5'
 $$
 WHERE code = 'C003';
+
+-- =============================================================================
+-- B015 - Tables With same trigger
+-- =============================================================================
+UPDATE pglinter.rules
+SET q1 = $$
+SELECT
+    COALESCE(COUNT(DISTINCT event_object_table), 0)::BIGINT as table_using_trigger
+FROM
+    information_schema.triggers t
+WHERE
+    t.trigger_schema NOT IN (
+    'pg_toast', 'pg_catalog', 'information_schema', 'pglinter'
+)
+$$
+WHERE code = 'B015';
+
+-- =============================================================================
+-- B015 - Tables With same trigger
+-- =============================================================================
+UPDATE pglinter.rules
+SET q2 = $$
+SELECT
+    COALESCE(SUM(shared_table_count), 0)::BIGINT AS table_using_same_trigger
+FROM (
+    SELECT
+        COUNT(DISTINCT t.event_object_table) AS shared_table_count
+    FROM (
+        SELECT
+            t.event_object_table,
+            -- Extracts the function name from the action_statement (e.g., 'public.my_func()')
+            SUBSTRING(t.action_statement FROM 'EXECUTE FUNCTION ([^()]+)') AS trigger_function_name
+        FROM
+            information_schema.triggers t
+        WHERE
+            t.trigger_schema NOT IN (
+            'pg_toast', 'pg_catalog', 'information_schema', 'pglinter'
+        )
+    ) t
+    GROUP BY
+        t.trigger_function_name
+    HAVING
+        COUNT(DISTINCT t.event_object_table) > 1
+) shared_triggers
+$$
+WHERE code = 'B015';
+
+-- =============================================================================
+-- T015 - Tables Sharing Same Trigger Function
+-- =============================================================================
+UPDATE pglinter.rules
+SET q1 = $$
+SELECT
+    t.trigger_schema::text || '.' || t.event_object_table::text ||
+    ' shares trigger function ' || t.trigger_function_name::text ||
+    ' with other tables' AS problematic_object
+FROM (
+    SELECT
+        t.trigger_schema,
+        t.event_object_table,
+        -- Extracts the function name from the action_statement (e.g., 'public.my_func()')
+        SUBSTRING(t.action_statement FROM 'EXECUTE FUNCTION ([^()]+)') AS trigger_function_name
+    FROM
+        information_schema.triggers t
+    WHERE
+        t.trigger_schema NOT IN (
+            'pg_toast', 'pg_catalog', 'information_schema', 'pglinter'
+        )
+) t
+WHERE t.trigger_function_name IN (
+    -- Subquery to find trigger functions shared by multiple tables
+    SELECT
+        SUBSTRING(t2.action_statement FROM 'EXECUTE FUNCTION ([^()]+)') AS shared_function
+    FROM
+        information_schema.triggers t2
+    WHERE
+        t2.trigger_schema NOT IN (
+            'pg_toast', 'pg_catalog', 'information_schema', 'pglinter'
+        )
+    GROUP BY
+        SUBSTRING(t2.action_statement FROM 'EXECUTE FUNCTION ([^()]+)')
+    HAVING
+        COUNT(DISTINCT t2.event_object_table) > 1
+)
+ORDER BY t.trigger_function_name, t.event_object_table
+$$
+WHERE code = 'T015';

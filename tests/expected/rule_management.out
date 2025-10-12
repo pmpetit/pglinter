@@ -18,6 +18,7 @@ NOTICE:  B005   ✅ ON     UnsecuredPublicSchema
 NOTICE:  B006   ✅ ON     HowManyObjectsWithUppercase             
 NOTICE:  B007   ✅ ON     HowManyTablesNeverSelected              
 NOTICE:  B008   ✅ ON     HowManyTablesWithFkOutsideSchema        
+NOTICE:  B015   ✅ ON     HowManyTableSharingSameTrigger          
 NOTICE:  C002   ✅ ON     PgHbaEntriesWithMethodTrustOrPasswordShouldNotExists
 NOTICE:  C003   ✅ ON     PasswordEncryptionIsMd5                 
 NOTICE:  S001   ✅ ON     SchemaWithDefaultRoleNotGranted         
@@ -32,8 +33,9 @@ NOTICE:  T007   ✅ ON     TableWithFkMismatch
 NOTICE:  T008   ✅ ON     TableWithRoleNotGranted                 
 NOTICE:  T009   ✅ ON     ReservedKeyWord                         
 NOTICE:  T010   🔴 OFF    TableWithSensibleColumn                 
+NOTICE:  T015   ✅ ON     TableSharingSameTrigger                 
 NOTICE:  ============================================================
-NOTICE:  📊 Summary: 21 enabled, 1 disabled
+NOTICE:  📊 Summary: 23 enabled, 1 disabled
  show_rules 
 ------------
  t
@@ -112,6 +114,7 @@ NOTICE:  B005   ✅ ON     UnsecuredPublicSchema
 NOTICE:  B006   ✅ ON     HowManyObjectsWithUppercase             
 NOTICE:  B007   ✅ ON     HowManyTablesNeverSelected              
 NOTICE:  B008   ✅ ON     HowManyTablesWithFkOutsideSchema        
+NOTICE:  B015   ✅ ON     HowManyTableSharingSameTrigger          
 NOTICE:  C002   ✅ ON     PgHbaEntriesWithMethodTrustOrPasswordShouldNotExists
 NOTICE:  C003   ✅ ON     PasswordEncryptionIsMd5                 
 NOTICE:  S001   ✅ ON     SchemaWithDefaultRoleNotGranted         
@@ -126,8 +129,9 @@ NOTICE:  T007   ✅ ON     TableWithFkMismatch
 NOTICE:  T008   ✅ ON     TableWithRoleNotGranted                 
 NOTICE:  T009   ✅ ON     ReservedKeyWord                         
 NOTICE:  T010   🔴 OFF    TableWithSensibleColumn                 
+NOTICE:  T015   ✅ ON     TableSharingSameTrigger                 
 NOTICE:  ============================================================
-NOTICE:  📊 Summary: 21 enabled, 1 disabled
+NOTICE:  📊 Summary: 23 enabled, 1 disabled
  show_rules 
 ------------
  t

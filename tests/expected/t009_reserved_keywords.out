@@ -183,10 +183,10 @@ SELECT 'Disabling all rules to test T009 specifically...' AS status;
 (1 row)
 
 SELECT pglinter.disable_all_rules() AS all_rules_disabled;
-NOTICE:  🔴 Disabled 21 rule(s)
+NOTICE:  🔴 Disabled 23 rule(s)
  all_rules_disabled 
 --------------------
-                 21
+                 23
 (1 row)
 
 SELECT pglinter.enable_rule('T009') AS t009_enabled;
