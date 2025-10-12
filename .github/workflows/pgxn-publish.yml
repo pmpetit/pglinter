@@ -78,8 +78,10 @@ jobs:
           ls -la META.json
           echo "DEBUG: First few lines of META.json:"
           head -10 META.json
-          echo "DEBUG: File encoding check:"
-          file META.json
+          echo "DEBUG: Character encoding check:"
+          # Use hexdump to check for encoding issues instead of file command
+          echo "First 200 bytes in hex:"
+          hexdump -C META.json | head -5
 
           # Validate META.json structure
           echo "DEBUG: Testing JSON validation with jq..."
