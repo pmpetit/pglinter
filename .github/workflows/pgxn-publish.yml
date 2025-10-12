@@ -51,6 +51,16 @@ jobs:
         run: |
           echo "Validating pglinter extension files..."
 
+          # Check if jq is available
+          if ! command -v jq >/dev/null 2>&1; then
+            echo "WARNING: jq not found, installing..."
+            apt-get update && apt-get install -y jq || {
+              echo "ERROR: Could not install jq"
+              exit 1
+            }
+          fi
+          echo "✅ jq is available: $(jq --version)"
+
           # Check META.json exists
           if [ ! -f "META.json" ]; then
             echo "ERROR: META.json file not found"
@@ -63,10 +73,22 @@ jobs:
             exit 1
           fi
 
+          # Debug: Show META.json content and file info
+          echo "DEBUG: META.json file info:"
+          ls -la META.json
+          echo "DEBUG: First few lines of META.json:"
+          head -10 META.json
+          echo "DEBUG: File encoding check:"
+          file META.json
+
           # Validate META.json structure
-          if ! jq empty META.json 2>/dev/null; then
+          echo "DEBUG: Testing JSON validation with jq..."
+          if ! jq empty META.json 2>&1; then
             echo "ERROR: META.json is not valid JSON"
+            echo "DEBUG: jq error details above"
             exit 1
+          else
+            echo "✅ META.json is valid JSON"
           fi
 
           # Check required META.json fields

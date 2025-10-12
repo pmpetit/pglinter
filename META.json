@@ -69,14 +69,19 @@
       "foreign keys",
       "primary keys",
       "import export"
-    ],
-    "no_index": {
-      "file":      [ "src/rules.sql" ],
-      "directory": [ "src/private",      "target/",
-      "docs/dev/",
-      "sql/test/",
-      "tests/expected/",
-      "coverage/"]
-    },
-    "release_status": "stable"
+   ],
+   "no_index": {
+      "file": [
+         "src/rules.sql"
+      ],
+      "directory": [
+         "src/private",
+         "target/",
+         "docs/dev/",
+         "sql/test/",
+         "tests/expected/",
+         "coverage/"
+      ]
+   },
+   "release_status": "stable"
 }
