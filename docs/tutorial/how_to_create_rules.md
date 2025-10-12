@@ -267,7 +267,7 @@ WHERE code = 'B015';
 
 This table check is for dev/ops/dba, that needs to know which table(s) are concerned by this rule, to fix the trouble.
 
-"T" rules (table) does not need any warning or critical threshold, it only returns the message.
+"T" rules (table) do not need any warning or critical threshold, it only returns the message.
 
 That's why T* rules only have one q1 query.
 
