@@ -7,7 +7,7 @@
 In recent years, DBAs were more involved with the database engine itself: creating instances, configuring backups, and monitoring systems and also, overseeing developers' activities.
 Today, in the DBRE world where databases are cloud-managed, developers and operations teams often work independently, without a dedicated DBA.
 
-So databases objects lives their own life, created by persons that do their best. It can be usefull to be able to detect some wrong desing creation (for example foreign keys created accross differents schemas...). That's what pglinter was created for.
+So databases objects lives their own life, created by persons that do their best. It can be usefull to be able to detect some wrong design creation (for example foreign keys created accross differents schemas...). That's what pglinter was created for.
 
 This extension is not designed for DBAs who often have their own tools and scripts to detect those potential problems, but for developers, operations teams, or CI pipelines that do not have deep knowledge on database best practices.
 
