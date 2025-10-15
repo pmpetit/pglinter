@@ -16,9 +16,11 @@ depends:
 contents:
   - src: ${PG_PKGLIBDIR}/pglinter.so
     dst: /usr/lib/postgresql/${PG_MAJOR_VERSION}/lib/pglinter.so
-  - src: ${PG_SHAREDIR}/extension/
-    dst: /usr/share/postgresql/${PG_MAJOR_VERSION}/extension/
-    type: tree
+  # Install only the specific extension files, not the entire directory tree
+  - src: ${PG_SHAREDIR}/extension/pglinter.control
+    dst: /usr/share/postgresql/${PG_MAJOR_VERSION}/extension/pglinter.control
+  - src: ${PG_SHAREDIR}/extension/pglinter--${PGLINTER_MINOR_VERSION}.sql
+    dst: /usr/share/postgresql/${PG_MAJOR_VERSION}/extension/pglinter--${PGLINTER_MINOR_VERSION}.sql
 
 overrides:
   rpm:
@@ -32,6 +34,8 @@ overrides:
     contents:
       - src: ${PG_PKGLIBDIR}/pglinter.so
         dst: /usr/pgsql-${PG_MAJOR_VERSION}/lib/pglinter.so
-      - src: ${PG_SHAREDIR}/extension/
-        dst: /usr/pgsql-${PG_MAJOR_VERSION}/share/extension/
-        type: tree
+      # Install only the specific extension files, not the entire directory tree
+      - src: ${PG_SHAREDIR}/extension/pglinter.control
+        dst: /usr/pgsql-${PG_MAJOR_VERSION}/share/extension/pglinter.control
+      - src: ${PG_SHAREDIR}/extension/pglinter--${PGLINTER_MINOR_VERSION}.sql
+        dst: /usr/pgsql-${PG_MAJOR_VERSION}/share/extension/pglinter--${PGLINTER_MINOR_VERSION}.sql
