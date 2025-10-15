@@ -1,33 +1,37 @@
+---
 name: "postgresql_pglinter_${PG_MAJOR_VERSION}"
-arch: "x86_64"
+arch: "amd64"
 platform: "linux"
-version: "${PGLINTER_MINOR_VERSION}"
+version: "v${PGLINTER_MINOR_VERSION}"
 section: "default"
 priority: "extra"
-maintainer: "Pierre-Marie Petit <pierre-marie.petit@dalibo.com>"
+maintainer: "pmpetit"
 description: |
-  pglinter is a PostgreSQL extension that analyzes databases for potential
-  issues, performance problems, and best practice violations.
+  pglinter analyzes database for best practice in PostgreSQL ${PG_MAJOR_VERSION}
+vendor: "pmpetit"
 homepage: "https://github.com/pmpetit/pglinter"
 license: "PostgreSQL"
 depends:
-  - postgresql${PG_MAJOR_VERSION}-server
-provides:
-  - postgresql_pglinter_${PG_MAJOR_VERSION}
+  - postgresql-${PG_MAJOR_VERSION}
 contents:
-  # Extension control file - only the file, not the directory
-  - src: "home/pmp/.pgrx/*/pgrx-install/share/postgresql/extension/pglinter.control"
-    dst: "/usr/pgsql-${PG_MAJOR_VERSION}/share/extension/pglinter.control"
-    file_info:
-      mode: 0644
-  # Extension SQL file - only the file, not the directory
-  - src: "home/pmp/.pgrx/*/pgrx-install/share/postgresql/extension/pglinter--${PGLINTER_MINOR_VERSION}.sql"
-    dst: "/usr/pgsql-${PG_MAJOR_VERSION}/share/extension/pglinter--${PGLINTER_MINOR_VERSION}.sql"
-    file_info:
-      mode: 0644
-  # Library file - only the file, not the directory
-  - src: "home/pmp/.pgrx/*/pgrx-install/lib/postgresql/pglinter.so"
-    dst: "/usr/pgsql-${PG_MAJOR_VERSION}/lib/pglinter.so"
-    file_info:
-      mode: 0755
-# Don't specify directories to avoid conflicts - let the PostgreSQL package own them
+  - src: ${PG_PKGLIBDIR}/pglinter.so
+    dst: /usr/lib/postgresql/${PG_MAJOR_VERSION}/lib/pglinter.so
+  - src: ${PG_SHAREDIR}/extension/
+    dst: /usr/share/postgresql/${PG_MAJOR_VERSION}/extension/
+    type: tree
+
+overrides:
+  rpm:
+    # The postgres server package is named `postgresql-server` on the RHEL repo
+    # and it is named `postgresql16-server` in the PGDG repo.
+    # With this `depends` clause we're making sure that postgres itself is
+    # installed from the PGDG repo..
+    depends:
+      - postgresql${PG_MAJOR_VERSION}-server
+    # These locations are based on the PGDG packages, not the RedHat ones
+    contents:
+      - src: ${PG_PKGLIBDIR}/pglinter.so
+        dst: /usr/pgsql-${PG_MAJOR_VERSION}/lib/pglinter.so
+      - src: ${PG_SHAREDIR}/extension/
+        dst: /usr/pgsql-${PG_MAJOR_VERSION}/share/extension/
+        type: tree
