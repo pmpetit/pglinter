@@ -74,6 +74,7 @@ runs:
           **Debian/Ubuntu Systems:**
           ```bash
           # Download and install (replace XX with your PG version: 13, 14, 15, 16, 17, 18)
+          # choose amd64 or arm64 based on your architecture.
           wget https://github.com/pmpetit/pglinter/releases/download/${{ inputs.tag }}/postgresql_pglinter_XX_${{ inputs.tag }}_amd64.deb
           sudo dpkg -i postgresql_pglinter_XX_${{ inputs.tag }}_amd64.deb
 
