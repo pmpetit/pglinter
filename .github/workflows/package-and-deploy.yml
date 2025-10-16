@@ -53,13 +53,41 @@ env:
   PGLINTER_MINOR_VERSION: ${{ github.ref_name }}
 
 jobs:
+
   ##
-  ## B U I L D / T E S T / P A C K A G E & D E P L O Y
+  ## D Y N A M I C   M A T R I X   G E N E R A T I O N
   ##
-  build:
+  setup-matrix:
+    runs-on: ubuntu-latest
+    outputs:
+      pgversions: ${{ steps.matrix.outputs.pgversions }}
+    steps:
+      - name: Generate matrix
+        id: matrix
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            # Use input from workflow_dispatch
+            PGVERSIONS="${{ inputs.pgversions }}"
+            echo "Using workflow_dispatch pgversions: $PGVERSIONS"
+          else
+            # Use default for tag push
+            PGVERSIONS="pg13,pg14,pg15,pg16,pg17,pg18"
+            echo "Using default pgversions: $PGVERSIONS"
+          fi
+
+          # Convert comma-separated string to JSON array
+          JSON_ARRAY=$(echo "$PGVERSIONS" | jq -R 'split(",") | map(select(length > 0))')
+          echo "pgversions=$JSON_ARRAY" >> $GITHUB_OUTPUT
+          echo "Generated matrix: $JSON_ARRAY"
+
+  ##
+  ## A M D 6 4   B U I L D S   ( U S I N G   C O N T A I N E R )
+  ##
+  build-amd64:
+    needs: setup-matrix
     strategy:
       matrix:
-        pgver: [pg13,pg14,pg15,pg16,pg17,pg18]
+        pgver: ${{ fromJSON(needs.setup-matrix.outputs.pgversions) }}
       fail-fast: false
     name: 'package-and-deploy-pglinter-${{ github.ref_name }}-for-${{ matrix.pgver }}'
     runs-on: ubuntu-latest
@@ -80,8 +108,65 @@ jobs:
           pgver: ${{ matrix.pgver }}
           tag: ${{ github.ref_name }}
 
+  ##
+  ## A R M 6 4   B U I L D S   ( D I R E C T   I N S T A L L A T I O N )
+  ##
+  build-arm64:
+    needs: setup-matrix
+    strategy:
+      matrix:
+        pgver: ${{ fromJSON(needs.setup-matrix.outputs.pgversions) }}
+      fail-fast: false
+    name: 'package-and-deploy-pglinter-${{ github.ref_name }}-for-${{ matrix.pgver }}-arm64'
+    runs-on: ubuntu-24.04-arm
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            build-essential pkg-config cmake git clang llvm \
+            bison flex libicu-dev libreadline-dev zlib1g-dev \
+            libssl-dev ccache wget curl ca-certificates \
+            postgresql-common
+
+      - name: Install PostgreSQL
+        run: |
+          sudo /usr/share/postgresql-common/pgdg/apt.postgresql.org.sh -y
+          PG_VERSION_NUM="${{ matrix.pgver }}"
+          PG_VERSION_NUM="${PG_VERSION_NUM#pg}"
+          sudo apt-get install -y \
+            "postgresql-$PG_VERSION_NUM" \
+            "postgresql-server-dev-$PG_VERSION_NUM" \
+            "postgresql-client-$PG_VERSION_NUM"
+          echo "/usr/lib/postgresql/$PG_VERSION_NUM/bin" >> $GITHUB_PATH
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: stable
+          components: clippy, llvm-tools-preview
+
+      - name: Install pgrx
+        run: |
+          cargo install --locked --version "0.16.1" cargo-pgrx
+          PG_VERSION_NUM="${{ matrix.pgver }}"
+          PG_VERSION_NUM="${PG_VERSION_NUM#pg}"
+          cargo pgrx init "--${{ matrix.pgver }}" "/usr/lib/postgresql/$PG_VERSION_NUM/bin/pg_config"
+
+      - name: Call reusable package action
+        uses: ./.github/actions/reusable-package-action
+        with:
+          pgver: ${{ matrix.pgver }}
+          tag: ${{ github.ref_name }}
+          arch: arm64
+
+
   create-release:
-    needs: [build]
+    needs: [build-amd64, build-arm64]
     runs-on: ubuntu-latest
     if: startsWith(github.ref, 'refs/tags/')
 
