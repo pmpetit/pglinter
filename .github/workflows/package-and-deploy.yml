@@ -81,13 +81,13 @@ jobs:
             arch: amd64
           # ARM64 builds (new)
           - pgver: pg16
-            runner: ubuntu-24.04-arm64
+            runner: ubuntu-24.04-arm
             arch: arm64
           - pgver: pg17
-            runner: ubuntu-24.04-arm64
+            runner: ubuntu-24.04-arm
             arch: arm64
           - pgver: pg18
-            runner: ubuntu-24.04-arm64
+            runner: ubuntu-24.04-arm
             arch: arm64
       fail-fast: false
     name: 'package-and-deploy-pglinter-${{ github.ref_name }}-for-${{ matrix.pgver }}'
