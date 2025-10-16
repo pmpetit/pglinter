@@ -20,6 +20,7 @@ runs:
   steps:
 
     - name: Setup workspace for postgres user
+      if: inputs.arch == 'amd64'
       run: |
         chown -R postgres:postgres $GITHUB_WORKSPACE
         chmod -R 755 $GITHUB_WORKSPACE
@@ -44,6 +45,7 @@ runs:
       shell: bash
 
     - name: Build packages (Container - AMD64)
+      if: inputs.arch == 'amd64'
       run: |
         su - postgres -c "cd $GITHUB_WORKSPACE && PGVER=${{ inputs.pgver }} make deb"
         su - postgres -c "cd $GITHUB_WORKSPACE && PGVER=${{ inputs.pgver }} make rpm"
