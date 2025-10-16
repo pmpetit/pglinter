@@ -14,12 +14,10 @@ inputs:
 runs:
   using: "composite"
   steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
 
     - name: Setup workspace for postgres user
       run: |
-        chown -R postgres:postgres $GITHUB_WORKSPACE
+        # chown -R postgres:postgres $GITHUB_WORKSPACE
         chmod -R 755 $GITHUB_WORKSPACE
       shell: bash
 
