@@ -36,6 +36,18 @@ runs:
         chmod -R 755 $HOME/.cargo
       shell: bash
 
+    - name: Install packaging tools (ARM64 only)
+      if: inputs.arch == 'arm64'
+      run: |
+        # Install nfpm for packaging
+        wget -q https://github.com/goreleaser/nfpm/releases/latest/download/nfpm_$(dpkg --print-architecture).deb
+        sudo dpkg -i nfpm_$(dpkg --print-architecture).deb || sudo apt-get install -f -y
+
+        # Verify installation
+        nfpm --version
+        echo "nfpm installed successfully"
+      shell: bash
+
     - name: Extract version from Cargo.toml
       id: get-version
       run: |
