@@ -66,19 +66,18 @@ jobs:
         id: matrix
         run: |
           if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-            # Use input from workflow_dispatch
             PGVERSIONS="${{ inputs.pgversions }}"
             echo "Using workflow_dispatch pgversions: $PGVERSIONS"
           else
-            # Use default for tag push
             PGVERSIONS="pg13,pg14,pg15,pg16,pg17,pg18"
             echo "Using default pgversions: $PGVERSIONS"
           fi
 
-          # Convert comma-separated string to JSON array
-          JSON_ARRAY=$(echo "$PGVERSIONS" | jq -R 'split(",") | map(select(length > 0))')
-          echo "pgversions=$JSON_ARRAY" >> $GITHUB_OUTPUT
+          # Create JSON array by replacing commas and wrapping
+          JSON_ARRAY=$(echo "[$PGVERSIONS]" | sed 's/,/","/g' | sed 's/\[/["/' | sed 's/\]/"]/')
+
           echo "Generated matrix: $JSON_ARRAY"
+          echo "pgversions=$JSON_ARRAY" >> $GITHUB_OUTPUT
 
   ##
   ## A M D 6 4   B U I L D S   ( U S I N G   C O N T A I N E R )
