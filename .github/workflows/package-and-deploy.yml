@@ -59,10 +59,39 @@ jobs:
   build:
     strategy:
       matrix:
-        pgver: [pg13,pg14,pg15,pg16,pg17,pg18]
+        include:
+          # AMD64 builds (existing)
+          - pgver: pg13
+            runner: ubuntu-latest
+            arch: amd64
+          - pgver: pg14
+            runner: ubuntu-latest
+            arch: amd64
+          - pgver: pg15
+            runner: ubuntu-latest
+            arch: amd64
+          - pgver: pg16
+            runner: ubuntu-latest
+            arch: amd64
+          - pgver: pg17
+            runner: ubuntu-latest
+            arch: amd64
+          - pgver: pg18
+            runner: ubuntu-latest
+            arch: amd64
+          # ARM64 builds (new)
+          - pgver: pg16
+            runner: ubuntu-24.04-arm64
+            arch: arm64
+          - pgver: pg17
+            runner: ubuntu-24.04-arm64
+            arch: arm64
+          - pgver: pg18
+            runner: ubuntu-24.04-arm64
+            arch: arm64
       fail-fast: false
     name: 'package-and-deploy-pglinter-${{ github.ref_name }}-for-${{ matrix.pgver }}'
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.runner }}
     # Use GitHub Container Registry for pmpetit
     container:
       image: ghcr.io/pmpetit/postgresql_pglinter:pgrx
