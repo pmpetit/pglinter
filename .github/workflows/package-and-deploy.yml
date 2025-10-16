@@ -106,6 +106,7 @@ jobs:
         with:
           pgver: ${{ matrix.pgver }}
           tag: ${{ github.ref_name }}
+          arch: 'amd64'
 
   ##
   ## A R M 6 4   B U I L D S   ( D I R E C T   I N S T A L L A T I O N )
@@ -161,6 +162,7 @@ jobs:
         with:
           pgver: ${{ matrix.pgver }}
           tag: ${{ github.ref_name }}
+          arch: 'arm64'
 
 
   create-release:

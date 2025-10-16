@@ -10,6 +10,10 @@ inputs:
   tag:
     description: "The tag version"
     required: true
+  arch:
+    description: 'Architecture (amd64 or arm64)'
+    required: false
+    default: 'amd64'
 
 runs:
   using: "composite"
@@ -17,8 +21,18 @@ runs:
 
     - name: Setup workspace for postgres user
       run: |
-        # chown -R postgres:postgres $GITHUB_WORKSPACE
+        chown -R postgres:postgres $GITHUB_WORKSPACE
         chmod -R 755 $GITHUB_WORKSPACE
+      shell: bash
+
+    - name: Setup workspace permissions (Native runner - ARM64)
+      if: inputs.arch == 'arm64'
+      run: |
+        # Only change permissions, not ownership on native runners
+        chmod -R 755 $GITHUB_WORKSPACE
+        # Ensure cargo cache is accessible
+        mkdir -p $HOME/.cargo
+        chmod -R 755 $HOME/.cargo
       shell: bash
 
     - name: Extract version from Cargo.toml
@@ -29,10 +43,17 @@ runs:
         echo "PGLINTER_MINOR_VERSION=$VERSION" >> $GITHUB_ENV
       shell: bash
 
-    - name: Build packages
+    - name: Build packages (Container - AMD64)
       run: |
         su - postgres -c "cd $GITHUB_WORKSPACE && PGVER=${{ inputs.pgver }} make deb"
         su - postgres -c "cd $GITHUB_WORKSPACE && PGVER=${{ inputs.pgver }} make rpm"
+      shell: bash
+
+    - name: Build packages (Native runner - ARM64)
+      if: inputs.arch == 'arm64'
+      run: |
+        PGVER=${{ inputs.pgver }} make deb
+        PGVER=${{ inputs.pgver }} make rpm
       shell: bash
 
     - name: 'RPM package for $[[ inputs.pgver ]] (x64_64)'
