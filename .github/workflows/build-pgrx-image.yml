@@ -1,0 +1,155 @@
+# .github/workflows/build-pgrx-image.yml
+name: Build and Push pgrx Image
+
+on:
+  # # Trigger on tag pushes (following pglinter release workflow)
+  # push:
+  #   tags:
+  #     - '*'
+
+  # Manual dispatch for testing (following pglinter CI/CD flexibility)
+  workflow_dispatch:
+    inputs:
+      image_tag:
+        description: 'Docker image tag'
+        required: false
+        default: 'latest'
+      push_image:
+        description: 'Push image to registry'
+        type: boolean
+        required: false
+        default: true
+
+env:
+  # Following pglinter's registry configuration
+  REGISTRY: ghcr.io
+  IMAGE_NAME: pmpetit/postgresql_pglinter
+
+jobs:
+  build-pgrx-image:
+    name: Build pgrx multi-platform image
+    runs-on: ubuntu-latest
+
+    # Following pglinter security guidelines
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+        with:
+          platforms: linux/amd64,linux/arm64
+
+      - name: Log in to Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=ref,event=tag
+            type=raw,value=pgrx
+            type=raw,value=${{ inputs.image_tag || 'latest' }}
+
+      - name: Set up Make environment
+        run: |
+          # Following pglinter's build configuration
+          echo "PGRX_IMAGE=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:pgrx" >> $GITHUB_ENV
+          echo "DOCKER_TAG=${{ inputs.image_tag || github.ref_name || 'latest' }}" >> $GITHUB_ENV
+
+      - name: Verify Dockerfile exists
+        run: |
+          if [ ! -f docker/pgrx/Dockerfile ]; then
+            echo "❌ docker/pgrx/Dockerfile not found"
+            exit 1
+          fi
+          echo "✅ Dockerfile found"
+
+      - name: Build pgrx image
+        run: |
+          # Following pglinter's error handling guidelines
+          echo "Building pglinter pgrx image..."
+          echo "Image: $PGRX_IMAGE"
+          echo "Platform: linux/amd64,linux/arm64"
+
+          # Use make target with proper error handling
+          if make pgrx_image; then
+            echo "✅ pgrx image built successfully"
+          else
+            echo "❌ pgrx image build failed"
+            exit 1
+          fi
+
+      - name: Verify image was pushed
+        if: ${{ inputs.push_image != false }}
+        run: |
+          echo "Verifying image was pushed to registry..."
+          docker buildx imagetools inspect $PGRX_IMAGE || {
+            echo "❌ Failed to verify image in registry"
+            exit 1
+          }
+          echo "✅ Image verified in registry"
+
+      - name: Clean up buildx builder
+        if: always()
+        run: |
+          # Following pglinter's cleanup guidelines
+          docker buildx rm pglinter-builder 2>/dev/null || true
+          echo "✅ Build environment cleaned up"
+
+  test-pgrx-image:
+    name: Test pgrx image
+    needs: build-pgrx-image
+    runs-on: ubuntu-latest
+    if: ${{ inputs.push_image != false }}
+
+    strategy:
+      matrix:
+        arch: [amd64, arm64]
+      fail-fast: false
+
+    steps:
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Test pgrx image (${{ matrix.arch }})
+        run: |
+          # Following pglinter's testing guidelines
+          IMAGE="${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:pgrx"
+
+          echo "Testing pgrx image for ${{ matrix.arch }}..."
+
+          # Test that the image can run basic commands
+          docker run --rm --platform linux/${{ matrix.arch }} $IMAGE which cargo || {
+            echo "❌ Cargo not found in image"
+            exit 1
+          }
+
+          docker run --rm --platform linux/${{ matrix.arch }} $IMAGE which nfpm || {
+            echo "❌ nfpm not found in image"
+            exit 1
+          }
+
+          docker run --rm --platform linux/${{ matrix.arch }} $IMAGE cargo pgrx --version || {
+            echo "❌ pgrx not working in image"
+            exit 1
+          }
+
+          echo "✅ pgrx image test passed for ${{ matrix.arch }}"
