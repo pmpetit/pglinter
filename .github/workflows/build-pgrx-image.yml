@@ -2,10 +2,10 @@
 name: Build and Push pgrx Image
 
 on:
-  # Trigger on tag pushes (following pglinter release workflow)
-  push:
-    tags:
-      - '*'
+  # # Trigger on tag pushes (following pglinter release workflow)
+  # push:
+  #   tags:
+  #     - '*'
 
   # Manual dispatch for testing (following pglinter CI/CD flexibility)
   workflow_dispatch:
