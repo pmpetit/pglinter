@@ -106,7 +106,6 @@ jobs:
         with:
           pgver: ${{ matrix.pgver }}
           tag: ${{ github.ref_name }}
-          arch: 'amd64'
 
   ##
   ## A R M 6 4   B U I L D S   ( D I R E C T   I N S T A L L A T I O N )
@@ -120,50 +119,21 @@ jobs:
     name: 'package-and-deploy-pglinter-${{ github.ref_name }}-for-${{ matrix.pgver }}-arm64'
     runs-on: ubuntu-24.04-arm
 
+    container:
+      image: ghcr.io/pmpetit/postgresql_pglinter:pgrx
+      options: --user root
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.GH_TOKEN }}
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-
-      - name: Install dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y \
-            build-essential pkg-config cmake git clang llvm \
-            bison flex libicu-dev libreadline-dev zlib1g-dev \
-            libssl-dev ccache wget curl ca-certificates \
-            postgresql-common
-
-      - name: Install PostgreSQL
-        run: |
-          sudo /usr/share/postgresql-common/pgdg/apt.postgresql.org.sh -y
-          PG_VERSION_NUM="${{ matrix.pgver }}"
-          PG_VERSION_NUM="${PG_VERSION_NUM#pg}"
-          sudo apt-get install -y \
-            "postgresql-$PG_VERSION_NUM" \
-            "postgresql-server-dev-$PG_VERSION_NUM" \
-            "postgresql-client-$PG_VERSION_NUM"
-          echo "/usr/lib/postgresql/$PG_VERSION_NUM/bin" >> $GITHUB_PATH
-
-      - name: Install Rust
-        uses: dtolnay/rust-toolchain@stable
-        with:
-          toolchain: stable
-          components: clippy, llvm-tools-preview
-
-      - name: Install pgrx
-        run: |
-          cargo install --locked --version "0.16.1" cargo-pgrx
-          PG_VERSION_NUM="${{ matrix.pgver }}"
-          PG_VERSION_NUM="${PG_VERSION_NUM#pg}"
-          cargo pgrx init "--${{ matrix.pgver }}" "/usr/lib/postgresql/$PG_VERSION_NUM/bin/pg_config"
-
       - name: Call reusable package action
         uses: ./.github/actions/reusable-package-action
         with:
           pgver: ${{ matrix.pgver }}
-          tag: ${{ github.ref_name }}
-          arch: 'arm64'
-
+          tag: ${{ github.ref_name }}  
 
   create-release:
     needs: [build-amd64, build-arm64]
