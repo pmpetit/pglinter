@@ -10,6 +10,10 @@ inputs:
   tag:
     description: "The tag version"
     required: true
+  arch:
+    description: 'Target architecture (amd64 or arm64)'
+    required: false
+    default: 'amd64'
 
 runs:
   using: "composite"
@@ -29,22 +33,24 @@ runs:
         VERSION=$(grep '^version = ' Cargo.toml | awk -F'"' '{print $2}')
         echo "Extracted version: $VERSION"
         echo "PGLINTER_MINOR_VERSION=$VERSION" >> $GITHUB_ENV
+        echo "PACKAGE_ARCH=${{ inputs.arch }}" >> $GITHUB_ENV
       shell: bash
 
     - name: Build packages
       run: |
-        su - postgres -c "cd $GITHUB_WORKSPACE && PGVER=${{ inputs.pgver }} make deb"
-        su - postgres -c "cd $GITHUB_WORKSPACE && PGVER=${{ inputs.pgver }} make rpm"
+        export PACKAGE_ARCH=${{ inputs.arch }}
+        su - postgres -c "cd $GITHUB_WORKSPACE && PGVER=${{ inputs.pgver }} PACKAGE_ARCH=${{ inputs.arch }} make deb"
+        su - postgres -c "cd $GITHUB_WORKSPACE && PGVER=${{ inputs.pgver }} PACKAGE_ARCH=${{ inputs.arch }} make rpm"
       shell: bash
 
-    - name: 'RPM package for $[[ inputs.pgver ]] (x64_64)'
+    - name: 'RPM package for ${{ inputs.pgver }} (${{ inputs.arch }})'
       uses: actions/upload-artifact@v4
       with:
-        name: pglinter-${{ inputs.pgver }}-${{ env.PGLINTER_MINOR_VERSION }}.rpm
+        name: pglinter-${{ inputs.pgver }}-${{ env.PGLINTER_MINOR_VERSION }}-${{ inputs.arch }}.rpm
         path: target/release/pglinter-${{ inputs.pgver }}/*.rpm
 
-    - name: 'DEB package for $[[ inputs.pgver ]] (amd-64)'
+    - name: 'DEB package for ${{ inputs.pgver }} (${{ inputs.arch }})'
       uses: actions/upload-artifact@v4
       with:
-        name: pglinter-${{ inputs.pgver }}-${{ env.PGLINTER_MINOR_VERSION }}.deb
+        name: pglinter-${{ inputs.pgver }}-${{ env.PGLINTER_MINOR_VERSION }}-${{ inputs.arch }}.deb
         path: target/release/pglinter-${{ inputs.pgver }}/*.deb
