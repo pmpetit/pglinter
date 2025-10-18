@@ -243,6 +243,8 @@ rpm deb: package
 	export PG_SHAREDIR=".$(PG_SHAREDIR)" && \
 	export PG_MAJOR_VERSION="$(PG_MAJOR_VERSION)" && \
 	export PGLINTER_MINOR_VERSION="$(PGLINTER_MINOR_VERSION)" && \
+	export PACKAGE_ARCH="${PACKAGE_ARCH:-amd64}" && \
+	export RPM_ARCH="$$(case "$$PACKAGE_ARCH" in arm64) echo "aarch64";; amd64) echo "x86_64";; *) echo "$$PACKAGE_ARCH";; esac)" && \
 	envsubst < nfpm.template.yaml > $(TARGET_DIR)/nfpm.yaml
 	cd $(TARGET_DIR) && nfpm package --packager $@
 
@@ -268,7 +270,19 @@ PGRX_IMAGE?=$(DOCKER_IMAGE):pgrx
 PGRX_BUILD_ARGS?=
 
 docker_image: docker/Dockerfile #: build the docker image
-	docker build --tag $(DOCKER_IMAGE):$(DOCKER_TAG) . --file $^  $(DOCKER_BUILD_ARG)
+	#: docker build --tag $(DOCKER_IMAGE):$(DOCKER_TAG) . --file $^  $(DOCKER_BUILD_ARG)
+	@echo "Setting up buildx for multi-platform builds..."
+	docker buildx create --name pglinter-builder --use --bootstrap 2>/dev/null || \
+	docker buildx use pglinter-builder 2>/dev/null || \
+	(echo "Creating new buildx instance..." && docker buildx create --name pglinter-builder --use --bootstrap)
+	@echo "Building multi-platform image..."
+	docker buildx build \
+			--platform linux/amd64,linux/arm64 \
+			--tag $(DOCKER_IMAGE):$(DOCKER_TAG) \
+			--file $^ \
+			--no-cache \
+			$(DOCKER_BUILD_ARG) \
+			.
 
 pgrx_image: docker/pgrx/Dockerfile
 	@echo "Setting up buildx for multi-platform builds..."
@@ -280,7 +294,6 @@ pgrx_image: docker/pgrx/Dockerfile
 			--platform linux/amd64,linux/arm64 \
 			--tag $(PGRX_IMAGE) \
 			--file $^ \
-			--push \
 			--no-cache \
 			$(PGRX_BUILD_ARGS) \
 			.

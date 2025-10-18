@@ -53,13 +53,40 @@ env:
   PGLINTER_MINOR_VERSION: ${{ github.ref_name }}
 
 jobs:
+
   ##
-  ## B U I L D / T E S T / P A C K A G E & D E P L O Y
+  ## D Y N A M I C   M A T R I X   G E N E R A T I O N
   ##
-  build:
+  setup-matrix:
+    runs-on: ubuntu-latest
+    outputs:
+      pgversions: ${{ steps.matrix.outputs.pgversions }}
+    steps:
+      - name: Generate matrix
+        id: matrix
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            PGVERSIONS="${{ inputs.pgversions }}"
+            echo "Using workflow_dispatch pgversions: $PGVERSIONS"
+          else
+            PGVERSIONS="pg13,pg14,pg15,pg16,pg17,pg18"
+            echo "Using default pgversions: $PGVERSIONS"
+          fi
+
+          # Create JSON array by replacing commas and wrapping
+          JSON_ARRAY=$(echo "[$PGVERSIONS]" | sed 's/,/","/g' | sed 's/\[/["/' | sed 's/\]/"]/')
+
+          echo "Generated matrix: $JSON_ARRAY"
+          echo "pgversions=$JSON_ARRAY" >> $GITHUB_OUTPUT
+
+  ##
+  ## A M D 6 4   B U I L D S   ( U S I N G   C O N T A I N E R )
+  ##
+  build-amd64:
+    needs: setup-matrix
     strategy:
       matrix:
-        pgver: [pg13,pg14,pg15,pg16,pg17,pg18]
+        pgver: ${{ fromJSON(needs.setup-matrix.outputs.pgversions) }}
       fail-fast: false
     name: 'package-and-deploy-pglinter-${{ github.ref_name }}-for-${{ matrix.pgver }}'
     runs-on: ubuntu-latest
@@ -80,8 +107,36 @@ jobs:
           pgver: ${{ matrix.pgver }}
           tag: ${{ github.ref_name }}
 
+  ##
+  ## A R M 6 4   B U I L D S   ( D I R E C T   I N S T A L L A T I O N )
+  ##
+  build-arm64:
+    needs: setup-matrix
+    strategy:
+      matrix:
+        pgver: ${{ fromJSON(needs.setup-matrix.outputs.pgversions) }}
+      fail-fast: false
+    name: 'package-and-deploy-pglinter-${{ github.ref_name }}-for-${{ matrix.pgver }}-arm64'
+    runs-on: ubuntu-24.04-arm
+
+    container:
+      image: ghcr.io/pmpetit/postgresql_pglinter:pgrx
+      options: --user root
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.GH_TOKEN }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Call reusable package action
+        uses: ./.github/actions/reusable-package-action
+        with:
+          pgver: ${{ matrix.pgver }}
+          tag: ${{ github.ref_name }}
+
   create-release:
-    needs: [build]
+    needs: [build-amd64, build-arm64]
     runs-on: ubuntu-latest
     if: startsWith(github.ref, 'refs/tags/')
 
