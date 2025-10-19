@@ -24,8 +24,6 @@ contents:
 
 overrides:
   rpm:
-    # Use aarch64 for ARM64 in RPM packages (not arm64)
-    arch: "${RPM_ARCH}"
     # The postgres server package is named `postgresql-server` on the RHEL repo
     # and it is named `postgresql16-server` in the PGDG repo.
     # With this `depends` clause we're making sure that postgres itself is

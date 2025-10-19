@@ -238,15 +238,23 @@ endif
 
 # The packages are built from the $(TARGET_DIR) folder.
 # So the $(PG_PKGLIBDIR) and $(PG_SHAREDIR) are relative to that folder
-rpm deb: package
+rpm: package
+	export PG_PKGLIBDIR=".$(PG_PKGLIBDIR)" && \
+	export PG_SHAREDIR=".$(PG_SHAREDIR)" && \
+	export PG_MAJOR_VERSION="$(PG_MAJOR_VERSION)" && \
+	export PGLINTER_MINOR_VERSION="$(PGLINTER_MINOR_VERSION)" && \
+	export PACKAGE_ARCH="$$(case "${PACKAGE_ARCH:-amd64}" in arm64) echo "aarch64";; amd64) echo "x86_64";; *) echo "${PACKAGE_ARCH:-amd64}";; esac)" && \
+	envsubst < nfpm.template.yaml > $(TARGET_DIR)/nfpm.yaml
+	cd $(TARGET_DIR) && nfpm package --packager rpm
+
+deb: package
 	export PG_PKGLIBDIR=".$(PG_PKGLIBDIR)" && \
 	export PG_SHAREDIR=".$(PG_SHAREDIR)" && \
 	export PG_MAJOR_VERSION="$(PG_MAJOR_VERSION)" && \
 	export PGLINTER_MINOR_VERSION="$(PGLINTER_MINOR_VERSION)" && \
 	export PACKAGE_ARCH="${PACKAGE_ARCH:-amd64}" && \
-	export RPM_ARCH="$$(case "$$PACKAGE_ARCH" in arm64) echo "aarch64";; amd64) echo "x86_64";; *) echo "$$PACKAGE_ARCH";; esac)" && \
 	envsubst < nfpm.template.yaml > $(TARGET_DIR)/nfpm.yaml
-	cd $(TARGET_DIR) && nfpm package --packager $@
+	cd $(TARGET_DIR) && nfpm package --packager deb
 
 
 # The `package` command needs pg_config from the target version
@@ -280,7 +288,6 @@ docker_image: docker/Dockerfile #: build the docker image
 			--platform linux/amd64,linux/arm64 \
 			--tag $(DOCKER_IMAGE):$(DOCKER_TAG) \
 			--file $^ \
-			--no-cache \
 			$(DOCKER_BUILD_ARG) \
 			.
 
