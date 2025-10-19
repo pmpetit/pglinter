@@ -106,6 +106,7 @@ jobs:
         with:
           pgver: ${{ matrix.pgver }}
           tag: ${{ github.ref_name }}
+          arch: amd64
 
   ##
   ## A R M 6 4   B U I L D S   ( D I R E C T   I N S T A L L A T I O N )
@@ -121,7 +122,7 @@ jobs:
 
     container:
       image: ghcr.io/pmpetit/postgresql_pglinter:pgrx
-      options: --user root
+      options: --user root --platform linux/arm64
       credentials:
         username: ${{ github.actor }}
         password: ${{ secrets.GH_TOKEN }}
@@ -134,6 +135,7 @@ jobs:
         with:
           pgver: ${{ matrix.pgver }}
           tag: ${{ github.ref_name }}
+          arch: arm64
 
   create-release:
     needs: [build-amd64, build-arm64]
