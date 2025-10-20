@@ -92,7 +92,7 @@ jobs:
     runs-on: ubuntu-latest
     # Use GitHub Container Registry for pmpetit
     container:
-      image: ghcr.io/pmpetit/postgresql_pglinter:pgrx
+      image: ghcr.io/pmpetit/postgresql_pglinter:pgrx-amd64
       options: --user root
       credentials:
         username: ${{ github.actor }}
@@ -117,36 +117,26 @@ jobs:
       matrix:
         pgver: ${{ fromJSON(needs.setup-matrix.outputs.pgversions) }}
       fail-fast: false
-    name: 'package-and-deploy-pglinter-${{ github.ref_name }}-for-${{ matrix.pgver }}-arm64'
+    name: 'package-and-deploy-pglinter-${{ github.ref_name }}-for-${{ matrix.pgver }}'
     runs-on: ubuntu-24.04-arm
+    # Use GitHub Container Registry for pmpetit
+    container:
+      image: ghcr.io/pmpetit/postgresql_pglinter:pgrx-arm64
+      options: --user root
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.GH_TOKEN }}
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-
-      - name: Install dependencies and setup environment
-        run: |
-          # Install system dependencies
-          sudo apt-get update
-          sudo apt-get install -y build-essential pkg-config libssl-dev
-
-          # Install Rust
-          curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
-          source ~/.cargo/env
-
-          # Install pgrx
-          cargo install --locked cargo-pgrx
-
-          # Create postgres user for builds
-          sudo useradd -r -m -s /bin/bash postgres || true
-          sudo chown -R postgres:postgres $GITHUB_WORKSPACE
-
       - name: Call reusable package action
         uses: ./.github/actions/reusable-package-action
         with:
           pgver: ${{ matrix.pgver }}
           tag: ${{ github.ref_name }}
           arch: arm64
+
 
   create-release:
     needs: [build-amd64, build-arm64]
