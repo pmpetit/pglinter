@@ -1,0 +1,103 @@
+# Test package installation workflow
+# This workflow downloads packages from artifacts and tests installation
+# on different architectures and package formats using reusable actions
+
+name: 'Test Package Installation'
+
+on:
+  workflow_run:
+    workflows: ["Package and deploy pglinter."]
+    types:
+      - completed
+  
+  workflow_dispatch:
+    inputs:
+      run_id:
+        description: 'Workflow run ID to download artifacts from'
+        required: true
+        type: string
+      pgver:
+        description: 'PostgreSQL version to test (e.g., pg17)'
+        required: false
+        default: 'pg17'
+        type: string
+
+jobs:
+  ##
+  ## I N T E G R A T I O N   T E S T S
+  ##
+  test-package-installation:
+    # Only run if the triggering workflow succeeded
+    if: ${{ github.event.workflow_run.conclusion == 'success' || github.event_name == 'workflow_dispatch' }}
+    
+    strategy:
+      matrix:
+        include:
+          # AMD64 tests
+          - os: ubuntu-latest
+            arch: amd64
+            pgver: ${{ inputs.pgver || 'pg17' }}
+            package_type: deb
+          - os: ubuntu-latest
+            arch: amd64
+            pgver: ${{ inputs.pgver || 'pg17' }}
+            package_type: rpm
+          # ARM64 tests
+          - os: ubuntu-24.04-arm
+            arch: arm64
+            pgver: ${{ inputs.pgver || 'pg17' }}
+            package_type: deb
+          - os: ubuntu-24.04-arm
+            arch: arm64
+            pgver: ${{ inputs.pgver || 'pg17' }}
+            package_type: rpm
+      fail-fast: false
+    
+    name: 'test-install-${{ matrix.package_type }}-${{ matrix.pgver }}-${{ matrix.arch }}'
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Download artifacts from workflow run
+        uses: actions/download-artifact@v4
+        with:
+          # If triggered by workflow_run, use that run_id, otherwise use manual input
+          run-id: ${{ github.event.workflow_run.id || inputs.run_id }}
+          path: ./artifacts
+          merge-multiple: true
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Find package to test
+        id: find-package
+        uses: ./.github/actions/find-package
+        with:
+          packages_path: ./artifacts
+          architecture: ${{ matrix.arch }}
+          package_type: ${{ matrix.package_type }}
+          pgver: ${{ matrix.pgver }}
+
+      - name: Install dependencies for RPM testing
+        if: matrix.package_type == 'rpm'
+        run: |
+          echo "📋 Installing dependencies for RPM testing..."
+          sudo apt-get update
+          sudo apt-get install -y alien rpm wget gnupg lsb-release
+
+      - name: Install PostgreSQL
+        uses: ./.github/actions/install-postgresql
+        with:
+          pgver: ${{ matrix.pgver }}
+
+      - name: Install package
+        uses: ./.github/actions/install-package
+        with:
+          package_file: ${{ steps.find-package.outputs.package_file }}
+          package_type: ${{ matrix.package_type }}
+          pgver: ${{ matrix.pgver }}
+
+      - name: Test extension
+        uses: ./.github/actions/test-extension
+        with:
+          pgver: ${{ matrix.pgver }}

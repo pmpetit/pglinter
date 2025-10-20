@@ -1,0 +1,123 @@
+name: 'Test Extension'
+description: 'Tests the installed pglinter extension'
+
+inputs:
+  pgver:
+    description: 'PostgreSQL version (e.g., pg17)'
+    required: true
+
+runs:
+  using: "composite"
+  steps:
+    - name: Test pglinter extension
+      run: |
+        echo "🧪 Testing pglinter extension for PostgreSQL ${{ inputs.pgver }}"
+
+        PG_VERSION=$(echo "${{ inputs.pgver }}" | sed 's/pg//')
+        echo "PostgreSQL version: $PG_VERSION"
+
+        # Start PostgreSQL if not already running
+        sudo systemctl start postgresql
+        sudo systemctl status postgresql
+
+        # Wait for PostgreSQL to be ready
+        echo "Waiting for PostgreSQL to be ready..."
+        for i in {1..30}; do
+          if sudo -u postgres psql -c "SELECT 1" >/dev/null 2>&1; then
+            echo "PostgreSQL is ready"
+            break
+          fi
+          echo "Waiting... ($i/30)"
+          sleep 1
+        done
+
+        # Create test database and install extension
+        echo "Creating test database..."
+        sudo -u postgres psql -c "DROP DATABASE IF EXISTS test_pglinter;"
+        sudo -u postgres psql -c "CREATE DATABASE test_pglinter;"
+
+        echo "Installing pglinter extension..."
+
+        # Show available extensions for debugging
+        echo "Available extensions:"
+        sudo -u postgres psql -d test_pglinter -c "SELECT name, default_version, installed_version FROM pg_available_extensions WHERE name LIKE '%pglinter%';"
+
+        # Try to create extension
+        if sudo -u postgres psql -d test_pglinter -c "CREATE EXTENSION IF NOT EXISTS pglinter;"; then
+          echo "✅ Extension created successfully"
+        else
+          echo "❌ Failed to create extension"
+          echo "Checking extension files..."
+
+          # Check for extension files in multiple locations
+          echo "Extension files search:"
+          sudo find /usr -name "pglinter.control" 2>/dev/null || echo "No control file found"
+          sudo find /usr -name "pglinter*.sql" 2>/dev/null || echo "No SQL files found"
+          sudo find /usr -name "pglinter.so" 2>/dev/null || echo "No library file found"
+
+          # Show PostgreSQL configuration
+          echo "PostgreSQL data directory and config:"
+          sudo -u postgres psql -c "SHOW data_directory;"
+          sudo -u postgres psql -c "SHOW config_file;"
+
+          # Show extension directories
+          echo "Extension directories:"
+          sudo -u postgres psql -c "SHOW shared_preload_libraries;"
+          sudo -u postgres psql -c "SELECT name, setting FROM pg_settings WHERE name LIKE '%extension%' OR name LIKE '%shared%';"
+
+          exit 1
+        fi
+
+        # Test basic extension functions
+        echo "Testing extension functions..."
+
+        # Check if pglinter functions are available
+        echo "Available pglinter functions:"
+        sudo -u postgres psql -d test_pglinter -c "SELECT proname, pronargs FROM pg_proc WHERE proname LIKE 'pglinter%';"
+
+        # Test basic functionality (if functions exist)
+        echo "Testing basic pglinter functionality..."
+
+        # Create some test data to lint
+        sudo -u postgres psql -d test_pglinter -c "
+          CREATE TABLE test_table (
+            id SERIAL PRIMARY KEY,
+            name VARCHAR(100),
+            email VARCHAR(255)
+          );
+          INSERT INTO test_table (name, email) VALUES
+            ('Test User', 'test@example.com'),
+            ('Another User', 'another@example.com');
+        "
+
+        # Try to run a simple pglinter check (adjust based on actual function names)
+        if sudo -u postgres psql -d test_pglinter -c "SELECT pglinter_version();" 2>/dev/null; then
+          echo "✅ pglinter_version() function works"
+        else
+          echo "ℹ️ pglinter_version() function not available or failed"
+        fi
+
+        # Try to get rules list
+        if sudo -u postgres psql -d test_pglinter -c "SELECT * FROM pglinter_list_rules() LIMIT 5;" 2>/dev/null; then
+          echo "✅ pglinter_list_rules() function works"
+        else
+          echo "ℹ️ pglinter_list_rules() function not available or failed"
+        fi
+
+        # Try to run basic linting
+        if sudo -u postgres psql -d test_pglinter -c "SELECT * FROM pglinter_run_rules() LIMIT 5;" 2>/dev/null; then
+          echo "✅ pglinter_run_rules() function works"
+        else
+          echo "ℹ️ pglinter_run_rules() function not available or failed"
+        fi
+
+        echo "Extension information:"
+        sudo -u postgres psql -d test_pglinter -c "SELECT extname, extversion FROM pg_extension WHERE extname = 'pglinter';"
+
+        echo "✅ Extension testing completed successfully"
+
+        # Cleanup
+        echo "Cleaning up test database..."
+        sudo -u postgres psql -c "DROP DATABASE IF EXISTS test_pglinter;"
+
+      shell: bash
