@@ -138,8 +138,83 @@ jobs:
           arch: arm64
 
 
-  create-release:
+  ##
+  ## T E S T   P A C K A G E   I N S T A L L A T I O N
+  ##
+  test-packages:
     needs: [build-amd64, build-arm64]
+    strategy:
+      matrix:
+        include:
+          # AMD64 tests
+          - os: ubuntu-latest
+            arch: amd64
+            pgver: pg17  # Test with one version for validation
+            package_type: deb
+          - os: ubuntu-latest
+            arch: amd64
+            pgver: pg17
+            package_type: rpm
+          # ARM64 tests
+          - os: ubuntu-24.04-arm
+            arch: arm64
+            pgver: pg17
+            package_type: deb
+          - os: ubuntu-24.04-arm
+            arch: arm64
+            pgver: pg17
+            package_type: rpm
+      fail-fast: false
+
+    name: 'test-install-${{ matrix.package_type }}-${{ matrix.pgver }}-${{ matrix.arch }}'
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Download packages from build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: "*-${{ matrix.pgver }}-${{ matrix.arch }}"
+          merge-multiple: true
+          path: ./packages
+
+      - name: Find package to test
+        id: find-package
+        uses: ./.github/actions/find-package
+        with:
+          packages_path: ./packages
+          architecture: ${{ matrix.arch }}
+          package_type: ${{ matrix.package_type }}
+          pgver: ${{ matrix.pgver }}
+
+      - name: Install dependencies for RPM testing
+        if: matrix.package_type == 'rpm'
+        run: |
+          echo "📋 Installing dependencies for RPM testing..."
+          sudo apt-get update
+          sudo apt-get install -y alien rpm wget gnupg lsb-release
+
+      - name: Install PostgreSQL
+        uses: ./.github/actions/install-postgresql
+        with:
+          pgver: ${{ matrix.pgver }}
+
+      - name: Install package
+        uses: ./.github/actions/install-package
+        with:
+          package_file: ${{ steps.find-package.outputs.package_file }}
+          package_type: ${{ matrix.package_type }}
+          pgver: ${{ matrix.pgver }}
+
+      - name: Test extension
+        uses: ./.github/actions/test-extension
+        with:
+          pgver: ${{ matrix.pgver }}
+
+  create-release:
+    needs: [build-amd64, build-arm64, test-packages]
     runs-on: ubuntu-latest
     if: startsWith(github.ref, 'refs/tags/')
 
