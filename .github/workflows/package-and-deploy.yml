@@ -173,12 +173,37 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Set architecture variables
+        id: setup-arch
+        run: |
+          case "${{ matrix.arch }}" in
+            "amd64")
+              echo "RPM_ARCH=x86_64" >> $GITHUB_OUTPUT
+              echo "DEB_ARCH=amd64" >> $GITHUB_OUTPUT
+              ;;
+            "arm64")
+              echo "RPM_ARCH=aarch64" >> $GITHUB_OUTPUT
+              echo "DEB_ARCH=arm64" >> $GITHUB_OUTPUT
+              ;;
+            *)
+              echo "Unknown architecture: ${{ matrix.arch }}"
+              exit 1
+              ;;
+          esac
+
       - name: Download packages from build artifacts
         uses: actions/download-artifact@v4
         with:
-          pattern: "*-${{ matrix.pgver }}-${{ matrix.arch }}"
+          pattern: "pglinter-${{ matrix.pgver }}-*"
           merge-multiple: true
           path: ./packages
+
+      - name: List downloaded artifacts
+        run: |
+          echo "Downloaded artifacts:"
+          find ./packages -type f | sort
+          echo ""
+          echo "Looking for ${{ matrix.package_type }} package for ${{ matrix.arch }}"
 
       - name: Find package to test
         id: find-package
