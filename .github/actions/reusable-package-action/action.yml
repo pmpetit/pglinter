@@ -13,7 +13,7 @@ inputs:
   arch:
     description: 'Target architecture (amd64 or arm64)'
     required: false
-    default: 'amd64'
+    default: amd64
 
 runs:
   using: "composite"
@@ -31,6 +31,22 @@ runs:
         echo "Extracted version: $VERSION"
         echo "PGLINTER_MINOR_VERSION=$VERSION" >> $GITHUB_ENV
         echo "PACKAGE_ARCH=${{ inputs.arch }}" >> $GITHUB_ENV
+
+        # Set architecture-specific names for artifacts
+        case "${{ inputs.arch }}" in
+          amd64)
+            echo "RPM_ARCH=x86_64" >> $GITHUB_ENV
+            echo "DEB_ARCH=amd64" >> $GITHUB_ENV
+            ;;
+          arm64)
+            echo "RPM_ARCH=aarch64" >> $GITHUB_ENV
+            echo "DEB_ARCH=arm64" >> $GITHUB_ENV
+            ;;
+          *)
+            echo "RPM_ARCH=${{ inputs.arch }}" >> $GITHUB_ENV
+            echo "DEB_ARCH=${{ inputs.arch }}" >> $GITHUB_ENV
+            ;;
+        esac
       shell: bash
 
     - name: Build packages
@@ -43,11 +59,11 @@ runs:
     - name: 'RPM package for ${{ inputs.pgver }} (${{ inputs.arch }})'
       uses: actions/upload-artifact@v4
       with:
-        name: pglinter-${{ inputs.pgver }}-${{ env.PGLINTER_MINOR_VERSION }}-${{ inputs.arch }}.rpm
+        name: pglinter-${{ inputs.pgver }}-${{ env.PGLINTER_MINOR_VERSION }}-${{ env.RPM_ARCH }}.rpm
         path: target/release/pglinter-${{ inputs.pgver }}/*.rpm
 
     - name: 'DEB package for ${{ inputs.pgver }} (${{ inputs.arch }})'
       uses: actions/upload-artifact@v4
       with:
-        name: pglinter-${{ inputs.pgver }}-${{ env.PGLINTER_MINOR_VERSION }}-${{ inputs.arch }}.deb
+        name: pglinter-${{ inputs.pgver }}-${{ env.PGLINTER_MINOR_VERSION }}-${{ env.DEB_ARCH }}.deb
         path: target/release/pglinter-${{ inputs.pgver }}/*.deb
