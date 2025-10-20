@@ -120,16 +120,27 @@ jobs:
     name: 'package-and-deploy-pglinter-${{ github.ref_name }}-for-${{ matrix.pgver }}-arm64'
     runs-on: ubuntu-24.04-arm
 
-    container:
-      image: ghcr.io/pmpetit/postgresql_pglinter:pgrx
-      options: --user root --platform linux/arm64
-      credentials:
-        username: ${{ github.actor }}
-        password: ${{ secrets.GH_TOKEN }}
-
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+
+      - name: Install dependencies and setup environment
+        run: |
+          # Install system dependencies
+          sudo apt-get update
+          sudo apt-get install -y build-essential pkg-config libssl-dev
+
+          # Install Rust
+          curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+          source ~/.cargo/env
+
+          # Install pgrx
+          cargo install --locked cargo-pgrx
+
+          # Create postgres user for builds
+          sudo useradd -r -m -s /bin/bash postgres || true
+          sudo chown -R postgres:postgres $GITHUB_WORKSPACE
+
       - name: Call reusable package action
         uses: ./.github/actions/reusable-package-action
         with:
