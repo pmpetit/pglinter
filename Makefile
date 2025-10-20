@@ -243,18 +243,22 @@ rpm: package
 	export PG_SHAREDIR=".$(PG_SHAREDIR)" && \
 	export PG_MAJOR_VERSION="$(PG_MAJOR_VERSION)" && \
 	export PGLINTER_MINOR_VERSION="$(PGLINTER_MINOR_VERSION)" && \
-	export PACKAGE_ARCH="$$(case "${PACKAGE_ARCH:-amd64}" in arm64) echo "aarch64";; amd64) echo "x86_64";; *) echo "${PACKAGE_ARCH:-amd64}";; esac)" && \
+	export PACKAGE_ARCH="$$(case "${PACKAGE_ARCH}" in arm64) echo "aarch64";; amd64) echo "x86_64";; *) echo "${PACKAGE_ARCH:-amd64}";; esac)" && \
+	echo "Building RPM package with architecture: $$PACKAGE_ARCH" && \
 	envsubst < nfpm.template.yaml > $(TARGET_DIR)/nfpm.yaml
 	cd $(TARGET_DIR) && nfpm package --packager rpm
+	@echo "RPM package created: $$(find $(TARGET_DIR) -name '*.rpm' -exec basename {} \;)"
 
 deb: package
 	export PG_PKGLIBDIR=".$(PG_PKGLIBDIR)" && \
 	export PG_SHAREDIR=".$(PG_SHAREDIR)" && \
 	export PG_MAJOR_VERSION="$(PG_MAJOR_VERSION)" && \
 	export PGLINTER_MINOR_VERSION="$(PGLINTER_MINOR_VERSION)" && \
-	export PACKAGE_ARCH="${PACKAGE_ARCH:-amd64}" && \
+	export PACKAGE_ARCH="${PACKAGE_ARCH}" && \
+	echo "Building DEB package with architecture: $$PACKAGE_ARCH" && \
 	envsubst < nfpm.template.yaml > $(TARGET_DIR)/nfpm.yaml
 	cd $(TARGET_DIR) && nfpm package --packager deb
+	@echo "DEB package created: $$(find $(TARGET_DIR) -name '*.deb' -exec basename {} \;)"
 
 
 # The `package` command needs pg_config from the target version
