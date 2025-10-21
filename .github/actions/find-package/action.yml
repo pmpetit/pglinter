@@ -41,6 +41,8 @@ runs:
     - name: Find package file
       id: find
       run: |
+        PG_VERSION=$(echo "${{ inputs.pgver }}" | sed 's/^pg//')
+        echo "PG_VERSION=$PG_VERSION" >> $GITHUB_OUTPUT
         # Determine architecture names for packages
         case "${{ inputs.arch }}" in
           amd64)
@@ -64,16 +66,16 @@ runs:
 
         # Find the package file
         if [ "${{ inputs.package_type }}" = "deb" ]; then
-          PACKAGE_FILE=$(find ${{ inputs.artifacts_path }} -name "*${{ inputs.pgver }}*${DEB_ARCH}.deb" | head -1)
+          PACKAGE_FILE=$(find ${{ inputs.artifacts_path }} -name "*_${PG_VERSION}*${DEB_ARCH}.deb" | head -1)
         else
-          PACKAGE_FILE=$(find ${{ inputs.artifacts_path }} -name "*${{ inputs.pgver }}*${RPM_ARCH}.rpm" | head -1)
+          PACKAGE_FILE=$(find ${{ inputs.artifacts_path }} -name "*_${PG_VERSION}*${RPM_ARCH}.rpm" | head -1)
         fi
 
         if [ -z "$PACKAGE_FILE" ]; then
-          echo "❌ ERROR: Package not found for ${{ inputs.package_type }} ${{ inputs.arch }} ${{ inputs.pgver }}"
+          echo "❌ ERROR: Package not found for ${{ inputs.package_type }} ${{ inputs.arch }} ${PG_VERSION}"
           echo ""
-          echo "Available packages for ${{ inputs.pgver }}:"
-          find ${{ inputs.artifacts_path }} -name "*${{ inputs.pgver }}*" || echo "No packages found for ${{ inputs.pgver }}"
+          echo "Available packages for ${PG_VERSION}:"
+          find ${{ inputs.artifacts_path }} -name "*_${PG_VERSION}*" || echo "No packages found for ${PG_VERSION}"
           echo ""
           echo "All available packages:"
           find ${{ inputs.artifacts_path }} -name "*.deb" -o -name "*.rpm" || echo "No packages found at all"
