@@ -36,7 +36,7 @@ runs:
         PG_VERSION=$(echo "${{ inputs.pgver }}" | sed 's/pg//')
         echo "Installing PostgreSQL version: $PG_VERSION"
 
-        sudo apt-get install -y postgresql-${PG_VERSION} postgresql-${PG_VERSION}-dev postgresql-client-${PG_VERSION}
+        sudo apt-get install -y postgresql-${PG_VERSION} postgresql-client-${PG_VERSION} postgresql-contrib-${PG_VERSION}
 
         # Start PostgreSQL
         sudo systemctl start postgresql
