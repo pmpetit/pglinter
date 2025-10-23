@@ -11,6 +11,7 @@ FROM postgres:$PG_MAJOR_VERSION
 # Re-declare ARG variables for use inside the build stage
 ARG PG_MAJOR_VERSION=13
 ARG PGLINTER_VERSION=0.0.19
+ARG ARCH=amd64
 
 RUN apt-get update \
  && apt-get install -y --no-install-recommends \
@@ -19,7 +20,7 @@ RUN apt-get update \
  && rm -rf /var/lib/apt/lists/*
 
 # Install extension
-RUN wget https://github.com/pmpetit/pglinter/releases/download/${PGLINTER_VERSION}/postgresql_pglinter_${PG_MAJOR_VERSION}_${PGLINTER_VERSION}_amd64.deb -O /tmp/pglinter.deb && \
+RUN wget https://github.com/pmpetit/pglinter/releases/download/${PGLINTER_VERSION}/postgresql_pglinter_${PG_MAJOR_VERSION}_${PGLINTER_VERSION}_${ARCH}.deb -O /tmp/pglinter.deb && \
     dpkg -i /tmp/pglinter.deb && \
     rm -f /tmp/pglinter.deb
 

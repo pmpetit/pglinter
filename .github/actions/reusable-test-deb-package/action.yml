@@ -51,6 +51,22 @@ runs:
       with:
         platforms: ${{ inputs.platform }}
 
+    - name: Set architecture variables
+      id: setup-arch
+      run: |
+        case "${{ matrix.arch }}" in
+          "amd64")
+            echo "DEB_ARCH=amd64" >> $GITHUB_OUTPUT
+            ;;
+          "arm64")
+            echo "DEB_ARCH=arm64" >> $GITHUB_OUTPUT
+            ;;
+          *)
+            echo "Unknown architecture: ${{ matrix.arch }}"
+            exit 1
+            ;;
+        esac
+
     - name: Build PostgreSQL DEB image
       id: build
       shell: bash
@@ -83,6 +99,7 @@ runs:
           --platform "${{ inputs.platform }}" \
           --build-arg PG_MAJOR_VERSION="${{ inputs.pg_version }}" \
           --build-arg PGLINTER_VERSION="${{ inputs.pglinter_version }}" \
+          --build-arg ARCH="${{ steps.setup-arch.outputs.DEB_ARCH }}" \
           -f docker/ci/Dockerfile.pg-deb \
           -t "${IMAGE_NAME}" \
           .; then
