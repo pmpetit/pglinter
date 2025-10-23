@@ -27,7 +27,7 @@ RUN wget https://github.com/pmpetit/pglinter/releases/download/${PGLINTER_VERSIO
 ENV PG_MAJOR_VERSION=${PG_MAJOR_VERSION}
 
 # init script
-COPY debian-start-with-pglinter.sh /usr/local/bin/start-with-pglinter.sh
+COPY deb-start-with-pglinter.sh /usr/local/bin/start-with-pglinter.sh
 RUN chmod +x /usr/local/bin/start-with-pglinter.sh
 
 
