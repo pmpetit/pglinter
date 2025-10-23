@@ -18,26 +18,22 @@ on:
       - 'README.md'
       - 'mkdocs.yml'
 
-  workflow_dispatch:
-    inputs:
-      version:
-        description: 'Version to release (e.g., 0.0.17)'
-        required: true
-        type: string
-      pgversions:
-        description: 'PostgreSQL versions to build (comma-separated: pg13,pg14,pg15,pg16,pg17,pg18)'
-        required: false
-        default: 'pg13,pg14,pg15,pg16,pg17,pg18'
-        type: string
+  # workflow_dispatch:
+  #   inputs:
+  #     version:
+  #       description: 'Version to release (e.g., 0.0.17)'
+  #       required: true
+  #       type: string
+  #     pgversions:
+  #       description: 'PostgreSQL versions to build (comma-separated: pg13,pg14,pg15,pg16,pg17,pg18)'
+  #       required: false
+  #       default: 'pg13,pg14,pg15,pg16,pg17,pg18'
+  #       type: string
+
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
-
-# env:
-#   PGLINTER_MINOR_VERSION: ${{ github.ref_name }}
-env:
-  RELEASE_VERSION: ${{ github.event_name == 'workflow_dispatch' && inputs.version || github.ref_name }}
 
 jobs:
 
@@ -75,7 +71,7 @@ jobs:
       matrix:
         pgver: ${{ fromJSON(needs.setup-matrix.outputs.pgversions) }}
       fail-fast: false
-    name: 'package-and-deploy-pglinter-${{ env.RELEASE_VERSION }}-for-${{ matrix.pgver }}'
+    name: 'package-and-deploy-pglinter-${{ github.ref_name }}-for-${{ matrix.pgver }}'
     runs-on: ubuntu-latest
     # Use GitHub Container Registry for pmpetit
     container:
@@ -92,7 +88,7 @@ jobs:
         uses: ./.github/actions/reusable-package-action
         with:
           pgver: ${{ matrix.pgver }}
-          tag: ${{ env.RELEASE_VERSION }}
+          tag: ${{ github.ref_name }}
           arch: amd64
 
   ##
@@ -140,7 +136,7 @@ jobs:
       - name: Create Release with Artifacts
         uses: ./.github/actions/reusable-release-action
         with:
-          tag: ${{ env.RELEASE_VERSION }}
+          tag: ${{ github.ref_name }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
           prerelease: true
           draft: false
@@ -148,7 +144,7 @@ jobs:
         uses: ./.github/actions/reusable-test-deb-package
         with:
           pg_version: '17'
-          pglinter_version: ${{ env.RELEASE_VERSION }}
+          pglinter_version: ${{ github.ref_name }}
           platform: 'linux/amd64'
           timeout: '180'
       - name: Mark release as production ready
@@ -156,4 +152,4 @@ jobs:
         uses: ./.github/actions/mark-release-production
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          release_tag: ${{ env.RELEASE_VERSION }}
+          release_tag: ${{ github.ref_name }}
