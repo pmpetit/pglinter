@@ -94,31 +94,31 @@ jobs:
   ##
   ## A R M 6 4   B U I L D S   ( D I R E C T   I N S T A L L A T I O N )
   ##
-  # build-arm64:
-  #   needs: setup-matrix
-  #   strategy:
-  #     matrix:
-  #       pgver: ${{ fromJSON(needs.setup-matrix.outputs.pgversions) }}
-  #     fail-fast: false
-  #   name: 'package-and-deploy-pglinter-${{ github.ref_name }}-for-${{ matrix.pgver }}'
-  #   runs-on: ubuntu-24.04-arm
-  #   # Use GitHub Container Registry for pmpetit
-  #   container:
-  #     image: ghcr.io/pmpetit/postgresql_pglinter:pgrx-arm64
-  #     options: --user root
-  #     credentials:
-  #       username: ${{ github.actor }}
-  #       password: ${{ secrets.GH_TOKEN }}
+  build-arm64:
+    needs: setup-matrix
+    strategy:
+      matrix:
+        pgver: ${{ fromJSON(needs.setup-matrix.outputs.pgversions) }}
+      fail-fast: false
+    name: 'package-and-deploy-pglinter-for-${{ matrix.pgver }}'
+    runs-on: ubuntu-24.04-arm
+    # Use GitHub Container Registry for pmpetit
+    container:
+      image: ghcr.io/pmpetit/postgresql_pglinter:pgrx-arm64
+      options: --user root
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.GH_TOKEN }}
 
-  #   steps:
-  #     - name: Checkout repository
-  #       uses: actions/checkout@v4
-  #     - name: Call reusable package action
-  #       uses: ./.github/actions/reusable-package-action
-  #       with:
-  #         pgver: ${{ matrix.pgver }}
-  #         tag: ${{ github.ref_name }}
-  #         arch: arm64
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Call reusable package action
+        uses: ./.github/actions/reusable-package-action
+        with:
+          pgver: ${{ matrix.pgver }}
+          tag: ${{ github.ref_name }}
+          arch: arm64
 
 
   create-release:
@@ -140,12 +140,19 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           prerelease: true
           draft: false
-      - name: Test pglinter release
+      - name: Test pglinter amd64 release
         uses: ./.github/actions/reusable-test-deb-package
         with:
           pg_version: '17'
           pglinter_version: ${{ github.event_name == 'workflow_dispatch' && inputs.version || github.ref_name }}
           platform: 'linux/amd64'
+          timeout: '180'
+      - name: Test pglinter arm64 release
+        uses: ./.github/actions/reusable-test-deb-package
+        with:
+          pg_version: '17'
+          pglinter_version: ${{ github.event_name == 'workflow_dispatch' && inputs.version || github.ref_name }}
+          platform: 'linux/arm64'
           timeout: '180'
       - name: Mark release as production ready
         if: success()
