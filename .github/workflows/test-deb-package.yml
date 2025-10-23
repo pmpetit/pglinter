@@ -1,0 +1,27 @@
+# .github/workflows/test-single-pg.yml
+name: Test Single PostgreSQL Version
+
+on:
+  workflow_dispatch:
+    inputs:
+      pg_version:
+        description: 'PostgreSQL version to test'
+        required: true
+        default: '17'
+        type: choice
+        options: ['13', '14', '15', '16', '17', '18']
+
+jobs:
+  test-pg-image:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Test PostgreSQL DEB image
+        uses: ./.github/actions/reusable-test-deb-package
+        with:
+          pg_version: ${{ inputs.pg_version }}
+          pglinter_version: '0.0.19'
+          platform: 'linux/amd64'
+          timeout: '180'

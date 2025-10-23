@@ -1,0 +1,179 @@
+# .github/actions/test-pg-deb-image/action.yml
+name: 'Test PostgreSQL DEB Image'
+description: 'Builds and tests pglinter PostgreSQL DEB Docker image'
+
+inputs:
+  pg_version:
+    description: 'PostgreSQL major version (13-18)'
+    required: true
+    default: '17'
+  pglinter_version:
+    description: 'pglinter version'
+    required: true
+    default: '0.0.19'
+  registry:
+    description: 'Docker registry (optional)'
+    required: false
+    default: ''
+  platform:
+    description: 'Target platform'
+    required: false
+    default: 'linux/amd64'
+  timeout:
+    description: 'Container timeout in seconds'
+    required: false
+    default: '120'
+
+outputs:
+  image_name:
+    description: 'Built Docker image name'
+    value: ${{ steps.build.outputs.image_name }}
+  test_result:
+    description: 'Test execution result (success/failure)'
+    value: ${{ steps.test.outputs.result }}
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Validate PostgreSQL version
+      shell: bash
+      run: |
+        # Following pglinter's PostgreSQL 13-18 support requirements
+        if [[ ! "${{ inputs.pg_version }}" =~ ^(13|14|15|16|17|18)$ ]]; then
+          echo "❌ ERROR: Unsupported PostgreSQL version: ${{ inputs.pg_version }}"
+          echo "Supported versions: 13, 14, 15, 16, 17, 18"
+          exit 1
+        fi
+        echo "✅ PostgreSQL version ${{ inputs.pg_version }} is supported"
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+      with:
+        platforms: ${{ inputs.platform }}
+
+    - name: Build PostgreSQL DEB image
+      id: build
+      shell: bash
+      run: |
+        # Following pglinter's maintainability guidelines
+        IMAGE_NAME="pglinter:pg${{ inputs.pg_version }}-deb-test"
+        if [[ -n "${{ inputs.registry }}" ]]; then
+          IMAGE_NAME="${{ inputs.registry }}/${IMAGE_NAME}"
+        fi
+
+        echo "🔨 Building pglinter PostgreSQL ${{ inputs.pg_version }} DEB image..."
+        echo "  Image: ${IMAGE_NAME}"
+        echo "  Platform: ${{ inputs.platform }}"
+        echo "  pglinter version: ${{ inputs.pglinter_version }}"
+
+        # Verify Dockerfile exists following pglinter's error handling standards
+        if [[ ! -f "docker/ci/Dockerfile.pg-deb" ]]; then
+          echo "❌ ERROR: Dockerfile not found: docker/ci/Dockerfile.pg-deb"
+          exit 1
+        fi
+
+        # Verify entrypoint script exists following pglinter's database safety requirements
+        if [[ ! -f "docker/ci/deb-start-with-pglinter.sh" ]]; then
+          echo "❌ ERROR: Entrypoint script not found: docker/ci/deb-start-with-pglinter.sh"
+          exit 1
+        fi
+
+        # Build image with proper error handling
+        if docker build \
+          --platform "${{ inputs.platform }}" \
+          --build-arg PG_MAJOR_VERSION="${{ inputs.pg_version }}" \
+          --build-arg PGLINTER_VERSION="${{ inputs.pglinter_version }}" \
+          -f docker/ci/Dockerfile.pg-deb \
+          -t "${IMAGE_NAME}" \
+          .; then
+          echo "✅ Successfully built image: ${IMAGE_NAME}"
+          echo "image_name=${IMAGE_NAME}" >> $GITHUB_OUTPUT
+        else
+          echo "❌ Failed to build PostgreSQL ${{ inputs.pg_version }} DEB image"
+          exit 1
+        fi
+
+    - name: Test pglinter DEB image
+      id: test
+      shell: bash
+      run: |
+        # Following pglinter's performance and error handling guidelines
+        IMAGE_NAME="${{ steps.build.outputs.image_name }}"
+        TIMEOUT="${{ inputs.timeout }}"
+
+        echo "🧪 Testing pglinter PostgreSQL ${{ inputs.pg_version }} DEB image..."
+        echo "  Image: ${IMAGE_NAME}"
+        echo "  Timeout: ${TIMEOUT}s"
+        echo "  Platform: ${{ inputs.platform }}"
+
+        # Create unique container name following pglinter's maintainability standards
+        CONTAINER_NAME="pglinter-test-pg${{ inputs.pg_version }}-$(date +%s)"
+
+        echo "🚀 Starting container: ${CONTAINER_NAME}"
+
+        # Run container with timeout and capture exit code
+        # The deb-start-with-pglinter.sh script will test pglinter automatically
+        set +e
+        timeout "${TIMEOUT}" docker run \
+          --name "${CONTAINER_NAME}" \
+          --platform "${{ inputs.platform }}" \
+          --rm \
+          "${IMAGE_NAME}"
+
+        EXIT_CODE=$?
+        set -e
+
+        # Analyze results following pglinter's database safety standards
+        case $EXIT_CODE in
+          0)
+            echo "✅ pglinter PostgreSQL ${{ inputs.pg_version }} test PASSED"
+            echo "  All pglinter extension tests completed successfully"
+            echo "  Extension loaded and functions validated"
+            echo "result=success" >> $GITHUB_OUTPUT
+            ;;
+          124)
+            echo "❌ pglinter PostgreSQL ${{ inputs.pg_version }} test TIMEOUT"
+            echo "  Container exceeded ${TIMEOUT}s timeout"
+            echo "  This may indicate hanging processes or slow startup"
+            echo "result=timeout" >> $GITHUB_OUTPUT
+            exit 1
+            ;;
+          *)
+            echo "❌ pglinter PostgreSQL ${{ inputs.pg_version }} test FAILED"
+            echo "  Exit code: ${EXIT_CODE}"
+            echo "  Check container logs for detailed error information"
+            echo "result=failure" >> $GITHUB_OUTPUT
+
+            # Enhanced error diagnostics following pglinter's error handling standards
+            echo ""
+            echo "🔍 Troubleshooting information:"
+            echo "  - Verify pglinter package installation"
+            echo "  - Check PostgreSQL startup logs"
+            echo "  - Validate extension creation process"
+            echo "  - Confirm pglinter.control and .so files are present"
+
+            exit 1
+            ;;
+        esac
+
+    - name: Cleanup test resources
+      if: always()
+      shell: bash
+      run: |
+        # Following pglinter's maintainability guidelines
+        echo "🧹 Cleaning up test resources..."
+
+        # Remove any leftover containers
+        LEFTOVER_CONTAINERS=$(docker ps -aq --filter "name=pglinter-test-pg${{ inputs.pg_version }}" 2>/dev/null || true)
+        if [[ -n "$LEFTOVER_CONTAINERS" ]]; then
+          echo "Removing leftover containers..."
+          docker rm -f $LEFTOVER_CONTAINERS 2>/dev/null || true
+        fi
+
+        # Clean up dangling images if not using registry
+        if [[ -z "${{ inputs.registry }}" ]]; then
+          echo "Cleaning up local test image..."
+          docker rmi "${{ steps.build.outputs.image_name }}" 2>/dev/null || true
+        fi
+
+        echo "✅ Cleanup completed"

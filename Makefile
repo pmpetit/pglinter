@@ -238,13 +238,27 @@ endif
 
 # The packages are built from the $(TARGET_DIR) folder.
 # So the $(PG_PKGLIBDIR) and $(PG_SHAREDIR) are relative to that folder
-rpm deb: package
+rpm: package
 	export PG_PKGLIBDIR=".$(PG_PKGLIBDIR)" && \
 	export PG_SHAREDIR=".$(PG_SHAREDIR)" && \
 	export PG_MAJOR_VERSION="$(PG_MAJOR_VERSION)" && \
 	export PGLINTER_MINOR_VERSION="$(PGLINTER_MINOR_VERSION)" && \
+	export PACKAGE_ARCH="$$(case "${PACKAGE_ARCH}" in arm64) echo "aarch64";; amd64) echo "x86_64";; *) echo "${PACKAGE_ARCH:-amd64}";; esac)" && \
+	echo "Building RPM package with architecture: $$PACKAGE_ARCH" && \
 	envsubst < nfpm.template.yaml > $(TARGET_DIR)/nfpm.yaml
-	cd $(TARGET_DIR) && nfpm package --packager $@
+	cd $(TARGET_DIR) && nfpm package --packager rpm
+	@echo "RPM package created: $$(find $(TARGET_DIR) -name '*.rpm' -exec basename {} \;)"
+
+deb: package
+	export PG_PKGLIBDIR=".$(PG_PKGLIBDIR)" && \
+	export PG_SHAREDIR=".$(PG_SHAREDIR)" && \
+	export PG_MAJOR_VERSION="$(PG_MAJOR_VERSION)" && \
+	export PGLINTER_MINOR_VERSION="$(PGLINTER_MINOR_VERSION)" && \
+	export PACKAGE_ARCH="${PACKAGE_ARCH}" && \
+	echo "Building DEB package with architecture: $$PACKAGE_ARCH" && \
+	envsubst < nfpm.template.yaml > $(TARGET_DIR)/nfpm.yaml
+	cd $(TARGET_DIR) && nfpm package --packager deb
+	@echo "DEB package created: $$(find $(TARGET_DIR) -name '*.deb' -exec basename {} \;)"
 
 
 # The `package` command needs pg_config from the target version
@@ -268,9 +282,7 @@ PGRX_IMAGE?=$(DOCKER_IMAGE):pgrx
 PGRX_BUILD_ARGS?=
 
 docker_image: docker/Dockerfile #: build the docker image
-	docker build --tag $(DOCKER_IMAGE):$(DOCKER_TAG) . --file $^  $(DOCKER_BUILD_ARG)
-
-pgrx_image: docker/pgrx/Dockerfile
+	#: docker build --tag $(DOCKER_IMAGE):$(DOCKER_TAG) . --file $^  $(DOCKER_BUILD_ARG)
 	@echo "Setting up buildx for multi-platform builds..."
 	docker buildx create --name pglinter-builder --use --bootstrap 2>/dev/null || \
 	docker buildx use pglinter-builder 2>/dev/null || \
@@ -278,24 +290,78 @@ pgrx_image: docker/pgrx/Dockerfile
 	@echo "Building multi-platform image..."
 	docker buildx build \
 			--platform linux/amd64,linux/arm64 \
-			--tag $(PGRX_IMAGE) \
+			--tag $(DOCKER_IMAGE):$(DOCKER_TAG) \
 			--file $^ \
-			--push \
+			$(DOCKER_BUILD_ARG) \
+			.
+
+# Build AMD64 pgrx image separately
+pgrx_image_amd64_only: docker/pgrx/Dockerfile
+	@echo "Building AMD64 pgrx image..."
+	docker buildx build \
+			--platform linux/amd64 \
+			--tag $(PGRX_IMAGE)-amd64 \
+			--file $^ \
+			--load \
 			--no-cache \
 			$(PGRX_BUILD_ARGS) \
 			.
+	@echo "AMD64 pgrx image built: $(PGRX_IMAGE)-amd64"
+
+# Build ARM64 pgrx image separately
+pgrx_image_arm64_only: docker/pgrx/Dockerfile
+	@echo "Building ARM64 pgrx image..."
+	docker buildx build \
+			--platform linux/arm64 \
+			--tag $(PGRX_IMAGE)-arm64 \
+			--file $^ \
+			--load \
+			--no-cache \
+			$(PGRX_BUILD_ARGS) \
+			.
+	@echo "ARM64 pgrx image built: $(PGRX_IMAGE)-arm64"
+
+# Build both architectures and create multi-arch manifest
+pgrx_image: pgrx_image_amd64_only pgrx_image_arm64_only
+	@echo "Creating multi-architecture manifest..."
+	docker tag $(PGRX_IMAGE)-amd64 $(PGRX_IMAGE):latest-amd64
+	docker tag $(PGRX_IMAGE)-arm64 $(PGRX_IMAGE):latest-arm64
+	docker push $(PGRX_IMAGE):latest-amd64
+	docker push $(PGRX_IMAGE):latest-arm64
+	docker manifest create $(PGRX_IMAGE):latest \
+		$(PGRX_IMAGE):latest-amd64 \
+		$(PGRX_IMAGE):latest-arm64
+	docker manifest push $(PGRX_IMAGE):latest
+	docker tag $(PGRX_IMAGE):latest $(PGRX_IMAGE)
+	@echo "Multi-architecture pgrx image created: $(PGRX_IMAGE)"
 
 docker_push: #: push the docker image to the registry
 	docker push $(DOCKER_IMAGE)
 
-pgrx_push:
+pgrx_push: pgrx_image
+	@echo "Pushing multi-architecture pgrx image..."
 	docker push $(PGRX_IMAGE)
+
+# Push individual architecture images
+pgrx_push_amd64:
+	docker push $(PGRX_IMAGE)-amd64
+
+pgrx_push_arm64:
+	docker push $(PGRX_IMAGE)-arm64
 
 docker_bash: #: enter the docker image (useful for testing)
 	docker exec -it docker-PostgreSQL-1 bash
 
 pgrx_bash:
 	docker run --rm --interactive --tty --volume  `pwd`:/pgrx $(PGRX_IMAGE)
+
+# Clean up intermediate architecture-specific images
+pgrx_clean:
+	@echo "Cleaning up intermediate pgrx images..."
+	docker rmi $(PGRX_IMAGE)-amd64 2>/dev/null || true
+	docker rmi $(PGRX_IMAGE)-arm64 2>/dev/null || true
+	docker rmi $(PGRX_IMAGE):latest-amd64 2>/dev/null || true
+	docker rmi $(PGRX_IMAGE):latest-arm64 2>/dev/null || true
 
 ##
 ## L I N T

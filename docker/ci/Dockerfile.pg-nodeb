@@ -1,0 +1,66 @@
+FROM rockylinux/rockylinux:10-ubi
+
+# Build arguments
+ARG PG_MAJOR_VERSION=13
+ARG PGLINTER_VERSION=0.0.19
+
+# Install PostgreSQL ${PG_MAJOR_VERSION} from PGDG repository
+# Install basic packages and EPEL repository
+RUN dnf install -y epel-release && \
+    dnf update -y && \
+    dnf install -y --allowerasing \
+        wget curl sudo vim gcc make rpm-build
+
+# Add PGDG repository (Rocky Linux 10 doesn't have postgresql module to disable)
+RUN dnf install -y https://download.postgresql.org/pub/repos/yum/reporpms/EL-10-x86_64/pgdg-redhat-repo-latest.noarch.rpm
+
+# Pre-create PostgreSQL directories and user to avoid pgbackrest installation issues
+RUN groupadd -r postgres --gid=26 || echo "Group postgres already exists" && \
+    useradd -r -g postgres --uid=26 --home-dir=/var/lib/pgsql --shell=/bin/bash postgres || echo "User postgres already exists" && \
+    mkdir -p /var/lib/pgsql /var/run/postgresql && \
+    chown -R postgres:postgres /var/lib/pgsql /var/run/postgresql
+
+# Install Perl dependencies that might be needed for postgresql-devel
+RUN dnf install -y --allowerasing \
+        perl-IPC-Run \
+        perl-Test-Simple \
+        perl-Test-More || echo "Perl packages not available, continuing without them"
+
+# Install PostgreSQL packages for the specified version
+RUN dnf install -y --allowerasing \
+        postgresql${PG_MAJOR_VERSION}-server \
+        postgresql${PG_MAJOR_VERSION} \
+        postgresql${PG_MAJOR_VERSION}-contrib
+
+# Setup directories (postgres user already exists from package installation)
+RUN mkdir -p /var/lib/pgsql/${PG_MAJOR_VERSION}/data /var/run/postgresql && \
+    chown -R postgres:postgres /var/lib/pgsql /var/run/postgresql && \
+    chmod 0700 /var/lib/pgsql/${PG_MAJOR_VERSION}/data
+
+# Initialize and configure PostgreSQL as postgres user
+USER postgres
+RUN /usr/pgsql-${PG_MAJOR_VERSION}/bin/initdb -D /var/lib/pgsql/${PG_MAJOR_VERSION}/data && \
+    echo "host all all 0.0.0.0/0 md5" >> /var/lib/pgsql/${PG_MAJOR_VERSION}/data/pg_hba.conf && \
+    echo "listen_addresses = '*'" >> /var/lib/pgsql/${PG_MAJOR_VERSION}/data/postgresql.conf && \
+    echo "port = 5432" >> /var/lib/pgsql/${PG_MAJOR_VERSION}/data/postgresql.conf
+
+# Switch back to root
+USER root
+
+# Create extension installation directory
+RUN mkdir -p /tmp/extensions && chmod 755 /tmp/extensions
+
+# Download and install pglinter extension
+RUN wget https://github.com/pmpetit/pglinter/releases/download/${PGLINTER_VERSION}/postgresql_pglinter_${PG_MAJOR_VERSION}-${PGLINTER_VERSION}-1.x86_64.rpm -O /tmp/pglinter.rpm && \
+    dnf localinstall -y /tmp/pglinter.rpm && \
+    rm -f /tmp/pglinter.rpm
+
+# Set environment variable for the script to use at runtime
+ENV PG_MAJOR_VERSION=${PG_MAJOR_VERSION}
+
+# Copy startup script
+COPY nodeb-start-with-pglinter.sh /usr/local/bin/start-with-pglinter.sh
+RUN chmod +x /usr/local/bin/start-with-pglinter.sh
+
+# Start PostgreSQL, install pglinter extension, run tests, and keep container running
+CMD ["/usr/local/bin/start-with-pglinter.sh"]

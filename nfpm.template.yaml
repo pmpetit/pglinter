@@ -1,6 +1,6 @@
 ---
 name: "postgresql_pglinter_${PG_MAJOR_VERSION}"
-arch: "amd64"
+arch: "${PACKAGE_ARCH}"
 platform: "linux"
 version: "v${PGLINTER_MINOR_VERSION}"
 section: "default"
