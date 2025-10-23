@@ -18,10 +18,18 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Test PostgreSQL DEB image
+      - name: Test PostgreSQL DEB amd64 image
         uses: ./.github/actions/reusable-test-deb-package
         with:
           pg_version: ${{ inputs.pg_version }}
           pglinter_version: '0.0.19'
           platform: 'linux/amd64'
           timeout: '180'
+      - name: Test PostgreSQL DEB arm64 image
+        uses: ./.github/actions/reusable-test-deb-package
+        with:
+          pg_version: ${{ inputs.pg_version }}
+          pglinter_version: '0.0.19'
+          platform: 'linux/arm64'
+          timeout: '180'
+
