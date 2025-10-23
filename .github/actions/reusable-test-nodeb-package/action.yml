@@ -1,0 +1,121 @@
+name: 'Reusable Test PostgreSQL NODEB Image'
+description: 'Builds and tests pglinter PostgreSQL NODEB Docker image'
+
+inputs:
+  pg_version:
+    description: 'PostgreSQL major version (13-18)'
+    required: true
+    default: '17'
+  pglinter_version:
+    description: 'pglinter version'
+    required: true
+    default: '0.0.19'
+  platform:
+    description: 'Target platform'
+    required: false
+    default: 'linux/amd64'
+  timeout:
+    description: 'Container timeout in seconds'
+    required: false
+    default: '120'
+
+outputs:
+  image_name:
+    description: 'Built Docker image name'
+    value: ${{ steps.build.outputs.image_name }}
+  test_result:
+    description: 'Test execution result (success/failure)'
+    value: ${{ steps.test.outputs.result }}
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Validate PostgreSQL version
+      shell: bash
+      run: |
+        if [[ ! "${{ inputs.pg_version }}" =~ ^(13|14|15|16|17|18)$ ]]; then
+          echo "❌ ERROR: Unsupported PostgreSQL version: ${{ inputs.pg_version }}"
+          exit 1
+        fi
+        echo "✅ PostgreSQL version ${{ inputs.pg_version }} is supported"
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+      with:
+        platforms: ${{ inputs.platform }}
+
+    - name: Build PostgreSQL NODEB image
+      id: build
+      shell: bash
+      run: |
+        IMAGE_NAME="pglinter:pg${{ inputs.pg_version }}-nodeb-test"
+        echo "🔨 Building pglinter PostgreSQL ${{ inputs.pg_version }} NODEB image..."
+        echo "  Image: ${IMAGE_NAME}"
+        echo "  Platform: ${{ inputs.platform }}"
+        echo "  pglinter version: ${{ inputs.pglinter_version }}"
+        if [[ ! -f "docker/ci/Dockerfile.pg-nodeb" ]]; then
+          echo "❌ ERROR: Dockerfile not found: docker/ci/Dockerfile.pg-nodeb"
+          exit 1
+        fi
+        if [[ ! -f "docker/ci/nodeb-start-with-pglinter.sh" ]]; then
+          echo "❌ ERROR: Entrypoint script not found: docker/ci/nodeb-start-with-pglinter.sh"
+          exit 1
+        fi
+        if docker build \
+          --platform "${{ inputs.platform }}" \
+          --build-arg PG_MAJOR_VERSION="${{ inputs.pg_version }}" \
+          --build-arg PGLINTER_VERSION="${{ inputs.pglinter_version }}" \
+          -f docker/ci/Dockerfile.pg-nodeb \
+          -t "${IMAGE_NAME}" \
+          .; then
+          echo "✅ Successfully built image: ${IMAGE_NAME}"
+          echo "image_name=${IMAGE_NAME}" >> $GITHUB_OUTPUT
+        else
+          echo "❌ Failed to build PostgreSQL ${{ inputs.pg_version }} NODEB image"
+          exit 1
+        fi
+
+    - name: Test pglinter NODEB image
+      id: test
+      shell: bash
+      run: |
+        IMAGE_NAME="${{ steps.build.outputs.image_name }}"
+        TIMEOUT="${{ inputs.timeout }}"
+        CONTAINER_NAME="pglinter-test-pg${{ inputs.pg_version }}-nodeb-$(date +%s)"
+        echo "🧪 Testing pglinter PostgreSQL ${{ inputs.pg_version }} NODEB image..."
+        set +e
+        timeout "${TIMEOUT}" docker run \
+          --name "${CONTAINER_NAME}" \
+          --platform "${{ inputs.platform }}" \
+          --rm \
+          "${IMAGE_NAME}"
+        EXIT_CODE=$?
+        set -e
+        case $EXIT_CODE in
+          0)
+            echo "✅ pglinter PostgreSQL ${{ inputs.pg_version }} NODEB test PASSED"
+            echo "result=success" >> $GITHUB_OUTPUT
+            ;;
+          124)
+            echo "❌ pglinter PostgreSQL ${{ inputs.pg_version }} NODEB test TIMEOUT"
+            echo "result=timeout" >> $GITHUB_OUTPUT
+            exit 1
+            ;;
+          *)
+            echo "❌ pglinter PostgreSQL ${{ inputs.pg_version }} NODEB test FAILED"
+            echo "result=failure" >> $GITHUB_OUTPUT
+            exit 1
+            ;;
+        esac
+
+    - name: Cleanup test resources
+      if: always()
+      shell: bash
+      run: |
+        echo "🧹 Cleaning up test resources..."
+        LEFTOVER_CONTAINERS=$(docker ps -aq --filter "name=pglinter-test-pg${{ inputs.pg_version }}-nodeb" 2>/dev/null || true)
+        if [[ -n "$LEFTOVER_CONTAINERS" ]]; then
+          docker rm -f $LEFTOVER_CONTAINERS 2>/dev/null || true
+        fi
+        docker rmi "${{ steps.build.outputs.image_name }}" 2>/dev/null || true
+        echo "✅ Cleanup completed"
