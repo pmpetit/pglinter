@@ -8,7 +8,8 @@ PGRX?=cargo pgrx
 PGVER?=$(shell grep 'default = \[".*\"]' Cargo.toml | sed -e 's/.*\["//' | sed -e 's/"].*//')
 PG_MAJOR_VERSION=$(PGVER:pg%=%)
 
-PGLINTER_MINOR_VERSION = $(shell grep '^version *= *' Cargo.toml | sed 's/^version *= *//' | tr -d '\"' | tr -d ' ' )
+# PGLINTER_MINOR_VERSION = $(shell grep '^version *= *' Cargo.toml | sed 's/^version *= *//' | tr -d '\"' | tr -d ' ' )
+PGLINTER_MINOR_VERSION ?= $(PGLINTER_MINOR_VERSION)
 
 # use `TARGET=debug make run` for more detailed errors
 TARGET?=release
