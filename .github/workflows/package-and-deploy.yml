@@ -121,7 +121,7 @@ jobs:
   #         arch: arm64
 
 
-  create-prerelease:
+  create-release:
     needs: [build-amd64]
     runs-on: ubuntu-latest
     if: startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch'
@@ -133,7 +133,7 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-      - name: Create Release with Artifacts
+      - name: Create pre-release with Artifacts
         uses: ./.github/actions/reusable-release-action
         with:
           tag: ${{ github.event_name == 'workflow_dispatch' && inputs.version || github.ref_name }}

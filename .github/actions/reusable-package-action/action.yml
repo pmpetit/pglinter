@@ -27,8 +27,9 @@ runs:
     - name: Extract version from Cargo.toml
       id: get-version
       run: |
-        VERSION=$(grep '^version = ' Cargo.toml | awk -F'"' '{print $2}')
-        echo "Extracted version: $VERSION"
+        # VERSION=$(grep '^version = ' Cargo.toml | awk -F'"' '{print $2}')
+        VERSION=${{ inputs.tag }}
+        echo "Version: $VERSION"
         echo "PGLINTER_MINOR_VERSION=$VERSION" >> $GITHUB_ENV
         echo "PACKAGE_ARCH=${{ inputs.arch }}" >> $GITHUB_ENV
 
