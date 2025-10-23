@@ -1,11 +1,21 @@
 #!/bin/bash
 set -e
 
+DATA_DIR="/var/lib/postgresql/${PG_MAJOR_VERSION}/main"
+PG_BIN="/usr/lib/postgresql/${PG_MAJOR_VERSION}/bin"
+
+if [ ! -d "$DATA_DIR" ]; then
+    echo "🛠 Initializing PostgreSQL data directory at $DATA_DIR"
+    mkdir -p "$DATA_DIR"
+    chown -R postgres:postgres "$(dirname "$DATA_DIR")"
+    su - postgres -c "${PG_BIN}/initdb -D $DATA_DIR"
+fi
+
 echo "🚀 Starting PostgreSQL..."
-su - postgres -c "/usr/lib/postgresql/${PG_MAJOR_VERSION}/bin/pg_ctl -D /var/lib/postgresql/${PG_MAJOR_VERSION}/main -l /var/lib/postgresql/${PG_MAJOR_VERSION}/main/logfile start"
+su - postgres -c "${PG_BIN}/pg_ctl -D $DATA_DIR -l ${DATA_DIR}/logfile start"
 
 echo "⏳ Waiting for PostgreSQL to be ready..."
-until su - postgres -c "/usr/lib/postgresql/${PG_MAJOR_VERSION}/bin/pg_isready -q"; do
+until su - postgres -c "${PG_BIN}/pg_isready -q"; do
     echo "PostgreSQL is not ready yet..."
     sleep 1
 done
