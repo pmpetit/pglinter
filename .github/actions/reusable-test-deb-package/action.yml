@@ -53,6 +53,7 @@ runs:
 
     - name: Set architecture variables
       id: setup-arch
+      shell: bash
       run: |
         case "${{ matrix.arch }}" in
           "amd64")
