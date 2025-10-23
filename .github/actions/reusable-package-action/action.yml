@@ -27,8 +27,7 @@ runs:
     - name: Extract version from Cargo.toml
       id: get-version
       run: |
-        # VERSION=$(grep '^version = ' Cargo.toml | awk -F'"' '{print $2}')
-        VERSION=${{ inputs.tag }}
+        VERSION=$(grep '^version = ' Cargo.toml | awk -F'"' '{print $2}')
         echo "Version: $VERSION"
         echo "PGLINTER_MINOR_VERSION=$VERSION" >> $GITHUB_ENV
         echo "PACKAGE_ARCH=${{ inputs.arch }}" >> $GITHUB_ENV
@@ -53,7 +52,6 @@ runs:
     - name: Build packages
       run: |
         export PACKAGE_ARCH=${{ inputs.arch }}
-        export PGLINTER_MINOR_VERSION=${{ env.PGLINTER_MINOR_VERSION }}
         su - postgres -c "cd $GITHUB_WORKSPACE && PGVER=${{ inputs.pgver }} PACKAGE_ARCH=${{ inputs.arch }} make deb"
         su - postgres -c "cd $GITHUB_WORKSPACE && PGVER=${{ inputs.pgver }} PACKAGE_ARCH=${{ inputs.arch }} make rpm"
       shell: bash
