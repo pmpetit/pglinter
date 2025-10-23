@@ -141,7 +141,7 @@ jobs:
   create-prerelease:
     needs: [build-amd64]
     runs-on: ubuntu-latest
-    if: startsWith(github.ref, 'refs/tags/')
+    if: startsWith(github.ref, 'refs/tags/')  || github.event_name == 'workflow_dispatch'
 
     permissions:
       contents: write
@@ -161,7 +161,7 @@ jobs:
   test-prerelease:
     needs: [create-prerelease]
     runs-on: ubuntu-latest
-    if: startsWith(github.ref, 'refs/tags/')
+    if: startsWith(github.ref, 'refs/tags/')  || github.event_name == 'workflow_dispatch'
 
     steps:
       - name: Checkout code
@@ -177,7 +177,7 @@ jobs:
   delete-prerelease:
     needs: [test-prerelease]
     runs-on: ubuntu-latest
-    if: success() && startsWith(github.ref, 'refs/tags/')
+    if: success() && startsWith(github.ref, 'refs/tags/')  || github.event_name == 'workflow_dispatch'
     steps:
       - name: Delete prerelease
         uses: ./.github/actions/delete-github-release
@@ -188,7 +188,7 @@ jobs:
   create-release:
     needs: [delete-prerelease]
     runs-on: ubuntu-latest
-    if: startsWith(github.ref, 'refs/tags/')
+    if: startsWith(github.ref, 'refs/tags/')  || github.event_name == 'workflow_dispatch'
 
     permissions:
       contents: write
