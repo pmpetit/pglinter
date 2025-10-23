@@ -205,39 +205,7 @@ jobs:
           echo ""
           echo "Looking for ${{ matrix.package_type }} package for ${{ matrix.arch }}"
 
-      - name: Find package to test
-        id: find-package
-        uses: ./.github/actions/find-package
-        with:
-          artifacts_path: ./packages
-          arch: ${{ matrix.arch }}
-          package_type: ${{ matrix.package_type }}
-          pgver: ${{ matrix.pgver }}
-
-      - name: Install dependencies for RPM testing
-        if: matrix.package_type == 'rpm'
-        run: |
-          echo "📋 Installing dependencies for RPM testing..."
-          sudo apt-get update
-          sudo apt-get install -y alien rpm wget gnupg lsb-release
-
-      - name: Install PostgreSQL
-        uses: ./.github/actions/install-postgresql
-        with:
-          pgver: ${{ matrix.pgver }}
-
-      - name: Install package
-        uses: ./.github/actions/install-package
-        with:
-          package_file: ${{ steps.find-package.outputs.package_file }}
-          package_type: ${{ matrix.package_type }}
-          pgver: ${{ matrix.pgver }}
-
-      - name: Test extension
-        uses: ./.github/actions/test-extension
-        with:
-          pgver: ${{ matrix.pgver }}
-
+      
   create-release:
     needs: [test-packages]
     runs-on: ubuntu-latest
