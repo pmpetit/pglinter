@@ -53,6 +53,7 @@ runs:
     - name: Build packages
       run: |
         export PACKAGE_ARCH=${{ inputs.arch }}
+        export PGLINTER_MINOR_VERSION=${{ env.PGLINTER_MINOR_VERSION }}
         su - postgres -c "cd $GITHUB_WORKSPACE && PGVER=${{ inputs.pgver }} PACKAGE_ARCH=${{ inputs.arch }} make deb"
         su - postgres -c "cd $GITHUB_WORKSPACE && PGVER=${{ inputs.pgver }} PACKAGE_ARCH=${{ inputs.arch }} make rpm"
       shell: bash
