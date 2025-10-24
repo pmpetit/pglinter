@@ -90,21 +90,22 @@ jobs:
           pgver: ${{ matrix.pgver }}
           tag: ${{ github.event_name == 'workflow_dispatch' && inputs.version || github.ref_name }}
           arch: amd64
-      - name: Create pre-release
+      - name: Create amd64 pre-release
         uses: ./.github/actions/reusable-release-action
         with:
           tag: amd64-${{ github.event_name == 'workflow_dispatch' && inputs.version || github.ref_name }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
           prerelease: true
           draft: false
-      - name: Test pglinter amd64 release
+          arch: amd64
+      - name: Test amd64 pglinter pre-release
         uses: ./.github/actions/reusable-test-deb-package
         with:
           pg_version: '17'
           pglinter_version: amd64-${{ github.event_name == 'workflow_dispatch' && inputs.version || github.ref_name }}
           platform: 'linux/amd64'
           timeout: '180'
-      - name: Delete pre-release
+      - name: Delete amd64 pre-release
         uses: ./.github/actions/delete-release-action
         with:
           tag: amd64-${{ github.event_name == 'workflow_dispatch' && inputs.version || github.ref_name }}
@@ -139,21 +140,22 @@ jobs:
           pgver: ${{ matrix.pgver }}
           tag: ${{ github.ref_name }}
           arch: arm64
-      - name: Create pre-release
+      - name: Create arm64 pre-release
         uses: ./.github/actions/reusable-release-action
         with:
           tag: arm64-${{ github.event_name == 'workflow_dispatch' && inputs.version || github.ref_name }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
           prerelease: true
           draft: false
-      - name: Test pglinter arm64 release
+          arch: arm64
+      - name: Test arm64 pglinter pre-release
         uses: ./.github/actions/reusable-test-deb-package
         with:
           pg_version: '17'
           pglinter_version: arm64-${{ github.event_name == 'workflow_dispatch' && inputs.version || github.ref_name }}
           platform: 'linux/arm64'
           timeout: '180'
-      - name: Delete pre-release
+      - name: Delete arm64 pre-release
         uses: ./.github/actions/delete-release-action
         with:
           tag: arm64-${{ github.event_name == 'workflow_dispatch' && inputs.version || github.ref_name }}
