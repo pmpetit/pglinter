@@ -12,6 +12,7 @@ FROM postgres:$PG_MAJOR_VERSION
 ARG PG_MAJOR_VERSION=13
 ARG PGLINTER_VERSION=0.0.19
 ARG ARCH=amd64
+ARG PATH=docker/ci
 
 RUN apt-get update \
  && apt-get install -y --no-install-recommends \
@@ -20,9 +21,9 @@ RUN apt-get update \
  && rm -rf /var/lib/apt/lists/*
 
 # Install extension
-RUN wget https://github.com/pmpetit/pglinter/releases/download/${PGLINTER_VERSION}/postgresql_pglinter_${PG_MAJOR_VERSION}_${PGLINTER_VERSION}_${ARCH}.deb -O /tmp/pglinter.deb && \
-    dpkg -i /tmp/pglinter.deb && \
-    rm -f /tmp/pglinter.deb
+COPY ${PATH}/postgresql_pglinter_${PG_MAJOR_VERSION}_${PGLINTER_VERSION}_${ARCH}.deb /tmp
+RUN dpkg -i /tmp/postgresql_pglinter_${PG_MAJOR_VERSION}_${PGLINTER_VERSION}_${ARCH}.deb && \
+    rm -f /tmp/postgresql_pglinter_${PG_MAJOR_VERSION}_${PGLINTER_VERSION}_${ARCH}.deb
 
 # Set environment variable for the script to use at runtime
 ENV PG_MAJOR_VERSION=${PG_MAJOR_VERSION}
