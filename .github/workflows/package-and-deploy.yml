@@ -90,12 +90,17 @@ jobs:
           pgver: ${{ matrix.pgver }}
           tag: ${{ github.event_name == 'workflow_dispatch' && inputs.version || github.ref_name }}
           arch: amd64
-      - name: Download package artifact
+
+  test-deb-package:
+    needs: [build-amd64]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download deb package
         uses: actions/download-artifact@v4
         with:
           name: pglinter-${{ matrix.pgver }}-${{ env.PGLINTER_MINOR_VERSION }}-amd64.deb
           path: ./artifacts
-      - name: test deb package
+      - name: Test deb package
         uses: ./.github/actions/reusable-test-deb-package
         with:
           pg_version: '17'
