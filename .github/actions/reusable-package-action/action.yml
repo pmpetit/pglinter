@@ -67,12 +67,14 @@ runs:
       shell: bash
 
     - name: 'RPM package for ${{ inputs.pgver }} (${{ inputs.arch }})'
+      if: ${{ inputs.pkgtype == 'rpm' }}
       uses: actions/upload-artifact@v4
       with:
         name: pglinter-${{ inputs.pgver }}-${{ env.PGLINTER_MINOR_VERSION }}-${{ env.RPM_ARCH }}.rpm
         path: target/release/pglinter-${{ inputs.pgver }}/*.rpm
 
     - name: 'DEB package for ${{ inputs.pgver }} (${{ inputs.arch }})'
+      if: ${{ inputs.pkgtype == 'deb' }}
       uses: actions/upload-artifact@v4
       with:
         name: pglinter-${{ inputs.pgver }}-${{ env.PGLINTER_MINOR_VERSION }}-${{ env.DEB_ARCH }}.deb

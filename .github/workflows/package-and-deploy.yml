@@ -181,4 +181,4 @@ jobs:
         uses: ./.github/actions/mark-release-production
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          release_tag: ${{ github.event_name == 'workflow_dispatch' && inputs.version || github.ref_name }}
+          release_tag: ${{ input.version }}
