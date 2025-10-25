@@ -140,6 +140,7 @@ jobs:
           pgver: ${{ matrix.pgver }}
           tag: ${{ github.ref_name }}
           arch: arm64
+          pkgtype: deb
       - name: Create arm64 pre-release
         uses: ./.github/actions/reusable-release-action
         with:
@@ -148,6 +149,7 @@ jobs:
           prerelease: true
           draft: false
           arch: arm64
+          pkgtype: deb
       - name: Test arm64 pglinter pre-release
         uses: ./.github/actions/reusable-test-deb-package
         with:

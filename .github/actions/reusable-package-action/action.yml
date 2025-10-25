@@ -14,6 +14,10 @@ inputs:
     description: 'Target architecture (amd64 or arm64)'
     required: false
     default: amd64
+  pkgtype:
+    description: 'Package type to build (rpm or deb)'
+    required: true
+    default: deb
 
 runs:
   using: "composite"
