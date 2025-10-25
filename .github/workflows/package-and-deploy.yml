@@ -84,7 +84,7 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-      - name: Call reusable package action
+      - name: create deb package
         uses: ./.github/actions/reusable-package-action
         with:
           pgver: ${{ matrix.pgver }}
@@ -95,7 +95,7 @@ jobs:
         with:
           name: pglinter-${{ matrix.pgver }}-${{ env.PGLINTER_MINOR_VERSION }}-amd64.deb
           path: ./artifacts
-      - name: Test amd64 pglinter pre-release
+      - name: test deb package
         uses: ./.github/actions/reusable-test-deb-package
         with:
           pg_version: '17'
