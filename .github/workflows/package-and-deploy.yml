@@ -90,14 +90,6 @@ jobs:
           pgver: ${{ matrix.pgver }}
           tag: ${{ github.event_name == 'workflow_dispatch' && inputs.version || github.ref_name }}
           arch: amd64
-      - name: Create amd64 pre-release
-        uses: ./.github/actions/reusable-release-action
-        with:
-          tag: ${{ github.event_name == 'workflow_dispatch' && inputs.version || github.ref_name }}
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          prerelease: true
-          draft: false
-          arch: amd64
       - name: Download package artifact
         uses: actions/download-artifact@v4
         with:
@@ -110,11 +102,7 @@ jobs:
           pglinter_version: ${{ github.event_name == 'workflow_dispatch' && inputs.version || github.ref_name }}
           platform: 'linux/amd64'
           timeout: '180'
-      - name: Delete amd64 pre-release
-        uses: ./.github/actions/delete-release-action
-        with:
-          tag: ${{ github.event_name == 'workflow_dispatch' && inputs.version || github.ref_name }}
-          github-token: ${{ secrets.GITHUB_TOKEN }}
+
 
 
   ##
