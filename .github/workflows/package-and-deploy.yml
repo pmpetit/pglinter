@@ -165,7 +165,7 @@ jobs:
 
 
   create-release:
-    needs: [build-amd64, build-arm64]
+    needs: [build-amd64]
     runs-on: ubuntu-latest
     if: startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch'
 
