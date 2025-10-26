@@ -106,10 +106,13 @@ jobs:
         with:
           name: pglinter-${{ matrix.pgver }}-${{ github.event_name == 'workflow_dispatch' && inputs.version || github.ref_name }}-amd64.deb
           path: ./artifacts
+      - name: Extract major version
+        id: extract_pgver
+        run: echo "PG_VERSION=${{ matrix.pgver:2 }}" >> $GITHUB_OUTPUT
       - name: Test deb package
         uses: ./.github/actions/reusable-test-deb-package
         with:
-          pg_version: ${{ matrix.pgver:2 }}
+          pg_version: ${{ steps.extract_pgver.outputs.PG_VERSION }}
           pglinter_version: ${{ github.event_name == 'workflow_dispatch' && inputs.version || github.ref_name }}
           platform: 'linux/amd64'
           timeout: '180'
@@ -159,10 +162,13 @@ jobs:
         with:
           name: pglinter-${{ matrix.pgver }}-${{ github.event_name == 'workflow_dispatch' && inputs.version || github.ref_name }}-arm64.deb
           path: ./artifacts
+      - name: Extract major version
+        id: extract_pgver
+        run: echo "PG_VERSION=${{ matrix.pgver:2 }}" >> $GITHUB_OUTPUT
       - name: Test deb package
         uses: ./.github/actions/reusable-test-deb-package
         with:
-          pg_version: ${{ matrix.pgver:2 }}
+          pg_version: ${{ steps.extract_pgver.outputs.PG_VERSION }}
           pglinter_version: ${{ github.event_name == 'workflow_dispatch' && inputs.version || github.ref_name }}
           platform: 'linux/arm64'
           timeout: '180'
