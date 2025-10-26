@@ -105,13 +105,12 @@ runs:
           -t \"${IMAGE_NAME}\" . "
 
         # Build image with proper error handling
-        if docker buildx build \
+        if docker buildx build --load \
           --platform "${{ inputs.platform }}" \
           --build-arg PG_MAJOR_VERSION="${{ inputs.pg_version }}" \
           --build-arg PGLINTER_VERSION="${{ inputs.pglinter_version }}" \
           --build-arg ARCH="${{ steps.setup-arch.outputs.DEB_ARCH }}" \
           --build-arg PACKAGE_PATH=./artifacts \
-          --load \
           -f docker/ci/Dockerfile.pg-deb \
           -t "${IMAGE_NAME}" \
           .; then
