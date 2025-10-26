@@ -38,6 +38,7 @@ runs:
     - name: Validate PostgreSQL version
       shell: bash
       run: |
+        echo "pg_version=${{ inputs.pg_version }}"
         # Following pglinter's PostgreSQL 13-18 support requirements
         if [[ ! "${{ inputs.pg_version }}" =~ ^(13|14|15|16|17|18)$ ]]; then
           echo "❌ ERROR: Unsupported PostgreSQL version: ${{ inputs.pg_version }}"
