@@ -1,6 +1,6 @@
 
 ARG PG_MAJOR_VERSION=13
-FROM postgres:${PG_MAJOR_VERSION}-bullseye
+FROM postgres:${PG_MAJOR_VERSION}
 
 # Re-declare ARG variables for use inside the build stage
 ARG PG_MAJOR_VERSION=13

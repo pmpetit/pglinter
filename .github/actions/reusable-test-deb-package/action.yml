@@ -111,6 +111,7 @@ runs:
           --build-arg PGLINTER_VERSION="${{ inputs.pglinter_version }}" \
           --build-arg ARCH="${{ steps.setup-arch.outputs.DEB_ARCH }}" \
           --build-arg PACKAGE_PATH=./artifacts \
+          --load \
           -f docker/ci/Dockerfile.pg-deb \
           -t "${IMAGE_NAME}" \
           .; then
