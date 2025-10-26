@@ -102,7 +102,7 @@ runs:
           --build-arg ARCH=\"${{ steps.setup-arch.outputs.DEB_ARCH }}\" \
           --build-arg PATH=./artifacts \
           -f docker/ci/Dockerfile.pg-deb \
-          -t "${IMAGE_NAME}"
+          -t \"${IMAGE_NAME}\" . "
 
         # Build image with proper error handling
         if docker buildx build \
