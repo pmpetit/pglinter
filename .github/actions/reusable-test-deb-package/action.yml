@@ -96,7 +96,7 @@ runs:
         fi
 
         # Build image with proper error handling
-        if docker build \
+        if docker buildx build \
           --platform "${{ inputs.platform }}" \
           --build-arg PG_MAJOR_VERSION="${{ inputs.pg_version }}" \
           --build-arg PGLINTER_VERSION="${{ inputs.pglinter_version }}" \
