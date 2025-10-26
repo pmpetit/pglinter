@@ -92,7 +92,7 @@ jobs:
           arch: amd64
 
   test-deb-amd64-package:
-    needs: [build-amd64,setup-matrix]
+    needs: build-amd64
     strategy:
       matrix:
         pgver: ${{ fromJSON(needs.setup-matrix.outputs.pgversions) }}
@@ -148,7 +148,7 @@ jobs:
           pkgtype: deb
 
   test-deb-arm64-package:
-    needs: [build-arm64,setup-matrix]
+    needs: build-arm64
     strategy:
       matrix:
         pgver: ${{ fromJSON(needs.setup-matrix.outputs.pgversions) }}
