@@ -1,18 +1,12 @@
 
-# This instructions must be declared before any FROM
-# You can override it and build your own image based another version
-# like this: `PG_MAJOR_VERSION=13 make docker_image`
-# An ARG declared before a FROM is outside of a build stage, so it can’t be
-# used in any instruction after a FROM. We need to declare it again.
 ARG PG_MAJOR_VERSION=13
-
-FROM postgres:$PG_MAJOR_VERSION
+FROM postgres:${PG_MAJOR_VERSION}-bullseye
 
 # Re-declare ARG variables for use inside the build stage
 ARG PG_MAJOR_VERSION=13
 ARG PGLINTER_VERSION=0.0.19
 ARG ARCH=amd64
-ARG PATH=docker/ci
+ARG PACKAGE_PATH=docker/ci
 
 RUN apt-get update \
  && apt-get install -y --no-install-recommends \
@@ -21,7 +15,7 @@ RUN apt-get update \
  && rm -rf /var/lib/apt/lists/*
 
 # Install extension
-COPY ${PATH}/postgresql_pglinter_${PG_MAJOR_VERSION}_${PGLINTER_VERSION}_${ARCH}.deb /tmp
+COPY ${PACKAGE_PATH}/postgresql_pglinter_${PG_MAJOR_VERSION}_${PGLINTER_VERSION}_${ARCH}.deb /tmp
 RUN dpkg -i /tmp/postgresql_pglinter_${PG_MAJOR_VERSION}_${PGLINTER_VERSION}_${ARCH}.deb && \
     rm -f /tmp/postgresql_pglinter_${PG_MAJOR_VERSION}_${PGLINTER_VERSION}_${ARCH}.deb
 
