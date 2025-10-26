@@ -202,6 +202,9 @@ jobs:
         with:
           name: pglinter-${{ matrix.pgver }}-${{ github.event_name == 'workflow_dispatch' && inputs.version || github.ref_name }}-arm64.deb
           path: ./artifacts
+      - name: List downloaded artifact files
+        run: ls -l ./artifacts
+        shell: bash
       - name: Extract major version
         id: extract_pgver
         run: echo "pg_version=$(echo '${{ matrix.pgver }}' | sed 's/^pg//')" >> $GITHUB_OUTPUT

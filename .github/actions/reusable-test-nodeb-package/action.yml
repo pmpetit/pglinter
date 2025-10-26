@@ -61,7 +61,7 @@ runs:
           echo "❌ ERROR: Entrypoint script not found: docker/ci/nodeb-start-with-pglinter.sh"
           exit 1
         fi
-        if docker build \
+        if docker buildx build --load \
           --platform "${{ inputs.platform }}" \
           --build-arg PG_MAJOR_VERSION="${{ inputs.pg_version }}" \
           --build-arg PGLINTER_VERSION="${{ inputs.pglinter_version }}" \
