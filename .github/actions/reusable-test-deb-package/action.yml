@@ -95,6 +95,15 @@ runs:
           exit 1
         fi
 
+        echo "docker buildx build \
+          --platform "${{ inputs.platform }}" \
+          --build-arg PG_MAJOR_VERSION="${{ inputs.pg_version }}" \
+          --build-arg PGLINTER_VERSION="${{ inputs.pglinter_version }}" \
+          --build-arg ARCH="${{ steps.setup-arch.outputs.DEB_ARCH }}" \
+          --build-arg PATH=./artifacts \
+          -f docker/ci/Dockerfile.pg-deb \
+          -t "${IMAGE_NAME}"
+
         # Build image with proper error handling
         if docker buildx build \
           --platform "${{ inputs.platform }}" \
