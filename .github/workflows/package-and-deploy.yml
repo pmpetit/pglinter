@@ -108,7 +108,7 @@ jobs:
           path: ./artifacts
       - name: Extract major version
         id: extract_pgver
-        run: echo "pg_version=${{ matrix.pgver }}" | sed 's/^pg//' >> $GITHUB_OUTPUT
+        run: echo "pg_version=$(echo '${{ matrix.pgver }}' | sed 's/^pg//')" >> $GITHUB_OUTPUT
       - name: Test deb package
         uses: ./.github/actions/reusable-test-deb-package
         with:
@@ -164,7 +164,7 @@ jobs:
           path: ./artifacts
       - name: Extract major version
         id: extract_pgver
-        run: echo "pg_version=${{ matrix.pgver }}" | sed 's/^pg//' >> $GITHUB_OUTPUT
+        run: echo "pg_version=$(echo '${{ matrix.pgver }}' | sed 's/^pg//')" >> $GITHUB_OUTPUT
       - name: Test deb package
         uses: ./.github/actions/reusable-test-deb-package
         with:
