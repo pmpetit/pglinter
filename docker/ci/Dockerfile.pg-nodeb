@@ -50,23 +50,23 @@ RUN /usr/pgsql-${PG_MAJOR_VERSION}/bin/initdb -D /var/lib/pgsql/${PG_MAJOR_VERSI
     echo "listen_addresses = '*'" >> /var/lib/pgsql/${PG_MAJOR_VERSION}/data/postgresql.conf && \
     echo "port = 5432" >> /var/lib/pgsql/${PG_MAJOR_VERSION}/data/postgresql.conf
 
-# # Switch back to root
-# USER root
+# Switch back to root
+USER root
 
-# # Create extension installation directory
-# RUN mkdir -p /tmp/extensions && chmod 755 /tmp/extensions
+# Create extension installation directory
+RUN mkdir -p /tmp/extensions && chmod 755 /tmp/extensions
 
-# # Download and install pglinter extension
-# COPY ${PACKAGE_PATH}/postgresql_pglinter_${PG_MAJOR_VERSION}-${PGLINTER_VERSION}-1.${ARCH}.rpm /tmp
-# RUN dnf localinstall -y /tmp/postgresql_pglinter_${PG_MAJOR_VERSION}-${PGLINTER_VERSION}-1.${ARCH}.rpm && \
-#     rm -f /tmp/postgresql_pglinter_${PG_MAJOR_VERSION}-${PGLINTER_VERSION}-1.${ARCH}.rpm
+# Download and install pglinter extension
+COPY ${PACKAGE_PATH}/postgresql_pglinter_${PG_MAJOR_VERSION}-${PGLINTER_VERSION}-1.${ARCH}.rpm /tmp
+RUN dnf localinstall -y /tmp/postgresql_pglinter_${PG_MAJOR_VERSION}-${PGLINTER_VERSION}-1.${ARCH}.rpm && \
+    rm -f /tmp/postgresql_pglinter_${PG_MAJOR_VERSION}-${PGLINTER_VERSION}-1.${ARCH}.rpm
 
-# # Set environment variable for the script to use at runtime
-# ENV PG_MAJOR_VERSION=${PG_MAJOR_VERSION}
+# Set environment variable for the script to use at runtime
+ENV PG_MAJOR_VERSION=${PG_MAJOR_VERSION}
 
-# # Copy startup script
-# COPY docker/ci/nodeb-start-with-pglinter.sh /usr/local/bin/start-with-pglinter.sh
-# RUN chmod +x /usr/local/bin/start-with-pglinter.sh
+# Copy startup script
+COPY docker/ci/nodeb-start-with-pglinter.sh /usr/local/bin/start-with-pglinter.sh
+RUN chmod +x /usr/local/bin/start-with-pglinter.sh
 
-# # Start PostgreSQL, install pglinter extension, run tests, and keep container running
-# CMD ["/usr/local/bin/start-with-pglinter.sh"]
+# Start PostgreSQL, install pglinter extension, run tests, and keep container running
+CMD ["/usr/local/bin/start-with-pglinter.sh"]
