@@ -203,7 +203,7 @@ jobs:
       matrix:
         pgver: ${{ fromJSON(needs.setup-matrix.outputs.pgversions) }}
       fail-fast: false
-    name: '${{ matrix.pgver }}-arm64-package-and-deploy'
+    name: '${{ matrix.pgver }}-aarch64-package-and-deploy'
     runs-on: ubuntu-24.04-arm
     # Use GitHub Container Registry for pmpetit
     container:
