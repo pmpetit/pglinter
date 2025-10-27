@@ -9,8 +9,8 @@ ARG ARCH
 # Install PostgreSQL ${PG_MAJOR_VERSION} from PGDG repository
 # Install basic packages and EPEL repository
 RUN dnf install -y epel-release && \
-    dnf update -y && \
-    dnf install -y --allowerasing \
+    dnf update -y --allowerasing --nobest && \
+    dnf install -y --allowerasing --nobest \
         wget curl sudo vim gcc make rpm-build
 
 # Add PGDG repository (Rocky Linux 10 doesn't have postgresql module to disable)
