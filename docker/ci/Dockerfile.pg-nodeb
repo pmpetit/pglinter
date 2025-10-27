@@ -53,9 +53,9 @@ USER root
 RUN mkdir -p /tmp/extensions && chmod 755 /tmp/extensions
 
 # Download and install pglinter extension
-COPY ${PACKAGE_PATH}/postgresql_pglinter_${PG_MAJOR_VERSION}_${PGLINTER_VERSION}_${ARCH}.rpm /tmp
-RUN dnf localinstall -y /tmp/postgresql_pglinter_${PG_MAJOR_VERSION}_${PGLINTER_VERSION}-1.${ARCH}.rpm && \
-    rm -f /tmp/postgresql_pglinter_${PG_MAJOR_VERSION}_${PGLINTER_VERSION}_${ARCH}.rpm
+COPY ${PACKAGE_PATH}/postgresql_pglinter_${PG_MAJOR_VERSION}-${PGLINTER_VERSION}.${ARCH}.rpm /tmp
+RUN dnf localinstall -y /tmp/postgresql_pglinter_${PG_MAJOR_VERSION}-${PGLINTER_VERSION}.${ARCH}.rpm && \
+    rm -f /tmp/postgresql_pglinter_${PG_MAJOR_VERSION}-${PGLINTER_VERSION}.${ARCH}.rpm
 
 # Set environment variable for the script to use at runtime
 ENV PG_MAJOR_VERSION=${PG_MAJOR_VERSION}
