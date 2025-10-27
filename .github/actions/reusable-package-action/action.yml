@@ -58,9 +58,9 @@ runs:
       run: |
         export PACKAGE_ARCH=${{ inputs.arch }}
         if [ "${{ inputs.pkgtype }}" = "deb" ]; then
-          su - postgres -c "cd $GITHUB_WORKSPACE && PGVER=${{ inputs.pgver }} PACKAGE_ARCH=${{ inputs.arch }} make deb"
+          su - postgres -c "cd $GITHUB_WORKSPACE && PGVER=${{ inputs.pgver }} PACKAGE_ARCH=${{ env.DEB_ARCH }} make deb"
         elif [ "${{ inputs.pkgtype }}" = "rpm" ]; then
-          su - postgres -c "cd $GITHUB_WORKSPACE && PGVER=${{ inputs.pgver }} PACKAGE_ARCH=${{ inputs.arch }} make rpm"
+          su - postgres -c "cd $GITHUB_WORKSPACE && PGVER=${{ inputs.pgver }} PACKAGE_ARCH=${{ env.RPM_ARCH }} make rpm"
         else
           echo "Unknown package type: ${{ inputs.pkgtype }}"
           exit 1
