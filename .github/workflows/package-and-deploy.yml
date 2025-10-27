@@ -65,7 +65,7 @@ jobs:
   ##
   ## A M D 6 4   B U I L D S   ( U S I N G   C O N T A I N E R )
   ##
-  build-amd64:
+  build-deb-amd64:
     needs: setup-matrix
     strategy:
       matrix:
@@ -80,7 +80,6 @@ jobs:
       credentials:
         username: ${{ github.actor }}
         password: ${{ secrets.GH_TOKEN }}
-
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -90,6 +89,25 @@ jobs:
           pgver: ${{ matrix.pgver }}
           tag: ${{ github.event_name == 'workflow_dispatch' && inputs.version || github.ref_name }}
           arch: amd64
+
+  build-rpm-x86_64:
+    needs: setup-matrix
+    strategy:
+      matrix:
+        pgver: ${{ fromJSON(needs.setup-matrix.outputs.pgversions) }}
+      fail-fast: false
+    name: 'package-and-deploy-pglinter-for-${{ matrix.pgver }}'
+    runs-on: ubuntu-latest
+    # Use GitHub Container Registry for pmpetit
+    container:
+      image: ghcr.io/pmpetit/postgresql_pglinter:pgrx-amd64
+      options: --user root
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.GH_TOKEN }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
       - name: create rpm package
         uses: ./.github/actions/reusable-package-action
         with:
@@ -99,7 +117,7 @@ jobs:
           pkgtype: rpm
 
   test-deb-amd64-package:
-    needs: [build-amd64,setup-matrix]
+    needs: [build-deb-amd64,setup-matrix]
     strategy:
       matrix:
         pgver: ${{ fromJSON(needs.setup-matrix.outputs.pgversions) }}
@@ -124,8 +142,8 @@ jobs:
           platform: 'linux/amd64'
           timeout: '180'
 
-  test-rpm-amd64-package:
-    needs: [build-amd64,setup-matrix]
+  test-rpm-x86_64-package:
+    needs: [build-rpm-x86_64,setup-matrix]
     strategy:
       matrix:
         pgver: ${{ fromJSON(needs.setup-matrix.outputs.pgversions) }}
@@ -153,7 +171,32 @@ jobs:
   #
   # A R M 6 4   B U I L D S   ( D I R E C T   I N S T A L L A T I O N )
   #
-  build-arm64:
+  build-deb-arm64:
+    needs: setup-matrix
+    strategy:
+      matrix:
+        pgver: ${{ fromJSON(needs.setup-matrix.outputs.pgversions) }}
+      fail-fast: false
+    name: 'package-and-deploy-pglinter-for-${{ matrix.pgver }}'
+    runs-on: ubuntu-24.04-arm
+    # Use GitHub Container Registry for pmpetit
+    container:
+      image: ghcr.io/pmpetit/postgresql_pglinter:pgrx-arm64
+      options: --user root
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.GH_TOKEN }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: create deb package
+        uses: ./.github/actions/reusable-package-action
+        with:
+          pgver: ${{ matrix.pgver }}
+          tag: ${{ github.ref_name }}
+          arch: arm64
+          pkgtype: deb
+  build-rpm-aarch64:
     needs: setup-matrix
     strategy:
       matrix:
@@ -172,13 +215,6 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-      - name: create deb package
-        uses: ./.github/actions/reusable-package-action
-        with:
-          pgver: ${{ matrix.pgver }}
-          tag: ${{ github.ref_name }}
-          arch: arm64
-          pkgtype: deb
       - name: create rpm package
         uses: ./.github/actions/reusable-package-action
         with:
@@ -188,7 +224,7 @@ jobs:
           pkgtype: rpm
 
   test-deb-arm64-package:
-    needs: [build-arm64,setup-matrix]
+    needs: [build-deb-arm64,setup-matrix]
     strategy:
       matrix:
         pgver: ${{ fromJSON(needs.setup-matrix.outputs.pgversions) }}
@@ -216,8 +252,8 @@ jobs:
           platform: 'linux/arm64'
           timeout: '180'
 
-  test-rpm-arm64-package:
-    needs: [build-arm64,setup-matrix]
+  test-rpm-aarch64-package:
+    needs: [build-rpm-aarch64,setup-matrix]
     strategy:
       matrix:
         pgver: ${{ fromJSON(needs.setup-matrix.outputs.pgversions) }}
