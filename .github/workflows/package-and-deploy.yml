@@ -234,6 +234,9 @@ jobs:
         with:
           name: postgresql_pglinter_${{ steps.extract_pgver.outputs.pg_version }}-${{ github.event_name == 'workflow_dispatch' && inputs.version || github.ref_name }}-1.aarch64.rpm
           path: ./artifacts
+      - name: List downloaded artifact files
+        run: ls -l ./artifacts
+        shell: bash
       - name: Test rpm package
         uses: ./.github/actions/reusable-test-nodeb-package
         with:
