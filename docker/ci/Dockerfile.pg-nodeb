@@ -29,8 +29,7 @@ RUN dnf install -y --allowerasing \
         perl-Test-More || echo "Perl packages not available, continuing without them"
 
 # Install PostgreSQL packages for the specified version
-RUN curl -s https://download.postgresql.org/pub/repos/yum/keys/RPM-GPG-KEY-PGDG | rpm --import - && \
-    dnf install -y https://download.postgresql.org/pub/repos/yum/common/redhat/rhel-10-${ARCH}/pgdg-redhat-repo-42.0-59PGDG.noarch.rpm && \
+RUN dnf install -y https://download.postgresql.org/pub/repos/yum/common/redhat/rhel-10-${ARCH}/pgdg-redhat-repo-42.0-59PGDG.noarch.rpm && \
     dnf install -y --allowerasing \
         postgresql${PG_MAJOR_VERSION}-server \
         postgresql${PG_MAJOR_VERSION} \
