@@ -51,7 +51,7 @@ runs:
             echo "DEB_ARCH=${{ inputs.arch }}" >> $GITHUB_ENV
             ;;
         esac
-        echo "PG_VERSION=$(echo '${{ inputs.pgver }}' | sed 's/^pg//')" >> $$GITHUB_ENV
+        echo "PG_VERSION=$(echo '${{ inputs.pgver }}' | sed 's/^pg//')" >> $GITHUB_ENV
       shell: bash
 
     - name: Build selected package
