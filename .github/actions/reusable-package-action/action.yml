@@ -14,6 +14,10 @@ inputs:
     description: 'Target architecture (amd64 or arm64)'
     required: false
     default: amd64
+  pkgtype:
+    description: 'Package type to build (rpm or deb)'
+    required: true
+    default: deb
 
 runs:
   using: "composite"
@@ -28,7 +32,7 @@ runs:
       id: get-version
       run: |
         VERSION=$(grep '^version = ' Cargo.toml | awk -F'"' '{print $2}')
-        echo "Extracted version: $VERSION"
+        echo "Version: $VERSION"
         echo "PGLINTER_MINOR_VERSION=$VERSION" >> $GITHUB_ENV
         echo "PACKAGE_ARCH=${{ inputs.arch }}" >> $GITHUB_ENV
 
@@ -47,23 +51,32 @@ runs:
             echo "DEB_ARCH=${{ inputs.arch }}" >> $GITHUB_ENV
             ;;
         esac
+        echo "PG_VERSION=$(echo '${{ inputs.pgver }}' | sed 's/^pg//')" >> $GITHUB_ENV
       shell: bash
 
-    - name: Build packages
+    - name: Build selected package
       run: |
         export PACKAGE_ARCH=${{ inputs.arch }}
-        su - postgres -c "cd $GITHUB_WORKSPACE && PGVER=${{ inputs.pgver }} PACKAGE_ARCH=${{ inputs.arch }} make deb"
-        su - postgres -c "cd $GITHUB_WORKSPACE && PGVER=${{ inputs.pgver }} PACKAGE_ARCH=${{ inputs.arch }} make rpm"
+        if [ "${{ inputs.pkgtype }}" = "deb" ]; then
+          su - postgres -c "cd $GITHUB_WORKSPACE && PGVER=${{ inputs.pgver }} PACKAGE_ARCH=${{ env.DEB_ARCH }} make deb"
+        elif [ "${{ inputs.pkgtype }}" = "rpm" ]; then
+          su - postgres -c "cd $GITHUB_WORKSPACE && PGVER=${{ inputs.pgver }} PACKAGE_ARCH=${{ env.RPM_ARCH }} make rpm"
+        else
+          echo "Unknown package type: ${{ inputs.pkgtype }}"
+          exit 1
+        fi
       shell: bash
 
     - name: 'RPM package for ${{ inputs.pgver }} (${{ inputs.arch }})'
+      if: ${{ inputs.pkgtype == 'rpm' }}
       uses: actions/upload-artifact@v4
       with:
-        name: pglinter-${{ inputs.pgver }}-${{ env.PGLINTER_MINOR_VERSION }}-${{ env.RPM_ARCH }}.rpm
+        name: postgresql_pglinter_${{ env.PG_VERSION }}-${{ env.PGLINTER_MINOR_VERSION }}-1.${{ env.RPM_ARCH }}.rpm
         path: target/release/pglinter-${{ inputs.pgver }}/*.rpm
 
     - name: 'DEB package for ${{ inputs.pgver }} (${{ inputs.arch }})'
+      if: ${{ inputs.pkgtype == 'deb' }}
       uses: actions/upload-artifact@v4
       with:
-        name: pglinter-${{ inputs.pgver }}-${{ env.PGLINTER_MINOR_VERSION }}-${{ env.DEB_ARCH }}.deb
+        name: postgresql_pglinter_${{ env.PG_VERSION }}-${{ env.PGLINTER_MINOR_VERSION }}_${{ env.DEB_ARCH }}.deb
         path: target/release/pglinter-${{ inputs.pgver }}/*.deb

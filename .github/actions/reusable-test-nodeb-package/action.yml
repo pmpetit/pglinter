@@ -39,6 +39,24 @@ runs:
         fi
         echo "✅ PostgreSQL version ${{ inputs.pg_version }} is supported"
 
+    - name: Set architecture variables
+      id: setup-arch
+      shell: bash
+      run: |
+        case "${{ inputs.platform }}" in
+          "linux/amd64")
+            echo "RPM_ARCH=x86_64" >> $GITHUB_OUTPUT
+            ;;
+          "linux/arm64")
+            echo "RPM_ARCH=aarch64" >> $GITHUB_OUTPUT
+            ;;
+          *)
+            echo "Unknown architecture: ${{ inputs.platform }}"
+            exit 1
+            ;;
+        esac
+
+
     - name: Set up Docker Buildx
       uses: docker/setup-buildx-action@v3
       with:
@@ -61,10 +79,22 @@ runs:
           echo "❌ ERROR: Entrypoint script not found: docker/ci/nodeb-start-with-pglinter.sh"
           exit 1
         fi
-        if docker build \
+
+        echo "docker buildx build --load \
+          --platform \"${{ inputs.platform }}\" \
+          --build-arg PG_MAJOR_VERSION=\"${{ inputs.pg_version }}\" \
+          --build-arg PGLINTER_VERSION=\"${{ inputs.pglinter_version }}\" \
+          --build-arg ARCH=\"${{ steps.setup-arch.outputs.RPM_ARCH }}\" \
+          --build-arg PACKAGE_PATH=./artifacts \
+          -f docker/ci/Dockerfile.pg-nodeb \
+          -t \"${IMAGE_NAME}\" . "
+
+        if docker buildx build --load \
           --platform "${{ inputs.platform }}" \
           --build-arg PG_MAJOR_VERSION="${{ inputs.pg_version }}" \
           --build-arg PGLINTER_VERSION="${{ inputs.pglinter_version }}" \
+          --build-arg ARCH="${{ steps.setup-arch.outputs.RPM_ARCH }}" \
+          --build-arg PACKAGE_PATH="./artifacts" \
           -f docker/ci/Dockerfile.pg-nodeb \
           -t "${IMAGE_NAME}" \
           .; then

@@ -12,16 +12,28 @@ on:
         options: ['13', '14', '15', '16', '17', '18']
 
 jobs:
-  test-pg-image:
+  test-deb-amd64-pglinter:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-
-      - name: Test PostgreSQL DEB image
+      - name: Test PostgreSQL DEB amd64 image
         uses: ./.github/actions/reusable-test-deb-package
         with:
           pg_version: ${{ inputs.pg_version }}
           pglinter_version: '0.0.19'
           platform: 'linux/amd64'
           timeout: '180'
+  test-deb-arm64-pglinter:
+    runs-on: ubuntu-24.04-arm
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Test PostgreSQL DEB arm64 image
+        uses: ./.github/actions/reusable-test-deb-package
+        with:
+          pg_version: ${{ inputs.pg_version }}
+          pglinter_version: '0.0.19'
+          platform: 'linux/arm64'
+          timeout: '180'
+
