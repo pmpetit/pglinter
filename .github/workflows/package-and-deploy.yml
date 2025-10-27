@@ -70,7 +70,7 @@ jobs:
       matrix:
         pgver: ${{ fromJSON(needs.setup-matrix.outputs.pgversions) }}
       fail-fast: false
-    name: 'package-and-deploy-pglinter-for-${{ matrix.pgver }}'
+    name: '${{ matrix.pgver }}-amd64-package-and-deploy'
     runs-on: ubuntu-latest
     # Use GitHub Container Registry for pmpetit
     container:
@@ -95,7 +95,7 @@ jobs:
       matrix:
         pgver: ${{ fromJSON(needs.setup-matrix.outputs.pgversions) }}
       fail-fast: false
-    name: 'package-and-deploy-pglinter-for-${{ matrix.pgver }}'
+    name: '${{ matrix.pgver }}-x86_64-package-and-deploy'
     runs-on: ubuntu-latest
     # Use GitHub Container Registry for pmpetit
     container:
@@ -117,6 +117,7 @@ jobs:
 
   test-deb-amd64-package:
     needs: [build-deb-amd64,setup-matrix]
+    name: '${{ matrix.pgver }}-amd64-test-package'
     strategy:
       matrix:
         pgver: ${{ fromJSON(needs.setup-matrix.outputs.pgversions) }}
@@ -143,6 +144,7 @@ jobs:
 
   test-rpm-x86_64-package:
     needs: [build-rpm-x86_64,setup-matrix]
+    name: '${{ matrix.pgver }}-x86_64-test-package'
     strategy:
       matrix:
         pgver: ${{ fromJSON(needs.setup-matrix.outputs.pgversions) }}
@@ -176,7 +178,7 @@ jobs:
       matrix:
         pgver: ${{ fromJSON(needs.setup-matrix.outputs.pgversions) }}
       fail-fast: false
-    name: 'package-and-deploy-pglinter-for-${{ matrix.pgver }}'
+    name: '${{ matrix.pgver }}-arm64-package-and-deploy'
     runs-on: ubuntu-24.04-arm
     # Use GitHub Container Registry for pmpetit
     container:
@@ -201,7 +203,7 @@ jobs:
       matrix:
         pgver: ${{ fromJSON(needs.setup-matrix.outputs.pgversions) }}
       fail-fast: false
-    name: 'package-and-deploy-pglinter-for-${{ matrix.pgver }}'
+    name: '${{ matrix.pgver }}-arm64-package-and-deploy'
     runs-on: ubuntu-24.04-arm
     # Use GitHub Container Registry for pmpetit
     container:
@@ -224,6 +226,7 @@ jobs:
 
   test-deb-arm64-package:
     needs: [build-deb-arm64,setup-matrix]
+    name: '${{ matrix.pgver }}-deb-arm64-test-package'
     strategy:
       matrix:
         pgver: ${{ fromJSON(needs.setup-matrix.outputs.pgversions) }}
@@ -253,6 +256,7 @@ jobs:
 
   test-rpm-aarch64-package:
     needs: [build-rpm-aarch64,setup-matrix]
+    name: '${{ matrix.pgver }}-rpm-aarch64-test-package'
     strategy:
       matrix:
         pgver: ${{ fromJSON(needs.setup-matrix.outputs.pgversions) }}
