@@ -111,7 +111,7 @@ jobs:
       - name: Download deb package
         uses: actions/download-artifact@v4
         with:
-          name: pglinter-${{ matrix.pgver }}-${{ github.event_name == 'workflow_dispatch' && inputs.version || github.ref_name }}-amd64.deb
+          name: postgresql_pglinter_${{ matrix.pgver }}-${{ github.event_name == 'workflow_dispatch' && inputs.version || github.ref_name }}_amd64.deb
           path: ./artifacts
       - name: Extract major version
         id: extract_pgver
@@ -137,7 +137,7 @@ jobs:
       - name: Download rpm package
         uses: actions/download-artifact@v4
         with:
-          name: pglinter-${{ matrix.pgver }}-${{ github.event_name == 'workflow_dispatch' && inputs.version || github.ref_name }}-x86_64.rpm
+          name: postgresql_pglinter_${{ matrix.pgver }}-${{ github.event_name == 'workflow_dispatch' && inputs.version || github.ref_name }}-1.x86_64.rpm
           path: ./artifacts
       - name: Extract major version
         id: extract_pgver
