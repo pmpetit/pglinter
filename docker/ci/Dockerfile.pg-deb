@@ -15,9 +15,9 @@ RUN apt-get update \
  && rm -rf /var/lib/apt/lists/*
 
 # Install extension
-COPY ${PACKAGE_PATH}/postgresql_pglinter_${PG_MAJOR_VERSION}-${PGLINTER_VERSION}_${ARCH}.deb /tmp
-RUN dpkg -i /tmp/postgresql_pglinter_${PG_MAJOR_VERSION}-${PGLINTER_VERSION}_${ARCH}.deb && \
-    rm -f /tmp/postgresql_pglinter_${PG_MAJOR_VERSION}-${PGLINTER_VERSION}_${ARCH}.deb
+COPY ${PACKAGE_PATH}/postgresql_pglinter_${PG_MAJOR_VERSION}_${PGLINTER_VERSION}_${ARCH}.deb /tmp
+RUN dpkg -i /tmp/postgresql_pglinter_${PG_MAJOR_VERSION}_${PGLINTER_VERSION}_${ARCH}.deb && \
+    rm -f /tmp/postgresql_pglinter_${PG_MAJOR_VERSION}_${PGLINTER_VERSION}_${ARCH}.deb
 
 # Set environment variable for the script to use at runtime
 ENV PG_MAJOR_VERSION=${PG_MAJOR_VERSION}
