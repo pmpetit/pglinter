@@ -12,10 +12,9 @@ RUN dnf install -y epel-release && \
     dnf update -y --allowerasing --nobest && \
     dnf install -y --allowerasing --nobest \
     wget curl sudo vim gcc make rpm-build \
-
     PGDG_REPO_URL="https://download.postgresql.org/pub/repos/yum/reporpms/EL-10-${ARCH}/pgdg-redhat-repo-latest.noarch.rpm"; \
     wget --no-check-certificate -O /tmp/pgdg-repo.rpm "${PGDG_REPO_URL}"; \
-    dnf install -y --nogpgcheck /tmp/pgdg-repo.rpm; \
+    dnf install -y --nogpgcheck /tmp/pgdg-repo.rpm;
 
 # Pre-create PostgreSQL directories and user to avoid pgbackrest installation issues
 RUN groupadd -r postgres --gid=26 || echo "Group postgres already exists" && \
