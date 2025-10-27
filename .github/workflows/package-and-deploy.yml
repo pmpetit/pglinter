@@ -108,14 +108,14 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-      - name: Download deb package
-        uses: actions/download-artifact@v4
-        with:
-          name: postgresql_pglinter_${{ matrix.pgver }}-${{ github.event_name == 'workflow_dispatch' && inputs.version || github.ref_name }}_amd64.deb
-          path: ./artifacts
       - name: Extract major version
         id: extract_pgver
         run: echo "pg_version=$(echo '${{ matrix.pgver }}' | sed 's/^pg//')" >> $GITHUB_OUTPUT
+      - name: Download deb package
+        uses: actions/download-artifact@v4
+        with:
+          name: postgresql_pglinter_${{ steps.extract_pgver.outputs.pg_version }}-${{ github.event_name == 'workflow_dispatch' && inputs.version || github.ref_name }}_amd64.deb
+          path: ./artifacts
       - name: Test deb package
         uses: ./.github/actions/reusable-test-deb-package
         with:
@@ -134,14 +134,14 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-      - name: Download rpm package
-        uses: actions/download-artifact@v4
-        with:
-          name: postgresql_pglinter_${{ matrix.pgver }}-${{ github.event_name == 'workflow_dispatch' && inputs.version || github.ref_name }}-1.x86_64.rpm
-          path: ./artifacts
       - name: Extract major version
         id: extract_pgver
         run: echo "pg_version=$(echo '${{ matrix.pgver }}' | sed 's/^pg//')" >> $GITHUB_OUTPUT
+      - name: Download rpm package
+        uses: actions/download-artifact@v4
+        with:
+          name: postgresql_pglinter_${{ steps.extract_pgver.outputs.pg_version }}-${{ github.event_name == 'workflow_dispatch' && inputs.version || github.ref_name }}-1.x86_64.rpm
+          path: ./artifacts
       - name: Test rpm package
         uses: ./.github/actions/reusable-test-nodeb-package
         with:
@@ -197,17 +197,17 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+      - name: Extract major version
+        id: extract_pgver
+        run: echo "pg_version=$(echo '${{ matrix.pgver }}' | sed 's/^pg//')" >> $GITHUB_OUTPUT
       - name: Download deb package
         uses: actions/download-artifact@v4
         with:
-          name: pglinter-${{ matrix.pgver }}-${{ github.event_name == 'workflow_dispatch' && inputs.version || github.ref_name }}-arm64.deb
+          name: pglinter-${{ steps.extract_pgver.outputs.pg_version }}-${{ github.event_name == 'workflow_dispatch' && inputs.version || github.ref_name }}_arm64.deb
           path: ./artifacts
       - name: List downloaded artifact files
         run: ls -l ./artifacts
         shell: bash
-      - name: Extract major version
-        id: extract_pgver
-        run: echo "pg_version=$(echo '${{ matrix.pgver }}' | sed 's/^pg//')" >> $GITHUB_OUTPUT
       - name: Test deb package
         uses: ./.github/actions/reusable-test-deb-package
         with:
@@ -226,14 +226,14 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-      - name: Download rpm package
-        uses: actions/download-artifact@v4
-        with:
-          name: pglinter-${{ matrix.pgver }}-${{ github.event_name == 'workflow_dispatch' && inputs.version || github.ref_name }}-aarch64.rpm
-          path: ./artifacts
       - name: Extract major version
         id: extract_pgver
         run: echo "pg_version=$(echo '${{ matrix.pgver }}' | sed 's/^pg//')" >> $GITHUB_OUTPUT
+      - name: Download rpm package
+        uses: actions/download-artifact@v4
+        with:
+          name: pglinter-${{ steps.extract_pgver.outputs.pg_version }}-${{ github.event_name == 'workflow_dispatch' && inputs.version || github.ref_name }}-1.aarch64.rpm
+          path: ./artifacts
       - name: Test rpm package
         uses: ./.github/actions/reusable-test-nodeb-package
         with:
