@@ -51,6 +51,7 @@ runs:
             echo "DEB_ARCH=${{ inputs.arch }}" >> $GITHUB_ENV
             ;;
         esac
+        echo "PG_VERSION=$(echo '${{ inputs.pgver }}' | sed 's/^pg//')" >> $$GITHUB_ENV
       shell: bash
 
     - name: Build selected package
@@ -70,12 +71,12 @@ runs:
       if: ${{ inputs.pkgtype == 'rpm' }}
       uses: actions/upload-artifact@v4
       with:
-        name: postgresql_pglinter_${{ inputs.pgver }}-${{ env.PGLINTER_MINOR_VERSION }}-1.${{ env.RPM_ARCH }}.rpm
+        name: postgresql_pglinter_${{ env.PG_VERSION }}-${{ env.PGLINTER_MINOR_VERSION }}-1.${{ env.RPM_ARCH }}.rpm
         path: target/release/pglinter-${{ inputs.pgver }}/*.rpm
 
     - name: 'DEB package for ${{ inputs.pgver }} (${{ inputs.arch }})'
       if: ${{ inputs.pkgtype == 'deb' }}
       uses: actions/upload-artifact@v4
       with:
-        name: postgresql_pglinter_${{ inputs.pgver }}-${{ env.PGLINTER_MINOR_VERSION }}_${{ env.DEB_ARCH }}.deb
+        name: postgresql_pglinter_${{ env.PG_VERSION }}-${{ env.PGLINTER_MINOR_VERSION }}_${{ env.DEB_ARCH }}.deb
         path: target/release/pglinter-${{ inputs.pgver }}/*.deb
