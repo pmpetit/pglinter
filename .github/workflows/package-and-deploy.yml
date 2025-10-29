@@ -301,4 +301,4 @@ jobs:
         uses: ./.github/actions/reusable-release-action
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          release_tag: ${{ input.version }}
+          release_tag: ${{ inputs.version }}
