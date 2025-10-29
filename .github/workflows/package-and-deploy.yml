@@ -284,21 +284,21 @@ jobs:
           platform: 'linux/arm64'
           timeout: '180'
 
-  # create-release:
-  #   needs: [test-rpm-aarch64-package, test-deb-arm64-package, test-rpm-x86_64-package, test-deb-amd64-package]
-  #   runs-on: ubuntu-latest
-  #   if: startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch'
+  create-release:
+    needs: [test-rpm-aarch64-package, test-deb-arm64-package, test-rpm-x86_64-package, test-deb-amd64-package]
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch'
 
-  #   permissions:
-  #     contents: write
-  #     packages: read
+    permissions:
+      contents: write
+      packages: read
 
-  #   steps:
-  #     - name: Checkout repository
-  #       uses: actions/checkout@v4
-  #     - name: Create Release Action
-  #       if: success()
-  #       uses: ./.github/actions/reusable-release-action
-  #       with:
-  #         github_token: ${{ secrets.GITHUB_TOKEN }}
-  #         release_tag: ${{ input.version }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Create Release Action
+        if: success()
+        uses: ./.github/actions/reusable-release-action
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          release_tag: ${{ inputs.version }}
