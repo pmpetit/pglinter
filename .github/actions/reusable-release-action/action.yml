@@ -127,5 +127,5 @@ runs:
         echo "Release URL: ${{ steps.create_release.outputs.url }}"
         echo ""
         echo "Uploaded files:"
-        find ./artifacts -name "*.rpm" -o -name "*.deb" -exec basename {} \; | sort
+        find ./artifacts \( -name "*.rpm" -o -name "*.deb" \) -exec basename {} \; | sort
       shell: bash
