@@ -17,10 +17,6 @@ inputs:
     description: 'Create as draft'
     required: false
     default: 'false'
-  arch:
-    description: 'Package type to release (rpm or deb)'
-    required: false
-    default: 'all'
 
 runs:
   using: "composite"
@@ -122,8 +118,8 @@ runs:
 
           For complete documentation, visit: https://github.com/pmpetit/pglinter/blob/main/docs/functions/README.md
         files: |
-          ${{ (inputs.arch == 'rpm' && './artifacts/*.rpm') || (inputs.arch == 'deb' && './artifacts/*.deb') || (inputs.arch == 'all' && './artifacts/*.rpm\n./artifacts/*.deb') }}
-
+          ./artifacts/*.rpm
+          ./artifacts/*.deb
 
     - name: List release assets
       run: |
