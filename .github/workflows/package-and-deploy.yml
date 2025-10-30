@@ -287,7 +287,7 @@ jobs:
   create-release:
     needs: [test-rpm-aarch64-package, test-deb-arm64-package, test-rpm-x86_64-package, test-deb-amd64-package]
     runs-on: ubuntu-latest
-    if: startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch'
+    if: startsWith(github.ref, 'refs/tags/')
 
     permissions:
       contents: write
@@ -300,5 +300,5 @@ jobs:
         if: success()
         uses: ./.github/actions/reusable-release-action
         with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          release_tag: ${{ inputs.version }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          tag: ${{ github.ref_name }}
