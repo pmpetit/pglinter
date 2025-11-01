@@ -46,6 +46,7 @@ jobs:
       runs_on: ${{ steps.matrix.outputs.runs_on }}
       arch: ${{ steps.matrix.outputs.arch }}
       pkgtype: ${{ steps.matrix.outputs.pkgtype }}
+      matrix_include: ${{ steps.matrix.outputs.matrix_include }}
     steps:
       - name: Generate matrix
         id: matrix
@@ -58,19 +59,20 @@ jobs:
             echo "Using default pgversions: $PGVERSIONS"
           fi
 
-          # Define matrix values for runs_on, arch, pkgtype
-          RUNS_ON='["ubuntu-latest","ubuntu-24.04-arm"]'
-          ARCH='["amd64","arm64"]'
-          PKGTYPE='["deb","rpm"]'
 
-          # Create JSON array for pgversions
-          PG_ARRAY=$(echo "[$PGVERSIONS]" | sed 's/,/","/g' | sed 's/\[/["/' | sed 's/\]/"]/')
+          # Create JSON array of objects for matrix.include
+          MATRIX_JSON="["
+          for PG in $(echo $PGVERSIONS | tr ',' ' '); do
+            MATRIX_JSON+="{\"pgver\": \"$PG\", \"arch\": \"amd64\", \"runs_on\": \"ubuntu-latest\", \"pkgtype\": \"deb\"},"
+            MATRIX_JSON+="{\"pgver\": \"$PG\", \"arch\": \"amd64\", \"runs_on\": \"ubuntu-latest\", \"pkgtype\": \"rpm\"},"
+            MATRIX_JSON+="{\"pgver\": \"$PG\", \"arch\": \"arm64\", \"runs_on\": \"ubuntu-24.04-arm\", \"pkgtype\": \"deb\"},"
+            MATRIX_JSON+="{\"pgver\": \"$PG\", \"arch\": \"arm64\", \"runs_on\": \"ubuntu-24.04-arm\", \"pkgtype\": \"rpm\"},"
+          done
+          # Remove trailing comma and close array
+          MATRIX_JSON=${MATRIX_JSON%,}
+          MATRIX_JSON+="]"
 
-          # Output all matrix values
-          echo "pgversions=$PG_ARRAY" >> $GITHUB_OUTPUT
-          echo "runs_on=$RUNS_ON" >> $GITHUB_OUTPUT
-          echo "arch=$ARCH" >> $GITHUB_OUTPUT
-          echo "pkgtype=$PKGTYPE" >> $GITHUB_OUTPUT
+          echo "matrix_include=$MATRIX_JSON" >> $GITHUB_OUTPUT
 
 
 
@@ -78,10 +80,7 @@ jobs:
     needs: setup-matrix
     strategy:
       matrix:
-        pgver: ${{ fromJSON(needs.setup-matrix.outputs.pgversions) }}
-        runs_on: ${{ fromJSON(needs.setup-matrix.outputs.runs_on) }}
-        arch: ${{ fromJSON(needs.setup-matrix.outputs.arch) }}
-        pkgtype: ${{ fromJSON(needs.setup-matrix.outputs.pkgtype) }}
+        include: ${{ fromJSON(needs.setup-matrix.outputs.matrix_include) }}
       fail-fast: false
     name: '${{ matrix.pgver }}-${{ matrix.arch }}-${{ matrix.pkgtype }}-package-build'
     runs-on: ${{ matrix.runs_on }}
@@ -111,13 +110,12 @@ jobs:
           path: ./artifacts
 
   test-package:
-    needs: build-package
+    needs:
+      - setup-matrix
+      - build-package
     strategy:
       matrix:
-        pgver: ${{ fromJSON(needs.setup-matrix.outputs.pgversions) }}
-        runs_on: ${{ fromJSON(needs.setup-matrix.outputs.runs_on) }}
-        arch: ${{ fromJSON(needs.setup-matrix.outputs.arch) }}
-        pkgtype: ${{ fromJSON(needs.setup-matrix.outputs.pkgtype) }}
+        include: ${{ fromJSON(needs.setup-matrix.outputs.matrix_include) }}
       fail-fast: false
     name: '${{ matrix.pgver }}-${{ matrix.arch }}-${{ matrix.pkgtype }}-package-test'
     runs-on: ubuntu-latest
