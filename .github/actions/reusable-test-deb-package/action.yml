@@ -108,6 +108,7 @@ runs:
           --build-arg PGLINTER_VERSION=\"${{ inputs.pglinter_version }}\" \
           --build-arg ARCH=\"${{ steps.setup-arch.outputs.DEB_ARCH }}\" \
           --build-arg PACKAGE_PATH=./artifacts \
+          --build-arg PACKAGE_NAME=${{ steps.download.outputs.package_name }} \
           -f docker/ci/Dockerfile.pg-deb \
           -t \"${IMAGE_NAME}\" . "
 
@@ -118,6 +119,7 @@ runs:
           --build-arg PGLINTER_VERSION="${{ inputs.pglinter_version }}" \
           --build-arg ARCH="${{ steps.setup-arch.outputs.DEB_ARCH }}" \
           --build-arg PACKAGE_PATH=./artifacts \
+          --build-arg PACKAGE_NAME=${{ steps.download.outputs.package_name }} \
           -f docker/ci/Dockerfile.pg-deb \
           -t "${IMAGE_NAME}" \
           .; then

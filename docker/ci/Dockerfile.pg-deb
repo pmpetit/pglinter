@@ -4,8 +4,6 @@ FROM postgres:${PG_MAJOR_VERSION}
 
 # Re-declare ARG variables for use inside the build stage
 ARG PG_MAJOR_VERSION=13
-ARG PGLINTER_VERSION=0.0.19
-ARG ARCH=amd64
 ARG PACKAGE_PATH=docker/ci
 ARG PACKAGE_NAME
 
