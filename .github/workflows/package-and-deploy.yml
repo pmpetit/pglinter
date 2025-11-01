@@ -108,8 +108,17 @@ jobs:
       - name: List downloaded artifact files
         run: ls -l ./artifacts
         shell: bash
-      - name: Test package
-        uses: ${{ matrix.pkgtype == 'deb' && './.github/actions/reusable-test-deb-package' || './.github/actions/reusable-test-nodeb-package' }}
+      - name: Test deb package
+        if: ${{ matrix.pkgtype == 'deb' }}
+        uses: ./.github/actions/reusable-test-deb-package
+        with:
+          pg_version: ${{ steps.extract_pgver.outputs.pg_version }}
+          pglinter_version: ${{ github.event_name == 'workflow_dispatch' && inputs.version || github.ref_name }}
+          platform: ${{ matrix.arch == 'amd64' && 'linux/amd64' || 'linux/arm64' }}
+          timeout: '180'
+      - name: Test rpm package
+        if: ${{ matrix.pkgtype == 'rpm' }}
+        uses: ./.github/actions/reusable-test-nodeb-package
         with:
           pg_version: ${{ steps.extract_pgver.outputs.pg_version }}
           pglinter_version: ${{ github.event_name == 'workflow_dispatch' && inputs.version || github.ref_name }}
