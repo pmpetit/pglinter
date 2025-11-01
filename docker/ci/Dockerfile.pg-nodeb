@@ -4,6 +4,7 @@ FROM rockylinux/rockylinux:10-ubi
 ARG PG_MAJOR_VERSION=13
 ARG PGLINTER_VERSION=0.0.19
 ARG PACKAGE_PATH
+ARG PACKAGE_NAME
 ARG ARCH
 
 # Install PostgreSQL ${PG_MAJOR_VERSION} from PGDG repository
@@ -57,9 +58,9 @@ USER root
 RUN mkdir -p /tmp/extensions && chmod 755 /tmp/extensions
 
 # Download and install pglinter extension
-COPY ${PACKAGE_PATH}/postgresql_pglinter_${PG_MAJOR_VERSION}-${PGLINTER_VERSION}-1.${ARCH}.rpm /tmp
-RUN dnf localinstall -y /tmp/postgresql_pglinter_${PG_MAJOR_VERSION}-${PGLINTER_VERSION}-1.${ARCH}.rpm && \
-    rm -f /tmp/postgresql_pglinter_${PG_MAJOR_VERSION}-${PGLINTER_VERSION}-1.${ARCH}.rpm
+COPY ${PACKAGE_PATH}/${PACKAGE_NAME} /tmp
+RUN dnf localinstall -y /tmp/${PACKAGE_NAME} && \
+    rm -f /tmp/${PACKAGE_NAME}.rpm
 
 # Set environment variable for the script to use at runtime
 ENV PG_MAJOR_VERSION=${PG_MAJOR_VERSION}
