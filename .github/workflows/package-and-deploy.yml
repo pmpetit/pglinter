@@ -43,6 +43,9 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       pgversions: ${{ steps.matrix.outputs.pgversions }}
+      runs_on: ${{ steps.matrix.outputs.runs_on }}
+      arch: ${{ steps.matrix.outputs.arch }}
+      pkgtype: ${{ steps.matrix.outputs.pkgtype }}
     steps:
       - name: Generate matrix
         id: matrix
