@@ -18,10 +18,6 @@ inputs:
     description: 'Container timeout in seconds'
     required: false
     default: '120'
-  artifact_name:
-    description: 'Name of the deb package artifact to download'
-    required: true
-    default: ''
 
 outputs:
   image_name:
@@ -37,7 +33,7 @@ runs:
     - name: Download package artifact
       uses: actions/download-artifact@v4
       with:
-        name: ${{ inputs.artifact_name }}
+        name: "*.rpm"
         path: ./artifacts
     - name: Validate PostgreSQL version
       shell: bash
