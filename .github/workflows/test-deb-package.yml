@@ -1,5 +1,5 @@
 # .github/workflows/test-single-pg.yml
-name: Test Single PostgreSQL Version
+name: Test DEB Package
 
 on:
   workflow_dispatch:
