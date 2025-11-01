@@ -108,7 +108,7 @@ runs:
           --build-arg PGLINTER_VERSION=\"${{ inputs.pglinter_version }}\" \
           --build-arg ARCH=\"${{ steps.setup-arch.outputs.DEB_ARCH }}\" \
           --build-arg PACKAGE_PATH=./artifacts \
-          --build-arg PACKAGE_NAME=\"postgresql_pglinter_${{ inputs.pg_version }}-${{ inputs.pglinter_version }}_${{ steps.setup-arch.outputs.DEB_ARCH }}.deb\" \
+          --build-arg PACKAGE_NAME=postgresql_pglinter_${{ inputs.pg_version }}-${{ inputs.pglinter_version }}_${{ steps.setup-arch.outputs.DEB_ARCH }}.deb \
           -f docker/ci/Dockerfile.pg-deb \
           -t \"${IMAGE_NAME}\" . "
 
@@ -119,7 +119,7 @@ runs:
           --build-arg PGLINTER_VERSION="${{ inputs.pglinter_version }}" \
           --build-arg ARCH="${{ steps.setup-arch.outputs.DEB_ARCH }}" \
           --build-arg PACKAGE_PATH=./artifacts \
-          --build-arg PACKAGE_NAME=\"postgresql_pglinter_${{ inputs.pg_version }}-${{ inputs.pglinter_version }}_${{ steps.setup-arch.outputs.DEB_ARCH }}.deb\" \
+          --build-arg PACKAGE_NAME=postgresql_pglinter_${{ inputs.pg_version }}-${{ inputs.pglinter_version }}_${{ steps.setup-arch.outputs.DEB_ARCH }}.deb \
           -f docker/ci/Dockerfile.pg-deb \
           -t "${IMAGE_NAME}" \
           .; then
