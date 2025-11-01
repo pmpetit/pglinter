@@ -23,6 +23,10 @@ inputs:
     description: 'Container timeout in seconds'
     required: false
     default: '120'
+  artifact_name:
+    description: 'Name of the deb package artifact to download'
+    required: true
+    default: ''
 
 outputs:
   image_name:
