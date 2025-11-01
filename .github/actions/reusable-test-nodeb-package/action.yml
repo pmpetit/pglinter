@@ -30,6 +30,11 @@ outputs:
 runs:
   using: 'composite'
   steps:
+    - name: Download package artifact
+      uses: actions/download-artifact@v4
+      with:
+        name: ${{ inputs.artifact_name }}
+        path: ./artifacts
     - name: Validate PostgreSQL version
       shell: bash
       run: |
