@@ -80,7 +80,7 @@ runs:
       shell: bash
 
     - name: Rename artifact files
-      run: mv postgresql_pglinter_${{ inputs.pg_version }}_${{ inputs.pglinter_version }}_${{ steps.setup-arch.outputs.DEB_ARCH }}.deb postgresql_pglinter_${{ inputs.pg_version }}-${{ inputs.pglinter_version }}_${{ steps.setup-arch.outputs.DEB_ARCH }}.deb
+      run: mv ./artifacts/postgresql_pglinter_${{ inputs.pg_version }}_${{ inputs.pglinter_version }}_${{ steps.setup-arch.outputs.DEB_ARCH }}.deb ./artifacts/postgresql_pglinter_${{ inputs.pg_version }}-${{ inputs.pglinter_version }}_${{ steps.setup-arch.outputs.DEB_ARCH }}.deb
       shell: bash
 
     - name: Build PostgreSQL DEB image
