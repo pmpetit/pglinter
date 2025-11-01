@@ -55,26 +55,34 @@ jobs:
             echo "Using default pgversions: $PGVERSIONS"
           fi
 
-          # Create JSON array by replacing commas and wrapping
-          JSON_ARRAY=$(echo "[$PGVERSIONS]" | sed 's/,/","/g' | sed 's/\[/["/' | sed 's/\]/"]/')
+          # Define matrix values for runs_on, arch, pkgtype
+          RUNS_ON='["ubuntu-latest","ubuntu-24.04-arm"]'
+          ARCH='["amd64","arm64"]'
+          PKGTYPE='["deb","rpm"]'
 
-          echo "Generated matrix: $JSON_ARRAY"
-          echo "pgversions=$JSON_ARRAY" >> $GITHUB_OUTPUT
+          # Create JSON array for pgversions
+          PG_ARRAY=$(echo "[$PGVERSIONS]" | sed 's/,/","/g' | sed 's/\[/["/' | sed 's/\]/"]/')
 
-  ##
-  ## A M D 6 4   B U I L D S   ( U S I N G   C O N T A I N E R )
-  ##
-  build-deb-amd64:
+          # Output all matrix values
+          echo "pgversions=$PG_ARRAY" >> $GITHUB_OUTPUT
+          echo "runs_on=$RUNS_ON" >> $GITHUB_OUTPUT
+          echo "arch=$ARCH" >> $GITHUB_OUTPUT
+          echo "pkgtype=$PKGTYPE" >> $GITHUB_OUTPUT
+
+
+  build-and-test:
     needs: setup-matrix
     strategy:
       matrix:
         pgver: ${{ fromJSON(needs.setup-matrix.outputs.pgversions) }}
+        runs_on: ${{ fromJSON(needs.setup-matrix.outputs.runs_on) }}
+        arch: ${{ fromJSON(needs.setup-matrix.outputs.arch) }}
+        pkgtype: ${{ fromJSON(needs.setup-matrix.outputs.pkgtype) }}
       fail-fast: false
-    name: '${{ matrix.pgver }}-amd64-package-and-deploy'
-    runs-on: ubuntu-latest
-    # Use GitHub Container Registry for pmpetit
+    name: '${{ matrix.pgver }}-${{ matrix.arch }}-${{ matrix.pkgtype }}-package-and-test'
+    runs-on: ${{ matrix.runs_on }}
     container:
-      image: ghcr.io/pmpetit/postgresql_pglinter:pgrx-amd64
+      image: ghcr.io/pmpetit/postgresql_pglinter:pgrx-${{ matrix.arch }}
       options: --user root
       credentials:
         username: ${{ github.actor }}
@@ -82,210 +90,34 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-      - name: create deb package
+      - name: create package
         uses: ./.github/actions/reusable-package-action
         with:
           pgver: ${{ matrix.pgver }}
           tag: ${{ github.event_name == 'workflow_dispatch' && inputs.version || github.ref_name }}
-          arch: amd64
-
-  build-rpm-x86_64:
-    needs: setup-matrix
-    strategy:
-      matrix:
-        pgver: ${{ fromJSON(needs.setup-matrix.outputs.pgversions) }}
-      fail-fast: false
-    name: '${{ matrix.pgver }}-x86_64-package-and-deploy'
-    runs-on: ubuntu-latest
-    # Use GitHub Container Registry for pmpetit
-    container:
-      image: ghcr.io/pmpetit/postgresql_pglinter:pgrx-amd64
-      options: --user root
-      credentials:
-        username: ${{ github.actor }}
-        password: ${{ secrets.GH_TOKEN }}
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-      - name: create rpm package
-        uses: ./.github/actions/reusable-package-action
-        with:
-          pgver: ${{ matrix.pgver }}
-          tag: ${{ github.event_name == 'workflow_dispatch' && inputs.version || github.ref_name }}
-          arch: amd64
-          pkgtype: rpm
-
-  test-deb-amd64-package:
-    needs: [build-deb-amd64,setup-matrix]
-    name: '${{ matrix.pgver }}-amd64-test-package'
-    strategy:
-      matrix:
-        pgver: ${{ fromJSON(needs.setup-matrix.outputs.pgversions) }}
-      fail-fast: false
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+          arch: ${{ matrix.arch }}
+          pkgtype: ${{ matrix.pkgtype }}
       - name: Extract major version
         id: extract_pgver
         run: echo "pg_version=$(echo '${{ matrix.pgver }}' | sed 's/^pg//')" >> $GITHUB_OUTPUT
-      - name: Download deb package
+      - name: Download package
         uses: actions/download-artifact@v4
         with:
-          name: postgresql_pglinter_${{ steps.extract_pgver.outputs.pg_version }}-${{ github.event_name == 'workflow_dispatch' && inputs.version || github.ref_name }}_amd64.deb
-          path: ./artifacts
-      - name: Test deb package
-        uses: ./.github/actions/reusable-test-deb-package
-        with:
-          pg_version: ${{ steps.extract_pgver.outputs.pg_version }}
-          pglinter_version: ${{ github.event_name == 'workflow_dispatch' && inputs.version || github.ref_name }}
-          platform: 'linux/amd64'
-          timeout: '180'
-
-  test-rpm-x86_64-package:
-    needs: [build-rpm-x86_64,setup-matrix]
-    name: '${{ matrix.pgver }}-x86_64-test-package'
-    strategy:
-      matrix:
-        pgver: ${{ fromJSON(needs.setup-matrix.outputs.pgversions) }}
-      fail-fast: false
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-      - name: Extract major version
-        id: extract_pgver
-        run: echo "pg_version=$(echo '${{ matrix.pgver }}' | sed 's/^pg//')" >> $GITHUB_OUTPUT
-      - name: Download rpm package
-        uses: actions/download-artifact@v4
-        with:
-          name: postgresql_pglinter_${{ steps.extract_pgver.outputs.pg_version }}-${{ github.event_name == 'workflow_dispatch' && inputs.version || github.ref_name }}-1.x86_64.rpm
-          path: ./artifacts
-      - name: Test rpm package
-        uses: ./.github/actions/reusable-test-nodeb-package
-        with:
-          pg_version: ${{ steps.extract_pgver.outputs.pg_version }}
-          pglinter_version: ${{ github.event_name == 'workflow_dispatch' && inputs.version || github.ref_name }}
-          platform: 'linux/amd64'
-          timeout: '180'
-
-  #
-  # A R M 6 4   B U I L D S   ( D I R E C T   I N S T A L L A T I O N )
-  #
-  build-deb-arm64:
-    needs: setup-matrix
-    strategy:
-      matrix:
-        pgver: ${{ fromJSON(needs.setup-matrix.outputs.pgversions) }}
-      fail-fast: false
-    name: '${{ matrix.pgver }}-arm64-package-and-deploy'
-    runs-on: ubuntu-24.04-arm
-    # Use GitHub Container Registry for pmpetit
-    container:
-      image: ghcr.io/pmpetit/postgresql_pglinter:pgrx-arm64
-      options: --user root
-      credentials:
-        username: ${{ github.actor }}
-        password: ${{ secrets.GH_TOKEN }}
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-      - name: create deb package
-        uses: ./.github/actions/reusable-package-action
-        with:
-          pgver: ${{ matrix.pgver }}
-          tag: ${{ github.ref_name }}
-          arch: arm64
-          pkgtype: deb
-  build-rpm-aarch64:
-    needs: setup-matrix
-    strategy:
-      matrix:
-        pgver: ${{ fromJSON(needs.setup-matrix.outputs.pgversions) }}
-      fail-fast: false
-    name: '${{ matrix.pgver }}-aarch64-package-and-deploy'
-    runs-on: ubuntu-24.04-arm
-    # Use GitHub Container Registry for pmpetit
-    container:
-      image: ghcr.io/pmpetit/postgresql_pglinter:pgrx-arm64
-      options: --user root
-      credentials:
-        username: ${{ github.actor }}
-        password: ${{ secrets.GH_TOKEN }}
-
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-      - name: create rpm package
-        uses: ./.github/actions/reusable-package-action
-        with:
-          pgver: ${{ matrix.pgver }}
-          tag: ${{ github.ref_name }}
-          arch: arm64
-          pkgtype: rpm
-
-  test-deb-arm64-package:
-    needs: [build-deb-arm64,setup-matrix]
-    name: '${{ matrix.pgver }}-deb-arm64-test-package'
-    strategy:
-      matrix:
-        pgver: ${{ fromJSON(needs.setup-matrix.outputs.pgversions) }}
-      fail-fast: false
-    runs-on: ubuntu-24.04-arm
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-      - name: Extract major version
-        id: extract_pgver
-        run: echo "pg_version=$(echo '${{ matrix.pgver }}' | sed 's/^pg//')" >> $GITHUB_OUTPUT
-      - name: Download deb package
-        uses: actions/download-artifact@v4
-        with:
-          name: postgresql_pglinter_${{ steps.extract_pgver.outputs.pg_version }}-${{ github.event_name == 'workflow_dispatch' && inputs.version || github.ref_name }}_arm64.deb
+          name: ${{ matrix.pkgtype == 'deb' && format('postgresql_pglinter_{0}-{1}_{2}.deb', steps.extract_pgver.outputs.pg_version, github.event_name == 'workflow_dispatch' && inputs.version || github.ref_name, matrix.arch) || format('postgresql_pglinter_{0}-{1}-1.{2}.rpm', steps.extract_pgver.outputs.pg_version, github.event_name == 'workflow_dispatch' && inputs.version || github.ref_name, matrix.arch == 'amd64' && 'x86_64' || 'aarch64') }}
           path: ./artifacts
       - name: List downloaded artifact files
         run: ls -l ./artifacts
         shell: bash
-      - name: Test deb package
-        uses: ./.github/actions/reusable-test-deb-package
+      - name: Test package
+        uses: ${{ matrix.pkgtype == 'deb' && './.github/actions/reusable-test-deb-package' || './.github/actions/reusable-test-nodeb-package' }}
         with:
           pg_version: ${{ steps.extract_pgver.outputs.pg_version }}
           pglinter_version: ${{ github.event_name == 'workflow_dispatch' && inputs.version || github.ref_name }}
-          platform: 'linux/arm64'
-          timeout: '180'
-
-  test-rpm-aarch64-package:
-    needs: [build-rpm-aarch64,setup-matrix]
-    name: '${{ matrix.pgver }}-rpm-aarch64-test-package'
-    strategy:
-      matrix:
-        pgver: ${{ fromJSON(needs.setup-matrix.outputs.pgversions) }}
-      fail-fast: false
-    runs-on: ubuntu-24.04-arm
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-      - name: Extract major version
-        id: extract_pgver
-        run: echo "pg_version=$(echo '${{ matrix.pgver }}' | sed 's/^pg//')" >> $GITHUB_OUTPUT
-      - name: Download rpm package
-        uses: actions/download-artifact@v4
-        with:
-          name: postgresql_pglinter_${{ steps.extract_pgver.outputs.pg_version }}-${{ github.event_name == 'workflow_dispatch' && inputs.version || github.ref_name }}-1.aarch64.rpm
-          path: ./artifacts
-      - name: List downloaded artifact files
-        run: ls -l ./artifacts
-        shell: bash
-      - name: Test rpm package
-        uses: ./.github/actions/reusable-test-nodeb-package
-        with:
-          pg_version: ${{ steps.extract_pgver.outputs.pg_version }}
-          pglinter_version: ${{ github.event_name == 'workflow_dispatch' && inputs.version || github.ref_name }}
-          platform: 'linux/arm64'
+          platform: ${{ matrix.arch == 'amd64' && 'linux/amd64' || 'linux/arm64' }}
           timeout: '180'
 
   create-release:
-    needs: [test-rpm-aarch64-package, test-deb-arm64-package, test-rpm-x86_64-package, test-deb-amd64-package]
+    needs: [build-and-test]
     runs-on: ubuntu-latest
     if: startsWith(github.ref, 'refs/tags/')
 
