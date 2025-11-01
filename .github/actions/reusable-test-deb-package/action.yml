@@ -69,6 +69,20 @@ runs:
       with:
         platforms: ${{ inputs.platform }}
 
+    - name: Download package artifact
+      uses: actions/download-artifact@v4
+      with:
+        name: postgresql_pglinter_${{ inputs.pg_version }}-${{ inputs.pglinter_version }}_${{ steps.setup-arch.outputs.DEB_ARCH }}.deb
+        path: ./artifacts
+
+    - name: List downloaded artifact files
+      run: ls -l ./artifacts
+      shell: bash
+
+    - name: Rename artifact files
+      run: mv ./artifacts/postgresql_pglinter_${{ inputs.pg_version }}_${{ inputs.pglinter_version }}_${{ steps.setup-arch.outputs.DEB_ARCH }}.deb ./artifacts/postgresql_pglinter_${{ inputs.pg_version }}-${{ inputs.pglinter_version }}_${{ steps.setup-arch.outputs.DEB_ARCH }}.deb
+      shell: bash
+
     - name: Build PostgreSQL DEB image
       id: build
       shell: bash
@@ -102,6 +116,7 @@ runs:
           --build-arg PGLINTER_VERSION=\"${{ inputs.pglinter_version }}\" \
           --build-arg ARCH=\"${{ steps.setup-arch.outputs.DEB_ARCH }}\" \
           --build-arg PACKAGE_PATH=./artifacts \
+          --build-arg PACKAGE_NAME=postgresql_pglinter_${{ inputs.pg_version }}-${{ inputs.pglinter_version }}_${{ steps.setup-arch.outputs.DEB_ARCH }}.deb \
           -f docker/ci/Dockerfile.pg-deb \
           -t \"${IMAGE_NAME}\" . "
 
@@ -112,6 +127,7 @@ runs:
           --build-arg PGLINTER_VERSION="${{ inputs.pglinter_version }}" \
           --build-arg ARCH="${{ steps.setup-arch.outputs.DEB_ARCH }}" \
           --build-arg PACKAGE_PATH=./artifacts \
+          --build-arg PACKAGE_NAME=postgresql_pglinter_${{ inputs.pg_version }}-${{ inputs.pglinter_version }}_${{ steps.setup-arch.outputs.DEB_ARCH }}.deb \
           -f docker/ci/Dockerfile.pg-deb \
           -t "${IMAGE_NAME}" \
           .; then

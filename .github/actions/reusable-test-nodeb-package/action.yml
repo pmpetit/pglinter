@@ -56,11 +56,20 @@ runs:
             ;;
         esac
 
-
     - name: Set up Docker Buildx
       uses: docker/setup-buildx-action@v3
       with:
         platforms: ${{ inputs.platform }}
+
+    - name: Download package artifact
+      uses: actions/download-artifact@v4
+      with:
+        name: postgresql_pglinter_${{ inputs.pg_version }}-${{ inputs.pglinter_version }}-1.${{ steps.setup-arch.outputs.RPM_ARCH }}.rpm
+        path: ./artifacts
+
+    - name: List downloaded artifact files
+      run: ls -l ./artifacts
+      shell: bash
 
     - name: Build PostgreSQL NODEB image
       id: build
@@ -86,6 +95,7 @@ runs:
           --build-arg PGLINTER_VERSION=\"${{ inputs.pglinter_version }}\" \
           --build-arg ARCH=\"${{ steps.setup-arch.outputs.RPM_ARCH }}\" \
           --build-arg PACKAGE_PATH=./artifacts \
+          --build-arg PACKAGE_NAME=postgresql_pglinter_${{ inputs.pg_version }}-${{ inputs.pglinter_version }}-1.${{ steps.setup-arch.outputs.RPM_ARCH }}.rpm \
           -f docker/ci/Dockerfile.pg-nodeb \
           -t \"${IMAGE_NAME}\" . "
 
@@ -94,7 +104,8 @@ runs:
           --build-arg PG_MAJOR_VERSION="${{ inputs.pg_version }}" \
           --build-arg PGLINTER_VERSION="${{ inputs.pglinter_version }}" \
           --build-arg ARCH="${{ steps.setup-arch.outputs.RPM_ARCH }}" \
-          --build-arg PACKAGE_PATH="./artifacts" \
+          --build-arg PACKAGE_PATH=./artifacts \
+          --build-arg PACKAGE_NAME=postgresql_pglinter_${{ inputs.pg_version }}-${{ inputs.pglinter_version }}-1.${{ steps.setup-arch.outputs.RPM_ARCH }}.rpm \
           -f docker/ci/Dockerfile.pg-nodeb \
           -t "${IMAGE_NAME}" \
           .; then

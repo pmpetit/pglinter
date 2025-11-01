@@ -4,9 +4,8 @@ FROM postgres:${PG_MAJOR_VERSION}
 
 # Re-declare ARG variables for use inside the build stage
 ARG PG_MAJOR_VERSION=13
-ARG PGLINTER_VERSION=0.0.19
-ARG ARCH=amd64
 ARG PACKAGE_PATH=docker/ci
+ARG PACKAGE_NAME
 
 RUN apt-get update \
  && apt-get install -y --no-install-recommends \
@@ -15,9 +14,9 @@ RUN apt-get update \
  && rm -rf /var/lib/apt/lists/*
 
 # Install extension
-COPY ${PACKAGE_PATH}/postgresql_pglinter_${PG_MAJOR_VERSION}_${PGLINTER_VERSION}_${ARCH}.deb /tmp
-RUN dpkg -i /tmp/postgresql_pglinter_${PG_MAJOR_VERSION}_${PGLINTER_VERSION}_${ARCH}.deb && \
-    rm -f /tmp/postgresql_pglinter_${PG_MAJOR_VERSION}_${PGLINTER_VERSION}_${ARCH}.deb
+COPY ${PACKAGE_PATH}/${PACKAGE_NAME} /tmp
+RUN dpkg -i /tmp/${PACKAGE_NAME} && \
+    rm -f /tmp/${PACKAGE_NAME}
 
 # Set environment variable for the script to use at runtime
 ENV PG_MAJOR_VERSION=${PG_MAJOR_VERSION}

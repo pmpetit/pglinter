@@ -1,4 +1,4 @@
-name: Test PostgreSQL NODEB Package
+name: Test NODEB Package
 
 on:
   workflow_dispatch:
