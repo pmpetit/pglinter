@@ -1,0 +1,51 @@
+# .github/workflows/test-single-pg.yml
+name: Test Single PostgreSQL Version
+
+on:
+  workflow_dispatch:
+    inputs:
+      pg_version:
+        description: 'PostgreSQL version to test'
+        required: true
+        default: '17'
+        type: choice
+        options: ['13', '14', '15', '16', '17', '18']
+      platform:
+        description: 'Target platform'
+        required: false
+        default: 'linux/amd64'
+        type: choice
+        options: ['linux/amd64', 'linux/arm64']
+      pglinter_version:
+        description: 'pglinter version to test'
+        required: false
+        default: '0.0.19'
+        type: string
+
+
+jobs:
+  test-deb-amd64-pglinter:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Test deb package
+        uses: ./.github/actions/reusable-test-deb-package
+        with:
+          pg_version: ${{ inputs.pg_version }}
+          pglinter_version: ${{ inputs.pglinter_version }}
+          platform: ${{ inputs.platform }}
+          timeout: '180'
+  test-deb-arm64-pglinter:
+    runs-on: ubuntu-24.04-arm
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Test deb package
+        uses: ./.github/actions/reusable-test-deb-package
+        with:
+          pg_version: ${{ inputs.pg_version }}
+          pglinter_version: ${{ inputs.pglinter_version }}
+          platform: ${{ inputs.platform }}
+          timeout: '180'
+
