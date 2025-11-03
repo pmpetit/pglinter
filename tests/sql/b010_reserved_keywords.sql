@@ -1,6 +1,6 @@
--- Simple example to demonstrate reserved keywords in object names detection (T009 rule)
+-- Simple example to demonstrate reserved keywords in object names detection (B010 rule)
 -- This script creates database objects using reserved keywords as names
--- and shows how the T009 rule detects these naming violations.
+-- and shows how the B010 rule detects these naming violations.
 CREATE EXTENSION pglinter;
 
 
@@ -10,7 +10,7 @@ CREATE EXTENSION pglinter;
 CREATE SCHEMA test_keywords_schema;
 CREATE SCHEMA test_naming_schema;
 
--- Create tables using reserved keywords (should trigger T009)
+-- Create tables using reserved keywords (should trigger B010)
 CREATE TABLE test_keywords_schema."SELECT" (
     id SERIAL PRIMARY KEY,
     data TEXT,
@@ -39,7 +39,7 @@ CREATE TABLE test_naming_schema."ORDER" (
     created_at TIMESTAMP DEFAULT '2024-01-15 11:00:00'
 );
 
--- Create tables with columns using reserved keywords (should trigger T009)
+-- Create tables with columns using reserved keywords (should trigger B010)
 CREATE TABLE test_keywords_schema.products_with_bad_columns (
     product_id SERIAL PRIMARY KEY,
     product_name VARCHAR(100) NOT NULL,
@@ -60,7 +60,7 @@ CREATE TABLE test_naming_schema.users_with_bad_columns (
     created_at TIMESTAMP DEFAULT '2024-01-01 10:00:00'
 );
 
--- Create views using reserved keywords (should trigger T009)
+-- Create views using reserved keywords (should trigger B010)
 CREATE VIEW test_keywords_schema."DISTINCT" AS
 SELECT product_id, product_name, price
 FROM test_keywords_schema.products_with_bad_columns
@@ -71,17 +71,17 @@ SELECT user_id, username, email
 FROM test_naming_schema.users_with_bad_columns
 WHERE user_id > 0;
 
--- Create sequences using reserved keywords (should trigger T009)
+-- Create sequences using reserved keywords (should trigger B010)
 CREATE SEQUENCE test_keywords_schema."NULL";
 CREATE SEQUENCE test_naming_schema."TRUE";
 CREATE SEQUENCE test_keywords_schema."FALSE";
 
--- Create indexes using reserved keywords (should trigger T009)
+-- Create indexes using reserved keywords (should trigger B010)
 CREATE INDEX "PRIMARY" ON test_keywords_schema.products_with_bad_columns (product_name);
 CREATE INDEX "UNIQUE" ON test_naming_schema.users_with_bad_columns (username);
 CREATE INDEX "FOREIGN" ON test_keywords_schema."FROM" (source_name);
 
--- Create functions using reserved keywords (should trigger T009)
+-- Create functions using reserved keywords (should trigger B010)
 CREATE FUNCTION test_keywords_schema."AND"(a INTEGER, b INTEGER)
 RETURNS INTEGER AS $$
 BEGIN
@@ -96,14 +96,14 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
--- Create user-defined types using reserved keywords (should trigger T009)
+-- Create user-defined types using reserved keywords (should trigger B010)
 CREATE TYPE test_keywords_schema."CASE" AS ENUM ('option1', 'option2', 'option3');
 CREATE TYPE test_naming_schema."WHEN" AS (
     condition TEXT,
     result INTEGER
 );
 
--- Create triggers using reserved keywords (should trigger T009)
+-- Create triggers using reserved keywords (should trigger B010)
 CREATE OR REPLACE FUNCTION test_keywords_schema."THEN"()
 RETURNS TRIGGER AS $$
 BEGIN
@@ -128,7 +128,7 @@ CREATE TRIGGER "BINARY"
     BEFORE UPDATE ON test_naming_schema.users_with_bad_columns
     FOR EACH ROW EXECUTE FUNCTION test_naming_schema."END"();
 
--- Create tables and objects with GOOD names (should NOT trigger T009)
+-- Create tables and objects with GOOD names (should NOT trigger B010)
 CREATE TABLE test_keywords_schema.good_products (
     id SERIAL PRIMARY KEY,
     product_name VARCHAR(100) NOT NULL,
@@ -211,54 +211,26 @@ ANALYZE test_naming_schema.good_users;
 
 
 
--- Disable all rules first to isolate T009 testing
-SELECT 'Disabling all rules to test T009 specifically...' AS status;
+-- Disable all rules first to isolate B010 testing
+SELECT 'Disabling all rules to test B010 specifically...' AS status;
 SELECT pglinter.disable_all_rules() AS all_rules_disabled;
-SELECT pglinter.enable_rule('T009') AS t009_enabled;
+SELECT pglinter.enable_rule('B010') AS B010_enabled;
 
 -- Run table check (should detect objects with reserved keyword names)
-SELECT 'Running table check with only T009 enabled:' AS test_info;
-SELECT pglinter.perform_table_check();
+SELECT 'Running table check with only B010 enabled:' AS test_info;
+SELECT pglinter.perform_base_check();
 
--- Test disabling T009 temporarily
-SELECT 'Testing T009 disable/enable cycle:' AS test_info;
-SELECT pglinter.disable_rule('T009') AS t009_disabled;
-SELECT pglinter.perform_table_check(); -- Should skip T009
+-- Test disabling B010 temporarily
+SELECT 'Testing B010 disable/enable cycle:' AS test_info;
+SELECT pglinter.disable_rule('B010') AS B010_disabled;
+SELECT pglinter.perform_base_check(); -- Should skip B010
 
--- Re-enable T009 and test again
-SELECT pglinter.enable_rule('T009') AS t009_re_enabled;
-SELECT pglinter.perform_table_check(); -- Should include T009 again
+-- Re-enable B010 and test again
+SELECT pglinter.enable_rule('B010') AS B010_re_enabled;
+SELECT pglinter.perform_base_check(); -- Should include B010 again
 
 -- ROLLBACK;
 
-DROP TABLE test_keywords_schema."SELECT" CASCADE;
-DROP TABLE test_keywords_schema."FROM" CASCADE;
-DROP TABLE test_naming_schema."WHERE" CASCADE;
-DROP TABLE test_naming_schema."ORDER" CASCADE;
-DROP TABLE test_keywords_schema.products_with_bad_columns CASCADE;
-DROP TABLE test_naming_schema.users_with_bad_columns CASCADE;
-DROP TABLE test_keywords_schema.good_products CASCADE;
-DROP TABLE test_naming_schema.good_users CASCADE;
-DROP VIEW test_keywords_schema."DISTINCT" CASCADE;
-DROP VIEW test_naming_schema."INNER" CASCADE;
-DROP VIEW test_keywords_schema.active_products CASCADE;
-DROP SEQUENCE test_keywords_schema."NULL" CASCADE;
-DROP SEQUENCE test_naming_schema."TRUE" CASCADE;
-DROP SEQUENCE test_keywords_schema."FALSE" CASCADE;
-DROP SEQUENCE test_naming_schema.user_id_seq CASCADE;
-DROP INDEX test_keywords_schema."PRIMARY" CASCADE;
-DROP INDEX test_naming_schema."UNIQUE" CASCADE;
-DROP INDEX test_keywords_schema."FOREIGN" CASCADE;
-DROP INDEX test_keywords_schema.idx_product_name CASCADE;
-DROP INDEX test_naming_schema.idx_username CASCADE;
-DROP FUNCTION test_keywords_schema."AND"(INTEGER, INTEGER) CASCADE;
-DROP FUNCTION test_naming_schema."OR"(TEXT, TEXT) CASCADE;
-DROP TYPE test_keywords_schema."CASE" CASCADE;
-DROP TYPE test_naming_schema."WHEN" CASCADE;
-DROP TRIGGER test_keywords_schema."ELSE" ON test_keywords_schema.products_with_bad_columns CASCADE;
-DROP FUNCTION test_keywords_schema."THEN"() CASCADE;
-DROP TRIGGER test_naming_schema."BINARY" ON test_naming_schema.users_with_bad_columns CASCADE;
-DROP FUNCTION test_naming_schema."END"() CASCADE;
 DROP SCHEMA test_keywords_schema CASCADE;
 DROP SCHEMA test_naming_schema CASCADE;
 

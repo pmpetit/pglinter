@@ -26,7 +26,7 @@
 -- =============================================================================
 
 CREATE TABLE IF NOT EXISTS pglinter.rules (
-    id INT PRIMARY KEY,
+    id SERIAL PRIMARY KEY,
     name TEXT,
     code TEXT,
     enable BOOL DEFAULT TRUE,
@@ -37,14 +37,15 @@ CREATE TABLE IF NOT EXISTS pglinter.rules (
     message TEXT,
     fixes TEXT [],
     q1 TEXT,
-    q2 TEXT
+    q2 TEXT,
+    q3 TEXT
 );
 
 -- Clear existing data and insert comprehensive rules
 DELETE FROM pglinter.rules;
 
+
 INSERT INTO pglinter.rules (
-    id,
     name,
     code,
     warning_level,
@@ -56,72 +57,133 @@ INSERT INTO pglinter.rules (
 ) VALUES
 -- Base Database Rules (B series)
 (
-    1, 'HowManyTableWithoutPrimaryKey', 'B001', 20, 80, 'BASE',
+    'HowManyTableWithoutPrimaryKey', 'B001', 1, 80, 'BASE',
     'Count number of tables without primary key.',
-    '{0}/{1} table(s) without primary key exceed the {2} threshold: {3}%.',
+    '{0}/{1} table(s) without primary key exceed the {2} threshold: {3}%. Object list:\n{4}',
     ARRAY['create a primary key or change warning/error threshold']
 ),
-
 (
-    2, 'HowManyRedudantIndex', 'B002', 20, 80, 'BASE',
+    'HowManyRedudantIndex', 'B002', 1, 80, 'BASE',
     'Count number of redundant index vs nb index.',
-    '{0}/{1} redundant(s) index exceed the {2} threshold: {3}%.',
+    '{0}/{1} redundant(s) index exceed the {2} threshold: {3}%. Object list:\n{4}',
     ARRAY[
         'remove duplicated index or check if a constraint does not create a redundant index, or change warning/error threshold'
     ]
 ),
-
 (
-    3, 'HowManyTableWithoutIndexOnFk', 'B003', 20, 80, 'BASE',
+    'HowManyTableWithoutIndexOnFk', 'B003', 1, 80, 'BASE',
     'Count number of tables without index on foreign key.',
-    '{0}/{1} table(s) without index on foreign key exceed the {2} threshold: {3}%.',
+    '{0}/{1} table(s) without index on foreign key exceed the {2} threshold: {3}%. Object list:\n{4}',
     ARRAY['create a index on foreign key or change warning/error threshold']
 ),
-
 (
-    4, 'HowManyUnusedIndex', 'B004', 20, 80, 'BASE',
+    'HowManyUnusedIndex', 'B004', 20, 80, 'BASE',
     'Count number of unused index vs nb index (base on pg_stat_user_indexes, indexes associated to unique constraints are discard.)',
-    '{0}/{1} unused index exceed the {2} threshold: {3}%',
+    '{0}/{1} unused index exceed the {2} threshold: {3}%. Object list:\n{4}',
     ARRAY['remove unused index or change warning/error threshold']
 ),
-
 (
-    5, 'UnsecuredPublicSchema', 'B005', 20, 80, 'BASE',
-    'Only authorized users should be allowed to create objects.',
-    '{0}/{1} schemas are unsecured, schemas where all users can create objects in, exceed the {2} threshold: {3}%.',
-    ARRAY['REVOKE CREATE ON SCHEMA <schema_name> FROM PUBLIC']
-),
-
-(
-    6, 'HowManyObjectsWithUppercase', 'B006', 20, 80, 'BASE',
+    'HowManyObjectsWithUppercase', 'B005', 20, 80, 'BASE',
     'Count number of objects with uppercase in name or in columns.',
-    '{0}/{1} object(s) using uppercase for name or columns exceed the {2} threshold: {3}%.',
+    '{0}/{1} object(s) using uppercase for name or columns exceed the {2} threshold: {3}%. Object list:\n{4}',
     ARRAY['Do not use uppercase for any database objects']
 ),
-
 (
-    7, 'HowManyTablesNeverSelected', 'B007', 20, 80, 'BASE',
+    'HowManyTablesNeverSelected', 'B006', 1, 80, 'BASE',
     'Count number of table(s) that has never been selected.',
-    '{0}/{1} table(s) are never selected the {2} threshold: {3}%.',
+    '{0}/{1} table(s) are never selected the {2} threshold: {3}%. Object list:\n{4}',
     ARRAY[
         'Is it necessary to update/delete/insert rows in table(s) that are never selected ?'
     ]
 ),
-
 (
-    8, 'HowManyTablesWithFkOutsideSchema', 'B008', 20, 80, 'BASE',
+    'HowManyTablesWithFkOutsideSchema', 'B007', 20, 80, 'BASE',
     'Count number of tables with foreign keys outside their schema.',
-    '{0}/{1} table(s) with foreign keys outside schema exceed the {2} threshold: {3}%.',
+    '{0}/{1} table(s) with foreign keys outside schema exceed the {2} threshold: {3}%. Object list:\n{4}',
     ARRAY[
         'Consider restructuring schema design to keep related tables in same schema',
         'ask a dba'
     ]
 ),
-
--- Cluster Rules (C series)
+(
+    'HowManyTablesWithFkMismatch', 'B008', 1, 80, 'BASE',
+    'Count number of tables with foreign keys that do not match the key reference type.',
+    '{0}/{1} table(s) with foreign key mismatch exceed the {2} threshold: {3}%. Object list:\n{4}',
+    ARRAY[
+        'Consider column type adjustments to ensure foreign key matches referenced key type',
+        'ask a dba'
+    ]
+),
+(
+    'HowManyTablesWithSameTrigger', 'B009', 20, 80, 'BASE',
+    'Count number of tables using the same trigger vs nb table with their own triggers.',
+    '{0}/{1} table(s) using the same trigger function exceed the {2} threshold: {3}%. Object list:\n{4}',
+    ARRAY[
+        'For more readability and other considerations use one trigger function per table.',
+        'Sharing the same trigger function add more complexity.'
+    ]
+),
+(
+    'HowManyTablesWithReservedKeywords', 'B010', 20, 80, 'BASE',
+    'Count number of database objects using reserved keywords in their names.',
+    '{0}/{1} object(s) using reserved keywords exceed the {2} threshold: {3}%. Object list:\n{4}',
+    ARRAY[
+        'Rename database objects to avoid using reserved keywords.',
+        'Using reserved keywords can lead to SQL syntax errors and maintenance difficulties.'
+    ]
+),
+(
+    'SchemaWithDefaultRoleNotGranted', 'S001', 1, 1, 'SCHEMA',
+    'The schema has no default role. Means that futur table will not be granted through a role. So you will have to re-execute grants on it.',
+    'No default role grantee on schema {0}.{1}. It means that each time a table is created, you must grant it to roles. Object list:\n{4}',
+    ARRAY[
+        'add a default privilege=> ALTER DEFAULT PRIVILEGES IN SCHEMA <schema> for user <schema''s owner>'
+    ]
+),
 
 (
-    11,
+    'SchemaPrefixedOrSuffixedWithEnvt', 'S002', 1, 1, 'SCHEMA',
+    'The schema is prefixed with one of staging,stg,preprod,prod,sandbox,sbox string. Means that when you refresh your preprod, staging environments from production, you have to rename the target schema from prod_ to stg_ or something like. It is possible, but it is never easy.',
+    'You should not prefix or suffix the schema name with {0}. You may have difficulties when refreshing environments. Prefer prefix or suffix the database name. Object list:\n{4}',
+    ARRAY[
+        'Keep the same schema name across environments. Prefer prefix or suffix the database name'
+    ]
+),
+(
+    'UnsecuredPublicSchema', 'S003', 1, 80, 'SCHEMA',
+    'Only authorized users should be allowed to create objects.',
+    '{0}/{1} schemas are unsecured, schemas where all users can create objects in, exceed the {2} threshold: {3}%. Object list:\n{4}',
+    ARRAY['REVOKE CREATE ON SCHEMA <schema_name> FROM PUBLIC']
+),
+(
+    'OwnerSchemaIsInternalRole', 'S004', 20, 80, 'SCHEMA',
+    'Owner of schema should not be any internal pg roles.',
+    '{0}/{1} schemas are owned by internal roles. Exceed the {2} threshold: {3}%. Object list:\n{4}',
+    ARRAY['change schema owner to a functional role']
+),
+(
+    'SeveralTableOwnerInSchema', 'S005', 20, 80, 'SCHEMA',
+    'In a schema there are several tables owned by different owners.',
+    '{0}/{1} schemas have tables owned by different owners. Exceed the {2} threshold: {3}%. Object list:\n{4}',
+    ARRAY['change table owners to the same functional role']
+),
+(
+    'SchemaOwnerDoNotMatchTableOwner', 'S006', 20, 80, 'SCHEMA',
+    'The schema owner and tables in the schema do not match.',
+    '{0}/{1} in the same schema, tables have different owners. They should be the same. Exceed the {2} threshold: {3}%. Object list:\n{4}',
+    ARRAY['For maintenance facilities, schema and tables owners should be the same.']
+),
+(
+    'PgHbaEntriesWithMethodTrustShouldNotExists',
+    'C001',
+    20,
+    80,
+    'CLUSTER',
+    'This configuration is extremely insecure and should only be used in a controlled, non-production environment for testing purposes. In a production environment, you should use more secure authentication methods such as md5, scram-sha-256, or cert, and restrict access to trusted IP addresses only.',
+    '{0} entries in pg_hba.conf with trust authentication method exceed the warning threshold: {1}.',
+    ARRAY['change trust method in pg_hba.conf']
+),
+(
     'PgHbaEntriesWithMethodTrustOrPasswordShouldNotExists',
     'C002',
     20,
@@ -131,9 +193,7 @@ INSERT INTO pglinter.rules (
     '{0} entries in pg_hba.conf with trust or password authentication method exceed the warning threshold: {1}.',
     ARRAY['change trust or password method in pg_hba.conf']
 ),
-
 (
-    12,
     'PasswordEncryptionIsMd5',
     'C003',
     20,
@@ -142,121 +202,8 @@ INSERT INTO pglinter.rules (
     'This configuration is not secure anymore and will prevent an upgrade to Postgres 18. Warning, you will need to reset all passwords after this is changed to scram-sha-256.',
     'Encrypted passwords with MD5.',
     ARRAY['change password_encryption parameter to scram-sha-256 (ALTER SYSTEM SET password_encryption = ''scram-sha-256'' ). Warning, you will need to reset all passwords after this parameter is updated.']
-),
-
-
--- Table Rules (T series)
-(
-    20, 'TableWithoutPrimaryKey', 'T001', 1, 1, 'TABLE',
-    'table without primary key.',
-    'no primary key on table(s)',
-    ARRAY['create a primary key']
-),
-
-(
-    22, 'TableWithRedundantIndex', 'T002', 10, 20, 'TABLE',
-    'table with duplicated index.',
-    'duplicated index',
-    ARRAY[
-        'remove duplicated index',
-        'check for constraints that can create indexes.'
-    ]
-),
-
-(
-    23, 'TableWithFkNotIndexed', 'T003', 1, 1, 'TABLE',
-    'When you delete or update a row in the parent table, the database must check the child table to ensure there are no orphaned records. An index on the foreign key allows for a rapid lookup, ensuring that these checks don''t negatively impact performance.',
-    'unindexed constraint',
-    ARRAY['create an index on the child table fk.']
-),
-
-(
-    24, 'TableWithPotentialMissingIdx', 'T004', 50, 90, 'TABLE',
-    ' with high level of seq scan, base on pg_stat_user_tables.',
-    'table with potential missing index',
-    ARRAY['ask a dba']
-),
-
-(
-    25, 'TableWithFkOutsideSchema', 'T005', 1, 1, 'TABLE',
-    'table with fk outside its schema. This can be problematic for  maintenance and scalability of the database, refreshing staging/preprod from prod, as well as for understanding the data model.  Migration challenges: Moving or restructuring schemas becomes difficult.',
-    'foreign key outside schema',
-    ARRAY['consider rewrite your model', 'ask a dba']
-),
-
-(
-    26, 'TableWithUnusedIndex', 'T006', 200, 500, 'TABLE',
-    'Table unused index, base on pg_stat_user_indexes, indexes associated to constraints are discard. Warning and error level are in Mo (the table size to consider).',
-    'Index (larger than threshold) seems to be unused.',
-    ARRAY['remove unused index or change warning/error threshold']
-),
-
-(
-    27, 'TableWithFkMismatch', 'T007', 1, 1, 'TABLE',
-    'table with fk mismatch, ex smallint refer to a bigint.',
-    'Table with fk type mismatch.',
-    ARRAY['consider rewrite your model', 'ask a dba']
-),
-
-(
-    28, 'TableWithRoleNotGranted', 'T008', 1, 1, 'TABLE',
-    'Table has no roles grantee. Meaning that users will need direct access on it (not through a role).',
-    'No role grantee on table. it means that except owner, users will need a direct grant on this table, not through a role. Prefer RBAC access if possible.',
-    ARRAY[
-        'create roles (myschema_ro & myschema_rw) and grant it on table with appropriate privileges'
-    ]
-),
-
-(
-    29, 'ReservedKeyWord', 'T009', 10, 20, 'TABLE',
-    'An object use reserved keywords.',
-    'Reserved keywords in object.',
-    ARRAY['Rename the object to use a non reserved keyword']
-),
-
-(
-    31, 'TableWithSensibleColumn', 'T010', 50, 80, 'TABLE',
-    'Base on the extension anon (https://postgresql-anonymizer.readthedocs.io/en/stable/detection), show sensitive column.',
-    '{0} have column {1} (category {2}) that can be consider has sensitive. It should be masked for non data-operator users.',
-    ARRAY['Install extension anon, and create some masking rules on']
-),
-(
-    32, 'TableSharingSameTrigger', 'T015', 1, 1, 'TABLE',
-    'Table shares the same trigger function with other tables.',
-    'Table shares trigger function with other tables.',
-    ARRAY[
-        'For more readability and other considerations use one trigger function per table.',
-        'Sharing the same trigger function add more complexity.'
-    ]
-),
-
--- Schema Rules (S series)
-(
-    40, 'SchemaWithDefaultRoleNotGranted', 'S001', 1, 1, 'SCHEMA',
-    'The schema ha no default role. Means that futur table will not be granted through a role. So you will have to re-execute grants on it.',
-    'No default role grantee on schema {0}.{1}. It means that each time a table is created, you must grant it to roles.',
-    ARRAY[
-        'add a default privilege=> ALTER DEFAULT PRIVILEGES IN SCHEMA <schema> for user <schema''s owner>'
-    ]
-),
-
-(
-    41, 'SchemaPrefixedOrSuffixedWithEnvt', 'S002', 1, 1, 'SCHEMA',
-    'The schema is prefixed with one of staging,stg,preprod,prod,sandbox,sbox string. Means that when you refresh your preprod, staging environments from production, you have to rename the target schema from prod_ to stg_ or something like. It is possible, but it is never easy.',
-    'You should not prefix or suffix the schema name with {0}. You may have difficulties when refreshing environments. Prefer prefix or suffix the database name.',
-    ARRAY[
-        'Keep the same schema name across environments. Prefer prefix or suffix the database name'
-    ]
-),
-(
-    45, 'HowManyTableSharingSameTrigger', 'B015', 20, 80, 'BASE',
-    'Count number of table that use the same trigger vs nb table with their own triggers.',
-    '{0}/{1} table(s) using the same trigger function exceed the {2} threshold: {3}%.',
-    ARRAY[
-        'For more readability and other considerations use one trigger function per table.',
-        'Sharing the same trigger function add more complexity.'
-    ]
 );
+
 
 -- =============================================================================
 -- RULE QUERY UPDATES - Auto-generated from individual SQL files
@@ -268,97 +215,35 @@ INSERT INTO pglinter.rules (
 
 -- B001 - Tables Without Primary Key
 UPDATE pglinter.rules
-SET q1 = $$
+SET
+    q1 = $$
 SELECT count(*) AS total_tables
 FROM pg_catalog.pg_tables
 WHERE
     schemaname NOT IN (
-        'pg_toast', 'pg_catalog', 'information_schema', 'pglinter'
+        'pg_toast', 'pg_catalog', 'information_schema', 'pglinter','_timescaledb', 'timescaledb'
     )
-$$
-WHERE code = 'B001';
-
-UPDATE pglinter.rules
-SET q2 = $$
-SELECT count(DISTINCT pg_class.relname) AS total_indexes
-FROM pg_index, pg_class, pg_attribute, pg_namespace
+$$,
+    q2 = $$
+SELECT
+count(1)
+FROM
+    pg_class c
+JOIN
+    pg_namespace n ON n.oid = c.relnamespace
+LEFT JOIN
+    pg_index i ON i.indrelid = c.oid AND i.indisprimary
 WHERE
-    indrelid = pg_class.oid
-    AND nspname NOT IN (
-        'pg_toast', 'pg_catalog', 'information_schema', 'pglinter'
-    )
-    AND pg_class.relnamespace = pg_namespace.oid
-    AND pg_attribute.attrelid = pg_class.oid
-    AND pg_attribute.attnum = any(pg_index.indkey)
-    AND indisprimary
-$$
-WHERE code = 'B001';
-
-
--- =============================================================================
--- B002 - Redundant Indexes (Total Index Count Query)
--- =============================================================================
-UPDATE pglinter.rules
-SET q1 = $$
-SELECT COUNT(*) AS total_indexes
-FROM pg_indexes
-WHERE
-    schemaname NOT IN (
-        'pg_toast', 'pg_catalog', 'information_schema', 'pglinter'
-    )
-$$
-WHERE code = 'B002';
-
--- =============================================================================
--- B002 - Redundant Indexes (Problem Query)
--- =============================================================================
-UPDATE pglinter.rules
-SET q2 = $$
-SELECT COUNT(*) AS redundant_indexes
-FROM (
-    SELECT DISTINCT i1.indexrelid
-    FROM pg_index i1, pg_index i2
-    WHERE
-        i1.indrelid = i2.indrelid
-        AND i1.indexrelid != i2.indexrelid
-        AND i1.indkey = i2.indkey
-        AND EXISTS (
-            SELECT 1 FROM pg_indexes pi1
-            WHERE
-                pi1.indexname
-                = (
-                    SELECT relname FROM pg_class
-                    WHERE oid = i1.indexrelid
-                )
-                AND pi1.schemaname NOT IN (
-                    'pg_toast', 'pg_catalog', 'information_schema', 'pglinter'
-                )
-        )
-) redundant
-$$
-WHERE code = 'B002';
-
--- -- =============================================================================
--- -- C001 - Memory Configuration Analysis
--- -- =============================================================================
--- UPDATE pglinter.rules
--- SET q1 = $$
--- SELECT
---     current_setting('max_connections')::int AS max_connections,
---     current_setting('work_mem') AS work_mem_setting
--- $$
--- WHERE code = 'C001';
-
--- =============================================================================
--- T001 - Tables Without Primary Keys (Problem Detection Query)
--- =============================================================================
-UPDATE pglinter.rules
-SET q1 = $$
-SELECT pt.schemaname::text || '.' || pt.tablename::text AS problematic_object
+    n.nspname NOT IN ('pg_catalog', 'information_schema', 'gp_toolkit','_timescaledb', 'timescaledb') -- Exclude system schemas
+    AND c.relkind = 'r' -- Only include regular tables
+    AND i.indrelid IS NULL
+$$,
+    q3 = $$
+SELECT pt.schemaname::text,pt.tablename::text
 FROM pg_tables AS pt
 WHERE
     pt.schemaname NOT IN (
-        'pg_toast', 'pg_catalog', 'information_schema', 'pglinter'
+        'pg_toast', 'pg_catalog', 'information_schema', 'pglinter','_timescaledb', 'timescaledb'
     )
     AND NOT EXISTS (
         SELECT 1
@@ -376,77 +261,112 @@ WHERE
     )
 ORDER BY 1
 $$
-WHERE code = 'T001';
+WHERE code = 'B001';
+
 
 -- =============================================================================
--- S001 - Schema Permission Analysis
+-- B002 - Redundant Indexes (Total Index Count Query)
 -- =============================================================================
 UPDATE pglinter.rules
-SET q1 = $$
-SELECT DISTINCT n.nspname::text AS schema_name
-FROM pg_namespace n
+SET
+    q1 = $$
+SELECT COUNT(*) AS total_indexes
+FROM pg_indexes
 WHERE
-    n.nspname NOT IN ('public', 'pg_toast', 'pg_catalog', 'information_schema')
-    AND n.nspname NOT LIKE 'pg_%'
-    AND NOT EXISTS (
-        SELECT 1
-        FROM pg_default_acl da
-        WHERE
-            da.defaclnamespace = n.oid
-            AND da.defaclrole != n.nspowner
+    schemaname NOT IN (
+        'pg_toast', 'pg_catalog', 'information_schema', 'pglinter', '_timescaledb', 'timescaledb'
     )
-ORDER BY 1
-$$
-WHERE code = 'S001';
-
--- =============================================================================
--- T005 - Cross-Schema Foreign Key Constraints
--- =============================================================================
-UPDATE pglinter.rules
-SET q1 = $$
+$$,
+    q2 = $$
+SELECT COUNT(*) AS redundant_indexes
+FROM (
+    SELECT DISTINCT i1.indexrelid
+    FROM pg_index i1, pg_index i2
+    WHERE
+        i1.indrelid = i2.indrelid
+        AND i1.indexrelid != i2.indexrelid
+        AND i1.indkey = i2.indkey
+        AND EXISTS (
+            SELECT 1 FROM pg_indexes pi1
+            WHERE
+                pi1.indexname
+                = (
+                    SELECT relname FROM pg_class
+                    WHERE oid = i1.indexrelid
+                )
+                AND pi1.schemaname NOT IN (
+                    'pg_toast', 'pg_catalog', 'information_schema', 'pglinter', '_timescaledb', 'timescaledb'
+                )
+        )
+) redundant
+$$,
+    q3 = $$
+WITH index_info AS (
+    -- This CTE gets the column info, plus the boolean flag for Primary Key (indisprimary).
+    SELECT
+        ind.indrelid AS table_oid,
+        ind.indexrelid AS index_oid,
+        att.attname AS column_name,
+        array_position(ind.indkey, att.attnum) AS column_order,
+        ind.indisprimary -- Added Primary Key flag
+    FROM pg_index ind
+    JOIN pg_attribute att ON att.attrelid = ind.indrelid AND att.attnum = ANY(ind.indkey)
+    WHERE NOT ind.indisexclusion
+),
+indexed_columns AS (
+    -- Aggregates columns for each index and propagates PK flag.
+    SELECT
+        table_oid,
+        index_oid,
+        string_agg(column_name, ',' ORDER BY column_order) AS indexed_columns_string,
+        MAX(indisprimary::int)::bool AS is_primary_key
+    FROM index_info
+    GROUP BY table_oid, index_oid
+),
+table_info AS (
+    -- Joins to pg_class and pg_namespace to get table names and schema names.
+    SELECT
+        oid AS table_oid,
+        relname AS tablename,
+        relnamespace
+    FROM pg_class
+)
 SELECT
-    tc.table_schema::text || '.'
-    || tc.table_name::text || ' fk '
-    || tc.constraint_name::text || ' reference '
-    || ccu.table_schema::text || '.'
-    || ccu.table_name::text AS problematic_object
-FROM information_schema.table_constraints tc
-JOIN information_schema.constraint_column_usage ccu
-    ON tc.constraint_name = ccu.constraint_name
+    pg_namespace.nspname::TEXT AS schema_name,
+    table_info.tablename::TEXT AS table_name,
+    redundant_index.relname::TEXT ||'('|| i1.indexed_columns_string || ') is redundant with '|| superset_index.relname||'('|| i2.indexed_columns_string ||')' AS problematic_object
+FROM indexed_columns AS i1 -- The smaller/redundant index
+JOIN indexed_columns AS i2 ON i1.table_oid = i2.table_oid -- The larger/superset index
+JOIN pg_class redundant_index ON i1.index_oid = redundant_index.oid
+JOIN pg_class superset_index ON i2.index_oid = superset_index.oid
+JOIN table_info ON i1.table_oid = table_info.table_oid
+JOIN pg_namespace ON table_info.relnamespace = pg_namespace.oid
 WHERE
-    tc.constraint_type = 'FOREIGN KEY'
-    AND tc.table_schema != ccu.table_schema
-    AND tc.table_schema NOT IN (
-        'pg_toast', 'pg_catalog', 'information_schema', 'pglinter'
-    )
-    AND ccu.table_schema NOT IN (
-        'pg_toast', 'pg_catalog', 'information_schema', 'pglinter'
-    )
-ORDER BY 1
+    pg_namespace.nspname NOT IN ('pg_toast', 'pg_catalog', 'information_schema', 'pglinter', '_timescaledb', 'timescaledb')
+    AND i1.index_oid <> i2.index_oid -- Ensure the indexes are not the same
+    -- Checks if the smaller index's column string is a prefix of the larger index's string.
+    AND i2.indexed_columns_string LIKE i1.indexed_columns_string || '%'
+
+ORDER BY 1, 2
 $$
-WHERE code = 'T005';
+WHERE code = 'B002';
 
 -- =============================================================================
--- B003 - Foreign Key Index Coverage (Total)
+-- B003 - Foreign Key without Index
 -- =============================================================================
 UPDATE pglinter.rules
-SET q1 = $$
+SET
+    q1 = $$
 SELECT count(DISTINCT tc.table_name)::INT AS total_tables
 FROM
     information_schema.table_constraints AS tc
 WHERE
     tc.constraint_type = 'FOREIGN KEY'
     AND tc.table_schema NOT IN (
-        'pg_toast', 'pg_catalog', 'information_schema', 'pglinter'
+        'pg_toast', 'pg_catalog', 'information_schema', 'pglinter', '_timescaledb', 'timescaledb'
     )
-$$
-WHERE code = 'B003';
-
--- =============================================================================
--- B003 - Foreign Key Index Coverage (Problems)
--- =============================================================================
-UPDATE pglinter.rules
-SET q2 = $$
+$$,
+    q2 = $$
 SELECT COUNT(DISTINCT c.relname)::INT AS tables_with_unindexed_foreign_keys
 FROM pg_constraint con
 JOIN pg_class c ON c.oid = con.conrelid
@@ -458,64 +378,13 @@ WHERE
     con.contype = 'f'
     AND c.relkind = 'r'
     AND i.indexrelid IS NULL
-    AND n.nspname NOT IN ('pg_catalog', 'pg_toast', 'information_schema', 'pglinter')
-$$
-WHERE code = 'B003';
-
--- =============================================================================
--- C002 - Authentication Security (Total)
--- =============================================================================
-UPDATE pglinter.rules
-SET q1 = $$
-SELECT count(*) FROM pg_catalog.pg_hba_file_rules
-$$
-WHERE code = 'C002';
-
--- =============================================================================
--- C002 - Authentication Security (Problems)
--- =============================================================================
-UPDATE pglinter.rules
-SET q2 = $$
-SELECT count(*)
-FROM pg_catalog.pg_hba_file_rules
-WHERE auth_method IN ('trust', 'password')
-$$
-WHERE code = 'C002';
-
--- =============================================================================
--- S002 - Environment-Named Schemas
--- =============================================================================
-UPDATE pglinter.rules
-SET q1 = $$
-SELECT nspname::text AS schema_name
-FROM pg_namespace
-WHERE
-    nspname NOT IN ('public', 'pg_toast', 'pg_catalog', 'information_schema')
-    AND nspname NOT LIKE 'pg_%'
-    AND (
-        nspname ILIKE 'staging_%' OR nspname ILIKE '%_staging'
-        OR nspname ILIKE 'stg_%' OR nspname ILIKE '%_stg'
-        OR nspname ILIKE 'preprod_%' OR nspname ILIKE '%_preprod'
-        OR nspname ILIKE 'prod_%' OR nspname ILIKE '%_prod'
-        OR nspname ILIKE 'production_%' OR nspname ILIKE '%_production'
-        OR nspname ILIKE 'dev_%' OR nspname ILIKE '%_dev'
-        OR nspname ILIKE 'development_%' OR nspname ILIKE '%_development'
-        OR nspname ILIKE 'sandbox_%' OR nspname ILIKE '%_sandbox'
-        OR nspname ILIKE 'sbox_%' OR nspname ILIKE '%_sbox'
-    )
-ORDER BY 1
-$$
-WHERE code = 'S002';
-
--- =============================================================================
--- T003 - Foreign Keys Without Index
--- =============================================================================
-UPDATE pglinter.rules
-SET q1 = $$
+    AND n.nspname NOT IN ('pg_catalog', 'pg_toast', 'information_schema', 'pglinter','_timescaledb', 'timescaledb')
+$$,
+    q3 = $$
 SELECT DISTINCT
-    tc.table_schema::text || '.'
-    || tc.table_name::text || ' constraint name:'
-    || tc.constraint_name::text AS problematic_object
+    tc.table_schema::text,
+    tc.table_name::text,
+    tc.constraint_name::text AS problematic_object
 FROM information_schema.table_constraints AS tc
 INNER JOIN information_schema.key_column_usage AS kcu
     ON
@@ -524,7 +393,7 @@ INNER JOIN information_schema.key_column_usage AS kcu
 WHERE
     tc.constraint_type = 'FOREIGN KEY'
     AND tc.table_schema NOT IN (
-        'pg_toast', 'pg_catalog', 'information_schema', 'pglinter'
+        'pg_toast', 'pg_catalog', 'information_schema', 'pglinter','_timescaledb', 'timescaledb'
     )
     AND NOT EXISTS (
         SELECT 1 FROM pg_indexes AS pi
@@ -535,73 +404,14 @@ WHERE
     )
 ORDER BY 1
 $$
-WHERE code = 'T003';
-
--- =============================================================================
--- T008 - Tables Without Role-Based Access
--- =============================================================================
-UPDATE pglinter.rules
-SET q1 = $$
-SELECT t.table_schema::text || '.' || t.table_name::text||' as no role granted' AS problematic_object
-FROM information_schema.tables AS t
-WHERE
-    t.table_schema NOT IN (
-        'public', 'pg_toast', 'pg_catalog', 'information_schema', 'pglinter'
-    )
-    AND NOT EXISTS (
-        SELECT 1
-        FROM information_schema.role_table_grants AS rtg
-        INNER JOIN pg_roles AS pr ON rtg.grantee = pr.rolname
-        WHERE
-            rtg.table_schema = t.table_schema
-            AND rtg.table_name = t.table_name
-            AND pr.rolcanlogin = false
-    )
-ORDER BY 1
-$$
-WHERE code = 'T008';
-
--- =============================================================================
--- T010 - Tables With Sensitive Columns (requires anon extension)
--- =============================================================================
-UPDATE pglinter.rules
-SET enable=false,q1 = $$
-SELECT
-    schemaname::text || '.'
-    || tablename::text || '.'
-    || attname::text || '.'
-    || identifiers_category::text AS problematic_object
-FROM (
-    SELECT
-        schemaname,
-        tablename,
-        attname,
-        identifiers_category
-    FROM anon.detect('en_US')
-    WHERE
-        schemaname NOT IN (
-            'pg_toast', 'pg_catalog', 'information_schema', 'pglinter'
-        )
-    UNION
-    SELECT
-        schemaname,
-        tablename,
-        attname,
-        identifiers_category
-    FROM anon.detect('fr_FR')
-    WHERE
-        schemaname NOT IN (
-            'pg_toast', 'pg_catalog', 'information_schema', 'pglinter'
-        )
-) sensitive_columns
-$$
-WHERE code = 'T010';
+WHERE code = 'B003';
 
 -- =============================================================================
 -- B004 - Manual Index Usage (Total)
 -- =============================================================================
 UPDATE pglinter.rules
-SET q1 = $$
+SET
+    q1 = $$
 SELECT COUNT(*) AS total_manual_indexes
 FROM pg_stat_user_indexes AS psu
 JOIN pg_index AS pgi ON psu.indexrelid = pgi.indexrelid
@@ -610,16 +420,10 @@ WHERE
     -- Excludes indexes created for a UNIQUE constraint
     AND pgi.indisunique = FALSE
     AND psu.schemaname NOT IN (
-        'pg_toast', 'pg_catalog', 'information_schema', 'pglinter'
+        'pg_toast', 'pg_catalog', 'information_schema', 'pglinter','_timescaledb', 'timescaledb'
     )
-$$
-WHERE code = 'B004';
-
--- =============================================================================
--- B004 - Manual Index Usage (Problems - Unused)
--- =============================================================================
-UPDATE pglinter.rules
-SET q2 = $$
+$$,
+    q2 = $$
 SELECT COUNT(*) AS unused_manual_indexes
 FROM pg_stat_user_indexes AS psu
 JOIN pg_index AS pgi ON psu.indexrelid = pgi.indexrelid
@@ -629,45 +433,14 @@ WHERE
     -- Excludes indexes created for a UNIQUE constraint
     AND pgi.indisunique = FALSE
     AND psu.schemaname NOT IN (
-        'pg_toast', 'pg_catalog', 'information_schema', 'pglinter'
+        'pg_toast', 'pg_catalog', 'information_schema', 'pglinter','_timescaledb', 'timescaledb'
     )
-$$
-WHERE code = 'B004';
-
--- =============================================================================
--- B005 - Schema Public Access (Total)
--- =============================================================================
-UPDATE pglinter.rules
-SET q1 = $$
-SELECT COUNT(*) AS total_schemas
-FROM pg_namespace
-WHERE
-    nspname NOT IN ('pg_toast', 'pg_catalog', 'information_schema', 'pglinter')
-$$
-WHERE code = 'B005';
-
--- =============================================================================
--- B005 - Schema Public Access (Problems)
--- =============================================================================
-UPDATE pglinter.rules
-SET q2 = $$
-SELECT COUNT(*) AS total_schemas
-FROM pg_namespace
-WHERE
-    nspname NOT IN ('pg_toast', 'pg_catalog', 'information_schema', 'pglinter')
-    AND HAS_SCHEMA_PRIVILEGE('public', nspname, 'CREATE')
-$$
-WHERE code = 'B005';
-
--- =============================================================================
--- T004 - Sequential Scan Ratio
--- =============================================================================
-UPDATE pglinter.rules
-SET q1 = $$
+$$,
+    q3 = $$
 SELECT
-    schemaname::text || '.'
-    || relname::text || ':'
-    || LEAST(
+    schemaname::text,
+    relname||' has '||
+    LEAST(
         ROUND(
             (
                 seq_tup_read::numeric
@@ -675,47 +448,23 @@ SELECT
             ) * 100, 0
         ),
         100
-    )::text ||' % of seq scan' AS problematic_object
+    )::text ||' % of seq scan.' AS problematic_object
 FROM pg_stat_user_tables
 WHERE
     schemaname NOT IN (
-        'pg_toast', 'pg_catalog', 'information_schema', 'pglinter'
+        'pg_toast', 'pg_catalog', 'information_schema', 'pglinter','_timescaledb', 'timescaledb'
     )
 ORDER BY 1
 $$
-WHERE code = 'T004';
+WHERE code = 'B004';
+
 
 -- =============================================================================
--- T006 - Large Unused Indexes
+-- B005 - Objects With Uppercase (Total)
 -- =============================================================================
 UPDATE pglinter.rules
-SET q1 = $$
-SELECT
-    pi.schemaname::text || '.'
-    || pi.tablename::text || ' idx '
-    || pi.indexname::text || ' size '
-    || pg_size_pretty(pg_relation_size(indexrelid))::text AS problematic_object
-FROM pg_stat_user_indexes AS psi
-INNER JOIN pg_indexes AS pi
-    ON
-        psi.indexrelname = pi.indexname
-        AND psi.schemaname = pi.schemaname
-WHERE
-    psi.idx_scan = 0
-    AND pi.indexdef !~* 'unique'
-    AND pi.schemaname NOT IN (
-        'pg_toast', 'pg_catalog', 'information_schema', 'pglinter'
-    )
-    AND pg_relation_size(indexrelid) > $1
-ORDER BY 1
-$$
-WHERE code = 'T006';
-
--- =============================================================================
--- B006 - Objects With Uppercase (Total)
--- =============================================================================
-UPDATE pglinter.rules
-SET q1 = $$
+SET
+    q1 = $$
 SELECT COUNT(*) AS total_objects
 FROM (
     -- All tables
@@ -726,7 +475,7 @@ FROM (
     FROM information_schema.tables
     WHERE
         table_schema NOT IN (
-            'pg_toast', 'pg_catalog', 'information_schema', 'pglinter'
+            'pg_toast', 'pg_catalog', 'information_schema', 'pglinter','_timescaledb', 'timescaledb'
         )
 
     UNION
@@ -739,7 +488,7 @@ FROM (
     FROM information_schema.columns
     WHERE
         table_schema NOT IN (
-            'pg_toast', 'pg_catalog', 'information_schema', 'pglinter'
+            'pg_toast', 'pg_catalog', 'information_schema', 'pglinter','_timescaledb', 'timescaledb'
         )
 
     UNION
@@ -752,7 +501,7 @@ FROM (
     FROM pg_indexes
     WHERE
         schemaname NOT IN (
-            'pg_toast', 'pg_catalog', 'information_schema', 'pglinter'
+            'pg_toast', 'pg_catalog', 'information_schema', 'pglinter','_timescaledb', 'timescaledb'
         )
 
     UNION
@@ -765,7 +514,7 @@ FROM (
     FROM information_schema.sequences
     WHERE
         sequence_schema NOT IN (
-            'pg_toast', 'pg_catalog', 'information_schema', 'pglinter'
+            'pg_toast', 'pg_catalog', 'information_schema', 'pglinter','_timescaledb', 'timescaledb'
         )
 
     UNION
@@ -778,7 +527,7 @@ FROM (
     FROM information_schema.views
     WHERE
         table_schema NOT IN (
-            'pg_toast', 'pg_catalog', 'information_schema', 'pglinter'
+            'pg_toast', 'pg_catalog', 'information_schema', 'pglinter','_timescaledb', 'timescaledb'
         )
 
     UNION
@@ -791,7 +540,7 @@ FROM (
     FROM information_schema.routines
     WHERE
         routine_schema NOT IN (
-            'pg_toast', 'pg_catalog', 'information_schema', 'pglinter'
+            'pg_toast', 'pg_catalog', 'information_schema', 'pglinter','_timescaledb', 'timescaledb'
         )
         AND routine_type = 'FUNCTION'
 
@@ -805,7 +554,7 @@ FROM (
     FROM information_schema.triggers
     WHERE
         trigger_schema NOT IN (
-            'pg_toast', 'pg_catalog', 'information_schema', 'pglinter'
+            'pg_toast', 'pg_catalog', 'information_schema', 'pglinter','_timescaledb', 'timescaledb'
         )
 
     UNION
@@ -818,17 +567,11 @@ FROM (
     FROM information_schema.schemata
     WHERE
         schema_name NOT IN (
-            'pg_toast', 'pg_catalog', 'information_schema', 'pglinter'
+            'pg_toast', 'pg_catalog', 'information_schema', 'pglinter','_timescaledb', 'timescaledb'
         )
 ) all_objects
-$$
-WHERE code = 'B006';
-
--- =============================================================================
--- B006 - Objects With Uppercase (Problems)
--- =============================================================================
-UPDATE pglinter.rules
-SET q2 = $$
+$$,
+    q2 = $$
 SELECT COUNT(*) AS uppercase_objects
 FROM (
     -- Tables with uppercase names
@@ -839,7 +582,7 @@ FROM (
     FROM information_schema.tables
     WHERE
         table_schema NOT IN (
-            'pg_toast', 'pg_catalog', 'information_schema', 'pglinter'
+            'pg_toast', 'pg_catalog', 'information_schema', 'pglinter','_timescaledb', 'timescaledb'
         )
         AND table_name != LOWER(table_name)
 
@@ -853,7 +596,7 @@ FROM (
     FROM information_schema.columns
     WHERE
         table_schema NOT IN (
-            'pg_toast', 'pg_catalog', 'information_schema', 'pglinter'
+            'pg_toast', 'pg_catalog', 'information_schema', 'pglinter','_timescaledb', 'timescaledb'
         )
         AND column_name != LOWER(column_name)
 
@@ -867,7 +610,7 @@ FROM (
     FROM pg_indexes
     WHERE
         schemaname NOT IN (
-            'pg_toast', 'pg_catalog', 'information_schema', 'pglinter'
+            'pg_toast', 'pg_catalog', 'information_schema', 'pglinter','_timescaledb', 'timescaledb'
         )
         AND indexname != LOWER(indexname)
 
@@ -881,7 +624,7 @@ FROM (
     FROM information_schema.sequences
     WHERE
         sequence_schema NOT IN (
-            'pg_toast', 'pg_catalog', 'information_schema', 'pglinter'
+            'pg_toast', 'pg_catalog', 'information_schema', 'pglinter','_timescaledb', 'timescaledb'
         )
         AND sequence_name != LOWER(sequence_name)
 
@@ -895,7 +638,7 @@ FROM (
     FROM information_schema.views
     WHERE
         table_schema NOT IN (
-            'pg_toast', 'pg_catalog', 'information_schema', 'pglinter'
+            'pg_toast', 'pg_catalog', 'information_schema', 'pglinter','_timescaledb', 'timescaledb'
         )
         AND table_name != LOWER(table_name)
 
@@ -909,7 +652,7 @@ FROM (
     FROM information_schema.routines
     WHERE
         routine_schema NOT IN (
-            'pg_toast', 'pg_catalog', 'information_schema', 'pglinter'
+            'pg_toast', 'pg_catalog', 'information_schema', 'pglinter','_timescaledb', 'timescaledb'
         )
         AND routine_type = 'FUNCTION'
         AND routine_name != LOWER(routine_name)
@@ -924,7 +667,7 @@ FROM (
     FROM information_schema.triggers
     WHERE
         trigger_schema NOT IN (
-            'pg_toast', 'pg_catalog', 'information_schema', 'pglinter'
+            'pg_toast', 'pg_catalog', 'information_schema', 'pglinter','_timescaledb', 'timescaledb'
         )
         AND trigger_name != LOWER(trigger_name)
 
@@ -938,32 +681,148 @@ FROM (
     FROM information_schema.schemata
     WHERE
         schema_name NOT IN (
-            'pg_toast', 'pg_catalog', 'information_schema', 'pglinter'
+            'pg_toast', 'pg_catalog', 'information_schema', 'pglinter','_timescaledb', 'timescaledb'
         )
         AND schema_name != LOWER(schema_name)
 ) uppercase_objects
+$$,
+    q3 = $$
+SELECT
+    object_type::TEXT ||' '||schema_name::TEXT,
+    object_name::TEXT AS problematic_object
+FROM (
+    -- Tables with uppercase names
+    SELECT
+        'table' AS object_type,
+        table_schema AS schema_name,
+        table_name AS object_name
+    FROM information_schema.tables
+    WHERE
+        table_schema NOT IN (
+            'pg_toast', 'pg_catalog', 'information_schema', 'pglinter','_timescaledb', 'timescaledb'
+        )
+        AND table_name != LOWER(table_name)
+
+    UNION ALL
+
+    -- Columns with uppercase names
+    SELECT
+        'column' AS object_type,
+        table_schema AS schema_name,
+        table_name || '.' || column_name AS object_name
+    FROM information_schema.columns
+    WHERE
+        table_schema NOT IN (
+            'pg_toast', 'pg_catalog', 'information_schema', 'pglinter','_timescaledb', 'timescaledb'
+        )
+        AND column_name != LOWER(column_name)
+
+    UNION ALL
+
+    -- Indexes with uppercase names
+    SELECT
+        'index' AS object_type,
+        schemaname AS schema_name,
+        indexname AS object_name
+    FROM pg_indexes
+    WHERE
+        schemaname NOT IN (
+            'pg_toast', 'pg_catalog', 'information_schema', 'pglinter','_timescaledb', 'timescaledb'
+        )
+        AND indexname != LOWER(indexname)
+
+    UNION ALL
+
+    -- Sequences with uppercase names
+    SELECT
+        'sequence' AS object_type,
+        sequence_schema AS schema_name,
+        sequence_name AS object_name
+    FROM information_schema.sequences
+    WHERE
+        sequence_schema NOT IN (
+            'pg_toast', 'pg_catalog', 'information_schema', 'pglinter','_timescaledb', 'timescaledb'
+        )
+        AND sequence_name != LOWER(sequence_name)
+
+    UNION ALL
+
+    -- Views with uppercase names
+    SELECT
+        'view' AS object_type,
+        table_schema AS schema_name,
+        table_name AS object_name
+    FROM information_schema.views
+    WHERE
+        table_schema NOT IN (
+            'pg_toast', 'pg_catalog', 'information_schema', 'pglinter','_timescaledb', 'timescaledb'
+        )
+        AND table_name != LOWER(table_name)
+
+    UNION ALL
+
+    -- Functions with uppercase names
+    SELECT
+        'function' AS object_type,
+        routine_schema AS schema_name,
+        routine_name AS object_name
+    FROM information_schema.routines
+    WHERE
+        routine_schema NOT IN (
+            'pg_toast', 'pg_catalog', 'information_schema', 'pglinter','_timescaledb', 'timescaledb'
+        )
+        AND routine_type = 'FUNCTION'
+        AND routine_name != LOWER(routine_name)
+
+    UNION ALL
+
+    -- Triggers with uppercase names
+    SELECT
+        'trigger' AS object_type,
+        trigger_schema AS schema_name,
+        trigger_name AS object_name
+    FROM information_schema.triggers
+    WHERE
+        trigger_schema NOT IN (
+            'pg_toast', 'pg_catalog', 'information_schema', 'pglinter','_timescaledb', 'timescaledb'
+        )
+        AND trigger_name != LOWER(trigger_name)
+
+    UNION ALL
+
+    -- Schemas with uppercase names
+    SELECT
+        'schema' AS object_type,
+        schema_name AS schema_name,
+        schema_name AS object_name
+    FROM information_schema.schemata
+    WHERE
+        schema_name NOT IN (
+            'pg_toast', 'pg_catalog', 'information_schema', 'pglinter','_timescaledb', 'timescaledb'
+        )
+        AND schema_name != LOWER(schema_name)
+) AS uppercase_objects
+ORDER BY
+    object_type,
+    schema_name,
+    object_name
 $$
-WHERE code = 'B006';
+WHERE code = 'B005';
 
 -- =============================================================================
--- B007 - Tables Never Selected (Total)
+-- B006 - Tables Never Selected (Total)
 -- =============================================================================
 UPDATE pglinter.rules
-SET q1 = $$
+SET
+  q1 = $$
 SELECT count(*)
 FROM pg_catalog.pg_tables pt
 WHERE
     schemaname NOT IN (
-        'pg_toast', 'pg_catalog', 'information_schema', 'pglinter'
+        'pg_toast', 'pg_catalog', 'information_schema', 'pglinter', '_timescaledb', 'timescaledb'
     )
-$$
-WHERE code = 'B007';
-
--- =============================================================================
--- B007 - Tables Never Selected (Problems)
--- =============================================================================
-UPDATE pglinter.rules
-SET q2 = $$
+$$,
+  q2 = $$
 SELECT COUNT(*) AS unselected_tables
 FROM pg_stat_user_tables AS psu
 WHERE
@@ -973,30 +832,46 @@ WHERE
     AND (n_tup_upd = 0 OR n_tup_upd IS NULL)
     AND (n_tup_del = 0 OR n_tup_del IS NULL)
     AND psu.schemaname NOT IN (
-        'pg_toast', 'pg_catalog', 'information_schema', 'pglinter'
+        'pg_toast', 'pg_catalog', 'information_schema', 'pglinter', '_timescaledb', 'timescaledb'
     )
-$$
-WHERE code = 'B007';
-
--- =============================================================================
--- B008 - Tables With FK Outside Schema (Total)
--- =============================================================================
-UPDATE pglinter.rules
-SET q1 = $$
-SELECT count(*)
-FROM pg_catalog.pg_tables pt
+$$,
+  q3 = $$
+SELECT psu.schemaname::text, psu.relname::text
+FROM pg_stat_user_tables AS psu
 WHERE
-    schemaname NOT IN (
-        'pg_toast', 'pg_catalog', 'information_schema', 'pglinter'
+    (psu.idx_scan = 0 OR psu.idx_scan IS NULL)
+    AND (psu.seq_scan = 0 OR psu.seq_scan IS NULL)
+    AND n_tup_ins > 0
+    AND (n_tup_upd = 0 OR n_tup_upd IS NULL)
+    AND (n_tup_del = 0 OR n_tup_del IS NULL)
+    AND psu.schemaname NOT IN (
+        'pg_toast', 'pg_catalog', 'information_schema', 'pglinter', '_timescaledb', 'timescaledb'
     )
 $$
-WHERE code = 'B008';
+WHERE code = 'B006';
+
 
 -- =============================================================================
--- B008 - Tables With FK Outside Schema (Problems)
+-- B007 - Tables With FK Outside Schema (Total)
 -- =============================================================================
 UPDATE pglinter.rules
-SET q2 = $$
+SET
+    q1 = $$
+SELECT
+    COUNT(DISTINCT conrelid::regclass) AS tables_with_foreign_keys
+FROM
+    pg_constraint c
+JOIN
+    pg_class r ON r.oid = c.conrelid
+JOIN
+    pg_namespace n ON n.oid = r.relnamespace
+WHERE
+    c.contype = 'f' -- Filter for Foreign Key constraints
+    AND n.nspname NOT IN (
+        'pg_toast', 'pg_catalog', 'information_schema', 'pglinter', '_timescaledb', 'timescaledb'
+    )
+$$,
+    q2 = $$
 SELECT
     COUNT(
         DISTINCT tc.table_schema || '.' || tc.table_name
@@ -1008,76 +883,80 @@ WHERE
     tc.constraint_type = 'FOREIGN KEY'
     AND tc.table_schema != ccu.table_schema
     AND tc.table_schema NOT IN (
-        'pg_toast', 'pg_catalog', 'information_schema', 'pglinter'
+        'pg_toast', 'pg_catalog', 'information_schema', 'pglinter', '_timescaledb', 'timescaledb'
+    )
+$$,
+    q3 = $$
+SELECT
+    tc.table_schema::TEXT,tc.table_name::TEXT,
+    'has foreign key '||tc.constraint_name::TEXT||' referencing '||
+    ccu.table_schema::TEXT||'.'||ccu.table_name::TEXT AS problematic_object
+FROM information_schema.table_constraints AS tc
+INNER JOIN information_schema.constraint_column_usage AS ccu
+    ON tc.constraint_name = ccu.constraint_name
+WHERE
+    tc.constraint_type = 'FOREIGN KEY'
+    AND tc.table_schema != ccu.table_schema
+    AND tc.table_schema NOT IN (
+        'pg_toast', 'pg_catalog', 'information_schema', 'pglinter', '_timescaledb', 'timescaledb'
     )
 $$
-WHERE code = 'B008';
+WHERE code = 'B007';
 
 -- =============================================================================
--- T002 - Table With Redundant Index
+-- B008 - Tables With FK mismatch
 -- =============================================================================
 UPDATE pglinter.rules
-SET q1 = $$
-WITH index_info AS (
-    -- This CTE gets the name and order of all columns for each index.
-    SELECT
-        ind.indrelid AS table_oid,
-        ind.indexrelid AS index_oid,
-        att.attname AS column_name,
-        array_position(ind.indkey, att.attnum) AS column_order
-    FROM pg_index ind
-    JOIN pg_attribute att ON att.attrelid = ind.indrelid AND att.attnum = ANY(ind.indkey)
-    WHERE ind.indisprimary = FALSE AND NOT ind.indisexclusion
-),
-indexed_columns AS (
-    -- This CTE aggregates the columns for each index into an ordered string.
-    SELECT
-        table_oid,
-        index_oid,
-        string_agg(column_name, ',' ORDER BY column_order) AS indexed_columns_string
-    FROM index_info
-    GROUP BY table_oid, index_oid
-),
-table_info AS (
-    -- Joins to pg_class and pg_namespace to get table names and schema names.
-    SELECT
-        oid AS table_oid,
-        relname AS tablename,
-        relnamespace
-    FROM pg_class
-)
+SET
+    q1 = $$
 SELECT
-    pg_namespace.nspname::TEXT ||'.'||table_info.tablename::TEXT||
-    ' idx '||redundant_index.relname::TEXT||
-    ' columns ('||i1.indexed_columns_string||') is a subset of '||
-    'idx '||superset_index.relname::TEXT||
-    ' columns ('||i2.indexed_columns_string||')' AS problematic_object
-FROM indexed_columns AS i1
-JOIN indexed_columns AS i2 ON i1.table_oid = i2.table_oid
-JOIN pg_class redundant_index ON i1.index_oid = redundant_index.oid
-JOIN pg_class superset_index ON i2.index_oid = superset_index.oid
-JOIN table_info ON i1.table_oid = table_info.table_oid
-JOIN pg_namespace ON table_info.relnamespace = pg_namespace.oid
+    COUNT(DISTINCT conrelid::regclass) AS tables_with_foreign_keys
+FROM
+    pg_constraint c
+JOIN
+    pg_class r ON r.oid = c.conrelid
+JOIN
+    pg_namespace n ON n.oid = r.relnamespace
 WHERE
-    pg_namespace.nspname NOT IN ('pg_toast', 'pg_catalog', 'information_schema', 'pglinter')
-    AND redundant_index.oid <> superset_index.oid -- Ensure the indexes are not the same
-    -- Checks if the smaller index's column string is a prefix of the larger index's string.
-    AND i2.indexed_columns_string LIKE i1.indexed_columns_string || '%'
-ORDER BY 1
-$$
-WHERE code = 'T002';
-
--- =============================================================================
--- T007 - Table With FK Mismatch
--- =============================================================================
-UPDATE pglinter.rules
-SET q1 = $$
+    c.contype = 'f' -- Filter for Foreign Key constraints
+    AND n.nspname NOT IN (
+        'pg_toast', 'pg_catalog', 'information_schema', 'pglinter', '_timescaledb', 'timescaledb'
+    )
+$$,
+    q2 = $$
+SELECT
+    count(1) AS fk_type_mismatches
+FROM information_schema.table_constraints AS tc
+INNER JOIN information_schema.key_column_usage AS kcu
+    ON
+        tc.constraint_name = kcu.constraint_name
+        AND tc.table_schema = kcu.table_schema
+INNER JOIN information_schema.constraint_column_usage AS ccu
+    ON tc.constraint_name = ccu.constraint_name
+INNER JOIN information_schema.columns AS col1
+    ON
+        kcu.table_schema = col1.table_schema
+        AND kcu.table_name = col1.table_name
+        AND kcu.column_name = col1.column_name
+INNER JOIN information_schema.columns AS col2
+    ON
+        ccu.table_schema = col2.table_schema
+        AND ccu.table_name = col2.table_name
+        AND ccu.column_name = col2.column_name
+WHERE
+    tc.constraint_type = 'FOREIGN KEY'
+    AND tc.table_schema NOT IN (
+        'pg_toast', 'pg_catalog', 'information_schema', 'pglinter', '_timescaledb', 'timescaledb'
+    )
+    AND col1.data_type != col2.data_type
+$$,
+    q3 = $$
 SELECT
     tc.table_schema::text || '.'
     || tc.table_name::text || ' constraint '
     || tc.constraint_name::text || ' column '
     || kcu.column_name::text || ' type is '
-    || col1.data_type::text || ' but'
+    || col1.data_type::text || ' but '
     || ccu.table_name::text || '.'
     || ccu.column_name::text || ' type is '
     || col2.data_type::text AS problematic_object
@@ -1101,101 +980,14 @@ INNER JOIN information_schema.columns AS col2
 WHERE
     tc.constraint_type = 'FOREIGN KEY'
     AND tc.table_schema NOT IN (
-        'pg_toast', 'pg_catalog', 'information_schema', 'pglinter'
+        'pg_toast', 'pg_catalog', 'information_schema', 'pglinter', '_timescaledb', 'timescaledb'
     )
     AND col1.data_type != col2.data_type
-ORDER BY 1
 $$
-WHERE code = 'T007';
+WHERE code = 'B008';
 
 -- =============================================================================
--- T009 - Reserved Keywords
--- =============================================================================
-UPDATE pglinter.rules
-SET q1 = $$
-WITH reserved_keywords AS (
-    SELECT UNNEST(ARRAY[
-        'ALL', 'ANALYSE', 'ANALYZE', 'AND', 'ANY', 'ARRAY', 'AS', 'ASC',
-        'ASYMMETRIC', 'AUTHORIZATION', 'BINARY', 'BOTH', 'CASE', 'CAST',
-        'CHECK', 'COLLATE', 'COLLATION', 'COLUMN', 'CONCURRENTLY',
-        'CONSTRAINT', 'CREATE', 'CROSS', 'CURRENT_CATALOG', 'CURRENT_DATE',
-        'CURRENT_ROLE', 'CURRENT_SCHEMA', 'CURRENT_TIME', 'CURRENT_TIMESTAMP',
-        'CURRENT_USER', 'DEFAULT', 'DEFERRABLE', 'DESC', 'DISTINCT', 'DO',
-        'ELSE', 'END', 'EXCEPT', 'FALSE', 'FETCH', 'FOR', 'FOREIGN', 'FROM',
-        'FULL', 'GRANT', 'GROUP', 'HAVING', 'IN', 'INITIALLY', 'INNER',
-        'INTERSECT', 'INTO', 'IS', 'ISNULL', 'JOIN', 'LATERAL', 'LEADING',
-        'LEFT', 'LIKE', 'LIMIT', 'LOCALTIME', 'LOCALTIMESTAMP', 'NATURAL',
-        'NOT', 'NOTNULL', 'NULL', 'OFFSET', 'ON', 'ONLY', 'OR', 'ORDER',
-        'OUTER', 'OVERLAPS', 'PLACING', 'PRIMARY', 'REFERENCES', 'RETURNING',
-        'RIGHT', 'SELECT', 'SESSION_USER', 'SIMILAR', 'SOME', 'SYMMETRIC',
-        'TABLE', 'TABLESAMPLE', 'THEN', 'TO', 'TRAILING', 'TRUE', 'UNION',
-        'UNIQUE', 'USER', 'USING', 'VARIADIC', 'VERBOSE', 'WHEN', 'WHERE',
-        'WINDOW', 'WITH'
-    ]) AS keyword
-)
-SELECT
-    object_type || ':' || schema_name || '.' || object_name ||' is a reserved keyword.' AS problematic_object
-FROM (
-    -- Tables using reserved keywords
-    SELECT
-        'table' AS object_type,
-        table_schema AS schema_name,
-        table_name AS object_name
-    FROM information_schema.tables
-    CROSS JOIN reserved_keywords
-    WHERE
-        table_schema NOT IN (
-            'pg_toast', 'pg_catalog', 'information_schema', 'pglinter'
-        )
-        AND UPPER(table_name) = keyword
-
-    UNION
-
-    -- Columns using reserved keywords
-    SELECT
-        'column' AS object_type,
-        table_schema AS schema_name,
-        table_name || '.' || column_name AS object_name
-    FROM information_schema.columns
-    CROSS JOIN reserved_keywords
-    WHERE
-        table_schema NOT IN (
-            'pg_toast', 'pg_catalog', 'information_schema', 'pglinter'
-        )
-        AND UPPER(column_name) = keyword
-
-    UNION
-
-    -- Indexes using reserved keywords
-    SELECT
-        'index' AS object_type,
-        schemaname AS schema_name,
-        indexname AS object_name
-    FROM pg_indexes
-    CROSS JOIN reserved_keywords
-    WHERE
-        schemaname NOT IN (
-            'pg_toast', 'pg_catalog', 'information_schema', 'pglinter'
-        )
-        AND UPPER(indexname) = keyword
-) reserved_objects
-ORDER BY 1
-$$
-WHERE code = 'T009';
-
--- =============================================================================
--- C003 - MD5 encrypted Passwords (Problems)
--- =============================================================================
-UPDATE pglinter.rules
-SET q1 = $$
-SELECT 'password_encryption is ' || setting FROM
-pg_catalog.pg_settings
-WHERE name='password_encryption' AND setting='md5'
-$$
-WHERE code = 'C003';
-
--- =============================================================================
--- B015 - Tables With same trigger
+-- B009 - Tables With same trigger
 -- =============================================================================
 UPDATE pglinter.rules
 SET q1 = $$
@@ -1207,14 +999,8 @@ WHERE
     t.trigger_schema NOT IN (
     'pg_toast', 'pg_catalog', 'information_schema', 'pglinter'
 )
-$$
-WHERE code = 'B015';
-
--- =============================================================================
--- B015 - Tables With same trigger
--- =============================================================================
-UPDATE pglinter.rules
-SET q2 = $$
+$$,
+  q2 = $$
 SELECT
     COALESCE(SUM(shared_table_count), 0)::BIGINT AS table_using_same_trigger
 FROM (
@@ -1237,46 +1023,511 @@ FROM (
     HAVING
         COUNT(DISTINCT t.event_object_table) > 1
 ) shared_triggers
-$$
-WHERE code = 'B015';
-
--- =============================================================================
--- T015 - Tables Sharing Same Trigger Function
--- =============================================================================
-UPDATE pglinter.rules
-SET q1 = $$
-SELECT
-    t.trigger_schema::text || '.' || t.event_object_table::text ||
-    ' shares trigger function ' || t.trigger_function_name::text ||
-    ' with other tables' AS problematic_object
-FROM (
+$$,
+  q3 = $$
+WITH SharedFunctions AS (
+    -- 1. Identify all trigger functions that are used by more than one table
     SELECT
-        t.trigger_schema,
-        t.event_object_table,
-        -- Extracts the function name from the action_statement (e.g., 'public.my_func()')
         SUBSTRING(t.action_statement FROM 'EXECUTE FUNCTION ([^()]+)') AS trigger_function_name
     FROM
         information_schema.triggers t
     WHERE
         t.trigger_schema NOT IN (
-            'pg_toast', 'pg_catalog', 'information_schema', 'pglinter'
-        )
-) t
-WHERE t.trigger_function_name IN (
-    -- Subquery to find trigger functions shared by multiple tables
-    SELECT
-        SUBSTRING(t2.action_statement FROM 'EXECUTE FUNCTION ([^()]+)') AS shared_function
-    FROM
-        information_schema.triggers t2
-    WHERE
-        t2.trigger_schema NOT IN (
-            'pg_toast', 'pg_catalog', 'information_schema', 'pglinter'
+            'pg_toast', 'pg_catalog', 'information_schema', 'pglinter', '_timescaledb', 'timescaledb'
         )
     GROUP BY
-        SUBSTRING(t2.action_statement FROM 'EXECUTE FUNCTION ([^()]+)')
+        1
     HAVING
-        COUNT(DISTINCT t2.event_object_table) > 1
+        COUNT(DISTINCT t.event_object_table) > 1
 )
-ORDER BY t.trigger_function_name, t.event_object_table
+SELECT
+    t.event_object_table::TEXT AS table_name,
+    t.trigger_name::TEXT || ' uses the same trigger function ' ||
+    t.trigger_schema::TEXT,
+    s.trigger_function_name::TEXT
+FROM
+    information_schema.triggers t
+JOIN
+    SharedFunctions s ON s.trigger_function_name = SUBSTRING(t.action_statement FROM 'EXECUTE FUNCTION ([^()]+)')
+WHERE
+    t.trigger_schema NOT IN (
+        'pg_toast', 'pg_catalog', 'information_schema', 'pglinter', '_timescaledb', 'timescaledb'
+    )
+ORDER BY
+    s.trigger_function_name,
+    t.trigger_schema,
+    t.event_object_table
 $$
-WHERE code = 'T015';
+WHERE code = 'B009';
+
+
+-- =============================================================================
+-- B010 - Tables With Reserved Keywords
+-- =============================================================================
+UPDATE pglinter.rules
+  SET q1 = $$
+SELECT count(*) AS total_tables
+FROM pg_catalog.pg_tables
+WHERE
+    schemaname NOT IN (
+        'pg_toast', 'pg_catalog', 'information_schema', 'pglinter','_timescaledb', 'timescaledb'
+    )
+$$,
+  q2 = $$
+WITH reserved_keywords AS (
+    SELECT UNNEST(ARRAY[
+        'ALL', 'ANALYSE', 'ANALYZE', 'AND', 'ANY', 'ARRAY', 'AS', 'ASC',
+        'ASYMMETRIC', 'AUTHORIZATION', 'BINARY', 'BOTH', 'CASE', 'CAST',
+        'CHECK', 'COLLATE', 'COLLATION', 'COLUMN', 'CONCURRENTLY',
+        'CONSTRAINT', 'CREATE', 'CROSS', 'CURRENT_CATALOG', 'CURRENT_DATE',
+        'CURRENT_ROLE', 'CURRENT_SCHEMA', 'CURRENT_TIME', 'CURRENT_TIMESTAMP',
+        'CURRENT_USER', 'DEFAULT', 'DEFERRABLE', 'DESC', 'DISTINCT', 'DO',
+        'ELSE', 'END', 'EXCEPT', 'FALSE', 'FETCH', 'FOR', 'FOREIGN', 'FROM',
+        'FULL', 'GRANT', 'GROUP', 'HAVING', 'IN', 'INITIALLY', 'INNER',
+        'INTERSECT', 'INTO', 'IS', 'ISNULL', 'JOIN', 'LATERAL', 'LEADING',
+        'LEFT', 'LIKE', 'LIMIT', 'LOCALTIME', 'LOCALTIMESTAMP', 'NATURAL',
+        'NOT', 'NOTNULL', 'NULL', 'OFFSET', 'ON', 'ONLY', 'OR', 'ORDER',
+        'OUTER', 'OVERLAPS', 'PLACING', 'PRIMARY', 'REFERENCES', 'RETURNING',
+        'RIGHT', 'SELECT', 'SESSION_USER', 'SIMILAR', 'SOME', 'SYMMETRIC',
+        'TABLE', 'TABLESAMPLE', 'THEN', 'TO', 'TRAILING', 'TRUE', 'UNION',
+        'UNIQUE', 'USER', 'USING', 'VARIADIC', 'VERBOSE', 'WHEN', 'WHERE',
+        'WINDOW', 'WITH'
+    ]) AS keyword
+)
+SELECT
+    COUNT(1) AS total_reserved_keyword_objects
+FROM (
+    -- Tables using reserved keywords
+    SELECT
+        'table' AS object_type,
+        table_schema AS schema_name,
+        table_name AS object_name
+    FROM information_schema.tables
+    CROSS JOIN reserved_keywords
+    WHERE
+        table_schema NOT IN (
+            'pg_toast', 'pg_catalog', 'information_schema', 'pglinter', '_timescaledb', 'timescaledb'
+        )
+        AND UPPER(table_name) = keyword
+
+    UNION ALL -- Use UNION ALL for counting to avoid redundant DISTINCT check
+
+    -- Columns using reserved keywords
+    SELECT
+        'column' AS object_type,
+        table_schema AS schema_name,
+        table_name || '.' || column_name AS object_name
+    FROM information_schema.columns
+    CROSS JOIN reserved_keywords
+    WHERE
+        table_schema NOT IN (
+            'pg_toast', 'pg_catalog', 'information_schema', 'pglinter', '_timescaledb', 'timescaledb'
+        )
+        AND UPPER(column_name) = keyword
+
+    UNION ALL
+
+    -- Indexes using reserved keywords
+    SELECT
+        'index' AS object_type,
+        schemaname AS schema_name,
+        indexname AS object_name
+    FROM pg_indexes
+    CROSS JOIN reserved_keywords
+    WHERE
+        schemaname NOT IN (
+            'pg_toast', 'pg_catalog', 'information_schema', 'pglinter', '_timescaledb', 'timescaledb'
+        )
+        AND UPPER(indexname) = keyword
+) reserved_objects
+$$,
+  q3 = $$
+WITH reserved_keywords AS (
+    SELECT UNNEST(ARRAY[
+        'ALL', 'ANALYSE', 'ANALYZE', 'AND', 'ANY', 'ARRAY', 'AS', 'ASC',
+        'ASYMMETRIC', 'AUTHORIZATION', 'BINARY', 'BOTH', 'CASE', 'CAST',
+        'CHECK', 'COLLATE', 'COLLATION', 'COLUMN', 'CONCURRENTLY',
+        'CONSTRAINT', 'CREATE', 'CROSS', 'CURRENT_CATALOG', 'CURRENT_DATE',
+        'CURRENT_ROLE', 'CURRENT_SCHEMA', 'CURRENT_TIME', 'CURRENT_TIMESTAMP',
+        'CURRENT_USER', 'DEFAULT', 'DEFERRABLE', 'DESC', 'DISTINCT', 'DO',
+        'ELSE', 'END', 'EXCEPT', 'FALSE', 'FETCH', 'FOR', 'FOREIGN', 'FROM',
+        'FULL', 'GRANT', 'GROUP', 'HAVING', 'IN', 'INITIALLY', 'INNER',
+        'INTERSECT', 'INTO', 'IS', 'ISNULL', 'JOIN', 'LATERAL', 'LEADING',
+        'LEFT', 'LIKE', 'LIMIT', 'LOCALTIME', 'LOCALTIMESTAMP', 'NATURAL',
+        'NOT', 'NOTNULL', 'NULL', 'OFFSET', 'ON', 'ONLY', 'OR', 'ORDER',
+        'OUTER', 'OVERLAPS', 'PLACING', 'PRIMARY', 'REFERENCES', 'RETURNING',
+        'RIGHT', 'SELECT', 'SESSION_USER', 'SIMILAR', 'SOME', 'SYMMETRIC',
+        'TABLE', 'TABLESAMPLE', 'THEN', 'TO', 'TRAILING', 'TRUE', 'UNION',
+        'UNIQUE', 'USER', 'USING', 'VARIADIC', 'VERBOSE', 'WHEN', 'WHERE',
+        'WINDOW', 'WITH'
+    ]) AS keyword
+)
+SELECT
+    object_type || ' in ' ||
+    schema_name,
+    object_name || ' is a reserved keyword: ' ||
+    keyword AS reserved_keyword_match
+FROM (
+    -- Tables using reserved keywords
+    SELECT
+        'table' AS object_type,
+        table_schema AS schema_name,
+        table_name AS object_name,
+        keyword
+    FROM information_schema.tables
+    CROSS JOIN reserved_keywords
+    WHERE
+        table_schema NOT IN (
+            'pg_toast', 'pg_catalog', 'information_schema', 'pglinter', '_timescaledb', 'timescaledb'
+        )
+        AND UPPER(table_name) = keyword
+
+    UNION ALL
+
+    -- Columns using reserved keywords
+    SELECT
+        'column' AS object_type,
+        table_schema AS schema_name,
+        table_name || '.' || column_name AS object_name,
+        keyword
+    FROM information_schema.columns
+    CROSS JOIN reserved_keywords
+    WHERE
+        table_schema NOT IN (
+            'pg_toast', 'pg_catalog', 'information_schema', 'pglinter', '_timescaledb', 'timescaledb'
+        )
+        AND UPPER(column_name) = keyword
+
+    UNION ALL
+
+    -- Indexes using reserved keywords
+    SELECT
+        'index' AS object_type,
+        schemaname AS schema_name,
+        indexname AS object_name,
+        keyword
+    FROM pg_indexes
+    CROSS JOIN reserved_keywords
+    WHERE
+        schemaname NOT IN (
+            'pg_toast', 'pg_catalog', 'information_schema', 'pglinter', '_timescaledb', 'timescaledb'
+        )
+        AND UPPER(indexname) = keyword
+) AS reserved_objects
+ORDER BY
+    object_type,
+    schema_name,
+    object_name
+$$
+WHERE code = 'B010';
+
+-- =============================================================================
+-- S001 - Schema Permission Analysis
+-- =============================================================================
+UPDATE pglinter.rules
+SET
+    q1 = $$
+SELECT
+    COUNT(*) AS total_schema_count
+FROM
+    pg_namespace n
+WHERE
+    n.nspname NOT IN ('public', 'pg_toast', 'pg_catalog', 'information_schema', 'pglinter', '_timescaledb', 'timescaledb')
+    AND n.nspname NOT LIKE 'pg_%'
+$$,
+    q2 = $$
+SELECT count(DISTINCT n.nspname::text) AS nb_schema
+FROM pg_namespace n
+WHERE
+    n.nspname NOT IN ('public', 'pg_toast', 'pg_catalog', 'information_schema', 'pglinter', '_timescaledb', 'timescaledb')
+    AND n.nspname NOT LIKE 'pg_%'
+    AND NOT EXISTS (
+        SELECT 1
+        FROM pg_default_acl da
+        WHERE
+            da.defaclnamespace = n.oid
+            AND da.defaclrole != n.nspowner
+    )
+ORDER BY 1
+$$,
+    q3 = $$
+SELECT DISTINCT n.nspname::text AS schema_name
+FROM pg_namespace n
+WHERE
+    n.nspname NOT IN ('public', 'pg_toast', 'pg_catalog', 'information_schema', 'pglinter', '_timescaledb', 'timescaledb')
+    AND n.nspname NOT LIKE 'pg_%'
+    AND NOT EXISTS (
+        SELECT 1
+        FROM pg_default_acl da
+        WHERE
+            da.defaclnamespace = n.oid
+            AND da.defaclrole != n.nspowner
+    )
+ORDER BY 1
+$$
+WHERE code = 'S001';
+
+
+-- =============================================================================
+-- S002 - Environment-Named Schemas
+-- =============================================================================
+UPDATE pglinter.rules
+SET
+    q1 = $$
+SELECT
+    COUNT(*) AS total_schema_count
+FROM
+    pg_namespace n
+WHERE
+    n.nspname NOT IN ('public', 'pg_toast', 'pg_catalog', 'information_schema', 'pglinter', '_timescaledb', 'timescaledb')
+    AND n.nspname NOT LIKE 'pg_%'
+$$,
+    q2 = $$
+SELECT count(n.nspname::text) AS nb_schema_name
+FROM pg_namespace n
+WHERE
+    n.nspname NOT IN ('public', 'pg_toast', 'pg_catalog', 'information_schema', 'pglinter', '_timescaledb', 'timescaledb')
+    AND n.nspname NOT LIKE 'pg_%'
+    AND (
+        n.nspname ILIKE 'staging_%' OR n.nspname ILIKE '%_staging'
+        OR n.nspname ILIKE 'stg_%' OR n.nspname ILIKE '%_stg'
+        OR n.nspname ILIKE 'preprod_%' OR n.nspname ILIKE '%_preprod'
+        OR n.nspname ILIKE 'prod_%' OR n.nspname ILIKE '%_prod'
+        OR n.nspname ILIKE 'production_%' OR n.nspname ILIKE '%_production'
+        OR n.nspname ILIKE 'dev_%' OR n.nspname ILIKE '%_dev'
+        OR n.nspname ILIKE 'development_%' OR n.nspname ILIKE '%_development'
+        OR n.nspname ILIKE 'sandbox_%' OR n.nspname ILIKE '%_sandbox'
+        OR n.nspname ILIKE 'sbox_%' OR n.nspname ILIKE '%_sbox'
+    )
+$$,
+    q3 = $$
+SELECT count(n.nspname::text) AS nb_schema_name
+FROM pg_namespace n
+WHERE
+    n.nspname NOT IN ('public', 'pg_toast', 'pg_catalog', 'information_schema', 'pglinter', '_timescaledb', 'timescaledb')
+    AND n.nspname NOT LIKE 'pg_%'
+    AND (
+        n.nspname ILIKE 'staging_%' OR n.nspname ILIKE '%_staging'
+        OR n.nspname ILIKE 'stg_%' OR n.nspname ILIKE '%_stg'
+        OR n.nspname ILIKE 'preprod_%' OR n.nspname ILIKE '%_preprod'
+        OR n.nspname ILIKE 'prod_%' OR n.nspname ILIKE '%_prod'
+        OR n.nspname ILIKE 'production_%' OR n.nspname ILIKE '%_production'
+        OR n.nspname ILIKE 'dev_%' OR n.nspname ILIKE '%_dev'
+        OR n.nspname ILIKE 'development_%' OR n.nspname ILIKE '%_development'
+        OR n.nspname ILIKE 'sandbox_%' OR n.nspname ILIKE '%_sandbox'
+        OR n.nspname ILIKE 'sbox_%' OR n.nspname ILIKE '%_sbox'
+    )
+ORDER BY 1
+$$
+WHERE code = 'S002';
+
+-- =============================================================================
+-- S003 - Schema Public Access (Problems)
+-- =============================================================================
+UPDATE pglinter.rules
+SET
+    q1 = $$
+SELECT
+    COUNT(*) AS total_schema_count
+FROM
+    pg_namespace n
+WHERE
+    n.nspname NOT IN ('public', 'pg_toast', 'pg_catalog', 'information_schema', 'pglinter', '_timescaledb', 'timescaledb')
+    AND n.nspname NOT LIKE 'pg_%'
+$$,
+    q2 = $$
+SELECT COUNT(*) AS total_schemas
+FROM pg_namespace n
+WHERE
+    n.nspname NOT IN ('pg_toast', 'pg_catalog', 'information_schema', 'pglinter', '_timescaledb', 'timescaledb')
+    AND HAS_SCHEMA_PRIVILEGE('public', n.nspname, 'CREATE')
+$$,
+    q3 = $$
+SELECT n.nspname::text AS schemas
+FROM pg_namespace n
+WHERE
+    n.nspname NOT IN ('pg_toast', 'pg_catalog', 'information_schema', 'pglinter', '_timescaledb', 'timescaledb')
+    AND HAS_SCHEMA_PRIVILEGE('public', n.nspname, 'CREATE')
+$$
+WHERE code = 'S003';
+
+-- =============================================================================
+-- S004 - Schema Owner is Internal Role
+-- =============================================================================
+UPDATE pglinter.rules
+SET
+    q1 = $$
+SELECT
+    COUNT(*) AS total_schema_count
+FROM
+    pg_namespace n
+WHERE
+    n.nspname NOT IN ('public', 'pg_toast', 'pg_catalog', 'information_schema', 'pglinter', '_timescaledb', 'timescaledb')
+    AND n.nspname NOT LIKE 'pg_%'
+$$,
+    q2 = $$
+SELECT COUNT(*) AS total_schemas
+FROM pg_namespace n
+WHERE
+    n.nspname NOT IN ('pg_toast', 'pg_catalog', 'information_schema', 'pglinter', '_timescaledb', 'timescaledb')
+    AND HAS_SCHEMA_PRIVILEGE('public', n.nspname, 'CREATE')
+$$,
+    q3 = $$
+SELECT
+    n.nspname AS schema_name,
+    r.rolname AS owner_role
+FROM
+    pg_namespace n
+JOIN
+    pg_roles r ON n.nspowner = r.oid
+WHERE
+    n.nspname NOT IN ('pg_toast', 'pg_catalog', 'information_schema', 'pglinter', '_timescaledb', 'timescaledb')
+    AND (
+        r.rolsuper IS TRUE -- Owned by a Superuser (e.g., 'postgres')
+        OR r.rolname LIKE 'pg_%' -- Owned by a reserved PostgreSQL system role
+        OR r.rolname = 'postgres' -- Explicitly include the default administrative account
+    )
+ORDER BY
+    n.nspname
+$$
+WHERE code = 'S004';
+
+-- =============================================================================
+-- S005 - Several tables in schema have different owners
+-- =============================================================================
+UPDATE pglinter.rules
+SET
+    q1 = $$
+SELECT
+    COUNT(*) AS total_schema_count
+FROM
+    pg_namespace n
+WHERE
+    n.nspname NOT IN ('public', 'pg_toast', 'pg_catalog', 'information_schema', 'pglinter', '_timescaledb', 'timescaledb')
+    AND n.nspname NOT LIKE 'pg_%'
+$$,
+    q2 = $$
+SELECT count(DISTINCT tableowner) AS owners
+FROM pg_tables
+WHERE
+    schemaname NOT IN ('pg_toast', 'pg_catalog', 'information_schema', 'pglinter', '_timescaledb', 'timescaledb')
+GROUP BY schemaname
+$$,
+    q3 = $$
+SELECT
+    schemaname::TEXT,
+    tableowner::TEXT,
+    STRING_AGG(tablename::TEXT, ', ' ORDER BY tablename) AS tables_owned_by_role
+FROM
+    pg_tables
+WHERE
+    schemaname NOT IN (
+        'pg_toast', 'pg_catalog', 'information_schema', 'pglinter', '_timescaledb', 'timescaledb'
+    )
+GROUP BY
+    schemaname,
+    tableowner
+ORDER BY
+    schemaname,
+    tableowner
+$$
+WHERE code = 'S005';
+
+-- =============================================================================
+-- S006 - Schema and table owners differ.
+-- =============================================================================
+UPDATE pglinter.rules
+SET
+    q1 = $$
+SELECT
+    COUNT(*) AS total_schema_count
+FROM
+    pg_namespace n
+WHERE
+    n.nspname NOT IN ('public', 'pg_toast', 'pg_catalog', 'information_schema', 'pglinter', '_timescaledb', 'timescaledb')
+    AND n.nspname NOT LIKE 'pg_%'
+$$,
+    q2 = $$
+SELECT
+    COUNT(DISTINCT n.nspname) AS schemas_with_mixed_ownership
+FROM
+    pg_namespace n
+JOIN
+    pg_class c ON c.relnamespace = n.oid -- Link schema to its relations (tables)
+WHERE
+    n.nspname NOT IN ( -- Exclude system/technical schemas
+        'pg_toast', 'pg_catalog', 'information_schema', 'pglinter', '_timescaledb', 'timescaledb'
+    )
+    AND n.nspname NOT LIKE 'pg_temp%' -- Exclude temp schemas
+    AND c.relkind = 'r'               -- Only count regular tables ('r')
+    AND n.nspowner <> c.relowner      -- Schema owner does NOT equal Table owner
+$$,
+    q3 = $$
+SELECT
+    n.nspname AS schema_name,
+    r_schema.rolname AS schema_owner,
+    r_table.rolname AS table_owner,
+    n.nspname || '.' || c.relname AS fully_qualified_table_name
+FROM
+    pg_namespace n
+JOIN
+    pg_class c ON c.relnamespace = n.oid -- Link schema to its relations (tables)
+JOIN
+    pg_roles r_schema ON n.nspowner = r_schema.oid -- Get schema owner name
+JOIN
+    pg_roles r_table ON c.relowner = r_table.oid    -- Get table owner name
+WHERE
+    n.nspname NOT IN (
+        'pg_toast', 'pg_catalog', 'information_schema', 'pglinter', '_timescaledb', 'timescaledb'
+    )
+    AND n.nspname NOT LIKE 'pg_temp%'
+    AND c.relkind = 'r'               -- Only count regular tables
+    AND n.nspowner <> c.relowner      -- The core condition: Owners are different
+ORDER BY
+    schema_name,
+    fully_qualified_table_name
+$$
+WHERE code = 'S006';
+
+
+-- =============================================================================
+-- C001 - Memory Configuration Analysis
+-- =============================================================================
+UPDATE pglinter.rules
+SET q1 = $$
+SELECT
+    current_setting('max_connections')::int AS max_connections,
+    current_setting('work_mem') AS work_mem_setting
+$$
+WHERE code = 'C001';
+
+-- =============================================================================
+-- C002 - Authentication Security (Total)
+-- =============================================================================
+UPDATE pglinter.rules
+SET q1 = $$
+SELECT count(*) FROM pg_catalog.pg_hba_file_rules
+$$
+WHERE code = 'C002';
+
+-- =============================================================================
+-- C002 - Authentication Security (Problems)
+-- =============================================================================
+UPDATE pglinter.rules
+SET q2 = $$
+SELECT count(*)
+FROM pg_catalog.pg_hba_file_rules
+WHERE auth_method IN ('trust', 'password')
+$$
+WHERE code = 'C002';
+
+-- =============================================================================
+-- C003 - MD5 encrypted Passwords (Problems)
+-- =============================================================================
+UPDATE pglinter.rules
+SET q1 = $$
+SELECT 'password_encryption is ' || setting FROM
+pg_catalog.pg_settings
+WHERE name='password_encryption' AND setting='md5'
+$$
+WHERE code = 'C003';

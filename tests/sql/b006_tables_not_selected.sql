@@ -1,8 +1,8 @@
--- Test for pglinter B007 rule: Tables that are never selected from
+-- Test for pglinter b006 rule: Tables that are never selected from
 -- This script creates tables with mixed usage patterns:
 -- - Some tables that are regularly queried (both index and sequential scans)
 -- - Some tables that are never selected from (neither idx_scan nor seq_scan)
--- to demonstrate the B007 rule detection of unused tables
+-- to demonstrate the b006 rule detection of unused tables
 CREATE EXTENSION pglinter;
 
 \pset pager off
@@ -32,7 +32,7 @@ CREATE TABLE dormant_logs_table (
     user_id INTEGER
 );
 
--- Table 3: Unused configuration table (NEVER accessed - B007 violation)
+-- Table 3: Unused configuration table (NEVER accessed - b006 violation)
 CREATE TABLE unused_config_table (
     id SERIAL,
     config_key VARCHAR(100) UNIQUE NOT NULL,
@@ -56,7 +56,7 @@ CREATE INDEX idx_frequently_product_name ON frequently_accessed_table (product_n
 CREATE INDEX idx_frequently_category ON frequently_accessed_table (category);
 CREATE INDEX idx_frequently_price ON frequently_accessed_table (price);
 
--- Table 5: Completely unused table (NEVER accessed - B007 violation)
+-- Table 5: Completely unused table (NEVER accessed - b006 violation)
 CREATE TABLE completely_unused_table (
     id SERIAL,
     data_field VARCHAR(200),
@@ -136,27 +136,25 @@ VACUUM ANALYZE completely_unused_table;
 
 select pg_sleep(2);
 
--- Create the extension and test B007 rule
+-- Create the extension and test b006 rule
 
 
-SELECT 'Testing B007 rule - Tables never selected detection...' as test_info;
+SELECT 'Testing b006 rule - Tables never selected detection...' as test_info;
 
--- First, disable all rules to isolate B007 testing
+-- First, disable all rules to isolate b006 testing
 SELECT pglinter.disable_all_rules() AS all_rules_disabled;
 
--- Enable only B007 for focused testing
-SELECT pglinter.enable_rule('B007') AS b007_enabled;
+-- Enable only b006 for focused testing
+SELECT pglinter.enable_rule('b006') AS b006_enabled;
 
--- Verify B007 is enabled
-SELECT pglinter.is_rule_enabled('B007') AS b007_status;
+-- Verify b006 is enabled
+SELECT pglinter.is_rule_enabled('b006') AS b006_status;
 
 SELECT pglinter.perform_base_check();
 
 -- Test with file output
-SELECT pglinter.perform_base_check('/tmp/pglinter_b007_results.sarif');
-\! md5sum /tmp/pglinter_b007_results.sarif
-
-
+SELECT pglinter.perform_base_check('/tmp/pglinter_b006_results.sarif');
+\! md5sum /tmp/pglinter_b006_results.sarif
 
 -- Now simulate realistic usage patterns:
 
@@ -180,10 +178,10 @@ SELECT AVG(price) FROM frequently_accessed_table WHERE stock_quantity > 50;
 SELECT id,product_name,category,price FROM frequently_accessed_table WHERE product_name = 'Product_1000';
 SELECT COUNT(*) FROM frequently_accessed_table WHERE category IN ('Electronics', 'Books');
 
--- 4. NO usage of unused_config_table (B007 violation - never selected)
+-- 4. NO usage of unused_config_table (b006 violation - never selected)
 -- (Intentionally no queries to simulate unused table)
 
--- 5. NO usage of completely_unused_table (B007 violation - never selected)
+-- 5. NO usage of completely_unused_table (b006 violation - never selected)
 -- (Intentionally no queries to simulate completely unused table)
 
 -- Update statistics after usage simulation
@@ -196,13 +194,13 @@ VACUUM ANALYZE completely_unused_table;
 -- Allow time for statistics to be recorded
 SELECT pg_sleep(5);
 
--- Run base check to detect B007 violations
+-- Run base check to detect b006 violations
 -- Expected result: Should detect unused_config_table and completely_unused_table
-SELECT 'Running base check to detect B007 violations (tables never selected)...' as status;
+SELECT 'Running base check to detect b006 violations (tables never selected)...' as status;
 SELECT pglinter.perform_base_check();
 
 
-SELECT 'B007 comprehensive test completed successfully!' as test_result;
+SELECT 'b006 comprehensive test completed successfully!' as test_result;
 
 -- Clean up test tables
 DROP TABLE active_users_table CASCADE;

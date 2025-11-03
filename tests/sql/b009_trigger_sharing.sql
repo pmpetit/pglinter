@@ -1,4 +1,4 @@
--- Regression test for B015 rule - Tables with shared trigger functions
+-- Regression test for B009 rule - Tables with shared trigger functions
 -- This script creates a test scenario with:
 -- - 10 tables total
 -- - 5 tables with their own unique trigger functions
@@ -224,18 +224,16 @@ INSERT INTO trigger_test.table_08 (amount) VALUES (99.99);
 INSERT INTO trigger_test.table_09 (notes) VALUES ('No trigger table');
 INSERT INTO trigger_test.table_10 (archived) VALUES (false);
 
--- Test with only B015 enabled
-SELECT 'Testing B015 in isolation...' AS test_step;
+-- Test with only B009 enabled
+SELECT 'Testing B009 in isolation...' AS test_step;
 SELECT pglinter.disable_all_rules() AS all_disabled;
-SELECT pglinter.enable_rule('B015') AS b015_only_enabled;
-SELECT pglinter.perform_base_check(); -- Should only run B015
-SELECT pglinter.enable_rule('T015') AS t015_only_enabled;
-SELECT pglinter.perform_table_check(); -- Should only run T015
+SELECT pglinter.enable_rule('B009') AS B009_only_enabled;
+SELECT pglinter.perform_base_check(); -- Should only run B009
 
 -- Test with output
-SELECT pglinter.perform_base_check('/tmp/pglinter_b015_results.sarif');
+SELECT pglinter.perform_base_check('/tmp/pglinter_B009_results.sarif');
 -- Test if file exists and show checksum
-\! md5sum /tmp/pglinter_b015_results.sarif
+\! md5sum /tmp/pglinter_B009_results.sarif
 
 -- Cleanup
 \echo 'Cleaning up test schema...'

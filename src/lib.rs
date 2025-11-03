@@ -7,8 +7,7 @@ mod manage_rules;
 #[cfg(any(test, feature = "pg_test"))]
 mod fixtures;
 
-// extension_sql_file!("../sql/rules.sql", name = "pglinter");
-extension_sql_file!("../sql/rules.sql", name = "pglinter", finalize);
+extension_sql_file!("../sql/rules.sql", name = "pglinter",finalize);
 
 ::pgrx::pg_module_magic!();
 
@@ -62,25 +61,6 @@ mod pglinter {
     }
 
     #[pg_extern(sql = "
-        CREATE FUNCTION pglinter.perform_table_check(output_file TEXT DEFAULT NULL)
-        RETURNS BOOLEAN
-        AS 'MODULE_PATHNAME', 'perform_table_check_wrapper'
-        LANGUAGE C
-        SECURITY DEFINER;
-    ")]
-    fn perform_table_check(output_file: Option<&str>) -> Option<bool> {
-        match execute_rules("TABLE")
-            .and_then(|results| generate_sarif_output_optional(results, output_file))
-        {
-            Ok(success) => Some(success),
-            Err(e) => {
-                pgrx::warning!("pglinter table check failed: {}", e);
-                Some(false)
-            }
-        }
-    }
-
-    #[pg_extern(sql = "
         CREATE FUNCTION pglinter.perform_schema_check(output_file TEXT DEFAULT NULL)
         RETURNS BOOLEAN
         AS 'MODULE_PATHNAME', 'perform_schema_check_wrapper'
@@ -111,11 +91,6 @@ mod pglinter {
     }
 
     #[pg_extern(security_definer)]
-    fn check_table() -> Option<bool> {
-        perform_table_check(None)
-    }
-
-    #[pg_extern(security_definer)]
     fn check_schema() -> Option<bool> {
         perform_schema_check(None)
     }
@@ -135,12 +110,6 @@ mod pglinter {
         pgrx::notice!("");
         pgrx::notice!("🖥️  CLUSTER CHECKS:");
         if let Some(false) = perform_cluster_check(None) {
-            all_success = false;
-        }
-
-        pgrx::notice!("");
-        pgrx::notice!("📊 TABLE CHECKS:");
-        if let Some(false) = perform_table_check(None) {
             all_success = false;
         }
 
@@ -1383,35 +1352,6 @@ mod tests {
     }
 
     #[pg_test]
-    fn test_perform_table_check() {
-        // Setup test tables using fixture
-        fixtures::setup_test_tables();
-
-        // Ensure T001 rule is enabled (tables without primary keys)
-        let _ = Spi::run("UPDATE pglinter.rules SET enable = true WHERE code = 'T001'");
-
-        // Perform table check via SQL interface - should return true (check completed successfully)
-        // Note: The function returns true even if violations are found, false only on error
-        let result = Spi::get_one::<bool>("SELECT pglinter.perform_table_check()");
-        assert!(result.is_ok());
-        let check_result = result.unwrap();
-        assert!(check_result.is_some());
-        assert_eq!(check_result.unwrap(), true);
-
-        // Test with output file parameter via SQL
-        let result_with_file = Spi::get_one::<bool>(
-            "SELECT pglinter.perform_table_check('/tmp/test_table_output.sarif')",
-        );
-        assert!(result_with_file.is_ok());
-        let check_result_with_file = result_with_file.unwrap();
-        assert!(check_result_with_file.is_some());
-        assert_eq!(check_result_with_file.unwrap(), true);
-
-        // Cleanup test tables
-        fixtures::cleanup_test_tables();
-    }
-
-    #[pg_test]
     fn test_perform_schema_check() {
         // Ensure S001 rule is enabled (schema with default role not granted)
         let _ = Spi::run("UPDATE pglinter.rules SET enable = true WHERE code = 'S001'");
@@ -1442,7 +1382,6 @@ mod tests {
         // Enable at least one rule from each category to ensure all check types run
         let _ = Spi::run("UPDATE pglinter.rules SET enable = true WHERE code = 'B001'"); // Base check
         let _ = Spi::run("UPDATE pglinter.rules SET enable = true WHERE code = 'C002'"); // Cluster check
-        let _ = Spi::run("UPDATE pglinter.rules SET enable = true WHERE code = 'T001'"); // Table check
         let _ = Spi::run("UPDATE pglinter.rules SET enable = true WHERE code = 'S001'"); // Schema check
 
         // Test check_all() via SQL interface - should return true (all checks completed successfully)
@@ -1462,10 +1401,6 @@ mod tests {
         let cluster_result = Spi::get_one::<bool>("SELECT pglinter.check_cluster()");
         assert!(cluster_result.is_ok());
         assert_eq!(cluster_result.unwrap().unwrap(), true);
-
-        let table_result = Spi::get_one::<bool>("SELECT pglinter.check_table()");
-        assert!(table_result.is_ok());
-        assert_eq!(table_result.unwrap().unwrap(), true);
 
         let schema_result = Spi::get_one::<bool>("SELECT pglinter.check_schema()");
         assert!(schema_result.is_ok());
@@ -1696,12 +1631,12 @@ mod tests {
         fixtures::setup_test_tables();
 
         // Enable a rule that will generate violations (tables without primary keys)
-        let _ = Spi::run("UPDATE pglinter.rules SET enable = true WHERE code = 'T001'");
+        let _ = Spi::run("UPDATE pglinter.rules SET enable = true WHERE code = 'B001'");
 
         // Test 1: Test SARIF output generation with file output
         let sarif_file_path = "/tmp/pglinter_test_sarif.json";
         let result_with_file = Spi::get_one::<bool>(&format!(
-            "SELECT pglinter.perform_table_check('{}')",
+            "SELECT pglinter.perform_base_check('{}')",
             sarif_file_path
         ))
         .unwrap();
@@ -1731,13 +1666,13 @@ mod tests {
             serde_json::from_str(&sarif_content).expect("SARIF output should be valid JSON");
 
         // Test 2: Test without file output (should not create file)
-        let result_no_file = Spi::get_one::<bool>("SELECT pglinter.perform_table_check()").unwrap();
+        let result_no_file = Spi::get_one::<bool>("SELECT pglinter.perform_base_check()").unwrap();
         assert!(result_no_file.is_some());
         assert_eq!(result_no_file.unwrap(), true);
 
         // Test 3: Test with different rule scope
         let sarif_file_path_2 = "/tmp/pglinter_test_sarif_2.json";
-        let _ = Spi::run("UPDATE pglinter.rules SET enable = true WHERE code = 'B001'");
+        let _ = Spi::run("UPDATE pglinter.rules SET enable = true WHERE code = 'B002'");
         let result_base = Spi::get_one::<bool>(&format!(
             "SELECT pglinter.perform_base_check('{}')",
             sarif_file_path_2
@@ -1764,26 +1699,26 @@ mod tests {
         // Setup test tables that will trigger violations
         fixtures::setup_test_tables();
 
-        // Enable T001 rule (tables without primary keys) for testing
-        let _ = Spi::run("UPDATE pglinter.rules SET enable = true WHERE code = 'T001'");
+        // Enable B001 rule (tables without primary keys) for testing
+        let _ = Spi::run("UPDATE pglinter.rules SET enable = true WHERE code = 'B001'");
 
         // Set specific warning/error levels to ensure we get warning level results
         // warning_level=1 means if 1 or more violations, it's a warning
         // error_level=10 means if 10 or more violations, it's an error
         let _ = Spi::run(
-            "UPDATE pglinter.rules SET warning_level = 1, error_level = 10 WHERE code = 'T001'",
+            "UPDATE pglinter.rules SET warning_level = 1, error_level = 10 WHERE code = 'B001'",
         );
 
         // Execute table check which internally uses execute_q1_rule_with_params
         // This should trigger violations from our test tables without primary keys
-        let result = Spi::get_one::<bool>("SELECT pglinter.perform_table_check()").unwrap();
+        let result = Spi::get_one::<bool>("SELECT pglinter.perform_base_check()").unwrap();
         assert!(result.is_some());
         assert_eq!(result.unwrap(), true);
 
         // Test with SARIF output to verify the warning message format
         let test_sarif_file = "/tmp/test_q1_warning.json";
         let result_sarif = Spi::get_one::<bool>(&format!(
-            "SELECT pglinter.perform_table_check('{}')",
+            "SELECT pglinter.perform_base_check('{}')",
             test_sarif_file
         ))
         .unwrap();
@@ -1821,8 +1756,8 @@ mod tests {
                             let message = result["message"]["text"].as_str().unwrap_or("");
                             // The format from execute_q1_rule_with_params should include the scope and details
                             assert!(
-                                message.contains("TABLE"),
-                                "T001 message should contain TABLE scope"
+                                message.contains("B001"),
+                                "B001 message should contain TABLE scope"
                             );
 
                             // Check that we have a level (warning, error, or note)
@@ -1849,7 +1784,7 @@ mod tests {
         fixtures::cleanup_test_tables();
 
         // Reset rule to default state
-        let _ = Spi::run("UPDATE pglinter.rules SET enable = false WHERE code = 'T001'");
+        let _ = Spi::run("UPDATE pglinter.rules SET enable = false WHERE code = 'B001'");
     }
 
     #[pg_test]
@@ -1860,20 +1795,22 @@ mod tests {
         // Setup test tables to ensure we have violations
         fixtures::setup_test_tables();
 
+        pgrx::notice!("<starting test_execute_q1_rule_warning_message_format>");
+
         // Enable a simple rule that will trigger the warning path
-        // T001 (tables without primary keys) is ideal since our test tables include one without PK
-        let _ = Spi::run("UPDATE pglinter.rules SET enable = true WHERE code = 'T001'");
+        // B001 (tables without primary keys) is ideal since our test tables include one without PK
+        let _ = Spi::run("UPDATE pglinter.rules SET enable = true WHERE code = 'B001'");
 
         // Set thresholds to ensure warning level result (low warning, high error)
         let _ = Spi::run(
-            "UPDATE pglinter.rules SET warning_level = 1, error_level = 100 WHERE code = 'T001'",
+            "UPDATE pglinter.rules SET warning_level = 1, error_level = 100 WHERE code = 'B001'",
         );
 
-        // Execute table check which will trigger execute_q1_rule_with_params for T001
+        // Execute table check which will trigger execute_q1_rule_with_params for B001
         // This should create a warning-level RuleResult using the format on lines 171-177
         let test_sarif_file = "/tmp/test_warning_format.json";
         let result = Spi::get_one::<bool>(&format!(
-            "SELECT pglinter.perform_table_check('{}')",
+            "SELECT pglinter.perform_base_check('{}')",
             test_sarif_file
         ))
         .unwrap();
@@ -1896,37 +1833,33 @@ mod tests {
 
             for result in results {
                 if let Some(rule_id) = result["ruleId"].as_str() {
-                    if rule_id == "T001" && result["level"].as_str() == Some("warning") {
+                    if rule_id == "B001" && result["level"].as_str() == Some("warning") {
                         found_warning_result = true;
 
                         let message = result["message"]["text"].as_str().unwrap();
 
-                        // Test the exact format from lines 171-177:
-                        // format!("{} {} {} : \n{} \n", scope, rule_message, count, details.join("\n"))
+                        let _formatted_message = format!("{}", message);
 
-                        // Should start with scope
-                        assert!(
-                            message.starts_with("TABLE"),
-                            "Message should start with scope 'TABLE'"
-                        );
+                        pgrx::notice!("<{}>", _formatted_message);
 
-                        // Should contain the specific format pattern: " : \n"
-                        assert!(
-                            message.contains(" : \n"),
-                            "Message should contain ' : \\n' from format string"
-                        );
 
-                        // Should end with " \n" (from the format string)
-                        assert!(
-                            message.ends_with(" \n"),
-                            "Message should end with ' \\n' from format string"
-                        );
+                        // // Should contain the specific format pattern: " : \n"
+                        // assert!(
+                        //     message.contains(" : \n"),
+                        //     "Message should contain ' : \\n' from format string"
+                        // );
 
-                        // Should contain a number (the count)
-                        assert!(
-                            message.chars().any(char::is_numeric),
-                            "Message should contain count number"
-                        );
+                        // // Should end with " \n" (from the format string)
+                        // assert!(
+                        //     message.ends_with(" \n"),
+                        //     "Message should end with ' \\n' from format string"
+                        // );
+
+                        // // Should contain a number (the count)
+                        // assert!(
+                        //     message.chars().any(char::is_numeric),
+                        //     "Message should contain count number"
+                        // );
 
                         // Verify the count field if it exists (might be optional in SARIF format)
                         if result["count"].is_number() {

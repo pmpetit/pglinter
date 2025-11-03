@@ -1,6 +1,6 @@
--- Simple example to demonstrate foreign key type mismatch detection (T007 rule)
+-- Simple example to demonstrate foreign key type mismatch detection (B008 rule)
 -- This script creates tables with foreign keys that have mismatched data types
--- and shows how the T007 rule detects these type inconsistencies.
+-- and shows how the B008 rule detects these type inconsistencies.
 CREATE EXTENSION pglinter;
 
 \pset pager off
@@ -34,7 +34,7 @@ CREATE TABLE test_regions_text (
     created_at TIMESTAMP DEFAULT '2024-01-01 10:00:00'
 );
 
--- Create child tables with MISMATCHED foreign key types (should trigger T007)
+-- Create child tables with MISMATCHED foreign key types (should trigger B008)
 
 -- FK type mismatch: INTEGER references BIGINT
 CREATE TABLE test_orders_int_to_bigint (
@@ -82,7 +82,7 @@ CREATE TABLE test_discounts_smallint_to_int (
     created_at TIMESTAMP DEFAULT '2024-01-15 14:30:00'
 );
 
--- Create child tables with CORRECT matching foreign key types (should NOT trigger T007)
+-- Create child tables with CORRECT matching foreign key types (should NOT trigger B008)
 
 CREATE TABLE test_user_profiles_correct (
     profile_id SERIAL PRIMARY KEY,
@@ -206,26 +206,23 @@ ANALYZE test_user_profiles_correct;
 ANALYZE test_category_stats_correct;
 ANALYZE test_product_details_correct;
 
-
-
--- Disable all rules first to isolate T007 testing
-SELECT 'Disabling all rules to test T007 specifically...' AS status;
+-- Disable all rules first to isolate B008 testing
+SELECT 'Disabling all rules to test B008 specifically...' AS status;
 SELECT pglinter.disable_all_rules() AS all_rules_disabled;
-SELECT pglinter.enable_rule('T007') AS t007_enabled;
+SELECT pglinter.enable_rule('B008') AS B008_enabled;
 
 -- Run table check (should show no results since all rules are disabled)
-SELECT 'Running table check with all rules disabled (should show no T007 results):' AS test_info;
-SELECT pglinter.perform_table_check();
+SELECT 'Running table check with all rules disabled (should show no B008 results):' AS test_info;
+SELECT pglinter.perform_base_check();
 
--- Test disabling T007 temporarily
-SELECT 'Testing T007 disable/enable cycle:' AS test_info;
-SELECT pglinter.disable_rule('T007') AS t007_disabled;
-SELECT pglinter.perform_table_check(); -- Should skip T007
+-- Test disabling B008 temporarily
+SELECT 'Testing B008 disable/enable cycle:' AS test_info;
+SELECT pglinter.disable_rule('B008') AS B008_disabled;
+SELECT pglinter.perform_base_check(); -- Should skip B008
 
--- Re-enable T007 and test again
-SELECT pglinter.enable_rule('T007') AS t007_re_enabled;
-SELECT pglinter.perform_table_check(); -- Should include T007 again
-
+-- Re-enable B008 and test again
+SELECT pglinter.enable_rule('B008') AS B008_re_enabled;
+SELECT pglinter.perform_base_check(); -- Should include B008 again
 
 
 DROP TABLE test_orders_int_to_bigint CASCADE;

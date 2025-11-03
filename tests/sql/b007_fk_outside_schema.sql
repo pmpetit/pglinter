@@ -1,6 +1,6 @@
--- Test for B008 rule - Tables with foreign keys outside their schema (Base level)
+-- Test for B007 rule - Tables with foreign keys outside their schema (Base level)
 -- This test creates tables with foreign keys crossing schema boundaries
--- and verifies that B008 correctly counts the percentage at database level
+-- and verifies that B007 correctly counts the percentage at database level
 CREATE EXTENSION pglinter;
 
 \pset pager off
@@ -38,7 +38,7 @@ CREATE TABLE public_schema.users (
     created_at TIMESTAMP DEFAULT NOW()
 );
 
--- Create tables with CROSS-SCHEMA foreign keys (should be counted by B008)
+-- Create tables with CROSS-SCHEMA foreign keys (should be counted by B007)
 -- These tables have FKs pointing outside their schema
 
 -- Sales schema table with FK to public_schema (CROSS-SCHEMA - should be counted)
@@ -83,7 +83,7 @@ CREATE TABLE audit_schema.user_actions (
     details JSONB
 );
 
--- Create tables WITHOUT cross-schema foreign keys (should NOT be counted by B008)
+-- Create tables WITHOUT cross-schema foreign keys (should NOT be counted by B007)
 -- These tables either have no FKs or only have FKs within their own schema
 
 -- Clean schema with internal FKs only (should NOT be counted)
@@ -167,53 +167,53 @@ INSERT INTO clean_schema.employees (first_name, last_name, email, department_id,
 -- Create the pglinter extension
 
 
--- Test B008 rule execution
-SELECT 'Testing B008 rule - Tables with foreign keys outside schema...' AS test_info;
+-- Test B007 rule execution
+SELECT 'Testing B007 rule - Tables with foreign keys outside schema...' AS test_info;
 
--- Test the B008 rule with base check
-SELECT 'Running base check to test B008 rule:' AS test_step;
+-- Test the B007 rule with base check
+SELECT 'Running base check to test B007 rule:' AS test_step;
 SELECT pglinter.perform_base_check();
 
--- Test rule management for B008
-SELECT 'Testing B008 rule management...' AS test_step;
-SELECT pglinter.explain_rule('B008');
-SELECT pglinter.is_rule_enabled('B008') AS b008_enabled;
+-- Test rule management for B007
+SELECT 'Testing B007 rule management...' AS test_step;
+SELECT pglinter.explain_rule('B007');
+SELECT pglinter.is_rule_enabled('B007') AS B007_enabled;
 
--- Test disabling B008
-SELECT 'Testing B008 disable...' AS test_step;
-SELECT pglinter.disable_rule('B008') AS b008_disabled;
-SELECT pglinter.perform_base_check(); -- Should skip B008
+-- Test disabling B007
+SELECT 'Testing B007 disable...' AS test_step;
+SELECT pglinter.disable_rule('B007') AS B007_disabled;
+SELECT pglinter.perform_base_check(); -- Should skip B007
 
--- Re-enable B008
-SELECT 'Testing B008 re-enable...' AS test_step;
-SELECT pglinter.enable_rule('B008') AS b008_reenabled;
-SELECT pglinter.perform_base_check(); -- Should include B008 again
+-- Re-enable B007
+SELECT 'Testing B007 re-enable...' AS test_step;
+SELECT pglinter.enable_rule('B007') AS B007_reenabled;
+SELECT pglinter.perform_base_check(); -- Should include B007 again
 
--- Test with only B008 enabled
-SELECT 'Testing B008 in isolation...' AS test_step;
+-- Test with only B007 enabled
+SELECT 'Testing B007 in isolation...' AS test_step;
 SELECT pglinter.disable_all_rules() AS all_disabled;
-SELECT pglinter.enable_rule('B008') AS b008_only_enabled;
-SELECT pglinter.perform_base_check(); -- Should only run B008
+SELECT pglinter.enable_rule('B007') AS B007_only_enabled;
+SELECT pglinter.perform_base_check(); -- Should only run B007
 
 -- Show rule status
-SELECT 'Current B008 rule status:' AS status_info;
-SELECT * FROM pglinter.rules WHERE code = 'B008';
+SELECT 'Current B007 rule status:' AS status_info;
+SELECT * FROM pglinter.rules WHERE code = 'B007';
 
 -- Test threshold configuration
-SELECT 'Testing B008 threshold configuration...' AS test_step;
-SELECT pglinter.get_rule_levels('B008') AS current_b008_levels;
+SELECT 'Testing B007 threshold configuration...' AS test_step;
+SELECT pglinter.get_rule_levels('B007') AS current_B007_levels;
 
--- Make B008 more strict temporarily
-SELECT pglinter.update_rule_levels('B008', 10, 30) AS b008_strict_update;
-SELECT 'B008 with stricter thresholds (should trigger more easily):' AS strict_test;
+-- Make B007 more strict temporarily
+SELECT pglinter.update_rule_levels('B007', 10, 30) AS B007_strict_update;
+SELECT 'B007 with stricter thresholds (should trigger more easily):' AS strict_test;
 SELECT pglinter.perform_base_check();
 
 -- Test if file exists and show checksum
-SELECT pglinter.perform_base_check('/tmp/pglinter_b008_results.sarif');
-\! md5sum /tmp/pglinter_b008_results.sarif
+SELECT pglinter.perform_base_check('/tmp/pglinter_B007_results.sarif');
+\! md5sum /tmp/pglinter_B007_results.sarif
 
 -- Reset to original levels
-SELECT pglinter.update_rule_levels('B008', 20, 80) AS b008_reset_levels;
+SELECT pglinter.update_rule_levels('B007', 20, 80) AS B007_reset_levels;
 
 DROP SCHEMA public_schema CASCADE;
 DROP SCHEMA sales_schema CASCADE;
