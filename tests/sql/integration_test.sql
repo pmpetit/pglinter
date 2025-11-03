@@ -79,9 +79,6 @@ SELECT '=== COMPREHENSIVE pglinter ANALYSIS ===' AS info;
 SELECT 'BASE RULES:' AS category;
 SELECT pglinter.perform_base_check();
 
-SELECT 'TABLE RULES:' AS category;
-SELECT pglinter.perform_table_check();
-
 SELECT 'SCHEMA RULES:' AS category;
 SELECT pglinter.perform_schema_check();
 
@@ -100,13 +97,11 @@ SELECT pglinter.show_rules();
 
 -- Test some explanations
 SELECT pglinter.explain_rule('B001');
-SELECT pglinter.explain_rule('T003');
 SELECT pglinter.explain_rule('S002');
 
 -- Test output to file functionality
 SELECT '=== OUTPUT TO FILE TEST ===' AS info;
 SELECT pglinter.perform_base_check('/tmp/integration_base.sarif');
-SELECT pglinter.perform_table_check('/tmp/integration_table.sarif');
 SELECT pglinter.perform_schema_check('/tmp/integration_schema.sarif');
 
 -- Test rule disable/enable functionality
@@ -114,15 +109,12 @@ SELECT '=== RULE TOGGLE TEST ===' AS info;
 
 -- Disable some rules
 SELECT pglinter.disable_rule('B001');
-SELECT pglinter.disable_rule('T003');
 
 -- Run checks (should skip disabled rules)
 SELECT pglinter.perform_base_check();
-SELECT pglinter.perform_table_check();
 
 -- Re-enable rules
 SELECT pglinter.enable_rule('B001');
-SELECT pglinter.enable_rule('T003');
 
 -- Final comprehensive check
 SELECT pglinter.check_all();

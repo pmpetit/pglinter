@@ -109,10 +109,10 @@ SELECT 'Testing B003 rule - Foreign keys without indexes detection...' AS test_i
 
 -- First, disable all rules to isolate B003 testing
 SELECT pglinter.disable_all_rules() AS all_rules_disabled;
-NOTICE:  🔴 Disabled 23 rule(s)
+NOTICE:  🔴 Disabled 19 rule(s)
  all_rules_disabled 
 --------------------
-                 23
+                 19
 (1 row)
 
 -- Enable only B003 for focused testing
@@ -141,7 +141,12 @@ SELECT 'Running base check to detect B003 violations...' AS status;
 SELECT pglinter.perform_base_check();
 NOTICE:  🔍 pglinter found 1 issue(s):
 NOTICE:  ==================================================
-NOTICE:  ⚠️  [B003] WARNING: 2/3 table(s) without index on foreign key exceed the warning threshold: 66%.
+NOTICE:  ⚠️  [B003] WARNING: 2/3 table(s) without index on foreign key exceed the warning threshold: 66%. Object list:
+public.inventory_no_index.fk_inventory_category
+public.inventory_no_index.fk_inventory_product
+public.reviews_no_index.fk_reviews_customer
+public.reviews_no_index.fk_reviews_product
+
 NOTICE:  ==================================================
 NOTICE:  📊 Summary: 0 error(s), 1 warning(s), 0 info
 NOTICE:  🟡 Some warnings found - consider reviewing for optimization
@@ -159,7 +164,7 @@ SELECT pglinter.perform_base_check('/tmp/pglinter_b003_results.sarif');
 
 -- Test if file exists and show checksum
 \! md5sum /tmp/pglinter_b003_results.sarif
-54825a80453fb23e4d5d39f76f1d76a6  /tmp/pglinter_b003_results.sarif
+e3206df1c1134e1bb392df2ee4e7b8af  /tmp/pglinter_b003_results.sarif
 -- Test rule management for B003
 SELECT 'Testing B003 rule management...' AS test_section;
           test_section           
@@ -178,7 +183,7 @@ NOTICE:  📖 Rule Explanation for B003
 Count number of tables without index on foreign key.
 
 ⚠️  Message Template:
-{0}/{1} table(s) without index on foreign key exceed the {2} threshold: {3}%.
+{0}/{1} table(s) without index on foreign key exceed the {2} threshold: {3}%. Object list:\n{4}
 
 🔧 How to Fix:
    1. create a index on foreign key or change warning/error threshold
@@ -235,7 +240,11 @@ SELECT 'B003 (base check) - Shows percentage-based foreign key index analysis:' 
 SELECT pglinter.perform_base_check();
 NOTICE:  🔍 pglinter found 1 issue(s):
 NOTICE:  ==================================================
-NOTICE:  ⚠️  [B003] WARNING: 2/3 table(s) without index on foreign key exceed the warning threshold: 66%.
+NOTICE:  ⚠️  [B003] WARNING: 2/3 table(s) without index on foreign key exceed the warning threshold: 66%. Object list:
+public.inventory_no_index.fk_inventory_product
+public.reviews_no_index.fk_reviews_customer
+public.reviews_no_index.fk_reviews_product
+
 NOTICE:  ==================================================
 NOTICE:  📊 Summary: 0 error(s), 1 warning(s), 0 info
 NOTICE:  🟡 Some warnings found - consider reviewing for optimization
@@ -253,7 +262,7 @@ SELECT pglinter.perform_base_check('/tmp/pglinter_b003_results.sarif');
 
 -- Test if file exists and show checksum
 \! md5sum /tmp/pglinter_b003_results.sarif
-54825a80453fb23e4d5d39f76f1d76a6  /tmp/pglinter_b003_results.sarif
+b8f708ce1b415921f03da35db7d60103  /tmp/pglinter_b003_results.sarif
 DROP TABLE orders_with_index CASCADE;
 DROP TABLE reviews_no_index CASCADE;
 DROP TABLE inventory_no_index CASCADE;

@@ -133,6 +133,12 @@ INSERT INTO pglinter.rules (
     ]
 ),
 (
+    'SeveralTableOwnerInSchema', 'B011', 1, 80, 'BASE',
+    'In a schema there are several tables owned by different owners.',
+    '{0}/{1} schemas have tables owned by different owners. Exceed the {2} threshold: {3}%. Object list:\n{4}',
+    ARRAY['change table owners to the same functional role']
+),
+(
     'SchemaWithDefaultRoleNotGranted', 'S001', 1, 1, 'SCHEMA',
     'The schema has no default role. Means that futur table will not be granted through a role. So you will have to re-execute grants on it.',
     'No default role grantee on schema {0}.{1}. It means that each time a table is created, you must grant it to roles. Object list:\n{4}',
@@ -144,7 +150,7 @@ INSERT INTO pglinter.rules (
 (
     'SchemaPrefixedOrSuffixedWithEnvt', 'S002', 1, 1, 'SCHEMA',
     'The schema is prefixed with one of staging,stg,preprod,prod,sandbox,sbox string. Means that when you refresh your preprod, staging environments from production, you have to rename the target schema from prod_ to stg_ or something like. It is possible, but it is never easy.',
-    'You should not prefix or suffix the schema name with {0}. You may have difficulties when refreshing environments. Prefer prefix or suffix the database name. Object list:\n{4}',
+    '{0}/{1} schemas are prefixed or suffixed with environment names. It exceed the {2} threshold: {3}%. Prefer prefix or suffix the database name instead. Object list:\n{4}',
     ARRAY[
         'Keep the same schema name across environments. Prefer prefix or suffix the database name'
     ]
@@ -157,18 +163,12 @@ INSERT INTO pglinter.rules (
 ),
 (
     'OwnerSchemaIsInternalRole', 'S004', 20, 80, 'SCHEMA',
-    'Owner of schema should not be any internal pg roles.',
-    '{0}/{1} schemas are owned by internal roles. Exceed the {2} threshold: {3}%. Object list:\n{4}',
+    'Owner of schema should not be any internal pg roles, or owner is a superuser (not sure it is necesary).',
+    '{0}/{1} schemas are owned by internal roles or superuser. Exceed the {2} threshold: {3}%. Object list:\n{4}',
     ARRAY['change schema owner to a functional role']
 ),
 (
-    'SeveralTableOwnerInSchema', 'S005', 20, 80, 'SCHEMA',
-    'In a schema there are several tables owned by different owners.',
-    '{0}/{1} schemas have tables owned by different owners. Exceed the {2} threshold: {3}%. Object list:\n{4}',
-    ARRAY['change table owners to the same functional role']
-),
-(
-    'SchemaOwnerDoNotMatchTableOwner', 'S006', 20, 80, 'SCHEMA',
+    'SchemaOwnerDoNotMatchTableOwner', 'S005', 20, 80, 'SCHEMA',
     'The schema owner and tables in the schema do not match.',
     '{0}/{1} in the same schema, tables have different owners. They should be the same. Exceed the {2} threshold: {3}%. Object list:\n{4}',
     ARRAY['For maintenance facilities, schema and tables owners should be the same.']
@@ -217,7 +217,7 @@ INSERT INTO pglinter.rules (
 UPDATE pglinter.rules
 SET
     q1 = $$
-SELECT count(*) AS total_tables
+SELECT count(*)::BIGINT AS total_tables
 FROM pg_catalog.pg_tables
 WHERE
     schemaname NOT IN (
@@ -226,7 +226,7 @@ WHERE
 $$,
     q2 = $$
 SELECT
-count(1)
+count(1)::BIGINT AS tables_without_primary_key
 FROM
     pg_class c
 JOIN
@@ -357,7 +357,7 @@ WHERE code = 'B002';
 UPDATE pglinter.rules
 SET
     q1 = $$
-SELECT count(DISTINCT tc.table_name)::INT AS total_tables
+SELECT count(DISTINCT tc.table_name)::BIGINT AS total_tables
 FROM
     information_schema.table_constraints AS tc
 WHERE
@@ -815,7 +815,7 @@ WHERE code = 'B005';
 UPDATE pglinter.rules
 SET
   q1 = $$
-SELECT count(*)
+SELECT count(*)::BIGINT
 FROM pg_catalog.pg_tables pt
 WHERE
     schemaname NOT IN (
@@ -925,7 +925,7 @@ WHERE
 $$,
     q2 = $$
 SELECT
-    count(1) AS fk_type_mismatches
+    count(1)::BIGINT AS fk_type_mismatches
 FROM information_schema.table_constraints AS tc
 INNER JOIN information_schema.key_column_usage AS kcu
     ON
@@ -1066,7 +1066,7 @@ WHERE code = 'B009';
 -- =============================================================================
 UPDATE pglinter.rules
   SET q1 = $$
-SELECT count(*) AS total_tables
+SELECT count(*)::BIGINT AS total_tables
 FROM pg_catalog.pg_tables
 WHERE
     schemaname NOT IN (
@@ -1221,6 +1221,72 @@ ORDER BY
 $$
 WHERE code = 'B010';
 
+
+-- =============================================================================
+-- B011 - Several tables in schema have different owners
+-- =============================================================================
+UPDATE pglinter.rules
+SET
+    q1 = $$
+SELECT
+    COUNT(*)::BIGINT AS total_schema_count
+FROM
+    pg_namespace n
+WHERE
+    n.nspname NOT IN ( 'pg_toast', 'pg_catalog', 'information_schema', 'pglinter', '_timescaledb', 'timescaledb')
+    AND n.nspname NOT LIKE 'pg_%'
+$$,
+    q2 = $$
+SELECT coalesce(count(DISTINCT tableowner)::BIGINT, 0) AS diff_owners
+FROM pg_tables
+WHERE
+    schemaname NOT IN ('pg_toast', 'pg_catalog', 'information_schema', 'pglinter', '_timescaledb', 'timescaledb')
+GROUP BY schemaname
+HAVING COUNT(DISTINCT tableowner) > 1
+$$,
+    q3 = $$
+WITH SchemaOwnerTable AS (
+    -- Step 1: Find all distinct combinations of (schemaname, tableowner)
+    SELECT DISTINCT
+        schemaname::TEXT AS schemaname,
+        tableowner::TEXT AS tableowner
+    FROM
+        pg_tables
+    WHERE
+        schemaname NOT IN (
+            'pg_toast', 'pg_catalog', 'information_schema', 'pglinter', '_timescaledb', 'timescaledb'
+        )
+),
+OwnerCounts AS (
+    -- Step 2: Count the number of distinct owners for each schema
+    SELECT
+        schemaname,
+        COUNT(tableowner) AS distinct_owner_count
+    FROM
+        SchemaOwnerTable
+    GROUP BY
+        schemaname
+    HAVING
+        -- Only keep schemas that have more than one distinct owner
+        COUNT(tableowner) > 1
+)
+SELECT
+    t.schemaname::TEXT,
+    t.tablename || ' owner is ' || t.tableowner::TEXT AS table_and_owner
+FROM
+    pg_tables t
+JOIN
+    OwnerCounts oc ON t.schemaname = oc.schemaname
+WHERE
+    t.schemaname NOT IN (
+        'pg_toast', 'pg_catalog', 'information_schema', 'pglinter', '_timescaledb', 'timescaledb'
+    )
+ORDER BY
+    1, 2
+$$
+WHERE code = 'B011';
+
+
 -- =============================================================================
 -- S001 - Schema Permission Analysis
 -- =============================================================================
@@ -1232,14 +1298,14 @@ SELECT
 FROM
     pg_namespace n
 WHERE
-    n.nspname NOT IN ('public', 'pg_toast', 'pg_catalog', 'information_schema', 'pglinter', '_timescaledb', 'timescaledb')
+    n.nspname NOT IN ('pg_toast', 'pg_catalog', 'information_schema', 'pglinter', '_timescaledb', 'timescaledb')
     AND n.nspname NOT LIKE 'pg_%'
 $$,
     q2 = $$
-SELECT count(DISTINCT n.nspname::text) AS nb_schema
+SELECT count(DISTINCT n.nspname::text)::BIGINT AS nb_schema
 FROM pg_namespace n
 WHERE
-    n.nspname NOT IN ('public', 'pg_toast', 'pg_catalog', 'information_schema', 'pglinter', '_timescaledb', 'timescaledb')
+    n.nspname NOT IN ('pg_toast', 'pg_catalog', 'information_schema', 'pglinter', '_timescaledb', 'timescaledb')
     AND n.nspname NOT LIKE 'pg_%'
     AND NOT EXISTS (
         SELECT 1
@@ -1254,7 +1320,7 @@ $$,
 SELECT DISTINCT n.nspname::text AS schema_name
 FROM pg_namespace n
 WHERE
-    n.nspname NOT IN ('public', 'pg_toast', 'pg_catalog', 'information_schema', 'pglinter', '_timescaledb', 'timescaledb')
+    n.nspname NOT IN ('pg_toast', 'pg_catalog', 'information_schema', 'pglinter', '_timescaledb', 'timescaledb')
     AND n.nspname NOT LIKE 'pg_%'
     AND NOT EXISTS (
         SELECT 1
@@ -1275,18 +1341,18 @@ UPDATE pglinter.rules
 SET
     q1 = $$
 SELECT
-    COUNT(*) AS total_schema_count
+    COUNT(*)::BIGINT AS total_schema_count
 FROM
     pg_namespace n
 WHERE
-    n.nspname NOT IN ('public', 'pg_toast', 'pg_catalog', 'information_schema', 'pglinter', '_timescaledb', 'timescaledb')
+    n.nspname NOT IN ('pg_toast', 'pg_catalog', 'information_schema', 'pglinter', '_timescaledb', 'timescaledb')
     AND n.nspname NOT LIKE 'pg_%'
 $$,
     q2 = $$
-SELECT count(n.nspname::text) AS nb_schema_name
+SELECT count(n.nspname::text)::BIGINT AS nb_schema_name
 FROM pg_namespace n
 WHERE
-    n.nspname NOT IN ('public', 'pg_toast', 'pg_catalog', 'information_schema', 'pglinter', '_timescaledb', 'timescaledb')
+    n.nspname NOT IN ('pg_toast', 'pg_catalog', 'information_schema', 'pglinter', '_timescaledb', 'timescaledb')
     AND n.nspname NOT LIKE 'pg_%'
     AND (
         n.nspname ILIKE 'staging_%' OR n.nspname ILIKE '%_staging'
@@ -1301,10 +1367,10 @@ WHERE
     )
 $$,
     q3 = $$
-SELECT count(n.nspname::text) AS nb_schema_name
+SELECT n.nspname::text AS nb_schema_name
 FROM pg_namespace n
 WHERE
-    n.nspname NOT IN ('public', 'pg_toast', 'pg_catalog', 'information_schema', 'pglinter', '_timescaledb', 'timescaledb')
+    n.nspname NOT IN ('pg_toast', 'pg_catalog', 'information_schema', 'pglinter', '_timescaledb', 'timescaledb')
     AND n.nspname NOT LIKE 'pg_%'
     AND (
         n.nspname ILIKE 'staging_%' OR n.nspname ILIKE '%_staging'
@@ -1328,11 +1394,11 @@ UPDATE pglinter.rules
 SET
     q1 = $$
 SELECT
-    COUNT(*) AS total_schema_count
+    COUNT(*)::BIGINT AS total_schema_count
 FROM
     pg_namespace n
 WHERE
-    n.nspname NOT IN ('public', 'pg_toast', 'pg_catalog', 'information_schema', 'pglinter', '_timescaledb', 'timescaledb')
+    n.nspname NOT IN ( 'pg_toast', 'pg_catalog', 'information_schema', 'pglinter', '_timescaledb', 'timescaledb')
     AND n.nspname NOT LIKE 'pg_%'
 $$,
     q2 = $$
@@ -1358,15 +1424,15 @@ UPDATE pglinter.rules
 SET
     q1 = $$
 SELECT
-    COUNT(*) AS total_schema_count
+    COUNT(*)::BIGINT AS total_schema_count
 FROM
     pg_namespace n
 WHERE
-    n.nspname NOT IN ('public', 'pg_toast', 'pg_catalog', 'information_schema', 'pglinter', '_timescaledb', 'timescaledb')
+    n.nspname NOT IN ( 'pg_toast', 'pg_catalog', 'information_schema', 'pglinter', '_timescaledb', 'timescaledb')
     AND n.nspname NOT LIKE 'pg_%'
 $$,
     q2 = $$
-SELECT COUNT(*) AS total_schemas
+SELECT COUNT(*)::BIGINT AS total_schemas
 FROM pg_namespace n
 WHERE
     n.nspname NOT IN ('pg_toast', 'pg_catalog', 'information_schema', 'pglinter', '_timescaledb', 'timescaledb')
@@ -1374,8 +1440,7 @@ WHERE
 $$,
     q3 = $$
 SELECT
-    n.nspname AS schema_name,
-    r.rolname AS owner_role
+    r.rolname::TEXT || ' is the owner of the schema ' || n.nspname::TEXT AS owner_info
 FROM
     pg_namespace n
 JOIN
@@ -1393,58 +1458,17 @@ $$
 WHERE code = 'S004';
 
 -- =============================================================================
--- S005 - Several tables in schema have different owners
+-- S005 - Schema and table owners differ.
 -- =============================================================================
 UPDATE pglinter.rules
 SET
     q1 = $$
 SELECT
-    COUNT(*) AS total_schema_count
+    COUNT(*)::BIGINT AS total_schema_count
 FROM
     pg_namespace n
 WHERE
-    n.nspname NOT IN ('public', 'pg_toast', 'pg_catalog', 'information_schema', 'pglinter', '_timescaledb', 'timescaledb')
-    AND n.nspname NOT LIKE 'pg_%'
-$$,
-    q2 = $$
-SELECT count(DISTINCT tableowner) AS owners
-FROM pg_tables
-WHERE
-    schemaname NOT IN ('pg_toast', 'pg_catalog', 'information_schema', 'pglinter', '_timescaledb', 'timescaledb')
-GROUP BY schemaname
-$$,
-    q3 = $$
-SELECT
-    schemaname::TEXT,
-    tableowner::TEXT,
-    STRING_AGG(tablename::TEXT, ', ' ORDER BY tablename) AS tables_owned_by_role
-FROM
-    pg_tables
-WHERE
-    schemaname NOT IN (
-        'pg_toast', 'pg_catalog', 'information_schema', 'pglinter', '_timescaledb', 'timescaledb'
-    )
-GROUP BY
-    schemaname,
-    tableowner
-ORDER BY
-    schemaname,
-    tableowner
-$$
-WHERE code = 'S005';
-
--- =============================================================================
--- S006 - Schema and table owners differ.
--- =============================================================================
-UPDATE pglinter.rules
-SET
-    q1 = $$
-SELECT
-    COUNT(*) AS total_schema_count
-FROM
-    pg_namespace n
-WHERE
-    n.nspname NOT IN ('public', 'pg_toast', 'pg_catalog', 'information_schema', 'pglinter', '_timescaledb', 'timescaledb')
+    n.nspname NOT IN ('pg_toast', 'pg_catalog', 'information_schema', 'pglinter', '_timescaledb', 'timescaledb')
     AND n.nspname NOT LIKE 'pg_%'
 $$,
     q2 = $$
@@ -1464,10 +1488,7 @@ WHERE
 $$,
     q3 = $$
 SELECT
-    n.nspname AS schema_name,
-    r_schema.rolname AS schema_owner,
-    r_table.rolname AS table_owner,
-    n.nspname || '.' || c.relname AS fully_qualified_table_name
+    'Owner of schema ' || n.nspname::TEXT || ' is ' || r_schema.rolname::TEXT ||' but owner of table '||n.nspname::TEXT ||'.'|| c.relname::TEXT || ' is ' || r_table.rolname::TEXT AS ownership_info
 FROM
     pg_namespace n
 JOIN
@@ -1483,11 +1504,9 @@ WHERE
     AND n.nspname NOT LIKE 'pg_temp%'
     AND c.relkind = 'r'               -- Only count regular tables
     AND n.nspowner <> c.relowner      -- The core condition: Owners are different
-ORDER BY
-    schema_name,
-    fully_qualified_table_name
+ORDER BY 1
 $$
-WHERE code = 'S006';
+WHERE code = 'S005';
 
 
 -- =============================================================================
@@ -1506,7 +1525,7 @@ WHERE code = 'C001';
 -- =============================================================================
 UPDATE pglinter.rules
 SET q1 = $$
-SELECT count(*) FROM pg_catalog.pg_hba_file_rules
+SELECT count(*)::BIGINT FROM pg_catalog.pg_hba_file_rules
 $$
 WHERE code = 'C002';
 
@@ -1515,7 +1534,7 @@ WHERE code = 'C002';
 -- =============================================================================
 UPDATE pglinter.rules
 SET q2 = $$
-SELECT count(*)
+SELECT count(*)::BIGINT
 FROM pg_catalog.pg_hba_file_rules
 WHERE auth_method IN ('trust', 'password')
 $$

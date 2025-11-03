@@ -24,10 +24,10 @@ CREATE TABLE business_logic.rules (
 );
 -- Enable only S002
 SELECT pglinter.disable_all_rules();
-NOTICE:  🔴 Disabled 23 rule(s)
+NOTICE:  🔴 Disabled 19 rule(s)
  disable_all_rules 
 -------------------
-                23
+                19
 (1 row)
 
 SELECT pglinter.enable_rule('S002');
@@ -48,14 +48,14 @@ SELECT 'Testing schema rules S002...' as test_info;
 SELECT pglinter.perform_schema_check();
 NOTICE:  🔍 pglinter found 1 issue(s):
 NOTICE:  ==================================================
-NOTICE:  ⚠️  [S002] WARNING: SCHEMA You should not prefix or suffix the schema name with {0}. You may have difficulties when refreshing environments. Prefer prefix or suffix the database name. 3 : 
+NOTICE:  ❌ [S002] ERROR: 3/6 schemas are prefixed or suffixed with environment names. It exceed the error threshold: 50%. Prefer prefix or suffix the database name instead. Object list:
 dev_analytics
 prod_sales
-reports_staging 
+reports_staging
 
 NOTICE:  ==================================================
-NOTICE:  📊 Summary: 0 error(s), 1 warning(s), 0 info
-NOTICE:  🟡 Some warnings found - consider reviewing for optimization
+NOTICE:  📊 Summary: 1 error(s), 0 warning(s), 0 info
+NOTICE:  🔴 Critical issues found - please review and fix errors
  perform_schema_check 
 ----------------------
  t
@@ -73,7 +73,7 @@ NOTICE:  📖 Rule Explanation for S002
 The schema is prefixed with one of staging,stg,preprod,prod,sandbox,sbox string. Means that when you refresh your preprod, staging environments from production, you have to rename the target schema from prod_ to stg_ or something like. It is possible, but it is never easy.
 
 ⚠️  Message Template:
-You should not prefix or suffix the schema name with {0}. You may have difficulties when refreshing environments. Prefer prefix or suffix the database name.
+{0}/{1} schemas are prefixed or suffixed with environment names. It exceed the {2} threshold: {3}%. Prefer prefix or suffix the database name instead. Object list:\n{4}
 
 🔧 How to Fix:
    1. Keep the same schema name across environments. Prefer prefix or suffix the database name
@@ -116,14 +116,14 @@ NOTICE:  ✅ Rule S002 has been enabled
 SELECT pglinter.perform_schema_check(); -- Should include S002 again
 NOTICE:  🔍 pglinter found 1 issue(s):
 NOTICE:  ==================================================
-NOTICE:  ⚠️  [S002] WARNING: SCHEMA You should not prefix or suffix the schema name with {0}. You may have difficulties when refreshing environments. Prefer prefix or suffix the database name. 3 : 
+NOTICE:  ❌ [S002] ERROR: 3/6 schemas are prefixed or suffixed with environment names. It exceed the error threshold: 50%. Prefer prefix or suffix the database name instead. Object list:
 dev_analytics
 prod_sales
-reports_staging 
+reports_staging
 
 NOTICE:  ==================================================
-NOTICE:  📊 Summary: 0 error(s), 1 warning(s), 0 info
-NOTICE:  🟡 Some warnings found - consider reviewing for optimization
+NOTICE:  📊 Summary: 1 error(s), 0 warning(s), 0 info
+NOTICE:  🔴 Critical issues found - please review and fix errors
  perform_schema_check 
 ----------------------
  t
@@ -139,20 +139,17 @@ NOTICE:
 NOTICE:  🖥️  CLUSTER CHECKS:
 NOTICE:  ✅ No issues found - database schema looks good!
 NOTICE:  
-NOTICE:  📊 TABLE CHECKS:
-NOTICE:  ✅ No issues found - database schema looks good!
-NOTICE:  
 NOTICE:  🗂️  SCHEMA CHECKS:
 NOTICE:  🔍 pglinter found 1 issue(s):
 NOTICE:  ==================================================
-NOTICE:  ⚠️  [S002] WARNING: SCHEMA You should not prefix or suffix the schema name with {0}. You may have difficulties when refreshing environments. Prefer prefix or suffix the database name. 3 : 
+NOTICE:  ❌ [S002] ERROR: 3/6 schemas are prefixed or suffixed with environment names. It exceed the error threshold: 50%. Prefer prefix or suffix the database name instead. Object list:
 dev_analytics
 prod_sales
-reports_staging 
+reports_staging
 
 NOTICE:  ==================================================
-NOTICE:  📊 Summary: 0 error(s), 1 warning(s), 0 info
-NOTICE:  🟡 Some warnings found - consider reviewing for optimization
+NOTICE:  📊 Summary: 1 error(s), 0 warning(s), 0 info
+NOTICE:  🔴 Critical issues found - please review and fix errors
 NOTICE:  
 NOTICE:  🎉 All pglinter checks completed successfully!
  check_all 

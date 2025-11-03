@@ -1,8 +1,8 @@
--- Test for pglinter B007 rule: Tables that are never selected from
+-- Test for pglinter b006 rule: Tables that are never selected from
 -- This script creates tables with mixed usage patterns:
 -- - Some tables that are regularly queried (both index and sequential scans)
 -- - Some tables that are never selected from (neither idx_scan nor seq_scan)
--- to demonstrate the B007 rule detection of unused tables
+-- to demonstrate the b006 rule detection of unused tables
 CREATE EXTENSION pglinter;
 \pset pager off
 SELECT pg_stat_reset();
@@ -31,7 +31,7 @@ CREATE TABLE dormant_logs_table (
     logged_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     user_id INTEGER
 );
--- Table 3: Unused configuration table (NEVER accessed - B007 violation)
+-- Table 3: Unused configuration table (NEVER accessed - b006 violation)
 CREATE TABLE unused_config_table (
     id SERIAL,
     config_key VARCHAR(100) UNIQUE NOT NULL,
@@ -52,7 +52,7 @@ CREATE TABLE frequently_accessed_table (
 CREATE INDEX idx_frequently_product_name ON frequently_accessed_table (product_name);
 CREATE INDEX idx_frequently_category ON frequently_accessed_table (category);
 CREATE INDEX idx_frequently_price ON frequently_accessed_table (price);
--- Table 5: Completely unused table (NEVER accessed - B007 violation)
+-- Table 5: Completely unused table (NEVER accessed - b006 violation)
 CREATE TABLE completely_unused_table (
     id SERIAL,
     data_field VARCHAR(200),
@@ -127,57 +127,52 @@ select pg_sleep(2);
  
 (1 row)
 
--- Create the extension and test B007 rule
-SELECT 'Testing B007 rule - Tables never selected detection...' as test_info;
+-- Create the extension and test b006 rule
+SELECT 'Testing b006 rule - Tables never selected detection...' as test_info;
                        test_info                        
 --------------------------------------------------------
- Testing B007 rule - Tables never selected detection...
+ Testing b006 rule - Tables never selected detection...
 (1 row)
 
--- First, disable all rules to isolate B007 testing
+-- First, disable all rules to isolate b006 testing
 SELECT pglinter.disable_all_rules() AS all_rules_disabled;
-NOTICE:  🔴 Disabled 23 rule(s)
+NOTICE:  🔴 Disabled 19 rule(s)
  all_rules_disabled 
 --------------------
-                 23
+                 19
 (1 row)
 
--- Enable only B007 for focused testing
-SELECT pglinter.enable_rule('B007') AS b007_enabled;
-NOTICE:  ✅ Rule B007 has been enabled
- b007_enabled 
+-- Enable only b006 for focused testing
+SELECT pglinter.enable_rule('b006') AS b006_enabled;
+WARNING:  ⚠️  Rule b006 not found
+ b006_enabled 
 --------------
- t
+ f
 (1 row)
 
--- Verify B007 is enabled
-SELECT pglinter.is_rule_enabled('B007') AS b007_status;
- b007_status 
+-- Verify b006 is enabled
+SELECT pglinter.is_rule_enabled('b006') AS b006_status;
+ b006_status 
 -------------
- t
+ f
 (1 row)
 
 SELECT pglinter.perform_base_check();
-NOTICE:  🔍 pglinter found 1 issue(s):
-NOTICE:  ==================================================
-NOTICE:  ⚠️  [B007] WARNING: 2/5 table(s) are never selected the warning threshold: 40%.
-NOTICE:  ==================================================
-NOTICE:  📊 Summary: 0 error(s), 1 warning(s), 0 info
-NOTICE:  🟡 Some warnings found - consider reviewing for optimization
+NOTICE:  ✅ No issues found - database schema looks good!
  perform_base_check 
 --------------------
  t
 (1 row)
 
 -- Test with file output
-SELECT pglinter.perform_base_check('/tmp/pglinter_b007_results.sarif');
+SELECT pglinter.perform_base_check('/tmp/pglinter_b006_results.sarif');
  perform_base_check 
 --------------------
  t
 (1 row)
 
-\! md5sum /tmp/pglinter_b007_results.sarif
-07c7fae6d1a34f5827365eafe09daf7d  /tmp/pglinter_b007_results.sarif
+\! md5sum /tmp/pglinter_b006_results.sarif
+7cd6073b52ee9a1173c05c016e2458f4  /tmp/pglinter_b006_results.sarif
 -- Now simulate realistic usage patterns:
 -- 1. Heavy usage of active_users_table (both index and sequential scans)
 SELECT COUNT(*) FROM active_users_table WHERE is_active = true;
@@ -446,9 +441,9 @@ SELECT COUNT(*) FROM frequently_accessed_table WHERE category IN ('Electronics',
   4800
 (1 row)
 
--- 4. NO usage of unused_config_table (B007 violation - never selected)
+-- 4. NO usage of unused_config_table (b006 violation - never selected)
 -- (Intentionally no queries to simulate unused table)
--- 5. NO usage of completely_unused_table (B007 violation - never selected)
+-- 5. NO usage of completely_unused_table (b006 violation - never selected)
 -- (Intentionally no queries to simulate completely unused table)
 -- Update statistics after usage simulation
 VACUUM ANALYZE active_users_table;
@@ -463,30 +458,25 @@ SELECT pg_sleep(5);
  
 (1 row)
 
--- Run base check to detect B007 violations
+-- Run base check to detect b006 violations
 -- Expected result: Should detect unused_config_table and completely_unused_table
-SELECT 'Running base check to detect B007 violations (tables never selected)...' as status;
+SELECT 'Running base check to detect b006 violations (tables never selected)...' as status;
                                  status                                  
 -------------------------------------------------------------------------
- Running base check to detect B007 violations (tables never selected)...
+ Running base check to detect b006 violations (tables never selected)...
 (1 row)
 
 SELECT pglinter.perform_base_check();
-NOTICE:  🔍 pglinter found 1 issue(s):
-NOTICE:  ==================================================
-NOTICE:  ⚠️  [B007] WARNING: 1/5 table(s) are never selected the warning threshold: 20%.
-NOTICE:  ==================================================
-NOTICE:  📊 Summary: 0 error(s), 1 warning(s), 0 info
-NOTICE:  🟡 Some warnings found - consider reviewing for optimization
+NOTICE:  ✅ No issues found - database schema looks good!
  perform_base_check 
 --------------------
  t
 (1 row)
 
-SELECT 'B007 comprehensive test completed successfully!' as test_result;
+SELECT 'b006 comprehensive test completed successfully!' as test_result;
                    test_result                   
 -------------------------------------------------
- B007 comprehensive test completed successfully!
+ b006 comprehensive test completed successfully!
 (1 row)
 
 -- Clean up test tables

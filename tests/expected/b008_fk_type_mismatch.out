@@ -1,6 +1,6 @@
--- Simple example to demonstrate foreign key type mismatch detection (T007 rule)
+-- Simple example to demonstrate foreign key type mismatch detection (B008 rule)
 -- This script creates tables with foreign keys that have mismatched data types
--- and shows how the T007 rule detects these type inconsistencies.
+-- and shows how the B008 rule detects these type inconsistencies.
 CREATE EXTENSION pglinter;
 \pset pager off
 -- Create parent tables with various data types for primary keys
@@ -28,7 +28,7 @@ CREATE TABLE test_regions_text (
     country VARCHAR(50),
     created_at TIMESTAMP DEFAULT '2024-01-01 10:00:00'
 );
--- Create child tables with MISMATCHED foreign key types (should trigger T007)
+-- Create child tables with MISMATCHED foreign key types (should trigger B008)
 -- FK type mismatch: INTEGER references BIGINT
 CREATE TABLE test_orders_int_to_bigint (
     order_id SERIAL PRIMARY KEY,
@@ -70,7 +70,7 @@ CREATE TABLE test_discounts_smallint_to_int (
     end_date DATE,
     created_at TIMESTAMP DEFAULT '2024-01-15 14:30:00'
 );
--- Create child tables with CORRECT matching foreign key types (should NOT trigger T007)
+-- Create child tables with CORRECT matching foreign key types (should NOT trigger B008)
 CREATE TABLE test_user_profiles_correct (
     profile_id SERIAL PRIMARY KEY,
     user_id BIGINT NOT NULL REFERENCES test_users_bigint(user_id), -- CORRECT!
@@ -177,96 +177,96 @@ ANALYZE test_discounts_smallint_to_int;
 ANALYZE test_user_profiles_correct;
 ANALYZE test_category_stats_correct;
 ANALYZE test_product_details_correct;
--- Disable all rules first to isolate T007 testing
-SELECT 'Disabling all rules to test T007 specifically...' AS status;
+-- Disable all rules first to isolate B008 testing
+SELECT 'Disabling all rules to test B008 specifically...' AS status;
                       status                      
 --------------------------------------------------
- Disabling all rules to test T007 specifically...
+ Disabling all rules to test B008 specifically...
 (1 row)
 
 SELECT pglinter.disable_all_rules() AS all_rules_disabled;
-NOTICE:  🔴 Disabled 23 rule(s)
+NOTICE:  🔴 Disabled 19 rule(s)
  all_rules_disabled 
 --------------------
-                 23
+                 19
 (1 row)
 
-SELECT pglinter.enable_rule('T007') AS t007_enabled;
-NOTICE:  ✅ Rule T007 has been enabled
- t007_enabled 
+SELECT pglinter.enable_rule('B008') AS B008_enabled;
+NOTICE:  ✅ Rule B008 has been enabled
+ b008_enabled 
 --------------
  t
 (1 row)
 
 -- Run table check (should show no results since all rules are disabled)
-SELECT 'Running table check with all rules disabled (should show no T007 results):' AS test_info;
+SELECT 'Running table check with all rules disabled (should show no B008 results):' AS test_info;
                                  test_info                                  
 ----------------------------------------------------------------------------
- Running table check with all rules disabled (should show no T007 results):
+ Running table check with all rules disabled (should show no B008 results):
 (1 row)
 
-SELECT pglinter.perform_table_check();
+SELECT pglinter.perform_base_check();
 NOTICE:  🔍 pglinter found 1 issue(s):
 NOTICE:  ==================================================
-NOTICE:  ⚠️  [T007] WARNING: TABLE Table with fk type mismatch. 5 : 
-public.test_discounts_smallint_to_int constraint test_discounts_smallint_to_int_category_id_fkey column category_id type is smallint buttest_categories_integer.category_id type is integer
-public.test_inventory_int_to_smallint constraint test_inventory_int_to_smallint_product_id_fkey column product_id type is integer buttest_products_smallint.product_id type is smallint
-public.test_orders_int_to_bigint constraint test_orders_int_to_bigint_user_id_fkey column user_id type is integer buttest_users_bigint.user_id type is bigint
-public.test_reviews_bigint_to_int constraint test_reviews_bigint_to_int_category_id_fkey column category_id type is bigint buttest_categories_integer.category_id type is integer
-public.test_stores_varchar_to_text constraint test_stores_varchar_to_text_region_code_fkey column region_code type is character varying buttest_regions_text.region_code type is text 
+NOTICE:  ⚠️  [B008] WARNING: 5/8 table(s) with foreign key mismatch exceed the warning threshold: 62%. Object list:
+public.test_orders_int_to_bigint constraint test_orders_int_to_bigint_user_id_fkey column user_id type is integer but test_users_bigint.user_id type is bigint
+public.test_reviews_bigint_to_int constraint test_reviews_bigint_to_int_category_id_fkey column category_id type is bigint but test_categories_integer.category_id type is integer
+public.test_inventory_int_to_smallint constraint test_inventory_int_to_smallint_product_id_fkey column product_id type is integer but test_products_smallint.product_id type is smallint
+public.test_stores_varchar_to_text constraint test_stores_varchar_to_text_region_code_fkey column region_code type is character varying but test_regions_text.region_code type is text
+public.test_discounts_smallint_to_int constraint test_discounts_smallint_to_int_category_id_fkey column category_id type is smallint but test_categories_integer.category_id type is integer
 
 NOTICE:  ==================================================
 NOTICE:  📊 Summary: 0 error(s), 1 warning(s), 0 info
 NOTICE:  🟡 Some warnings found - consider reviewing for optimization
- perform_table_check 
----------------------
+ perform_base_check 
+--------------------
  t
 (1 row)
 
--- Test disabling T007 temporarily
-SELECT 'Testing T007 disable/enable cycle:' AS test_info;
+-- Test disabling B008 temporarily
+SELECT 'Testing B008 disable/enable cycle:' AS test_info;
              test_info              
 ------------------------------------
- Testing T007 disable/enable cycle:
+ Testing B008 disable/enable cycle:
 (1 row)
 
-SELECT pglinter.disable_rule('T007') AS t007_disabled;
-NOTICE:  🔴 Rule T007 has been disabled
- t007_disabled 
+SELECT pglinter.disable_rule('B008') AS B008_disabled;
+NOTICE:  🔴 Rule B008 has been disabled
+ b008_disabled 
 ---------------
  t
 (1 row)
 
-SELECT pglinter.perform_table_check(); -- Should skip T007
+SELECT pglinter.perform_base_check(); -- Should skip B008
 NOTICE:  ✅ No issues found - database schema looks good!
- perform_table_check 
----------------------
+ perform_base_check 
+--------------------
  t
 (1 row)
 
--- Re-enable T007 and test again
-SELECT pglinter.enable_rule('T007') AS t007_re_enabled;
-NOTICE:  ✅ Rule T007 has been enabled
- t007_re_enabled 
+-- Re-enable B008 and test again
+SELECT pglinter.enable_rule('B008') AS B008_re_enabled;
+NOTICE:  ✅ Rule B008 has been enabled
+ b008_re_enabled 
 -----------------
  t
 (1 row)
 
-SELECT pglinter.perform_table_check(); -- Should include T007 again
+SELECT pglinter.perform_base_check(); -- Should include B008 again
 NOTICE:  🔍 pglinter found 1 issue(s):
 NOTICE:  ==================================================
-NOTICE:  ⚠️  [T007] WARNING: TABLE Table with fk type mismatch. 5 : 
-public.test_discounts_smallint_to_int constraint test_discounts_smallint_to_int_category_id_fkey column category_id type is smallint buttest_categories_integer.category_id type is integer
-public.test_inventory_int_to_smallint constraint test_inventory_int_to_smallint_product_id_fkey column product_id type is integer buttest_products_smallint.product_id type is smallint
-public.test_orders_int_to_bigint constraint test_orders_int_to_bigint_user_id_fkey column user_id type is integer buttest_users_bigint.user_id type is bigint
-public.test_reviews_bigint_to_int constraint test_reviews_bigint_to_int_category_id_fkey column category_id type is bigint buttest_categories_integer.category_id type is integer
-public.test_stores_varchar_to_text constraint test_stores_varchar_to_text_region_code_fkey column region_code type is character varying buttest_regions_text.region_code type is text 
+NOTICE:  ⚠️  [B008] WARNING: 5/8 table(s) with foreign key mismatch exceed the warning threshold: 62%. Object list:
+public.test_orders_int_to_bigint constraint test_orders_int_to_bigint_user_id_fkey column user_id type is integer but test_users_bigint.user_id type is bigint
+public.test_reviews_bigint_to_int constraint test_reviews_bigint_to_int_category_id_fkey column category_id type is bigint but test_categories_integer.category_id type is integer
+public.test_inventory_int_to_smallint constraint test_inventory_int_to_smallint_product_id_fkey column product_id type is integer but test_products_smallint.product_id type is smallint
+public.test_stores_varchar_to_text constraint test_stores_varchar_to_text_region_code_fkey column region_code type is character varying but test_regions_text.region_code type is text
+public.test_discounts_smallint_to_int constraint test_discounts_smallint_to_int_category_id_fkey column category_id type is smallint but test_categories_integer.category_id type is integer
 
 NOTICE:  ==================================================
 NOTICE:  📊 Summary: 0 error(s), 1 warning(s), 0 info
 NOTICE:  🟡 Some warnings found - consider reviewing for optimization
- perform_table_check 
----------------------
+ perform_base_check 
+--------------------
  t
 (1 row)
 

@@ -1,4 +1,4 @@
--- Regression test for B015 rule - Tables with shared trigger functions
+-- Regression test for B009 rule - Tables with shared trigger functions
 -- This script creates a test scenario with:
 -- - 10 tables total
 -- - 5 tables with their own unique trigger functions
@@ -188,31 +188,35 @@ INSERT INTO trigger_test.table_07 (content) VALUES ('Sample content');
 INSERT INTO trigger_test.table_08 (amount) VALUES (99.99);
 INSERT INTO trigger_test.table_09 (notes) VALUES ('No trigger table');
 INSERT INTO trigger_test.table_10 (archived) VALUES (false);
--- Test with only B015 enabled
-SELECT 'Testing B015 in isolation...' AS test_step;
+-- Test with only B009 enabled
+SELECT 'Testing B009 in isolation...' AS test_step;
           test_step           
 ------------------------------
- Testing B015 in isolation...
+ Testing B009 in isolation...
 (1 row)
 
 SELECT pglinter.disable_all_rules() AS all_disabled;
-NOTICE:  🔴 Disabled 23 rule(s)
+NOTICE:  🔴 Disabled 19 rule(s)
  all_disabled 
 --------------
-           23
+           19
 (1 row)
 
-SELECT pglinter.enable_rule('B015') AS b015_only_enabled;
-NOTICE:  ✅ Rule B015 has been enabled
- b015_only_enabled 
+SELECT pglinter.enable_rule('B009') AS B009_only_enabled;
+NOTICE:  ✅ Rule B009 has been enabled
+ b009_only_enabled 
 -------------------
  t
 (1 row)
 
-SELECT pglinter.perform_base_check(); -- Should only run B015
+SELECT pglinter.perform_base_check(); -- Should only run B009
 NOTICE:  🔍 pglinter found 1 issue(s):
 NOTICE:  ==================================================
-NOTICE:  ⚠️  [B015] WARNING: 3/8 table(s) using the same trigger function exceed the warning threshold: 37%.
+NOTICE:  ⚠️  [B009] WARNING: 3/8 table(s) using the same trigger function exceed the warning threshold: 37%. Object list:
+table_06.trigger_table_06_update uses the same trigger function trigger_test.trigger_test.shared_update_timestamp
+table_07.trigger_table_07_update uses the same trigger function trigger_test.trigger_test.shared_update_timestamp
+table_08.trigger_table_08_update uses the same trigger function trigger_test.trigger_test.shared_update_timestamp
+
 NOTICE:  ==================================================
 NOTICE:  📊 Summary: 0 error(s), 1 warning(s), 0 info
 NOTICE:  🟡 Some warnings found - consider reviewing for optimization
@@ -221,39 +225,16 @@ NOTICE:  🟡 Some warnings found - consider reviewing for optimization
  t
 (1 row)
 
-SELECT pglinter.enable_rule('T015') AS t015_only_enabled;
-NOTICE:  ✅ Rule T015 has been enabled
- t015_only_enabled 
--------------------
- t
-(1 row)
-
-SELECT pglinter.perform_table_check(); -- Should only run T015
-NOTICE:  🔍 pglinter found 1 issue(s):
-NOTICE:  ==================================================
-NOTICE:  ⚠️  [T015] WARNING: TABLE Table shares trigger function with other tables. 3 : 
-trigger_test.table_06 shares trigger function trigger_test.shared_update_timestamp with other tables
-trigger_test.table_07 shares trigger function trigger_test.shared_update_timestamp with other tables
-trigger_test.table_08 shares trigger function trigger_test.shared_update_timestamp with other tables 
-
-NOTICE:  ==================================================
-NOTICE:  📊 Summary: 0 error(s), 1 warning(s), 0 info
-NOTICE:  🟡 Some warnings found - consider reviewing for optimization
- perform_table_check 
----------------------
- t
-(1 row)
-
 -- Test with output
-SELECT pglinter.perform_base_check('/tmp/pglinter_b015_results.sarif');
+SELECT pglinter.perform_base_check('/tmp/pglinter_B009_results.sarif');
  perform_base_check 
 --------------------
  t
 (1 row)
 
 -- Test if file exists and show checksum
-\! md5sum /tmp/pglinter_b015_results.sarif
-bc9862aaea33e520b1b22558d8c1a840  /tmp/pglinter_b015_results.sarif
+\! md5sum /tmp/pglinter_B009_results.sarif
+47448789a35db4210f1c25563876c068  /tmp/pglinter_B009_results.sarif
 -- Cleanup
 \echo 'Cleaning up test schema...'
 Cleaning up test schema...

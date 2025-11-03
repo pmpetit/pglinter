@@ -156,10 +156,10 @@ SELECT 'Testing B004 rule - Unused indexes detection...' AS test_info;
 
 -- First, disable all rules to isolate B004 testing
 SELECT pglinter.disable_all_rules() AS all_rules_disabled;
-NOTICE:  🔴 Disabled 23 rule(s)
+NOTICE:  🔴 Disabled 19 rule(s)
  all_rules_disabled 
 --------------------
-                 23
+                 19
 (1 row)
 
 -- Enable only B004 for focused testing
@@ -188,7 +188,9 @@ SELECT 'Running base check to detect B004 violations...' AS status;
 SELECT pglinter.perform_base_check();
 NOTICE:  🔍 pglinter found 1 issue(s):
 NOTICE:  ==================================================
-NOTICE:  ⚠️  [B004] WARNING: 3/5 unused index exceed the warning threshold: 60%
+NOTICE:  ⚠️  [B004] WARNING: 3/5 unused index exceed the warning threshold: 60%. Object list:
+public.customer_analytics has 88 % of seq scan.
+
 NOTICE:  ==================================================
 NOTICE:  📊 Summary: 0 error(s), 1 warning(s), 0 info
 NOTICE:  🟡 Some warnings found - consider reviewing for optimization
@@ -215,7 +217,7 @@ NOTICE:  📖 Rule Explanation for B004
 Count number of unused index vs nb index (base on pg_stat_user_indexes, indexes associated to unique constraints are discard.)
 
 ⚠️  Message Template:
-{0}/{1} unused index exceed the {2} threshold: {3}%
+{0}/{1} unused index exceed the {2} threshold: {3}%. Object list:\n{4}
 
 🔧 How to Fix:
    1. remove unused index or change warning/error threshold
@@ -246,7 +248,9 @@ SELECT 'Running B004 check after dropping some unused indexes (should show fewer
 SELECT pglinter.perform_base_check();
 NOTICE:  🔍 pglinter found 1 issue(s):
 NOTICE:  ==================================================
-NOTICE:  ⚠️  [B004] WARNING: 2/4 unused index exceed the warning threshold: 50%
+NOTICE:  ⚠️  [B004] WARNING: 2/4 unused index exceed the warning threshold: 50%. Object list:
+public.customer_analytics has 88 % of seq scan.
+
 NOTICE:  ==================================================
 NOTICE:  📊 Summary: 0 error(s), 1 warning(s), 0 info
 NOTICE:  🟡 Some warnings found - consider reviewing for optimization
@@ -264,7 +268,7 @@ SELECT pglinter.perform_base_check('/tmp/pglinter_b004_results.sarif');
 
 -- Test if file exists and show checksum
 \! md5sum /tmp/pglinter_b004_results.sarif
-6f9137d468fa46f3f874a97ddb77a835  /tmp/pglinter_b004_results.sarif
+c5f6efe660026d79b5e321ad29caf933  /tmp/pglinter_b004_results.sarif
 -- Update B004 thresholds to demonstrate message formatting
 SELECT pglinter.update_rule_levels('B004', 60, 90);
 NOTICE:  ✅ Updated rule B004 levels: warning=60, error=90

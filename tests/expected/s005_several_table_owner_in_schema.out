@@ -1,0 +1,55 @@
+-- Regression test for S005: SeveralTableOwnerInSchema
+-- This test creates two tables in the same schema with different owners
+-- and checks that the rule S005 correctly identifies the schema as problematic.
+CREATE EXTENSION IF NOT EXISTS pglinter;
+NOTICE:  extension "pglinter" already exists, skipping
+\pset pager off
+-- Setup: Create test roles and schema
+CREATE ROLE s005_owner1 LOGIN;
+CREATE ROLE s005_owner2 LOGIN;
+CREATE SCHEMA s005_schema AUTHORIZATION s005_owner1;
+-- Create tables with different owners in the same schema
+CREATE TABLE s005_schema.table1 (id INT);
+ALTER TABLE s005_schema.table1 OWNER TO s005_owner1;
+CREATE TABLE s005_schema.table2 (id INT);
+ALTER TABLE s005_schema.table2 OWNER TO s005_owner2;
+SELECT 'Testing S005 in isolation...' AS test_step;
+          test_step           
+------------------------------
+ Testing S005 in isolation...
+(1 row)
+
+SELECT pglinter.disable_all_rules() AS all_disabled;
+NOTICE:  🔴 Disabled 1 rule(s)
+ all_disabled 
+--------------
+            1
+(1 row)
+
+SELECT pglinter.enable_rule('S005') AS S005_only_enabled;
+NOTICE:  ✅ Rule S005 has been enabled
+ s005_only_enabled 
+-------------------
+ t
+(1 row)
+
+SELECT pglinter.perform_schema_check(); -- Should only run S005
+NOTICE:  🔍 pglinter found 1 issue(s):
+NOTICE:  ==================================================
+NOTICE:  ⚠️  [S005] WARNING: 1/2 in the same schema, tables have different owners. They should be the same. Exceed the warning threshold: 50%. Object list:
+Owner of schema s005_schema is s005_owner1 but owner of table s005_schema.table2 is s005_owner2
+
+NOTICE:  ==================================================
+NOTICE:  📊 Summary: 0 error(s), 1 warning(s), 0 info
+NOTICE:  🟡 Some warnings found - consider reviewing for optimization
+ perform_schema_check 
+----------------------
+ t
+(1 row)
+
+-- Cleanup
+DROP TABLE s005_schema.table1;
+DROP TABLE s005_schema.table2;
+DROP SCHEMA s005_schema;
+DROP ROLE s005_owner1;
+DROP ROLE s005_owner2;

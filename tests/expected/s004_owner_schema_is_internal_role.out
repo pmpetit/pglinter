@@ -1,0 +1,46 @@
+-- Regression test for S004: OwnerSchemaIsInternalRole
+-- This test creates a schema owned by a superuser and checks that S004 identifies it.
+CREATE EXTENSION IF NOT EXISTS pglinter;
+NOTICE:  extension "pglinter" already exists, skipping
+\pset pager off
+-- Setup: Create test role and schema
+CREATE ROLE s004_owner LOGIN;
+CREATE SCHEMA s004_schema AUTHORIZATION postgres;
+SELECT 'Testing S004 in isolation...' AS test_step;
+          test_step           
+------------------------------
+ Testing S004 in isolation...
+(1 row)
+
+SELECT pglinter.disable_all_rules() AS all_disabled;
+NOTICE:  🔴 Disabled 1 rule(s)
+ all_disabled 
+--------------
+            1
+(1 row)
+
+SELECT pglinter.enable_rule('S004') AS S004_only_enabled;
+NOTICE:  ✅ Rule S004 has been enabled
+ s004_only_enabled 
+-------------------
+ t
+(1 row)
+
+SELECT pglinter.perform_schema_check(); -- Should only run S004
+NOTICE:  🔍 pglinter found 1 issue(s):
+NOTICE:  ==================================================
+NOTICE:  ⚠️  [S004] WARNING: 1/2 schemas are owned by internal roles or superuser. Exceed the warning threshold: 50%. Object list:
+pmp is the owner of the schema public
+postgres is the owner of the schema s004_schema
+
+NOTICE:  ==================================================
+NOTICE:  📊 Summary: 0 error(s), 1 warning(s), 0 info
+NOTICE:  🟡 Some warnings found - consider reviewing for optimization
+ perform_schema_check 
+----------------------
+ t
+(1 row)
+
+-- Cleanup
+DROP SCHEMA s004_schema CASCADE;
+DROP ROLE s004_owner;

@@ -1,12 +1,12 @@
--- Simple example to demonstrate reserved keywords in object names detection (T009 rule)
+-- Simple example to demonstrate reserved keywords in object names detection (B010 rule)
 -- This script creates database objects using reserved keywords as names
--- and shows how the T009 rule detects these naming violations.
+-- and shows how the B010 rule detects these naming violations.
 CREATE EXTENSION pglinter;
 \pset pager off
 -- Create test schemas for object creation
 CREATE SCHEMA test_keywords_schema;
 CREATE SCHEMA test_naming_schema;
--- Create tables using reserved keywords (should trigger T009)
+-- Create tables using reserved keywords (should trigger B010)
 CREATE TABLE test_keywords_schema."SELECT" (
     id SERIAL PRIMARY KEY,
     data TEXT,
@@ -31,7 +31,7 @@ CREATE TABLE test_naming_schema."ORDER" (
     order_date DATE DEFAULT '2024-01-15',
     created_at TIMESTAMP DEFAULT '2024-01-15 11:00:00'
 );
--- Create tables with columns using reserved keywords (should trigger T009)
+-- Create tables with columns using reserved keywords (should trigger B010)
 CREATE TABLE test_keywords_schema.products_with_bad_columns (
     product_id SERIAL PRIMARY KEY,
     product_name VARCHAR(100) NOT NULL,
@@ -50,7 +50,7 @@ CREATE TABLE test_naming_schema.users_with_bad_columns (
     email VARCHAR(150),
     created_at TIMESTAMP DEFAULT '2024-01-01 10:00:00'
 );
--- Create views using reserved keywords (should trigger T009)
+-- Create views using reserved keywords (should trigger B010)
 CREATE VIEW test_keywords_schema."DISTINCT" AS
 SELECT product_id, product_name, price
 FROM test_keywords_schema.products_with_bad_columns
@@ -59,15 +59,15 @@ CREATE VIEW test_naming_schema."INNER" AS
 SELECT user_id, username, email
 FROM test_naming_schema.users_with_bad_columns
 WHERE user_id > 0;
--- Create sequences using reserved keywords (should trigger T009)
+-- Create sequences using reserved keywords (should trigger B010)
 CREATE SEQUENCE test_keywords_schema."NULL";
 CREATE SEQUENCE test_naming_schema."TRUE";
 CREATE SEQUENCE test_keywords_schema."FALSE";
--- Create indexes using reserved keywords (should trigger T009)
+-- Create indexes using reserved keywords (should trigger B010)
 CREATE INDEX "PRIMARY" ON test_keywords_schema.products_with_bad_columns (product_name);
 CREATE INDEX "UNIQUE" ON test_naming_schema.users_with_bad_columns (username);
 CREATE INDEX "FOREIGN" ON test_keywords_schema."FROM" (source_name);
--- Create functions using reserved keywords (should trigger T009)
+-- Create functions using reserved keywords (should trigger B010)
 CREATE FUNCTION test_keywords_schema."AND"(a INTEGER, b INTEGER)
 RETURNS INTEGER AS $$
 BEGIN
@@ -80,13 +80,13 @@ BEGIN
     RETURN CONCAT(x, ' OR ', y);
 END;
 $$ LANGUAGE plpgsql;
--- Create user-defined types using reserved keywords (should trigger T009)
+-- Create user-defined types using reserved keywords (should trigger B010)
 CREATE TYPE test_keywords_schema."CASE" AS ENUM ('option1', 'option2', 'option3');
 CREATE TYPE test_naming_schema."WHEN" AS (
     condition TEXT,
     result INTEGER
 );
--- Create triggers using reserved keywords (should trigger T009)
+-- Create triggers using reserved keywords (should trigger B010)
 CREATE OR REPLACE FUNCTION test_keywords_schema."THEN"()
 RETURNS TRIGGER AS $$
 BEGIN
@@ -107,7 +107,7 @@ $$ LANGUAGE plpgsql;
 CREATE TRIGGER "BINARY"
     BEFORE UPDATE ON test_naming_schema.users_with_bad_columns
     FOR EACH ROW EXECUTE FUNCTION test_naming_schema."END"();
--- Create tables and objects with GOOD names (should NOT trigger T009)
+-- Create tables and objects with GOOD names (should NOT trigger B010)
 CREATE TABLE test_keywords_schema.good_products (
     id SERIAL PRIMARY KEY,
     product_name VARCHAR(100) NOT NULL,
@@ -175,165 +175,143 @@ ANALYZE test_keywords_schema.products_with_bad_columns;
 ANALYZE test_naming_schema.users_with_bad_columns;
 ANALYZE test_keywords_schema.good_products;
 ANALYZE test_naming_schema.good_users;
--- Disable all rules first to isolate T009 testing
-SELECT 'Disabling all rules to test T009 specifically...' AS status;
+-- Disable all rules first to isolate B010 testing
+SELECT 'Disabling all rules to test B010 specifically...' AS status;
                       status                      
 --------------------------------------------------
- Disabling all rules to test T009 specifically...
+ Disabling all rules to test B010 specifically...
 (1 row)
 
 SELECT pglinter.disable_all_rules() AS all_rules_disabled;
-NOTICE:  🔴 Disabled 23 rule(s)
+NOTICE:  🔴 Disabled 19 rule(s)
  all_rules_disabled 
 --------------------
-                 23
+                 19
 (1 row)
 
-SELECT pglinter.enable_rule('T009') AS t009_enabled;
-NOTICE:  ✅ Rule T009 has been enabled
- t009_enabled 
+SELECT pglinter.enable_rule('B010') AS B010_enabled;
+NOTICE:  ✅ Rule B010 has been enabled
+ b010_enabled 
 --------------
  t
 (1 row)
 
 -- Run table check (should detect objects with reserved keyword names)
-SELECT 'Running table check with only T009 enabled:' AS test_info;
+SELECT 'Running table check with only B010 enabled:' AS test_info;
                   test_info                  
 ---------------------------------------------
- Running table check with only T009 enabled:
+ Running table check with only B010 enabled:
 (1 row)
 
-SELECT pglinter.perform_table_check();
+SELECT pglinter.perform_base_check();
 NOTICE:  🔍 pglinter found 1 issue(s):
 NOTICE:  ==================================================
-NOTICE:  ⚠️  [T009] WARNING: TABLE Reserved keywords in object. 15 : 
-column:test_keywords_schema.products_with_bad_columns.GROUP is a reserved keyword.
-column:test_keywords_schema.products_with_bad_columns.HAVING is a reserved keyword.
-column:test_keywords_schema.products_with_bad_columns.UNION is a reserved keyword.
-column:test_naming_schema.users_with_bad_columns.JOIN is a reserved keyword.
-column:test_naming_schema.users_with_bad_columns.LIMIT is a reserved keyword.
-column:test_naming_schema.users_with_bad_columns.OFFSET is a reserved keyword.
-index:test_keywords_schema.FOREIGN is a reserved keyword.
-index:test_keywords_schema.PRIMARY is a reserved keyword.
-index:test_naming_schema.UNIQUE is a reserved keyword.
-table:test_keywords_schema.DISTINCT is a reserved keyword.
-table:test_keywords_schema.FROM is a reserved keyword.
-table:test_keywords_schema.SELECT is a reserved keyword.
-table:test_naming_schema.INNER is a reserved keyword.
-table:test_naming_schema.ORDER is a reserved keyword.
-table:test_naming_schema.WHERE is a reserved keyword. 
+NOTICE:  ❌ [B010] ERROR: 15/8 object(s) using reserved keywords exceed the error threshold: 187%. Object list:
+column in test_keywords_schema.products_with_bad_columns.GROUP is a reserved keyword: GROUP
+column in test_keywords_schema.products_with_bad_columns.HAVING is a reserved keyword: HAVING
+column in test_keywords_schema.products_with_bad_columns.UNION is a reserved keyword: UNION
+column in test_naming_schema.users_with_bad_columns.JOIN is a reserved keyword: JOIN
+column in test_naming_schema.users_with_bad_columns.LIMIT is a reserved keyword: LIMIT
+column in test_naming_schema.users_with_bad_columns.OFFSET is a reserved keyword: OFFSET
+index in test_keywords_schema.FOREIGN is a reserved keyword: FOREIGN
+index in test_keywords_schema.PRIMARY is a reserved keyword: PRIMARY
+index in test_naming_schema.UNIQUE is a reserved keyword: UNIQUE
+table in test_keywords_schema.DISTINCT is a reserved keyword: DISTINCT
+table in test_keywords_schema.FROM is a reserved keyword: FROM
+table in test_keywords_schema.SELECT is a reserved keyword: SELECT
+table in test_naming_schema.INNER is a reserved keyword: INNER
+table in test_naming_schema.ORDER is a reserved keyword: ORDER
+table in test_naming_schema.WHERE is a reserved keyword: WHERE
 
 NOTICE:  ==================================================
-NOTICE:  📊 Summary: 0 error(s), 1 warning(s), 0 info
-NOTICE:  🟡 Some warnings found - consider reviewing for optimization
- perform_table_check 
----------------------
+NOTICE:  📊 Summary: 1 error(s), 0 warning(s), 0 info
+NOTICE:  🔴 Critical issues found - please review and fix errors
+ perform_base_check 
+--------------------
  t
 (1 row)
 
--- Test disabling T009 temporarily
-SELECT 'Testing T009 disable/enable cycle:' AS test_info;
+-- Test disabling B010 temporarily
+SELECT 'Testing B010 disable/enable cycle:' AS test_info;
              test_info              
 ------------------------------------
- Testing T009 disable/enable cycle:
+ Testing B010 disable/enable cycle:
 (1 row)
 
-SELECT pglinter.disable_rule('T009') AS t009_disabled;
-NOTICE:  🔴 Rule T009 has been disabled
- t009_disabled 
+SELECT pglinter.disable_rule('B010') AS B010_disabled;
+NOTICE:  🔴 Rule B010 has been disabled
+ b010_disabled 
 ---------------
  t
 (1 row)
 
-SELECT pglinter.perform_table_check(); -- Should skip T009
+SELECT pglinter.perform_base_check(); -- Should skip B010
 NOTICE:  ✅ No issues found - database schema looks good!
- perform_table_check 
----------------------
+ perform_base_check 
+--------------------
  t
 (1 row)
 
--- Re-enable T009 and test again
-SELECT pglinter.enable_rule('T009') AS t009_re_enabled;
-NOTICE:  ✅ Rule T009 has been enabled
- t009_re_enabled 
+-- Re-enable B010 and test again
+SELECT pglinter.enable_rule('B010') AS B010_re_enabled;
+NOTICE:  ✅ Rule B010 has been enabled
+ b010_re_enabled 
 -----------------
  t
 (1 row)
 
-SELECT pglinter.perform_table_check(); -- Should include T009 again
+SELECT pglinter.perform_base_check(); -- Should include B010 again
 NOTICE:  🔍 pglinter found 1 issue(s):
 NOTICE:  ==================================================
-NOTICE:  ⚠️  [T009] WARNING: TABLE Reserved keywords in object. 15 : 
-column:test_keywords_schema.products_with_bad_columns.GROUP is a reserved keyword.
-column:test_keywords_schema.products_with_bad_columns.HAVING is a reserved keyword.
-column:test_keywords_schema.products_with_bad_columns.UNION is a reserved keyword.
-column:test_naming_schema.users_with_bad_columns.JOIN is a reserved keyword.
-column:test_naming_schema.users_with_bad_columns.LIMIT is a reserved keyword.
-column:test_naming_schema.users_with_bad_columns.OFFSET is a reserved keyword.
-index:test_keywords_schema.FOREIGN is a reserved keyword.
-index:test_keywords_schema.PRIMARY is a reserved keyword.
-index:test_naming_schema.UNIQUE is a reserved keyword.
-table:test_keywords_schema.DISTINCT is a reserved keyword.
-table:test_keywords_schema.FROM is a reserved keyword.
-table:test_keywords_schema.SELECT is a reserved keyword.
-table:test_naming_schema.INNER is a reserved keyword.
-table:test_naming_schema.ORDER is a reserved keyword.
-table:test_naming_schema.WHERE is a reserved keyword. 
+NOTICE:  ❌ [B010] ERROR: 15/8 object(s) using reserved keywords exceed the error threshold: 187%. Object list:
+column in test_keywords_schema.products_with_bad_columns.GROUP is a reserved keyword: GROUP
+column in test_keywords_schema.products_with_bad_columns.HAVING is a reserved keyword: HAVING
+column in test_keywords_schema.products_with_bad_columns.UNION is a reserved keyword: UNION
+column in test_naming_schema.users_with_bad_columns.JOIN is a reserved keyword: JOIN
+column in test_naming_schema.users_with_bad_columns.LIMIT is a reserved keyword: LIMIT
+column in test_naming_schema.users_with_bad_columns.OFFSET is a reserved keyword: OFFSET
+index in test_keywords_schema.FOREIGN is a reserved keyword: FOREIGN
+index in test_keywords_schema.PRIMARY is a reserved keyword: PRIMARY
+index in test_naming_schema.UNIQUE is a reserved keyword: UNIQUE
+table in test_keywords_schema.DISTINCT is a reserved keyword: DISTINCT
+table in test_keywords_schema.FROM is a reserved keyword: FROM
+table in test_keywords_schema.SELECT is a reserved keyword: SELECT
+table in test_naming_schema.INNER is a reserved keyword: INNER
+table in test_naming_schema.ORDER is a reserved keyword: ORDER
+table in test_naming_schema.WHERE is a reserved keyword: WHERE
 
 NOTICE:  ==================================================
-NOTICE:  📊 Summary: 0 error(s), 1 warning(s), 0 info
-NOTICE:  🟡 Some warnings found - consider reviewing for optimization
- perform_table_check 
----------------------
+NOTICE:  📊 Summary: 1 error(s), 0 warning(s), 0 info
+NOTICE:  🔴 Critical issues found - please review and fix errors
+ perform_base_check 
+--------------------
  t
 (1 row)
 
 -- ROLLBACK;
-DROP TABLE test_keywords_schema."SELECT" CASCADE;
-DROP TABLE test_keywords_schema."FROM" CASCADE;
-DROP TABLE test_naming_schema."WHERE" CASCADE;
-DROP TABLE test_naming_schema."ORDER" CASCADE;
-DROP TABLE test_keywords_schema.products_with_bad_columns CASCADE;
-NOTICE:  drop cascades to view test_keywords_schema."DISTINCT"
-DROP TABLE test_naming_schema.users_with_bad_columns CASCADE;
-NOTICE:  drop cascades to view test_naming_schema."INNER"
-DROP TABLE test_keywords_schema.good_products CASCADE;
-NOTICE:  drop cascades to view test_keywords_schema.active_products
-DROP TABLE test_naming_schema.good_users CASCADE;
-DROP VIEW test_keywords_schema."DISTINCT" CASCADE;
-ERROR:  view "DISTINCT" does not exist
-DROP VIEW test_naming_schema."INNER" CASCADE;
-ERROR:  view "INNER" does not exist
-DROP VIEW test_keywords_schema.active_products CASCADE;
-ERROR:  view "active_products" does not exist
-DROP SEQUENCE test_keywords_schema."NULL" CASCADE;
-DROP SEQUENCE test_naming_schema."TRUE" CASCADE;
-DROP SEQUENCE test_keywords_schema."FALSE" CASCADE;
-DROP SEQUENCE test_naming_schema.user_id_seq CASCADE;
-DROP INDEX test_keywords_schema."PRIMARY" CASCADE;
-ERROR:  index "PRIMARY" does not exist
-DROP INDEX test_naming_schema."UNIQUE" CASCADE;
-ERROR:  index "UNIQUE" does not exist
-DROP INDEX test_keywords_schema."FOREIGN" CASCADE;
-ERROR:  index "FOREIGN" does not exist
-DROP INDEX test_keywords_schema.idx_product_name CASCADE;
-ERROR:  index "idx_product_name" does not exist
-DROP INDEX test_naming_schema.idx_username CASCADE;
-ERROR:  index "idx_username" does not exist
-DROP FUNCTION test_keywords_schema."AND"(INTEGER, INTEGER) CASCADE;
-DROP FUNCTION test_naming_schema."OR"(TEXT, TEXT) CASCADE;
-DROP TYPE test_keywords_schema."CASE" CASCADE;
-DROP TYPE test_naming_schema."WHEN" CASCADE;
-DROP TRIGGER test_keywords_schema."ELSE" ON test_keywords_schema.products_with_bad_columns CASCADE;
-ERROR:  syntax error at or near "."
-LINE 1: DROP TRIGGER test_keywords_schema."ELSE" ON test_keywords_sc...
-                                         ^
-DROP FUNCTION test_keywords_schema."THEN"() CASCADE;
-DROP TRIGGER test_naming_schema."BINARY" ON test_naming_schema.users_with_bad_columns CASCADE;
-ERROR:  syntax error at or near "."
-LINE 1: DROP TRIGGER test_naming_schema."BINARY" ON test_naming_sche...
-                                       ^
-DROP FUNCTION test_naming_schema."END"() CASCADE;
 DROP SCHEMA test_keywords_schema CASCADE;
+NOTICE:  drop cascades to 11 other objects
+DETAIL:  drop cascades to table test_keywords_schema."SELECT"
+drop cascades to table test_keywords_schema."FROM"
+drop cascades to table test_keywords_schema.products_with_bad_columns
+drop cascades to view test_keywords_schema."DISTINCT"
+drop cascades to sequence test_keywords_schema."NULL"
+drop cascades to sequence test_keywords_schema."FALSE"
+drop cascades to function test_keywords_schema."AND"(integer,integer)
+drop cascades to type test_keywords_schema."CASE"
+drop cascades to function test_keywords_schema."THEN"()
+drop cascades to table test_keywords_schema.good_products
+drop cascades to view test_keywords_schema.active_products
 DROP SCHEMA test_naming_schema CASCADE;
+NOTICE:  drop cascades to 10 other objects
+DETAIL:  drop cascades to table test_naming_schema."WHERE"
+drop cascades to table test_naming_schema."ORDER"
+drop cascades to table test_naming_schema.users_with_bad_columns
+drop cascades to view test_naming_schema."INNER"
+drop cascades to sequence test_naming_schema."TRUE"
+drop cascades to function test_naming_schema."OR"(text,text)
+drop cascades to type test_naming_schema."WHEN"
+drop cascades to function test_naming_schema."END"()
+drop cascades to table test_naming_schema.good_users
+drop cascades to sequence test_naming_schema.user_id_seq
 DROP EXTENSION pglinter CASCADE;

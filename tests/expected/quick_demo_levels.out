@@ -7,19 +7,19 @@ CREATE EXTENSION pglinter;
 \echo 'Current T005 levels:'
 Current T005 levels:
 SELECT pglinter.get_rule_levels('T005') as current_t005_levels;
-      current_t005_levels       
---------------------------------
- warning_level=1, error_level=1
+       current_t005_levels        
+----------------------------------
+ warning_level=50, error_level=90
 (1 row)
 
 -- Update T005 to be more strict (lower thresholds)
 \echo 'Making T005 more strict (warning=20, error=40):'
 Making T005 more strict (warning=20, error=40):
 SELECT pglinter.update_rule_levels('T005', 20, 40) as update_success;
-NOTICE:  ✅ Updated rule T005 levels: warning=20, error=40
+WARNING:  ⚠️  Rule T005 not found
  update_success 
 ----------------
- t
+ f
 (1 row)
 
 -- Verify the change
@@ -28,7 +28,7 @@ T005 levels after update:
 SELECT pglinter.get_rule_levels('T005') as updated_t005_levels;
        updated_t005_levels        
 ----------------------------------
- warning_level=20, error_level=40
+ warning_level=50, error_level=90
 (1 row)
 
 -- Check a few other rules
@@ -42,12 +42,10 @@ SELECT
 FROM pglinter.rules
 WHERE code IN ('B001', 'T001', 'T005')
 ORDER BY code;
- code | warning_level | error_level |         formatted_levels         
-------+---------------+-------------+----------------------------------
- B001 |            20 |          80 | warning_level=20, error_level=80
- T001 |             1 |           1 | warning_level=1, error_level=1
- T005 |            20 |          40 | warning_level=20, error_level=40
-(3 rows)
+ code | warning_level | error_level |        formatted_levels         
+------+---------------+-------------+---------------------------------
+ B001 |             1 |          80 | warning_level=1, error_level=80
+(1 row)
 
 -- Update only warning level for B001
 \echo 'Updating only B001 warning level to 5:'
