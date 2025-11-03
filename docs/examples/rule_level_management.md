@@ -69,19 +69,19 @@ SELECT pglinter.enable_all_rules();
 ### Performance Tuning Workflow
 
 ```sql
--- 1. Set sensitive thresholds
-SELECT pglinter.update_rule_levels('T005', 20.0, 50.0);
+-- 1. Set sensitive thresholds for B004 (sequential scan analysis)
+SELECT pglinter.update_rule_levels('B004', 20.0, 50.0);
 
 -- 2. Run analysis to identify high sequential scan tables
-SELECT * FROM pglinter.perform_table_check()
-WHERE ruleid = 'T005';
+SELECT * FROM pglinter.perform_base_check()
+WHERE ruleid = 'B004';
 
 -- 3. After adding indexes, set moderate thresholds for monitoring
-SELECT pglinter.update_rule_levels('T005', 40.0, 70.0);
+SELECT pglinter.update_rule_levels('B004', 40.0, 70.0);
 
 -- 4. Schedule regular monitoring
-SELECT * FROM pglinter.perform_table_check()
-WHERE ruleid = 'T005';
+SELECT * FROM pglinter.perform_base_check()
+WHERE ruleid = 'B004';
 ```
 
 ## Best Practices
@@ -103,9 +103,9 @@ SELECT pglinter.update_rule_levels('B001', 40.0, 80.0);
 SELECT pglinter.get_rule_levels('B001');  -- Returns defaults if not configurable
 
 -- Issue: Thresholds seem ineffective
-SELECT pglinter.get_rule_levels('T005');  -- Verify current settings
-SELECT * FROM pglinter.perform_table_check() WHERE ruleid = 'T005';  -- Check results
+SELECT pglinter.get_rule_levels('B004');  -- Verify current settings
+SELECT * FROM pglinter.perform_base_check() WHERE ruleid = 'B004';  -- Check results
 
 -- Issue: Reset to defaults
-SELECT pglinter.update_rule_levels('T005', 50.0, 90.0);  -- Reset T005 to defaults
+SELECT pglinter.update_rule_levels('B004', 50.0, 90.0);  -- Reset B004 to defaults
 ```

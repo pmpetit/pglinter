@@ -21,9 +21,8 @@
 - `tests/expected/`: Expected output files for regression testing
 
 ### Rule Categories
-- **B (Base/Database)**: Database-wide checks (indexes, constraints, etc.)
+- **B (Base/Database)**: Database-wide checks including tables, indexes, constraints, and general database analysis
 - **C (Cluster)**: PostgreSQL cluster configuration checks (authentication, security)
-- **T (Table)**: Individual table analysis
 - **S (Schema)**: Schema-level validation
 
 ## Coding Standards & Best Practices

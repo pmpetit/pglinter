@@ -52,22 +52,6 @@ PostgreSQL cluster configuration checks:
 * **C002**: Insecure pg_hba.conf entries
 * **C003**: MD5 password encryption (deprecated, blocks PG18+ upgrades)
 
-### Table Rules (T-series)
-
-Individual table-specific checks:
-
-* **T001**: Individual tables without primary keys
-* **T002**: Tables without any indexes
-* **T003**: Tables with redundant indexes
-* **T004**: Tables with foreign keys not indexed
-* **T005**: Tables with potential missing indexes (high sequential scan usage)
-* **T006**: Tables with foreign keys referencing other schemas
-* **T007**: Tables with unused indexes
-* **T008**: Tables with foreign key type mismatches
-* **T009**: Tables with no roles granted
-* **T010**: Tables using reserved keywords
-* **T011**: Tables with uppercase names/columns
-
 ### Schema Rules (S-series)
 
 Schema-level checks:

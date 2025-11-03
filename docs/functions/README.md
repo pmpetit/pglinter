@@ -122,52 +122,7 @@ SELECT * FROM pglinter.perform_cluster_check() WHERE level = 'error';
 
 - **C002**: HBA security configuration vulnerabilities
 
----
 
-### perform_table_check([output_file])
-
-Executes all enabled table rules (T-series) for detailed table-level structural and performance analysis.
-
-#### perform_table_check Syntax
-
-```sql
-SELECT pglinter.perform_table_check([output_file text]);
-```
-
-#### perform_table_check Parameters
-
-- `output_file` (optional): Path to save SARIF results
-
-#### perform_table_check Returns
-
-- When `output_file` specified: Success message
-- When no file specified: Table with rule results
-
-#### perform_table_check Examples
-
-```sql
--- Analyze all tables
-SELECT * FROM pglinter.perform_table_check();
-
--- Save table analysis
-SELECT pglinter.perform_table_check('/tmp/table_analysis.sarif');
-
--- Filter for specific severity
-SELECT * FROM pglinter.perform_table_check() WHERE level IN ('error', 'warning');
-```
-
-#### perform_table_check Rule Coverage
-
-- **T001**: Table without primary key
-- **T002**: Table with redundant indexes
-- **T003**: Table with foreign keys not indexed
-- **T004**: Table with potential missing indexes
-- **T005**: Table with foreign keys outside schema
-- **T006**: Table with unused indexes
-- **T007**: Table with foreign key type mismatch
-- **T008**: Table with no roles granted
-- **T009**: Reserved keywords in object names
-- **T010**: Table with sensitive columns
 
 ---
 

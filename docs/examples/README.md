@@ -135,7 +135,6 @@ for db in "${DATABASES[@]}"; do
     esac)
 
     SELECT pglinter.perform_base_check('$REPORT_DIR/$db/base.sarif');
-    SELECT pglinter.perform_table_check('$REPORT_DIR/$db/tables.sarif');
     "
 
     echo "✅ Completed analysis for $db"
@@ -429,14 +428,9 @@ Key Differences B001 vs T001:
 - B001: "X tables without primary key exceed the warning threshold: 20%"
 - T001: "Found X tables without primary key: schema.table1, schema.table2..."
 
-- B001: Database-wide percentage analysis
-- T001: Individual table identification
-
+- B001: Database-wide percentage analysis including individual table identification
 - B001: Part of base checks (perform_base_check)
-- T001: Part of table checks (perform_table_check)
-
-- B001: Useful for monitoring overall database design quality
-- T001: Useful for identifying specific tables that need primary keys
+- B001: Useful for monitoring overall database design quality and identifying specific tables that need primary keys
 
 Why Both Rules Matter:
 

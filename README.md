@@ -29,9 +29,8 @@ This extension is built with **pgrx 0.16.1** and supports:
 
 ### Rule Categories
 
-- **B (Base/Database)**: Database-wide checks
+- **B (Base/Database)**: Database-wide checks including tables, indexes, constraints, and general database analysis
 - **C (Cluster)**: PostgreSQL cluster configuration checks
-- **T (Table)**: Individual table checks
 - **S (Schema)**: Schema-level checks
 
 ### Key Components
@@ -93,9 +92,8 @@ SELECT pglinter.check_rule('B002');  -- Redundant indexes
 
 #### 📋 Available Rules
 
-- **B001-B008**: Base database rules (primary keys, indexes, schemas, etc.)
+- **B001-B008**: Base database rules (tables, primary keys, indexes, constraints, etc.)
 - **C002**: Cluster security rules
-- **T001-T010**: Individual table rules
 - **S001**: Schema rules
 
 For complete documentation, visit: https://github.com/pmpetit/pglinter/blob/main/docs/functions/README.md
@@ -133,13 +131,11 @@ SELECT pglinter.check_all();
 -- Individual category checks (output to prompt)
 SELECT pglinter.check_base();
 SELECT pglinter.check_cluster();
-SELECT pglinter.check_table();
 SELECT pglinter.check_schema();
 
 -- Generate SARIF reports to files
 SELECT pglinter.perform_base_check('/path/to/base_results.sarif');
 SELECT pglinter.perform_cluster_check('/path/to/cluster_results.sarif');
-SELECT pglinter.perform_table_check('/path/to/table_results.sarif');
 SELECT pglinter.perform_schema_check('/path/to/schema_results.sarif');
 
 -- Rule management
@@ -163,20 +159,6 @@ SELECT pglinter.is_rule_enabled('B001');         -- Check rule status
 ### Cluster Rules (C-series)
 - **C001**: max_connections * work_mem > available RAM
 - **C002**: Insecure pg_hba.conf entries
-
-### Table Rules (T-series)
-- **T001**: Individual tables without primary keys
-- **T002**: Tables without any indexes
-- **T003**: Tables with redundant indexes
-- **T004**: Tables with foreign keys not indexed
-- **T005**: Tables with potential missing indexes (high sequential scan usage)
-- **T006**: Tables with foreign keys referencing other schemas
-- **T007**: Tables with unused indexes
-- **T008**: Tables with foreign key type mismatches
-- **T009**: Tables with no roles granted
-- **T010**: Tables using reserved keywords
-- **T011**: Tables with uppercase names/columns
-- **T012**: Tables with sensitive columns (requires anon extension)
 
 ### Schema Rules (S-series)
 - **S001**: Schemas without default role grants
