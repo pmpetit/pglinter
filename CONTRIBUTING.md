@@ -127,7 +127,6 @@ To add a new linting rule to pglinter, follow these steps:
      - BASE: Database-wide analysis (e.g., overall table statistics)
      - CLUSTER: PostgreSQL cluster configuration (e.g., security settings)
      - SCHEMA: Schema-level checks (e.g., permissions, ownership)
-     - TABLE: Individual table analysis (e.g., indexes, foreign keys)
    - **Assign a rule code**: Follow the pattern `[B|C|S|T][XXX]` (e.g., B003, T007)
    - **Set thresholds**: Define warning_level and error_level percentages or counts
 
@@ -155,6 +154,7 @@ To add a new linting rule to pglinter, follow these steps:
    - **Threshold Rules (q1 + q2)**: For percentage-based analysis
      - `q1`: Query returning total count (denominator)
      - `q2`: Query returning problem count (numerator)
+     - `q3`: Query returning problem object list
      - Calculates percentage: (q2/q1) * 100
 
    Update the rule definition in `sql/rules.sql` with your queries:
