@@ -1758,6 +1758,126 @@ mod tests {
         fixtures::cleanup_test_tables();
         let _ = Spi::run("UPDATE pglinter.rules SET enable = false WHERE code = 'B001'");
     }
+
+    #[pg_test]
+    fn test_check_rule() {
+        // Setup test tables for violations
+        fixtures::setup_test_tables();
+
+        // Test 1: Test check_rule with valid rule ID
+        // Enable B001 rule (tables without primary keys)
+        let _ = Spi::run("UPDATE pglinter.rules SET enable = true WHERE code = 'B001'");
+        
+        // Test check_rule function with B001 rule
+        let result = Spi::get_one::<bool>("SELECT pglinter.check_rule('B001')").unwrap();
+        assert!(result.is_some());
+        assert_eq!(result.unwrap(), true); // Should complete successfully
+
+        // Test 2: Test check_rule with lowercase rule ID (should be converted to uppercase)
+        let result_lower = Spi::get_one::<bool>("SELECT pglinter.check_rule('b001')").unwrap();
+        assert!(result_lower.is_some());
+        assert_eq!(result_lower.unwrap(), true);
+
+        // Test 3: Test check_rule with output file parameter
+        let test_file_path = "/tmp/pglinter_check_rule_test.sarif";
+        let result_with_file = Spi::get_one::<bool>(&format!(
+            "SELECT pglinter.check_rule('B001', '{}')",
+            test_file_path
+        )).unwrap();
+        assert!(result_with_file.is_some());
+        assert_eq!(result_with_file.unwrap(), true);
+
+        // Verify SARIF file was created
+        assert!(
+            std::fs::metadata(test_file_path).is_ok(),
+            "SARIF file should be created when check_rule is called with output file"
+        );
+
+        // Read and verify SARIF file contains rule-specific results
+        let sarif_content = std::fs::read_to_string(test_file_path)
+            .expect("Failed to read SARIF file");
+        
+        // Basic SARIF structure validation
+        assert!(!sarif_content.is_empty(), "SARIF file should not be empty");
+        assert!(sarif_content.contains("version"), "SARIF should contain version");
+        assert!(sarif_content.contains("runs"), "SARIF should contain runs");
+        
+        // Parse as JSON to ensure it's valid
+        let sarif_json: serde_json::Value = serde_json::from_str(&sarif_content)
+            .expect("SARIF output should be valid JSON");
+        
+        // Check that results contain B001 rule violations
+        if let Some(results) = sarif_json["runs"][0]["results"].as_array() {
+            if !results.is_empty() {
+                // Should have results for B001 rule
+                let has_b001_results = results.iter().any(|result| {
+                    result["ruleId"].as_str() == Some("B001")
+                });
+                assert!(has_b001_results, "SARIF should contain B001 rule results");
+            }
+        }
+
+        // Test 4: Test check_rule with non-existent rule ID
+        let result_nonexistent = Spi::get_one::<bool>("SELECT pglinter.check_rule('NONEXISTENT')").unwrap();
+        assert!(result_nonexistent.is_some());
+        assert_eq!(result_nonexistent.unwrap(), true); // Should still complete without error
+
+        // Test 5: Test check_rule with disabled rule
+        let _ = Spi::run("UPDATE pglinter.rules SET enable = false WHERE code = 'B001'");
+        let result_disabled = Spi::get_one::<bool>("SELECT pglinter.check_rule('B001')").unwrap();
+        assert!(result_disabled.is_some());
+        assert_eq!(result_disabled.unwrap(), true); // Should complete but find no results
+
+        // Test 6: Test check_rule with different rule types
+        // Enable a cluster rule (C002)
+        let _ = Spi::run("UPDATE pglinter.rules SET enable = true WHERE code = 'C002'");
+        let result_cluster = Spi::get_one::<bool>("SELECT pglinter.check_rule('C002')").unwrap();
+        assert!(result_cluster.is_some());
+        assert_eq!(result_cluster.unwrap(), true);
+
+        // Enable a schema rule (S001) 
+        let _ = Spi::run("UPDATE pglinter.rules SET enable = true WHERE code = 'S001'");
+        let result_schema = Spi::get_one::<bool>("SELECT pglinter.check_rule('S001')").unwrap();
+        assert!(result_schema.is_some());
+        assert_eq!(result_schema.unwrap(), true);
+
+        // Test 7: Test check_rule with empty string rule ID
+        let result_empty = Spi::get_one::<bool>("SELECT pglinter.check_rule('')").unwrap();
+        assert!(result_empty.is_some());
+        assert_eq!(result_empty.unwrap(), true); // Should complete without error
+
+        // Test 8: Test check_rule with mixed case rule ID
+        let _ = Spi::run("UPDATE pglinter.rules SET enable = true WHERE code = 'B002'");
+        let result_mixed = Spi::get_one::<bool>("SELECT pglinter.check_rule('b002')").unwrap();
+        assert!(result_mixed.is_some());
+        assert_eq!(result_mixed.unwrap(), true);
+
+        // Test 9: Test multiple consecutive check_rule calls
+        let result1 = Spi::get_one::<bool>("SELECT pglinter.check_rule('B001')").unwrap();
+        let result2 = Spi::get_one::<bool>("SELECT pglinter.check_rule('B002')").unwrap();
+        let result3 = Spi::get_one::<bool>("SELECT pglinter.check_rule('C002')").unwrap();
+        
+        assert!(result1.is_some() && result1.unwrap());
+        assert!(result2.is_some() && result2.unwrap());
+        assert!(result3.is_some() && result3.unwrap());
+
+        // Test 10: Test check_rule with output to different file locations
+        let test_file_path_2 = "/tmp/pglinter_check_rule_test_2.json";
+        let result_file_2 = Spi::get_one::<bool>(&format!(
+            "SELECT pglinter.check_rule('B001', '{}')",
+            test_file_path_2
+        )).unwrap();
+        assert!(result_file_2.is_some());
+        assert_eq!(result_file_2.unwrap(), true);
+
+        // Cleanup files
+        let _ = std::fs::remove_file(test_file_path);
+        let _ = std::fs::remove_file(test_file_path_2);
+
+        // Cleanup test tables and reset rules
+        fixtures::cleanup_test_tables();
+        let _ = Spi::run("UPDATE pglinter.rules SET enable = false WHERE code IN ('B001', 'B002', 'C002', 'S001')");
+    }
 }
 
 /// This module is required by `cargo pgrx test` invocations.

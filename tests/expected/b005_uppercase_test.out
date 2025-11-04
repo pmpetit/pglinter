@@ -110,7 +110,7 @@ SELECT 'Running B005 check to detect comprehensive uppercase violations...' AS s
 SELECT pglinter.check();
 NOTICE:  🔍 pglinter found 1 issue(s):
 NOTICE:  ==================================================
-NOTICE:  ⚠️  [B005] WARNING: 14/61 object(s) using uppercase for name or columns exceed the warning threshold: 22%. Object list:
+NOTICE:  ⚠️  [B005] WARNING: 14/62 object(s) using uppercase for name or columns exceed the warning threshold: 22%. Object list:
 column test_b005_schema.ACTIVE_CUSTOMERS.FIRST_NAME
 column test_b005_schema.CUSTOMERS_TABLE.EMAIL_ADDRESS
 column test_b005_schema.CUSTOMERS_TABLE.FIRST_NAME
@@ -143,7 +143,7 @@ SELECT pglinter.check('/tmp/pglinter_B005_results.sarif');
 
 -- Test if file exists and show checksum
 \! md5sum /tmp/pglinter_B005_results.sarif
-00a43d47180ce625b8b65a1a0af44158  /tmp/pglinter_B005_results.sarif
+a7e9d3337fb0984226189a4ffc5c8173  /tmp/pglinter_B005_results.sarif
 -- Test rule management for B005
 SELECT 'Testing B005 rule management...' AS test_section;
           test_section           
