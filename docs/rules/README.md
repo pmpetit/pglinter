@@ -4,11 +4,10 @@ Complete reference for all PG Linter rules, organized by category with detailed 
 
 ## Rule Categories
 
-PG Linter organizes analysis rules into four main categories:
+PG Linter organizes analysis rules into three main categories:
 
-- **[B-series](#base-rules-b-series)**: Database-wide checks
+- **[B-series](#base-rules-b-series)**: Database-wide checks including tables, indexes, constraints, and general database analysis
 - **[C-series](#cluster-rules-c-series)**: Cluster configuration checks
-- **[T-series](#table-rules-t-series)**: Individual table checks
 - **[S-series](#schema-rules-s-series)**: Schema-level checks
 
 ## Base Rules (B-series)
@@ -153,40 +152,9 @@ DROP INDEX idx_unused_column;
 
 ---
 
-### B005: Unsecured Public Schema
+### B005: Objects With Uppercase Names
 
 **Rule Code**: B005
-**Name**: UnsecuredPublicSchema
-**Severity**: Warning at 20%, Error at 80%
-**Scope**: BASE
-
-**Description**: Only authorized users should be allowed to create objects.
-
-**Message Template**: `{0}/{1} schemas are unsecured, schemas where all users can create objects in, exceed the {2} threshold: {3}%.`
-
-**Why This Matters**:
-
-- Allows any user to create objects in schemas
-- Can lead to security vulnerabilities
-- Makes access control management difficult
-
-**How to Fix**:
-
-- `REVOKE CREATE ON SCHEMA <schema_name> FROM PUBLIC`
-
-**SQL Example**:
-
-```sql
--- Secure a schema
-REVOKE CREATE ON SCHEMA public FROM PUBLIC;
-GRANT CREATE ON SCHEMA public TO specific_role;
-```
-
----
-
-### B006: Objects With Uppercase Names
-
-**Rule Code**: B006
 **Name**: HowManyObjectsWithUppercase
 **Severity**: Warning at 20%, Error at 80%
 **Scope**: BASE
@@ -217,9 +185,9 @@ ALTER TABLE users RENAME COLUMN "FirstName" TO first_name;
 
 ---
 
-### B007: Tables Never Selected
+### B006: Tables Never Selected
 
-**Rule Code**: B007
+**Rule Code**: B006
 **Name**: HowManyTablesNeverSelected
 **Severity**: Warning at 20%, Error at 80%
 **Scope**: BASE
@@ -249,9 +217,9 @@ WHERE seq_scan = 0 AND idx_scan = 0;
 
 ---
 
-### B008: Tables With Foreign Keys Outside Schema
+### B007: Tables With Foreign Keys Outside Schema
 
-**Rule Code**: B008
+**Rule Code**: B007
 **Name**: HowManyTablesWithFkOutsideSchema
 **Severity**: Warning at 20%, Error at 80%
 **Scope**: BASE
@@ -271,126 +239,200 @@ WHERE seq_scan = 0 AND idx_scan = 0;
 - Consider restructuring schema design to keep related tables in same schema
 - Ask a DBA
 
----
-
-## Cluster Rules (C-series)
-
-PostgreSQL cluster configuration checks for system-level settings.
-
-### C002: Insecure Authentication Methods
-
-**Rule Code**: C002
-**Name**: PgHbaEntriesWithMethodTrustOrPasswordShouldNotExists
-**Severity**: Warning at 20%, Error at 80%
-**Scope**: CLUSTER
-
-**Description**: This configuration is extremely insecure and should only be used in a controlled, non-production environment for testing purposes. In a production environment, you should use more secure authentication methods such as md5, scram-sha-256, or cert, and restrict access to trusted IP addresses only.
-
-**Message Template**: `{0} entries in pg_hba.conf with trust or password authentication method exceed the warning threshold: {1}.`
-
-**Why This Matters**:
-
-- "trust" and "password" methods are insecure
-- Can lead to unauthorized database access
-- Passwords transmitted in plain text with "password" method
-
-**How to Fix**:
-
-- Change trust or password method in pg_hba.conf
-
 **SQL Example**:
 
 ```sql
--- Check current authentication methods
-SELECT * FROM pg_hba_file_rules WHERE auth_method IN ('trust', 'password');
-```
-
-**Configuration Fix**:
-
-```
-# Replace in pg_hba.conf:
-# host    all    all    0.0.0.0/0    trust
-# With:
-host    all    all    0.0.0.0/0    scram-sha-256
+-- Check for foreign keys crossing schema boundaries
+SELECT
+    tc.table_schema,
+    tc.table_name,
+    tc.constraint_name,
+    ccu.table_schema AS referenced_schema,
+    ccu.table_name AS referenced_table
+FROM information_schema.table_constraints tc
+JOIN information_schema.constraint_column_usage ccu
+    ON tc.constraint_name = ccu.constraint_name
+WHERE
+    tc.constraint_type = 'FOREIGN KEY'
+    AND tc.table_schema != ccu.table_schema;
 ```
 
 ---
 
-### C003: MD5 Password Encryption
+### B008: Foreign Key Type Mismatches
 
-**Rule Code**: C003
-**Name**: PasswordEncryptionIsMd5
-**Severity**: Warning at 20%, Error at 80%
-**Scope**: CLUSTER
+**Rule Code**: B008
+**Name**: HowManyTablesWithFkMismatch
+**Severity**: Warning at 1%, Error at 80%
+**Scope**: BASE
 
-**Description**: This configuration is not secure anymore and will prevent an upgrade to Postgres 18. Warning, you will need to reset all passwords after this is changed to scram-sha-256.
+**Description**: Count number of tables with foreign keys that do not match the key reference type.
 
-**Message Template**: ``
+**Message Template**: `{0}/{1} table(s) with foreign key mismatch exceed the {2} threshold: {3}%.`
 
 **Why This Matters**:
 
-- MD5 password encryption is deprecated and insecure
-- PostgreSQL 18+ will not support MD5 password encryption
-- MD5 hashing is cryptographically weak and vulnerable to attacks
-- Prevents database upgrades to newer PostgreSQL versions
-- Security compliance requirements often prohibit MD5
+- Type mismatches between foreign keys and referenced columns can cause performance issues
+- May lead to unexpected behavior in joins and constraints
+- Can prevent proper use of indexes on foreign key columns
+- Indicates potential data modeling issues
 
 **How to Fix**:
 
-1. **Change password_encryption parameter to scram-sha-256**
-2. **Reset all existing user passwords** (required after parameter change)
-3. **Update application connection strings** if needed
-4. **Test all connections** thoroughly before deploying
+- Consider column type adjustments to ensure foreign key matches referenced key type
+- Ask a DBA
 
 **SQL Example**:
 
 ```sql
--- Check current password encryption setting
-SHOW password_encryption;
-
--- Change to SCRAM-SHA-256 (requires superuser)
-ALTER SYSTEM SET password_encryption = 'scram-sha-256';
-SELECT pg_reload_conf();
-
--- Reset user passwords (each user password must be reset)
-ALTER USER myuser PASSWORD 'new_secure_password';
-
--- Verify the change
-SELECT rolname, rolcanlogin
-FROM pg_roles
-WHERE rolcanlogin = true;
+-- Find foreign key type mismatches
+SELECT
+    tc.table_schema,
+    tc.table_name,
+    tc.constraint_name,
+    kcu.column_name,
+    col1.data_type AS fk_column_type,
+    ccu.table_name AS referenced_table,
+    ccu.column_name AS referenced_column,
+    col2.data_type AS referenced_column_type
+FROM information_schema.table_constraints tc
+JOIN information_schema.key_column_usage kcu ON tc.constraint_name = kcu.constraint_name
+JOIN information_schema.constraint_column_usage ccu ON tc.constraint_name = ccu.constraint_name
+JOIN information_schema.columns col1 ON kcu.table_name = col1.table_name AND kcu.column_name = col1.column_name
+JOIN information_schema.columns col2 ON ccu.table_name = col2.table_name AND ccu.column_name = col2.column_name
+WHERE tc.constraint_type = 'FOREIGN KEY'
+AND col1.data_type != col2.data_type;
 ```
 
-**Configuration Steps**:
+---
+
+### B009: Tables Using Same Trigger Function
+
+**Rule Code**: B009
+**Name**: HowManyTablesWithSameTrigger
+**Severity**: Warning at 20%, Error at 80%
+**Scope**: BASE
+
+**Description**: Count number of tables using the same trigger vs nb table with their own triggers.
+
+**Message Template**: `{0}/{1} table(s) using the same trigger function exceed the {2} threshold: {3}%.`
+
+**Why This Matters**:
+
+- Sharing trigger functions across tables adds complexity
+- Makes debugging and maintenance more difficult
+- Can create unexpected side effects when modifying trigger logic
+- Reduces code readability and maintainability
+
+**How to Fix**:
+
+- For more readability and other considerations use one trigger function per table
+- Sharing the same trigger function add more complexity
+
+**SQL Example**:
 
 ```sql
--- 1. Change the global setting
-ALTER SYSTEM SET password_encryption = 'scram-sha-256';
-SELECT pg_reload_conf();
-
--- 2. Reset all user passwords
--- (This must be done for each user individually)
-ALTER USER app_user PASSWORD 'reset_password_123';
-ALTER USER readonly_user PASSWORD 'reset_password_456';
-
--- 3. Update pg_hba.conf if using md5 auth method
--- Change: host all all 0.0.0.0/0 md5
--- To:     host all all 0.0.0.0/0 scram-sha-256
+-- Find tables sharing trigger functions
+SELECT
+    trigger_function,
+    array_agg(DISTINCT table_name) AS tables_using_function,
+    count(DISTINCT table_name) AS table_count
+FROM (
+    SELECT
+        event_object_table AS table_name,
+        substring(action_statement FROM 'EXECUTE FUNCTION ([^()]+)') AS trigger_function
+    FROM information_schema.triggers
+    WHERE trigger_schema NOT IN ('information_schema', 'pg_catalog')
+) t
+GROUP BY trigger_function
+HAVING count(DISTINCT table_name) > 1;
 ```
 
-**⚠️ Important Warnings**:
+---
 
-- **All existing passwords become invalid** after changing password_encryption
-- **Applications will fail to connect** until passwords are reset
-- **Plan maintenance window** for this change
-- **Test thoroughly** in non-production environment first
-- **Update application configurations** to use new auth method
+### B010: Objects Using Reserved Keywords
+
+**Rule Code**: B010
+**Name**: HowManyTablesWithReservedKeywords
+**Severity**: Warning at 20%, Error at 80%
+**Scope**: BASE
+
+**Description**: Count number of database objects using reserved keywords in their names.
+
+**Message Template**: `{0}/{1} object(s) using reserved keywords exceed the {2} threshold: {3}%.`
+
+**Why This Matters**:
+
+- Reserved keywords require quoting in SQL statements
+- Can cause SQL syntax errors and parsing issues
+- Makes code less portable between database systems
+- Creates maintenance difficulties and confusion
+
+**How to Fix**:
+
+- Rename database objects to avoid using reserved keywords
+- Using reserved keywords can lead to SQL syntax errors and maintenance difficulties
+
+**SQL Example**:
+
+```sql
+-- Check for objects using reserved keywords (example with 'user' table)
+SELECT tablename
+FROM pg_tables
+WHERE tablename IN ('user', 'table', 'select', 'from', 'where', 'order', 'group');
+
+-- Rename objects that use reserved keywords
+ALTER TABLE "user" RENAME TO app_user;
+ALTER TABLE "order" RENAME TO customer_order;
+```
+
+---
+
+### B011: Multiple Table Owners in Schema
+
+**Rule Code**: B011
+**Name**: SeveralTableOwnerInSchema
+**Severity**: Warning at 1%, Error at 80%
+**Scope**: BASE
+
+**Description**: In a schema there are several tables owned by different owners.
+
+**Message Template**: `{0}/{1} schemas have tables owned by different owners. Exceed the {2} threshold: {3}%.`
+
+**Why This Matters**:
+
+- Inconsistent ownership makes maintenance difficult
+- Can create permission and access control issues
+- Complicates backup and restore operations
+- Makes schema management more complex
+
+**How to Fix**:
+
+- Change table owners to the same functional role
+
+**SQL Example**:
+
+```sql
+-- Find schemas with mixed table ownership
+SELECT
+    schemaname,
+    array_agg(DISTINCT tableowner) AS owners,
+    count(DISTINCT tableowner) AS owner_count
+FROM pg_tables
+WHERE schemaname NOT IN ('information_schema', 'pg_catalog')
+GROUP BY schemaname
+HAVING count(DISTINCT tableowner) > 1;
+
+-- Standardize table ownership within a schema
+ALTER TABLE schema_name.table1 OWNER TO schema_owner_role;
+ALTER TABLE schema_name.table2 OWNER TO schema_owner_role;
+```
 
 ---
 
 ## Schema Rules (S-series)
 
-Schema-level checks for organization and security.
+Schema-level checks for functional namespace.
 
 ### S001: Schema Without Default Role Grants
 
@@ -456,301 +498,149 @@ GRANT SELECT ON TABLES TO myschema_ro;
 
 ---
 
-## Table Rules (T-series)
+### S003: Unsecured Public Schema Access
 
-Individual table-specific checks for data structure and performance.
+**Rule Code**: S003
+**Name**: UnsecuredPublicSchema
+**Severity**: Warning at 1%, Error at 80%
+**Scope**: SCHEMA
 
-### T001: Table Without Primary Key
+**Description**: Only authorized users should be allowed to create objects.
 
-**Rule Code**: T001
-**Name**: TableWithoutPrimaryKey
-**Severity**: Warning at 1, Error at 1
-**Scope**: TABLE
-
-**Description**: Table without primary key.
-
-**Message Template**: `No primary key on table(s)`
+**Message Template**: `{0}/{1} schemas are unsecured, schemas where all users can create objects in, exceed the {2} threshold: {3}%.`
 
 **Why This Matters**:
 
-- Table-specific version of B001
-- Provides detailed information about which tables need attention
-- Essential for data integrity and replication
+- Allows any user to create objects in schemas
+- Can lead to security vulnerabilities and unauthorized access
+- Makes access control management difficult
+- May result in unexpected objects being created by unprivileged users
 
 **How to Fix**:
 
-- Create a primary key
-
----
-
-### T002: Table With Redundant Index
-
-**Rule Code**: T002
-**Name**: TableWithRedundantIndex
-**Severity**: Warning at 10, Error at 20
-**Scope**: TABLE
-
-**Description**: Table with duplicated index.
-
-**Message Template**: `Duplicated index`
-
-**Why This Matters**:
-
-- Table-specific version of B002
-- Provides detailed analysis of index redundancy per table
-- Helps prioritize optimization efforts
-
-**How to Fix**:
-
-- Remove duplicated index
-- Check for constraints that can create indexes
-
-**Example Output**:
-
-```text
-public.users idx idx_email_1 columns (email) is a subset of idx idx_email_2 columns (email,created_at)
-```
-
----
-
-### T003: Foreign Key Without Index
-
-**Rule Code**: T003
-**Name**: TableWithFkNotIndexed
-**Severity**: Warning at 1, Error at 1
-**Scope**: TABLE
-
-**Description**: When you delete or update a row in the parent table, the database must check the child table to ensure there are no orphaned records. An index on the foreign key allows for a rapid lookup, ensuring that these checks don't negatively impact performance.
-
-**Message Template**: `Unindexed constraint`
-
-**Why This Matters**:
-
-- Table-specific version of B003
-- Provides exact foreign key constraints needing indexes
-- Critical for query performance
-
-**How to Fix**:
-
-- Create an index on the child table foreign key
-
----
-
-### T004: Table With High Sequential Scan Percentage
-
-**Rule Code**: T004
-**Name**: TableWithPotentialMissingIdx
-**Severity**: Warning at 50, Error at 90
-**Scope**: TABLE
-
-**Description**: With high level of seq scan, base on pg_stat_user_tables.
-
-**Message Template**: `Table with potential missing index`
-
-**Why This Matters**:
-
-- Table-specific version of B004
-- Provides detailed scan statistics per table
-- Helps identify which tables need index optimization
-
-**How to Fix**:
-
-- Ask a DBA
-
-**Example Output**:
-
-```text
-public.orders:85 % of seq scan
-```
-
----
-
-### T005: Table With Foreign Key Outside Schema
-
-**Rule Code**: T005
-**Name**: TableWithFkOutsideSchema
-**Severity**: Warning at 1, Error at 1
-**Scope**: TABLE
-
-**Description**: Table with fk outside its schema. This can be problematic for maintenance and scalability of the database, refreshing staging/preprod from prod, as well as for understanding the data model. Migration challenges: Moving or restructuring schemas becomes difficult.
-
-**Message Template**: `Foreign key outside schema`
-
-**Why This Matters**:
-
-- Table-specific version of B008
-- Provides detailed information about cross-schema dependencies
-- Helps with schema organization planning
-
-**How to Fix**:
-
-- Consider rewrite your model
-- Ask a DBA
-
----
-
-### T006: Table With Large Unused Index
-
-**Rule Code**: T006
-**Name**: TableWithUnusedIndex
-**Severity**: Warning at 200MB, Error at 500MB
-**Scope**: TABLE
-
-**Description**: Table unused index, base on pg_stat_user_indexes, indexes associated to constraints are discard. Warning and error level are in MB (the table size to consider).
-
-**Message Template**: `Index (larger than threshold) seems to be unused.`
-
-**Why This Matters**:
-
-- Focuses on unused indexes that consume significant storage
-- Helps prioritize index cleanup efforts
-- Provides size information for impact assessment
-
-**How to Fix**:
-
-- Remove unused index or change warning/error threshold
-
-**Example Output**:
-
-```text
-public.orders idx idx_old_status size 5200 kB
-```
-
----
-
-### T007: Table With Foreign Key Data Type Mismatch
-
-**Rule Code**: T007
-**Name**: TableWithFkMismatch
-**Severity**: Warning at 1, Error at 1
-**Scope**: TABLE
-
-**Description**: Table with fk mismatch, ex smallint refer to a bigint.
-
-**Message Template**: `Table with fk type mismatch.`
-
-**Why This Matters**:
-
-- Type mismatches can prevent proper foreign key constraint creation
-- May cause performance issues during joins
-- Indicates data modeling problems
-
-**How to Fix**:
-
-- Consider rewrite your model
-- Ask a DBA
-
-**Example Output**:
-
-```text
-public.orders constraint fk_customer column customer_id type is integer but customers.id type is bigint
-```
-
----
-
-### T008: Table Without Role-Based Access
-
-**Rule Code**: T008
-**Name**: TableWithRoleNotGranted
-**Severity**: Warning at 1, Error at 1
-**Scope**: TABLE
-
-**Description**: Table has no roles grantee. Meaning that users will need direct access on it (not through a role).
-
-**Message Template**: `No role grantee on table. it means that except owner, users will need a direct grant on this table, not through a role. Prefer RBAC access if possible.`
-
-**Why This Matters**:
-
-- Tables without explicit grants may be inaccessible to application users
-- Indicates incomplete security configuration
-- Makes role-based access control difficult
-
-**How to Fix**:
-
-- Create roles (myschema_ro & myschema_rw) and grant it on table with appropriate privileges
+- `REVOKE CREATE ON SCHEMA <schema_name> FROM PUBLIC`
 
 **SQL Example**:
 
 ```sql
--- Create roles and grant privileges
-CREATE ROLE myschema_ro;
-CREATE ROLE myschema_rw;
+-- Check which schemas allow public creation
+SELECT nspname
+FROM pg_namespace
+WHERE HAS_SCHEMA_PRIVILEGE('public', nspname, 'CREATE')
+AND nspname NOT IN ('information_schema', 'pg_catalog');
 
-GRANT SELECT ON ALL TABLES IN SCHEMA myschema TO myschema_ro;
-GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA myschema TO myschema_rw;
+-- Secure a schema by revoking public creation privileges
+REVOKE CREATE ON SCHEMA public FROM PUBLIC;
+REVOKE CREATE ON SCHEMA myschema FROM PUBLIC;
+
+-- Grant creation privileges to specific roles only
+GRANT CREATE ON SCHEMA myschema TO app_role;
 ```
 
 ---
 
-### T009: Reserved Keywords Violation
+### S004: Schema Owned by Internal/System Roles
 
-**Rule Code**: T009
-**Name**: ReservedKeyWord
-**Severity**: Warning at 10, Error at 20
-**Scope**: TABLE
+**Rule Code**: S004
+**Name**: OwnerSchemaIsInternalRole
+**Severity**: Warning at 20%, Error at 80%
+**Scope**: SCHEMA
 
-**Description**: An object use reserved keywords.
+**Description**: Owner of schema should not be any internal pg roles, or owner is a superuser (not sure it is necesary).
 
-**Message Template**: `Reserved keywords in object.`
-
-**Why This Matters**:
-
-- Reserved keywords require quoting in SQL statements
-- Can cause parser confusion and syntax errors
-- Makes code harder to read and maintain
-- May cause issues during database migrations
-
-**How to Fix**:
-
-- Rename the object to use a non reserved keyword
-
-**Common Reserved Keywords**:
-
-- SELECT, FROM, WHERE, ORDER, GROUP
-- TABLE, INDEX, CREATE, DROP, ALTER
-- PRIMARY, FOREIGN, UNIQUE, NOT, NULL
-
-**Example Output**:
-
-```text
-table:public.order is a reserved keyword.
-column:public.users.select is a reserved keyword.
-```
-
----
-
-### T010: Table With Sensitive Columns (Disabled by Default)
-
-**Rule Code**: T010
-**Name**: TableWithSensibleColumn
-**Severity**: Warning at 50, Error at 80
-**Scope**: TABLE
-**Status**: DISABLED (requires anon extension)
-
-**Description**: Base on the extension anon (https://postgresql-anonymizer.readthedocs.io/en/stable/detection), show sensitive column.
-
-**Message Template**: `{0} have column {1} (category {2}) that can be consider has sensitive. It should be masked for non data-operator users.`
-
-**Prerequisites**: Requires `anon` extension for detection
+**Message Template**: `{0}/{1} schemas are owned by internal roles or superuser. Exceed the {2} threshold: {3}%.`
 
 **Why This Matters**:
 
-- Helps identify data that may need privacy protection
-- Assists with GDPR and data protection compliance
-- Highlights columns that should be masked in non-production environments
+- Schemas owned by system roles or superusers can create security risks
+- Makes proper role separation and access control difficult
+- Can lead to privilege escalation issues
+- Complicates backup and restore operations
 
 **How to Fix**:
 
-- Install extension anon, and create some masking rules on
+- Change schema owner to a functional role
 
 **SQL Example**:
 
 ```sql
--- Install anon extension
-CREATE EXTENSION IF NOT EXISTS anon CASCADE;
+-- Find schemas owned by system roles or superusers
+SELECT
+    n.nspname AS schema_name,
+    r.rolname AS owner_name,
+    r.rolsuper AS is_superuser
+FROM pg_namespace n
+JOIN pg_roles r ON n.nspowner = r.oid
+WHERE (
+    r.rolsuper IS TRUE
+    OR r.rolname LIKE 'pg_%'
+    OR r.rolname = 'postgres'
+)
+AND n.nspname NOT IN ('information_schema', 'pg_catalog');
 
--- Create masking rule
-SELECT anon.mask_column('public.users.email', 'anon.fake_email()');
+-- Change schema ownership to a functional role
+ALTER SCHEMA myschema OWNER TO app_owner_role;
+```
+
+---
+
+### S005: Schema and Table Owner Mismatch
+
+**Rule Code**: S005
+**Name**: SchemaOwnerDoNotMatchTableOwner
+**Severity**: Warning at 20%, Error at 80%
+**Scope**: SCHEMA
+
+**Description**: The schema owner and tables in the schema do not match.
+
+**Message Template**: `{0}/{1} in the same schema, tables have different owners. They should be the same. Exceed the {2} threshold: {3}%.`
+
+**Why This Matters**:
+
+- Inconsistent ownership complicates maintenance and permissions
+- Can create access control and security issues
+- Makes backup, restore, and migration operations more complex
+- Reduces administrative efficiency and clarity
+
+**How to Fix**:
+
+- For maintenance facilities, schema and tables owners should be the same
+
+**SQL Example**:
+
+```sql
+-- Find schemas where table owners don't match schema owner
+SELECT
+    n.nspname AS schema_name,
+    r_schema.rolname AS schema_owner,
+    c.relname AS table_name,
+    r_table.rolname AS table_owner
+FROM pg_namespace n
+JOIN pg_class c ON c.relnamespace = n.oid
+JOIN pg_roles r_schema ON n.nspowner = r_schema.oid
+JOIN pg_roles r_table ON c.relowner = r_table.oid
+WHERE
+    c.relkind = 'r'  -- regular tables only
+    AND n.nspowner <> c.relowner  -- owners are different
+    AND n.nspname NOT IN ('information_schema', 'pg_catalog');
+
+-- Align table ownership with schema ownership
+ALTER TABLE myschema.table1 OWNER TO schema_owner_role;
+ALTER TABLE myschema.table2 OWNER TO schema_owner_role;
+
+-- Or change all tables in a schema at once
+DO $$
+DECLARE
+    rec RECORD;
+BEGIN
+    FOR rec IN
+        SELECT tablename
+        FROM pg_tables
+        WHERE schemaname = 'myschema'
+    LOOP
+        EXECUTE 'ALTER TABLE myschema.' || rec.tablename || ' OWNER TO schema_owner_role';
+    END LOOP;
+END $$;
 ```
 
 ---
@@ -813,18 +703,16 @@ SELECT pglinter.show_rule_queries('B001');
 ### Rule Execution
 
 ```sql
--- Run all rules
-SELECT pglinter.check_all();
+-- Run all enabled rules
+SELECT pglinter.check();
 
--- Run specific rule categories
-SELECT pglinter.perform_base_check();
-SELECT pglinter.perform_cluster_check();
-SELECT pglinter.perform_schema_check();
-SELECT pglinter.perform_table_check();
+-- Run a specific rule only
+SELECT pglinter.check_rule('B001');
+SELECT pglinter.check_rule('C002');
 
 -- Generate SARIF output
-SELECT pglinter.perform_base_check('/tmp/base_results.sarif');
-SELECT pglinter.check_all('/tmp/complete_results.sarif');
+SELECT pglinter.check('/tmp/results.sarif');
+SELECT pglinter.check_rule('B001', '/tmp/b001_results.sarif');
 ```
 
 ---
@@ -912,15 +800,19 @@ SELECT pglinter.import_rules_from_file('/path/to/rules.yaml');
 **CI/CD Integration**:
 
 ```bash
-# Run checks as part of deployment pipeline
-psql -c "SELECT pglinter.check_all('/tmp/results.sarif')"
+# Run all checks as part of deployment pipeline
+psql -c "SELECT pglinter.check('/tmp/results.sarif')"
+
+# Run specific critical rules only
+psql -c "SELECT pglinter.check_rule('B001', '/tmp/primary_keys.sarif')"
+psql -c "SELECT pglinter.check_rule('C002', '/tmp/security.sarif')"
 ```
 
 **Regular Monitoring**:
 
 ```sql
 -- Schedule weekly reports
-SELECT pglinter.check_all();
+SELECT pglinter.check();
 ```
 
 **Custom Rule Sets**:
@@ -940,9 +832,7 @@ PG Linter supports SARIF (Static Analysis Results Interchange Format) output for
 
 ```sql
 -- Generate SARIF report
-SELECT pglinter.perform_base_check('/tmp/analysis.sarif');
-SELECT pglinter.perform_table_check('/tmp/table_analysis.sarif');
-SELECT pglinter.check_all('/tmp/complete_analysis.sarif');
+SELECT pglinter.check('/tmp/analysis.sarif');
 ```
 
 SARIF files can be consumed by:

@@ -1,0 +1,285 @@
+-- Simple example to demonstrate foreign key type mismatch detection (B008 rule)
+-- This script creates tables with foreign keys that have mismatched data types
+-- and shows how the B008 rule detects these type inconsistencies.
+CREATE EXTENSION pglinter;
+\pset pager off
+-- Create parent tables with various data types for primary keys
+CREATE TABLE test_users_bigint (
+    user_id BIGINT PRIMARY KEY,
+    username VARCHAR(50) UNIQUE NOT NULL,
+    email VARCHAR(150) UNIQUE,
+    created_at TIMESTAMP DEFAULT '2024-01-01 10:00:00'
+);
+CREATE TABLE test_categories_integer (
+    category_id INTEGER PRIMARY KEY,
+    category_name VARCHAR(100) NOT NULL,
+    description TEXT,
+    created_at TIMESTAMP DEFAULT '2024-01-01 10:00:00'
+);
+CREATE TABLE test_products_smallint (
+    product_id SMALLINT PRIMARY KEY,
+    product_name VARCHAR(100) NOT NULL,
+    price DECIMAL(10, 2),
+    created_at TIMESTAMP DEFAULT '2024-01-01 10:00:00'
+);
+CREATE TABLE test_regions_text (
+    region_code TEXT PRIMARY KEY,
+    region_name VARCHAR(100) NOT NULL,
+    country VARCHAR(50),
+    created_at TIMESTAMP DEFAULT '2024-01-01 10:00:00'
+);
+-- Create child tables with MISMATCHED foreign key types (should trigger B008)
+-- FK type mismatch: INTEGER references BIGINT
+CREATE TABLE test_orders_int_to_bigint (
+    order_id SERIAL PRIMARY KEY,
+    user_id INTEGER NOT NULL REFERENCES test_users_bigint(user_id), -- MISMATCH!
+    order_date DATE NOT NULL DEFAULT '2024-01-15',
+    total_amount DECIMAL(10, 2),
+    created_at TIMESTAMP DEFAULT '2024-01-15 14:30:00'
+);
+-- FK type mismatch: BIGINT references INTEGER
+CREATE TABLE test_reviews_bigint_to_int (
+    review_id SERIAL PRIMARY KEY,
+    category_id BIGINT NOT NULL REFERENCES test_categories_integer(category_id), -- MISMATCH!
+    rating INTEGER CHECK (rating >= 1 AND rating <= 5),
+    review_text TEXT,
+    created_at TIMESTAMP DEFAULT '2024-01-15 14:30:00'
+);
+-- FK type mismatch: INTEGER references SMALLINT
+CREATE TABLE test_inventory_int_to_smallint (
+    inventory_id SERIAL PRIMARY KEY,
+    product_id INTEGER NOT NULL REFERENCES test_products_smallint(product_id), -- MISMATCH!
+    quantity INTEGER DEFAULT 0,
+    warehouse_location VARCHAR(50),
+    created_at TIMESTAMP DEFAULT '2024-01-15 14:30:00'
+);
+-- FK type mismatch: VARCHAR references TEXT
+CREATE TABLE test_stores_varchar_to_text (
+    store_id SERIAL PRIMARY KEY,
+    region_code VARCHAR(10) NOT NULL REFERENCES test_regions_text(region_code), -- MISMATCH!
+    store_name VARCHAR(100) NOT NULL,
+    address TEXT,
+    created_at TIMESTAMP DEFAULT '2024-01-15 14:30:00'
+);
+-- FK type mismatch: SMALLINT references INTEGER
+CREATE TABLE test_discounts_smallint_to_int (
+    discount_id SERIAL PRIMARY KEY,
+    category_id SMALLINT NOT NULL REFERENCES test_categories_integer(category_id), -- MISMATCH!
+    discount_percentage DECIMAL(5, 2),
+    start_date DATE,
+    end_date DATE,
+    created_at TIMESTAMP DEFAULT '2024-01-15 14:30:00'
+);
+-- Create child tables with CORRECT matching foreign key types (should NOT trigger B008)
+CREATE TABLE test_user_profiles_correct (
+    profile_id SERIAL PRIMARY KEY,
+    user_id BIGINT NOT NULL REFERENCES test_users_bigint(user_id), -- CORRECT!
+    first_name VARCHAR(50),
+    last_name VARCHAR(50),
+    bio TEXT,
+    created_at TIMESTAMP DEFAULT '2024-01-15 14:30:00'
+);
+CREATE TABLE test_category_stats_correct (
+    stat_id SERIAL PRIMARY KEY,
+    category_id INTEGER NOT NULL REFERENCES test_categories_integer(category_id), -- CORRECT!
+    product_count INTEGER DEFAULT 0,
+    avg_rating DECIMAL(3, 2),
+    created_at TIMESTAMP DEFAULT '2024-01-15 14:30:00'
+);
+CREATE TABLE test_product_details_correct (
+    detail_id SERIAL PRIMARY KEY,
+    product_id SMALLINT NOT NULL REFERENCES test_products_smallint(product_id), -- CORRECT!
+    specifications TEXT,
+    warranty_months INTEGER,
+    created_at TIMESTAMP DEFAULT '2024-01-15 14:30:00'
+);
+-- Insert test data to make the tables functional
+INSERT INTO test_users_bigint (user_id, username, email)
+VALUES
+(1000000001, 'john_doe', 'john.doe@test.com'),
+(1000000002, 'jane_smith', 'jane.smith@test.com'),
+(1000000003, 'bob_johnson', 'bob.johnson@test.com'),
+(1000000004, 'alice_brown', 'alice.brown@test.com'),
+(1000000005, 'charlie_wilson', 'charlie.wilson@test.com');
+INSERT INTO test_categories_integer (category_id, category_name, description)
+VALUES
+(100, 'Electronics', 'Electronic devices and gadgets'),
+(200, 'Furniture', 'Home and office furniture'),
+(300, 'Books', 'Books and educational materials'),
+(400, 'Clothing', 'Apparel and accessories'),
+(500, 'Sports', 'Sports equipment and gear');
+INSERT INTO test_products_smallint (product_id, product_name, price)
+VALUES
+(1, 'Laptop', 999.99),
+(2, 'Chair', 199.50),
+(3, 'Book', 29.99),
+(4, 'Shirt', 49.99),
+(5, 'Tennis Racket', 89.99);
+INSERT INTO test_regions_text (region_code, region_name, country)
+VALUES
+('US-EAST', 'Eastern United States', 'USA'),
+('US-WEST', 'Western United States', 'USA'),
+('CA-ON', 'Ontario', 'Canada'),
+('UK-LON', 'London Region', 'United Kingdom'),
+('FR-PAR', 'Paris Region', 'France');
+-- Insert data into tables with type mismatches
+INSERT INTO test_orders_int_to_bigint (user_id, total_amount)
+VALUES
+(1000000001, 999.99),  -- This works but has type mismatch
+(1000000002, 299.50),
+(1000000003, 149.99);
+INSERT INTO test_reviews_bigint_to_int (category_id, rating, review_text)
+VALUES
+(100, 5, 'Excellent electronics selection'),
+(200, 4, 'Good furniture quality'),
+(300, 5, 'Great book collection');
+INSERT INTO test_inventory_int_to_smallint (product_id, quantity, warehouse_location)
+VALUES
+(1, 50, 'Warehouse A'),
+(2, 25, 'Warehouse B'),
+(3, 100, 'Warehouse C');
+INSERT INTO test_stores_varchar_to_text (region_code, store_name, address)
+VALUES
+('US-EAST', 'East Coast Store', '123 Main St, New York'),
+('US-WEST', 'West Coast Store', '456 Oak Ave, Los Angeles'),
+('CA-ON', 'Toronto Store', '789 Queen St, Toronto');
+INSERT INTO test_discounts_smallint_to_int (category_id, discount_percentage, start_date, end_date)
+VALUES
+(100, 10.00, '2024-01-01', '2024-01-31'),
+(200, 15.00, '2024-02-01', '2024-02-29'),
+(300, 20.00, '2024-03-01', '2024-03-31');
+-- Insert data into tables with correct types
+INSERT INTO test_user_profiles_correct (user_id, first_name, last_name, bio)
+VALUES
+(1000000001, 'John', 'Doe', 'Software developer from New York'),
+(1000000002, 'Jane', 'Smith', 'Designer from Los Angeles'),
+(1000000003, 'Bob', 'Johnson', 'Manager from Chicago');
+INSERT INTO test_category_stats_correct (category_id, product_count, avg_rating)
+VALUES
+(100, 1500, 4.2),
+(200, 800, 4.0),
+(300, 2000, 4.5);
+INSERT INTO test_product_details_correct (product_id, specifications, warranty_months)
+VALUES
+(1, 'Intel i7, 16GB RAM, 512GB SSD', 24),
+(2, 'Ergonomic design, adjustable height', 12),
+(3, 'Hardcover, 350 pages', 0);
+-- Update statistics
+ANALYZE test_users_bigint;
+ANALYZE test_categories_integer;
+ANALYZE test_products_smallint;
+ANALYZE test_regions_text;
+ANALYZE test_orders_int_to_bigint;
+ANALYZE test_reviews_bigint_to_int;
+ANALYZE test_inventory_int_to_smallint;
+ANALYZE test_stores_varchar_to_text;
+ANALYZE test_discounts_smallint_to_int;
+ANALYZE test_user_profiles_correct;
+ANALYZE test_category_stats_correct;
+ANALYZE test_product_details_correct;
+-- Disable all rules first to isolate B008 testing
+SELECT 'Disabling all rules to test B008 specifically...' AS status;
+                      status                      
+--------------------------------------------------
+ Disabling all rules to test B008 specifically...
+(1 row)
+
+SELECT pglinter.disable_all_rules() AS all_rules_disabled;
+NOTICE:  🔴 Disabled 19 rule(s)
+ all_rules_disabled 
+--------------------
+                 19
+(1 row)
+
+SELECT pglinter.enable_rule('B008') AS B008_enabled;
+NOTICE:  ✅ Rule B008 has been enabled
+ b008_enabled 
+--------------
+ t
+(1 row)
+
+-- Run table check (should show no results since all rules are disabled)
+SELECT 'Running table check with all rules disabled (should show no B008 results):' AS test_info;
+                                 test_info                                  
+----------------------------------------------------------------------------
+ Running table check with all rules disabled (should show no B008 results):
+(1 row)
+
+SELECT pglinter.check();
+NOTICE:  🔍 pglinter found 1 issue(s):
+NOTICE:  ==================================================
+NOTICE:  ⚠️  [B008] WARNING: 5/8 table(s) with foreign key mismatch exceed the warning threshold: 62%. Object list:
+public.test_orders_int_to_bigint constraint test_orders_int_to_bigint_user_id_fkey column user_id type is integer but test_users_bigint.user_id type is bigint
+public.test_reviews_bigint_to_int constraint test_reviews_bigint_to_int_category_id_fkey column category_id type is bigint but test_categories_integer.category_id type is integer
+public.test_inventory_int_to_smallint constraint test_inventory_int_to_smallint_product_id_fkey column product_id type is integer but test_products_smallint.product_id type is smallint
+public.test_stores_varchar_to_text constraint test_stores_varchar_to_text_region_code_fkey column region_code type is character varying but test_regions_text.region_code type is text
+public.test_discounts_smallint_to_int constraint test_discounts_smallint_to_int_category_id_fkey column category_id type is smallint but test_categories_integer.category_id type is integer
+
+NOTICE:  ==================================================
+NOTICE:  📊 Summary: 0 error(s), 1 warning(s), 0 info
+NOTICE:  🟡 Some warnings found - consider reviewing for optimization
+ check 
+-------
+ t
+(1 row)
+
+-- Test disabling B008 temporarily
+SELECT 'Testing B008 disable/enable cycle:' AS test_info;
+             test_info              
+------------------------------------
+ Testing B008 disable/enable cycle:
+(1 row)
+
+SELECT pglinter.disable_rule('B008') AS B008_disabled;
+NOTICE:  🔴 Rule B008 has been disabled
+ b008_disabled 
+---------------
+ t
+(1 row)
+
+SELECT pglinter.check(); -- Should skip B008
+NOTICE:  ✅ No issues found - database schema looks good!
+ check 
+-------
+ t
+(1 row)
+
+-- Re-enable B008 and test again
+SELECT pglinter.enable_rule('B008') AS B008_re_enabled;
+NOTICE:  ✅ Rule B008 has been enabled
+ b008_re_enabled 
+-----------------
+ t
+(1 row)
+
+SELECT pglinter.check(); -- Should include B008 again
+NOTICE:  🔍 pglinter found 1 issue(s):
+NOTICE:  ==================================================
+NOTICE:  ⚠️  [B008] WARNING: 5/8 table(s) with foreign key mismatch exceed the warning threshold: 62%. Object list:
+public.test_orders_int_to_bigint constraint test_orders_int_to_bigint_user_id_fkey column user_id type is integer but test_users_bigint.user_id type is bigint
+public.test_reviews_bigint_to_int constraint test_reviews_bigint_to_int_category_id_fkey column category_id type is bigint but test_categories_integer.category_id type is integer
+public.test_inventory_int_to_smallint constraint test_inventory_int_to_smallint_product_id_fkey column product_id type is integer but test_products_smallint.product_id type is smallint
+public.test_stores_varchar_to_text constraint test_stores_varchar_to_text_region_code_fkey column region_code type is character varying but test_regions_text.region_code type is text
+public.test_discounts_smallint_to_int constraint test_discounts_smallint_to_int_category_id_fkey column category_id type is smallint but test_categories_integer.category_id type is integer
+
+NOTICE:  ==================================================
+NOTICE:  📊 Summary: 0 error(s), 1 warning(s), 0 info
+NOTICE:  🟡 Some warnings found - consider reviewing for optimization
+ check 
+-------
+ t
+(1 row)
+
+DROP TABLE test_orders_int_to_bigint CASCADE;
+DROP TABLE test_reviews_bigint_to_int CASCADE;
+DROP TABLE test_inventory_int_to_smallint CASCADE;
+DROP TABLE test_stores_varchar_to_text CASCADE;
+DROP TABLE test_discounts_smallint_to_int CASCADE;
+DROP TABLE test_user_profiles_correct CASCADE;
+DROP TABLE test_category_stats_correct CASCADE;
+DROP TABLE test_product_details_correct CASCADE;
+DROP TABLE test_users_bigint CASCADE;
+DROP TABLE test_categories_integer CASCADE;
+DROP TABLE test_products_smallint CASCADE;
+DROP TABLE test_regions_text CASCADE;
+DROP EXTENSION pglinter CASCADE;

@@ -49,10 +49,10 @@ CREATE INDEX idx_customer_date_1 ON orders_table (product_name, order_date);
 CREATE INDEX idx_customer_date_2 ON orders_table (product_name, order_date);
 -- First, disable all rules to isolate B001 testing
 SELECT pglinter.disable_all_rules() AS all_rules_disabled;
-NOTICE:  🔴 Disabled 23 rule(s)
+NOTICE:  🔴 Disabled 19 rule(s)
  all_rules_disabled 
 --------------------
-                 23
+                 19
 (1 row)
 
 -- Enable only B002 for focused testing
@@ -64,25 +64,36 @@ NOTICE:  ✅ Rule B002 has been enabled
 (1 row)
 
 -- Test with file output
-SELECT pglinter.perform_base_check('/tmp/pglinter_b002_results.sarif');
- perform_base_check 
---------------------
+SELECT pglinter.check('/tmp/pglinter_b002_results.sarif');
+ check 
+-------
  t
 (1 row)
 
 -- Test if file exists and show checksum
 \! md5sum /tmp/pglinter_b002_results.sarif
-7d3b35d5659fa55a84d9986d4f7665d6  /tmp/pglinter_b002_results.sarif
+d33fa0746f8eacf2f90c32f1a9957845  /tmp/pglinter_b002_results.sarif
 -- Test with no output file (should output to prompt)
-SELECT pglinter.perform_base_check();
+SELECT pglinter.check();
 NOTICE:  🔍 pglinter found 1 issue(s):
 NOTICE:  ==================================================
-NOTICE:  ⚠️  [B002] WARNING: 6/14 redundant(s) index exceed the warning threshold: 42%.
+NOTICE:  ⚠️  [B002] WARNING: 6/14 redundant(s) index exceed the warning threshold: 42%. Object list:
+public.orders_table.idx_customer_date_2(product_name,order_date) is redundant with idx_customer_date_1(product_name,order_date)
+public.orders_table.orders_table_pkey(order_id) is redundant with idx_customer_1(order_id)
+public.orders_table.idx_customer_date_1(product_name,order_date) is redundant with idx_customer_date_2(product_name,order_date)
+public.orders_table.idx_customer_1(order_id) is redundant with orders_table_pkey(order_id)
+public.orders_table_with_constraint.my_idx_customer(customer_id) is redundant with orders_table_with_constraint_customer_id_key(customer_id)
+public.orders_table_with_constraint.orders_table_with_constraint_customer_id_key(customer_id) is redundant with my_idx_customer(customer_id)
+public.test_table_with_redundant_indexes.idx_name_1(name) is redundant with idx_name_3(name,created_at,email)
+public.test_table_with_redundant_indexes.idx_email_status_1(email,status) is redundant with idx_email_status_2(email,status,created_at)
+public.test_table_with_redundant_indexes.idx_name_2(name,created_at) is redundant with idx_name_3(name,created_at,email)
+public.test_table_with_redundant_indexes.idx_name_1(name) is redundant with idx_name_2(name,created_at)
+
 NOTICE:  ==================================================
 NOTICE:  📊 Summary: 0 error(s), 1 warning(s), 0 info
 NOTICE:  🟡 Some warnings found - consider reviewing for optimization
- perform_base_check 
---------------------
+ check 
+-------
  t
 (1 row)
 
@@ -98,7 +109,7 @@ NOTICE:  📖 Rule Explanation for B002
 Count number of redundant index vs nb index.
 
 ⚠️  Message Template:
-{0}/{1} redundant(s) index exceed the {2} threshold: {3}%.
+{0}/{1} redundant(s) index exceed the {2} threshold: {3}%. Object list:\n{4}
 
 🔧 How to Fix:
    1. remove duplicated index or check if a constraint does not create a redundant index, or change warning/error threshold
@@ -123,10 +134,10 @@ NOTICE:  🔴 Rule B002 has been disabled
  t
 (1 row)
 
-SELECT pglinter.perform_base_check();
+SELECT pglinter.check();
 NOTICE:  ✅ No issues found - database schema looks good!
- perform_base_check 
---------------------
+ check 
+-------
  t
 (1 row)
 

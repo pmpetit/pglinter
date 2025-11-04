@@ -1,452 +1,418 @@
-# pglinter Examples
+# PGLinter Examples
 
-Practical examples of using pglinter in real-world scenarios.
+This document provides practical examples of using PGLinter to analyze PostgreSQL databases for potential issues, performance problems, and best practice violations. All examples are based on the regression tests in `tests/sql/`.
 
-## Basic Usage Examples
+## Table of Contents
 
-### Simple Database Analysis
+- [Getting Started](#getting-started)
+- [Base Rules (B-Series)](#base-rules-b-series)
+- [Schema Rules (S-Series)](#schema-rules-s-series)
+- [Rule Management](#rule-management)
+- [Integration Testing](#integration-testing)
+- [Output Options](#output-options)
+
+## Getting Started
+
+First, install the extension in your PostgreSQL database:
 
 ```sql
--- Quick health check
-SELECT * FROM pglinter.perform_base_check();
+CREATE EXTENSION pglinter;
+```
 
--- Save results to file
-SELECT pglinter.perform_base_check('/tmp/db_analysis.sarif');
+### Basic Usage
 
--- Check specific rule
+Run all enabled checks:
+
+```sql
+SELECT pglinter.check();
+```
+
+Run a specific rule:
+
+```sql
+SELECT pglinter.check_rule('B001');
+```
+
+Export results to SARIF format:
+
+```sql
+SELECT pglinter.check('/tmp/pglinter_results.sarif');
+```
+
+## Base Rules (B-Series)
+
+### B001: Tables Without Primary Keys
+
+**Problem**: Tables without primary keys can cause replication issues and make data management difficult.
+
+```sql
+-- Create a problematic table
+CREATE TABLE my_table_without_pk (
+    id INT,
+    name TEXT,
+    code TEXT,
+    enable BOOL DEFAULT TRUE
+);
+
+-- Check for tables without primary keys
+SELECT pglinter.check_rule('B001');
+
+-- Get detailed explanation
 SELECT pglinter.explain_rule('B001');
 ```
 
-### Rule Management
+**Fix**: Add a primary key to the table:
 
 ```sql
--- View all rules
-SELECT rule_code, enabled, description
-FROM pglinter.show_rules()
-ORDER BY rule_code;
-
--- Enable/disable rules
-SELECT pglinter.disable_rule('B005'); -- Public schema security
-SELECT pglinter.enable_rule('T004');  -- FK indexing
-
--- Check rule status
-SELECT pglinter.is_rule_enabled('B002');
+ALTER TABLE my_table_without_pk ADD PRIMARY KEY (id);
 ```
 
-## Configuration Examples
+### B002: Redundant Indexes
 
-### Development Environment Setup
-
-```sql
--- config/development.sql
-\echo 'Configuring pglinter for development environment...'
-
--- Disable strict rules for development
-SELECT pglinter.disable_rule('B005'); -- Public schema
-SELECT pglinter.disable_rule('C002'); -- pg_hba security
-SELECT pglinter.disable_rule('C003'); -- MD5 password encryption
-SELECT pglinter.disable_rule('T009'); -- Role grants
-SELECT pglinter.disable_rule('T010'); -- Reserved keywords
-
--- Enable core data integrity rules
-SELECT pglinter.enable_rule('B001');  -- Primary keys
-SELECT pglinter.enable_rule('T001');  -- Table primary keys
-SELECT pglinter.enable_rule('T004');  -- FK indexing
-SELECT pglinter.enable_rule('T008');  -- FK type mismatches
-
-\echo 'Development configuration complete.'
-```
-
-### Production Environment Setup
+**Problem**: Redundant indexes waste storage space and slow down write operations.
 
 ```sql
--- config/production.sql
-\echo 'Configuring pglinter for production environment...'
-
--- Enable all security and performance rules
-SELECT pglinter.enable_rule(rule_code)
-FROM pglinter.show_rules();
-
-\echo 'Production configuration complete.'
-```
-
-### Performance-Focused Configuration
-
-```sql
--- config/performance.sql
-\echo 'Configuring pglinter for performance analysis...'
-
--- Disable non-performance rules
-SELECT pglinter.disable_rule(rule_code)
-FROM pglinter.show_rules()
-WHERE rule_code NOT IN (
-    'B002', -- Redundant indexes
-    'B004', -- Unused indexes
-    'T003', -- Table redundant indexes
-    'T005', -- High sequential scans
-    'T007'  -- Table unused indexes
+-- Create table with redundant indexes
+CREATE TABLE test_table_with_redundant_indexes (
+    id INT PRIMARY KEY,
+    name TEXT,
+    email VARCHAR(255),
+    status VARCHAR(50)
 );
 
-\echo 'Performance configuration complete.'
+-- Create redundant indexes
+CREATE INDEX idx_name_1 ON test_table_with_redundant_indexes (name);
+CREATE INDEX idx_name_2 ON test_table_with_redundant_indexes (name); -- redundant!
+
+-- Create table with unique constraint and redundant index
+CREATE TABLE orders_table_with_constraint (
+    order_id SERIAL PRIMARY KEY,
+    customer_id INT UNIQUE,
+    product_name VARCHAR(255)
+);
+
+-- This index is redundant with the unique constraint above
+CREATE INDEX my_idx_customer ON orders_table_with_constraint (customer_id);
+
+-- Check for redundant indexes
+SELECT pglinter.check_rule('B002');
 ```
 
-### Rule Level Configuration
-
-For advanced rule customization, see the [Rule Level Management Examples](rule_level_management.md) which covers:
-
-- **Configurable Thresholds**: Adjust warning/error levels for rules like T005
-- **Environment-Specific Settings**: Different thresholds for dev/staging/production
-- **Bulk Rule Management**: Enable/disable all rules at once
-- **Monitoring Integration**: Track configuration changes and effectiveness
+**Fix**: Drop the redundant indexes:
 
 ```sql
--- Quick example: Adjust T005 sequential scan thresholds
-SELECT pglinter.update_rule_levels('T005', 30.0, 70.0);  -- More sensitive
-SELECT pglinter.enable_all_rules();                      -- Enable everything
+DROP INDEX idx_name_2;
+DROP INDEX my_idx_customer; -- The unique constraint already provides an index
 ```
 
-## Scripted Analysis Examples
+### B003: Foreign Keys Without Indexes
 
-### Multi-Database Analysis
-
-```bash
-#!/bin/bash
-# analyze_all_databases.sh - Analyze multiple databases
-
-DATABASES=("app_prod" "app_staging" "analytics" "reporting")
-ANALYSIS_DATE=$(date +%Y-%m-%d_%H-%M)
-REPORT_DIR="/var/log/pglinter/multi-db-$ANALYSIS_DATE"
-
-mkdir -p "$REPORT_DIR"
-
-for db in "${DATABASES[@]}"; do
-    echo "Analyzing database: $db"
-
-    # Create database-specific directory
-    mkdir -p "$REPORT_DIR/$db"
-
-    # Run analysis
-    psql -d "$db" -c "
-    -- Configure based on database type
-    $(case $db in
-        *prod*) echo 'SELECT pglinter.enable_rule(rule_code) FROM pglinter.show_rules();' ;;
-        *staging*) echo 'SELECT pglinter.disable_rule(''T010''); SELECT pglinter.disable_rule(''C002'');' ;;
-        *analytics*) echo 'SELECT pglinter.disable_rule(''B001''); SELECT pglinter.disable_rule(''T001'');' ;;
-    esac)
-
-    SELECT pglinter.perform_base_check('$REPORT_DIR/$db/base.sarif');
-    SELECT pglinter.perform_table_check('$REPORT_DIR/$db/tables.sarif');
-    "
-
-    echo "✅ Completed analysis for $db"
-done
-
-# Generate summary report
-echo "Generating summary report..."
-
-{
-    echo "# Multi-Database Analysis Report"
-    echo "Generated: $(date)"
-    echo ""
-
-    for db in "${DATABASES[@]}"; do
-        echo "## Database: $db"
-
-        errors=$(grep -c '"level": "error"' "$REPORT_DIR/$db"/*.sarif 2>/dev/null || echo "0")
-        warnings=$(grep -c '"level": "warning"' "$REPORT_DIR/$db"/*.sarif 2>/dev/null || echo "0")
-
-        echo "- Errors: $errors"
-        echo "- Warnings: $warnings"
-        echo ""
-    done
-} > "$REPORT_DIR/summary.md"
-
-echo "📊 Summary report created: $REPORT_DIR/summary.md"
-```
-
-## Rule Configuration Management with YAML
-
-### Exporting Rules to YAML
-
-pglinter supports exporting rule configurations to YAML format for backup, version control, or modification:
+**Problem**: Foreign key columns without indexes can cause performance issues during joins and constraint checks.
 
 ```sql
--- Export all rules to YAML string (view in psql output)
+-- Create tables with foreign key relationships
+CREATE TABLE customers (
+    id SERIAL PRIMARY KEY,
+    name TEXT
+);
+
+CREATE TABLE orders (
+    id SERIAL PRIMARY KEY,
+    customer_id INT,
+    order_date DATE,
+    FOREIGN KEY (customer_id) REFERENCES customers(id)
+);
+-- Note: customer_id doesn't have an index, which can cause performance issues
+
+-- Check for unindexed foreign keys
+SELECT pglinter.check_rule('B003');
+```
+
+**Fix**: Add indexes to foreign key columns:
+
+```sql
+CREATE INDEX idx_orders_customer_id ON orders(customer_id);
+```
+
+### B004: Unused Indexes
+
+**Problem**: Unused indexes consume storage and slow down writes without providing query benefits.
+
+```sql
+-- Create table with potentially unused index
+CREATE TABLE test_unused_index (
+    id SERIAL PRIMARY KEY,
+    name TEXT,
+    status TEXT
+);
+
+CREATE INDEX idx_unused_status ON test_unused_index(status);
+-- This index might be unused if no queries actually use it
+
+-- Check for unused indexes
+SELECT pglinter.check_rule('B004');
+```
+
+### B005: Uppercase Table/Column Names
+
+**Problem**: Uppercase identifiers require quoting and can cause portability issues.
+
+```sql
+-- Create tables with uppercase names (problematic)
+CREATE TABLE "UPPERCASE_TABLE" (
+    "ID" INT PRIMARY KEY,
+    "NAME" TEXT
+);
+
+-- Check for uppercase identifiers
+SELECT pglinter.check_rule('B005');
+```
+
+**Fix**: Use lowercase identifiers:
+
+```sql
+CREATE TABLE lowercase_table (
+    id INT PRIMARY KEY,
+    name TEXT
+);
+```
+
+## Schema Rules (S-Series)
+
+### S001: Schema Without Default Role Grants
+
+**Problem**: Schemas without proper role grants can cause access issues.
+
+```sql
+-- Create problematic schema setup
+CREATE ROLE s001_owner LOGIN;
+CREATE SCHEMA s001_schema AUTHORIZATION s001_owner;
+-- No default privileges granted
+
+-- Check schema security
+SELECT pglinter.check_rule('S001');
+
+-- Cleanup
+DROP SCHEMA s001_schema CASCADE;
+DROP ROLE s001_owner;
+```
+
+### S002: Schema Names with Environment Prefixes/Suffixes
+
+**Problem**: Schema names containing environment indicators (dev, test, prod) in production can be confusing.
+
+```sql
+-- Problematic schema names
+CREATE SCHEMA dev_application;
+CREATE SCHEMA test_schema;
+CREATE SCHEMA prod_data;
+
+-- Check schema naming conventions
+SELECT pglinter.check_rule('S002');
+```
+
+### S003: Unsecured Public Schema
+
+**Problem**: The public schema with default permissions can be a security risk.
+
+```sql
+-- Check public schema security
+SELECT pglinter.check_rule('S003');
+
+-- View current public schema permissions
+SELECT * FROM information_schema.usage_privileges WHERE object_name = 'public';
+```
+
+## Rule Management
+
+### Viewing Available Rules
+
+```sql
+-- List all available rules with their status
+SELECT pglinter.list_rules();
+
+-- Show detailed rule status
+SELECT pglinter.show_rules();
+
+-- Get explanation for a specific rule
+SELECT pglinter.explain_rule('B001');
+```
+
+### Enabling and Disabling Rules
+
+```sql
+-- Check if a rule is enabled
+SELECT pglinter.is_rule_enabled('B001');
+
+-- Disable a specific rule
+SELECT pglinter.disable_rule('B001');
+
+-- Enable a specific rule
+SELECT pglinter.enable_rule('B001');
+
+-- Disable all rules (useful for testing)
+SELECT pglinter.disable_all_rules();
+
+-- Enable all rules
+SELECT pglinter.enable_all_rules();
+```
+
+### Rule Level Management
+
+```sql
+-- View current rule levels
+SELECT pglinter.get_rule_levels('B001');
+
+-- Update warning and error thresholds
+SELECT pglinter.update_rule_levels('B001', 5, 20); -- warning_level=5, error_level=20
+
+-- Update only warning level
+SELECT pglinter.update_rule_levels('B001', 10, NULL);
+
+-- Update only error level
+SELECT pglinter.update_rule_levels('B001', NULL, 25);
+```
+
+### Rule Configuration Import/Export
+
+```sql
+-- Export current rule configuration to YAML
 SELECT pglinter.export_rules_to_yaml();
 
--- Export rules directly to a file
-SELECT pglinter.export_rules_to_file('/tmp/pglinter_rules_backup.yaml');
-```
+-- Export to file
+SELECT pglinter.export_rules_to_file('/tmp/pglinter_config.yaml');
 
-### Sample YAML Output
-
-The exported YAML includes metadata and all rule configurations:
-
-```yaml
-metadata:
-  export_timestamp: "2024-01-15T14:30:00Z"
-  total_rules: 45
-  format_version: "1.0"
-rules:
-  - id: 1
-    name: "HowManyTableWithoutPrimaryKey"
-    code: "B001"
-    enable: true
-    warning_level: 20
-    error_level: 80
-    scope: "BASE"
-    description: "Count number of tables without primary key."
-    message: "{0}/{1} table(s) without primary key exceed the {2} threshold: {3}%."
-    fixes: ["create a primary key or change warning/error threshold"]
-    q1: "SELECT count(*) FROM pg_tables WHERE schemaname NOT IN ('information_schema', 'pg_catalog')"
-    q2: "SELECT count(*) FROM pg_tables t WHERE NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conrelid = t.oid AND contype = 'p') AND t.schemaname NOT IN ('information_schema', 'pg_catalog')"
-  - id: 2
-    name: "HowManyRedudantIndex"
-    code: "B002"
-    enable: true
-    warning_level: 20
-    error_level: 80
-    scope: "BASE"
-    # ... more rules
-```
-
-### Modifying Rules in YAML
-
-Common modifications you can make to the YAML file:
-
-1. **Adjust Warning/Error Thresholds**:
-   ```yaml
-   # Make B001 more sensitive (lower thresholds)
-   - id: 1
-     name: "HowManyTableWithoutPrimaryKey"
-     code: "B001"
-     warning_level: 10  # Changed from 20
-     error_level: 50    # Changed from 80
-   ```
-
-2. **Enable/Disable Rules**:
-   ```yaml
-   # Disable strict security rules for development
-   - id: 5
-     code: "B005"
-     enable: false      # Changed from true
-   ```
-
-3. **Customize Messages**:
-   ```yaml
-   # Add more descriptive message
-   - id: 1
-     code: "B001"
-     message: "⚠️ DATABASE HEALTH: {0}/{1} tables lack primary keys ({3}% exceeds {2}% threshold). This impacts data integrity and replication."
-   ```
-
-4. **Update Rule Queries**:
-   ```yaml
-   # Modify B001 to exclude specific schemas
-   - id: 1
-     code: "B001"
-     q1: "SELECT count(*) FROM pg_tables WHERE schemaname NOT IN ('information_schema', 'pg_catalog', 'staging', 'temp')"
-     q2: "SELECT count(*) FROM pg_tables t WHERE NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conrelid = t.oid AND contype = 'p') AND t.schemaname NOT IN ('information_schema', 'pg_catalog', 'staging', 'temp')"
-   ```
-
-### Re-importing Modified Rules
-
-After editing the YAML file, import the changes back:
-
-```sql
--- Import from YAML file
-SELECT pglinter.import_rules_from_file('/tmp/pglinter_rules_modified.yaml');
-
--- Or import directly from YAML string
+-- Import from YAML string
 SELECT pglinter.import_rules_from_yaml('
 metadata:
+  export_timestamp: "2024-01-01T00:00:00Z"
+  total_rules: 2
   format_version: "1.0"
 rules:
-  - id: 1
-    code: "B001"
+  - code: "B001"
+    enabled: true
     warning_level: 10
     error_level: 50
-    # ... rest of rule definition
 ');
+
+-- Import from file
+SELECT pglinter.import_rules_from_file('/tmp/pglinter_config.yaml');
 ```
 
-### Complete Workflow Example
+## Integration Testing
 
-Here's a complete example of exporting, modifying, and re-importing rules:
+Run comprehensive checks across multiple rule categories:
 
-```bash
-#!/bin/bash
-# rule_management_workflow.sh
+```sql
+-- Create diverse test scenario
+CREATE TABLE users_no_pk (
+    id INT,  -- B001: No primary key
+    username TEXT,
+    email TEXT
+);
 
-# Step 1: Export current rules
-echo "📤 Exporting current rules..."
-psql -d myapp_prod -t -c "SELECT pglinter.export_rules_to_file('/tmp/rules_backup.yaml');"
+CREATE TABLE products (
+    id SERIAL PRIMARY KEY,
+    name TEXT,
+    category TEXT,
+    price NUMERIC
+);
 
-# Step 2: Create a development-friendly version
-echo "✏️ Creating development configuration..."
-cat > /tmp/rules_dev.yaml << 'EOF'
-metadata:
-  export_timestamp: "2024-01-15T15:00:00Z"
-  total_rules: 3
-  format_version: "1.0"
-rules:
-  # Relaxed primary key rule for development
-  - id: 1
-    name: "HowManyTableWithoutPrimaryKey"
-    code: "B001"
-    enable: true
-    warning_level: 50    # More lenient for dev
-    error_level: 90      # Higher error threshold
-    scope: "BASE"
-    description: "Count number of tables without primary key (dev settings)."
-    message: "DEV: {0}/{1} tables without primary keys ({3}% > {2}%). Consider adding PKs before production."
-    fixes: ["Add primary key: ALTER TABLE table_name ADD PRIMARY KEY (id)"]
-    q1: "SELECT count(*) FROM pg_tables WHERE schemaname NOT IN ('information_schema', 'pg_catalog')"
-    q2: "SELECT count(*) FROM pg_tables t WHERE NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conrelid = t.oid AND contype = 'p') AND t.schemaname NOT IN ('information_schema', 'pg_catalog')"
+-- Create redundant indexes (B002)
+CREATE INDEX idx_name_1 ON products (name);
+CREATE INDEX idx_name_2 ON products (name); -- redundant
 
-  # Disable public schema security in dev
-  - id: 5
-    name: "UnsecuredPublicSchema"
-    code: "B005"
-    enable: false        # Disabled for development
-    warning_level: 20
-    error_level: 80
-    scope: "BASE"
-    description: "Public schema security (disabled in dev)."
-    message: "Public schema allows object creation by all users."
-    fixes: ["REVOKE CREATE ON SCHEMA public FROM PUBLIC"]
+-- Create foreign key without index (B003)
+CREATE TABLE orders (
+    id SERIAL PRIMARY KEY,
+    user_id INT,  -- Foreign key without index
+    product_id INT,
+    order_date DATE,
+    FOREIGN KEY (user_id) REFERENCES users_no_pk(id),
+    FOREIGN KEY (product_id) REFERENCES products(id)
+);
 
-  # Keep FK indexing rule active
-  - id: 3
-    name: "HowManyTableWithoutIndexOnFk"
-    code: "B003"
-    enable: true
-    warning_level: 30    # Slightly more lenient
-    error_level: 70
-    scope: "BASE"
-    description: "Count tables without indexes on foreign keys."
-    message: "{0}/{1} tables lack FK indexes ({3}% > {2}%). Performance may suffer."
-    fixes: ["CREATE INDEX ON table_name (foreign_key_column)"]
-EOF
+-- Run comprehensive check
+SELECT pglinter.check();
 
-# Step 3: Apply development configuration
-echo "🔧 Applying development configuration..."
-psql -d myapp_dev -c "SELECT pglinter.import_rules_from_file('/tmp/rules_dev.yaml');"
-
-# Step 4: Verify changes
-echo "✅ Verifying rule changes..."
-psql -d myapp_dev -c "
-SELECT rule_code, enabled, warning_level, error_level,
-       CASE WHEN enabled THEN '✅' ELSE '❌' END as status
-FROM pglinter.show_rules()
-WHERE rule_code IN ('B001', 'B005', 'B003')
-ORDER BY rule_code;
-"
-
-# Step 5: Run analysis with new settings
-echo "🔍 Running analysis with new configuration..."
-psql -d myapp_dev -c "SELECT pglinter.perform_base_check();"
-
-echo "🎉 Configuration update complete!"
+-- Run specific rule categories
+SELECT pglinter.check_rule('B001'); -- Tables without PKs
+SELECT pglinter.check_rule('B002'); -- Redundant indexes
+SELECT pglinter.check_rule('B003'); -- Unindexed foreign keys
 ```
 
-### Environment-Specific Rule Management
+## Output Options
 
-Create different YAML configurations for different environments:
+### Console Output
 
-```bash
-# Create environment-specific configurations
-mkdir -p /etc/pglinter/environments
+```sql
+-- Basic check with console output
+SELECT pglinter.check();
 
-# Production: All rules enabled, strict thresholds
-cat > /etc/pglinter/environments/production.yaml << 'EOF'
-metadata:
-  format_version: "1.0"
-rules:
-  - {code: "B001", enable: true, warning_level: 5, error_level: 15}
-  - {code: "B002", enable: true, warning_level: 10, error_level: 25}
-  - {code: "B003", enable: true, warning_level: 10, error_level: 30}
-  - {code: "B005", enable: true, warning_level: 0, error_level: 1}
-EOF
-
-# Development: Relaxed rules
-cat > /etc/pglinter/environments/development.yaml << 'EOF'
-metadata:
-  format_version: "1.0"
-rules:
-  - {code: "B001", enable: true, warning_level: 40, error_level: 80}
-  - {code: "B002", enable: true, warning_level: 30, error_level: 60}
-  - {code: "B003", enable: true, warning_level: 30, error_level: 70}
-  - {code: "B005", enable: false}
-EOF
-
-# Apply environment-specific configuration
-ENVIRONMENT=${1:-development}
-psql -d $DATABASE -c "SELECT pglinter.import_rules_from_file('/etc/pglinter/environments/${ENVIRONMENT}.yaml');"
+-- Check specific rule with explanation
+SELECT pglinter.explain_rule('B001');
 ```
 
-### Version Control Integration
+### SARIF File Output
 
-Track rule changes in Git:
+```sql
+-- Generate SARIF report file
+SELECT pglinter.check('/tmp/pglinter_full_report.sarif');
+
+-- Generate SARIF for specific rule
+SELECT pglinter.check_rule('B001', '/tmp/pglinter_b001_report.sarif');
+```
+
+### Advanced Rule Queries
+
+```sql
+-- Show SQL queries used by a rule
+SELECT pglinter.show_rule_queries('B001');
+
+-- Get detailed rule levels
+SELECT pglinter.get_rule_levels('B001');
+```
+
+## Best Practices
+
+1. **Regular Monitoring**: Run PGLinter regularly as part of your database maintenance routine
+2. **Rule Customization**: Adjust warning and error levels based on your environment's requirements
+3. **Selective Checking**: Use specific rule checks during development, comprehensive checks in CI/CD
+4. **Documentation**: Export rule configurations to maintain consistency across environments
+5. **Integration**: Include PGLinter checks in your deployment pipeline
+
+## Example CI/CD Integration
 
 ```bash
-# Add to your deployment pipeline
-git add /etc/pglinter/
-git commit -m "Update pglinter rules for production deployment"
+# In your CI/CD pipeline
+psql -d your_database -c "SELECT pglinter.check('/tmp/pglinter_results.sarif');"
 
-# Automated rule deployment
-#!/bin/bash
-# deploy_rules.sh
-ENVIRONMENT=$1
-RULES_FILE="/etc/pglinter/environments/${ENVIRONMENT}.yaml"
-
-if [[ -f "$RULES_FILE" ]]; then
-    echo "Deploying $ENVIRONMENT rules..."
-    psql -d $DATABASE -c "SELECT pglinter.import_rules_from_file('$RULES_FILE');"
-    echo "✅ Rules deployed successfully"
-else
-    echo "❌ Rules file not found: $RULES_FILE"
+# Check if any issues were found
+if [ -s /tmp/pglinter_results.sarif ]; then
+    echo "Database issues found - check SARIF report"
     exit 1
 fi
 ```
 
-This YAML-based approach provides powerful configuration management capabilities, allowing you to maintain consistent rule settings across environments while tracking changes over time.
+## Troubleshooting
 
-## Example base on rule B001 and T001 (primary key missing), why using a base and table approach
+### Common Issues
 
-This example explain the point of view about the B001 rule which detects database-wide primary key issues vs T001 rule.
+1. **Permission Errors**: Ensure the database user has appropriate permissions to query system catalogs
+2. **Extension Not Found**: Make sure PGLinter is properly installed and the extension is created
+3. **Rule Not Found**: Verify rule codes are correct (case-sensitive)
 
-Key Points about B001:
+### Debugging
 
-1. B001 is a BASE-level rule (database-wide analysis)
-2. Uses percentage threshold (default: 20%)
-3. Triggers when >20% of tables lack primary keys
-4. Part of perform_base_check() function
-5. Focuses on overall database health metrics
+```sql
+-- Enable verbose logging for specific rule
+SELECT pglinter.explain_rule('B001');
 
-Key Differences B001 vs T001:
+-- Check rule status
+SELECT pglinter.is_rule_enabled('B001');
 
-- B001: "X tables without primary key exceed the warning threshold: 20%"
-- T001: "Found X tables without primary key: schema.table1, schema.table2..."
+-- View all available rules
+SELECT pglinter.list_rules();
+```
 
-- B001: Database-wide percentage analysis
-- T001: Individual table identification
-
-- B001: Part of base checks (perform_base_check)
-- T001: Part of table checks (perform_table_check)
-
-- B001: Useful for monitoring overall database design quality
-- T001: Useful for identifying specific tables that need primary keys
-
-Why Both Rules Matter:
-
-- B001 helps DBAs understand overall database design quality
-- T001 helps developers know exactly which tables to fix
-- Together they provide comprehensive primary key analysis
-
-The B001 rule is particularly useful for:
-
-- Database health monitoring
-- Migration planning
-- Design quality assessments
-- Setting up alerts for design degradation
+For more detailed information about specific rules, see the individual rule documentation in the `docs/rules/` directory.

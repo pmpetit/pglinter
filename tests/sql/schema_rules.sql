@@ -55,7 +55,7 @@ SELECT pglinter.enable_rule('S002') AS s002_reenabled;
 SELECT pglinter.perform_schema_check(); -- Should include S002 again
 
 -- Test the comprehensive check including schemas
-SELECT pglinter.check_all();
+SELECT pglinter.check();
 
 DROP SCHEMA prod_sales CASCADE;
 DROP SCHEMA dev_analytics CASCADE;

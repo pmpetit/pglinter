@@ -41,10 +41,10 @@ SELECT pglinter.disable_rule(rule_code)
 FROM pglinter.show_rules()
 WHERE rule_code LIKE 'B%';
 
--- Enable only table rules
+-- Enable only base/database rules (including table checks)
 SELECT pglinter.enable_rule(rule_code)
 FROM pglinter.show_rules()
-WHERE rule_code LIKE 'T%';
+WHERE rule_code LIKE 'B%';
 ```
 
 ### Export/Import Rules

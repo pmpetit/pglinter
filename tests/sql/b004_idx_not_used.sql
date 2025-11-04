@@ -105,7 +105,7 @@ SELECT pglinter.is_rule_enabled('B004') AS b004_status;
 -- Run base check to detect B004 violations
 -- Expected result: Should detect unused indexes with idx_scan = 0
 SELECT 'Running base check to detect B004 violations...' AS status;
-SELECT pglinter.perform_base_check();
+SELECT pglinter.check();
 
 -- Test rule management for B004
 SELECT 'Testing B004 rule management...' AS test_section;
@@ -121,10 +121,10 @@ SELECT PG_SLEEP(2);
 
 -- Run B004 check again (should show fewer violations)
 SELECT 'Running B004 check after dropping some unused indexes (should show fewer violations):' AS test_info;
-SELECT pglinter.perform_base_check();
+SELECT pglinter.check();
 
 -- Test with file output
-SELECT pglinter.perform_base_check('/tmp/pglinter_b004_results.sarif');
+SELECT pglinter.check('/tmp/pglinter_b004_results.sarif');
 -- Test if file exists and show checksum
 \! md5sum /tmp/pglinter_b004_results.sarif
 
@@ -134,7 +134,7 @@ SELECT pglinter.update_rule_levels('B004', 60, 90);
 
 -- Final demonstration with current state
 SELECT 'Final B004 (base check) - Shows percentage-based unused index analysis:' AS b004_demo;
-SELECT pglinter.perform_base_check();
+SELECT pglinter.check();
 
 DROP TABLE customer_analytics;
 

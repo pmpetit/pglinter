@@ -65,13 +65,13 @@ SELECT pglinter.disable_all_rules() AS all_rules_disabled;
 SELECT pglinter.enable_rule('B002') AS b001_enabled;
 
 -- Test with file output
-SELECT pglinter.perform_base_check('/tmp/pglinter_b002_results.sarif');
+SELECT pglinter.check('/tmp/pglinter_b002_results.sarif');
 
 -- Test if file exists and show checksum
 \! md5sum /tmp/pglinter_b002_results.sarif
 
 -- Test with no output file (should output to prompt)
-SELECT pglinter.perform_base_check();
+SELECT pglinter.check();
 
 -- Test rule management for B002
 SELECT pglinter.explain_rule('B002');
@@ -81,7 +81,7 @@ SELECT pglinter.is_rule_enabled('B002') AS b002_enabled;
 
 -- Disable B002 temporarily and test
 SELECT pglinter.disable_rule('B002') AS b002_disabled;
-SELECT pglinter.perform_base_check();
+SELECT pglinter.check();
 
 DROP TABLE orders_table CASCADE;
 DROP TABLE orders_table_with_constraint CASCADE;

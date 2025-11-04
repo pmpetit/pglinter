@@ -27,9 +27,7 @@ nav:
   - Tutorial:
     - 'Create rules': tutorial/how_to_create_rules.md
   - Examples:
-    - 'Usage Examples': examples/README.md
-    - 'Rules level management': examples/rule_level_management.md
-    - 'Rules yaml management': examples/yaml_rule_management.md
+    - 'Examples': examples/README.md
 
 # Markdown settings
 markdown_extensions:

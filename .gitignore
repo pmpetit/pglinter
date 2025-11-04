@@ -19,3 +19,4 @@ results/*
 tests/results/*
 tests/tmp/*
 generated/
+*.code-workspace

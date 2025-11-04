@@ -2,49 +2,53 @@
 
 Practical guides for common pglinter scenarios and use cases.
 
-## Analyzing Large Databases
+## Create extension
 
-### Chunked Analysis
+### download packages
 
-For very large databases, analyze in chunks:
+**Debian/Ubuntu Systems:**
+```bash
+PGVER=17
+PGLINTER=0.0.20
 
-not implemented yet. Should use a schema_name as input, or a database name.
+wget https://github.com/pmpetit/pglinter/releases/download/${PGVER}/postgresql_pglinter_${PGVER}_${PGLINTER}_amd64.deb
+sudo dpkg -i postgresql_pglinter_${PGVER}_${PGLINTER}_amd64.deb
 
-```sql
--- analyze_by_schema.sql
-DO $$
-DECLARE
-    schema_name text;
-    result_file text;
-BEGIN
-    FOR schema_name IN
-        SELECT schema_name
-        FROM information_schema.schemata
-        WHERE schema_name NOT IN ('information_schema', 'pg_catalog', 'pg_toast')
-    LOOP
-        result_file := '/tmp/analysis_' || schema_name || '_' ||
-                      to_char(now(), 'YYYY-MM-DD') || '.sarif';
-
-        RAISE NOTICE 'Analyzing schema: %', schema_name;
-
-        -- Focus analysis on specific schema
-        -- (Note: This would require schema-specific rules in future versions)
-        PERFORM pglinter.perform_table_check(result_file);
-
-        RAISE NOTICE 'Results saved to: %', result_file;
-    END LOOP;
-END $$;
+# Fix dependencies if needed
+sudo apt-get install -f
 ```
 
-### Performance Optimization
+**RHEL/CentOS/Fedora Systems:**
+```bash
+PGVER=17
+PGLINTER=0.0.20
+wget https://github.com/pmpetit/pglinter/releases/download/${PGVER}/postgresql_pglinter_${PGVER}-${PGLINTER}-1.x86_64.rpm
+sudo rpm -i postgresql_pglinter_${PGVER}-${PGLINTER}-1.x86_64.rpm
+# or
+sudo yum localinstall postgresql_pglinter_${PGVER}-${PGLINTER}-1.x86_64.rpm
+```
+
+### 💻 Usage
+
+After installation, enable the extension in your PostgreSQL database:
 
 ```sql
--- performance_focused.sql - Only run performance-related rules
-SELECT pglinter.disable_rule(rule_code)
-FROM pglinter.show_rules()
-WHERE rule_code NOT IN ('B002', 'B004', 'T003', 'T005', 'T007');
+-- Connect to your database
+\c your_database
 
--- Run analysis
-SELECT pglinter.perform_base_check('/tmp/performance_analysis.sarif');
-SELECT pglinter.perform_table_check('/tmp/table_performance.sarif');
+-- Create the extension
+CREATE EXTENSION pglinter;
+
+-- Run a basic check
+SELECT pglinter.check();
+
+-- Check specific rules
+SELECT pglinter.check_rule('B001');  -- Tables without primary keys
+SELECT pglinter.check_rule('B002');  -- Redundant indexes
 ```
+
+### 📋 Available Rules
+
+- **B00**: Base database rules (primary keys, indexes, schemas, etc.)
+- **C00**: Cluster security rules
+- **S00**: Schema rules

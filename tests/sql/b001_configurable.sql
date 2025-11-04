@@ -1,4 +1,5 @@
 -- Quick test to verify B001 rule uses configurable thresholds
+DROP EXTENSION IF EXISTS pglinter CASCADE;
 CREATE EXTENSION pglinter;
 
 \pset pager off
@@ -22,8 +23,8 @@ SELECT pglinter.disable_all_rules() AS all_rules_disabled;
 SELECT pglinter.enable_rule('B001') AS b001_enabled;
 
 -- Test B001 rule - should show it uses the configured thresholds
-SELECT pglinter.perform_base_check();
-SELECT pglinter.perform_base_check('/tmp/pglinter_b001_results.sarif');
+SELECT pglinter.check();
+SELECT pglinter.check('/tmp/pglinter_b001_results.sarif');
 \! md5sum /tmp/pglinter_b001_results.sarif
 
 -- Update B001 thresholds to very large values (60%, 80%) not to trigger on any table without PK
@@ -37,7 +38,7 @@ FROM pglinter.rules
 WHERE code = 'B001';
 
 -- Test B001 rule again - should now trigger with new thresholds
-SELECT pglinter.perform_base_check();
+SELECT pglinter.check();
 
 -- Update B001 thresholds to very low values (1%, 2%) not to trigger on any table without PK
 SELECT pglinter.update_rule_levels('B001', 60, 80);

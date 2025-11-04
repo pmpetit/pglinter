@@ -60,63 +60,6 @@ runs:
         name: pglinter v${{ inputs.tag }}
         draft: ${{ inputs.draft }}
         prerelease: ${{ inputs.prerelease }}
-        body: |
-          ## pglinter v${{ inputs.tag }}
-
-          PostgreSQL extension for database linting and analysis.
-
-          ### 📦 Available Packages
-
-          This release includes packages for PostgreSQL versions 13, 14, 15, 16, 17, and 18.
-
-          ### 🚀 Installation
-
-          **Debian/Ubuntu Systems:**
-          ```bash
-          # Download and install (replace XX with your PG version: 13, 14, 15, 16, 17, 18)
-          wget https://github.com/pmpetit/pglinter/releases/download/${{ inputs.tag }}/postgresql_pglinter_XX_${{ inputs.tag }}_amd64.deb
-          sudo dpkg -i postgresql_pglinter_XX_${{ inputs.tag }}_amd64.deb
-
-          # Fix dependencies if needed
-          sudo apt-get install -f
-          ```
-
-          **RHEL/CentOS/Fedora Systems:**
-          ```bash
-          # Download and install (replace XX with your PG version: 13, 14, 15, 16, 17, 18)
-          wget https://github.com/pmpetit/pglinter/releases/download/${{ inputs.tag }}/postgresql_pglinter_XX-${{ inputs.tag }}-1.x86_64.rpm
-          sudo rpm -i postgresql_pglinter_XX-${{ inputs.tag }}-1.x86_64.rpm
-          # or
-          sudo yum localinstall postgresql_pglinter_XX-${{ inputs.tag }}-1.x86_64.rpm
-          ```
-
-          ### 💻 Usage
-
-          After installation, enable the extension in your PostgreSQL database:
-
-          ```sql
-          -- Connect to your database
-          \c your_database
-
-          -- Create the extension
-          CREATE EXTENSION pglinter;
-
-          -- Run a basic check
-          SELECT pglinter.perform_base_check();
-
-          -- Check specific rules
-          SELECT pglinter.check_rule('B001');  -- Tables without primary keys
-          SELECT pglinter.check_rule('B002');  -- Redundant indexes
-          ```
-
-          ### 📋 Available Rules
-
-          - **B001-B008**: Base database rules (primary keys, indexes, schemas, etc.)
-          - **C002**: Cluster security rules
-          - **T001-T010**: Individual table rules
-          - **S001**: Schema rules
-
-          For complete documentation, visit: https://github.com/pmpetit/pglinter/blob/main/docs/functions/README.md
         files: |
           ./artifacts/*.rpm
           ./artifacts/*.deb

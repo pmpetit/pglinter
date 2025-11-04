@@ -1,3 +1,4 @@
+
 use pgrx::prelude::*;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
@@ -6,6 +7,60 @@ use std::io::Write;
 
 // Import the rule management functions
 use crate::manage_rules::is_rule_enabled;
+
+/// Executes the q3 SQL query for a given ruleId, formats the result dataset into a string with each row separated by a newline, and returns it.
+pub fn execute_and_format_dataset(ruleid: &str) -> Result<String, String> {
+    // Fetch q3 from pglinter.rules
+    pgrx::debug1!(
+        "execute_and_format_dataset; Retrieved q3 for {}",
+        ruleid
+    );
+    let q3_query = "SELECT q3 FROM pglinter.rules WHERE code = $1";
+    let q3: String = match Spi::connect(|client| {
+        let mut rows = client.select(q3_query, None, &[ruleid.into()])?;
+        if let Some(row) = rows.next() {
+            match row.get::<String>(1)? {
+                Some(q) if !q.trim().is_empty() => Ok::<Option<String>, spi::SpiError>(Some(q)),
+                _ => Ok::<Option<String>, spi::SpiError>(None),
+            }
+        } else {
+            Ok(None)
+        }
+    }) {
+        Ok(Some(val)) => val,
+        _ => return Err(format!("No q3 query found for rule '{}'.", ruleid)),
+    };
+    // Execute q3 and format dataset
+    let result: Result<String, spi::SpiError> = Spi::connect(|client| {
+        let mut output = String::new();
+        let rows = client.select(&q3, None, &[])?;
+        pgrx::debug1!("found {} rows in q3 result set", rows.len());
+        for row in rows {
+            let ncols = row.columns();
+            pgrx::debug1!("found {} cols in q3 result set", ncols);
+            let mut row_str = Vec::new();
+            for col in 1..=ncols {
+                //pgrx::debug1!("column {}", col);
+                let val: Option<String> = row.get::<String>(col)?;
+                let val_str = val.unwrap_or_default();
+                pgrx::debug1!(
+                    "column {}, value: {:?}",
+                    col,
+                    val_str
+                );
+                row_str.push(val_str.clone());
+            }
+            output.push_str(&row_str.join("."));
+            output.push('\n');
+        }
+        pgrx::debug1!("output dataset:\n{}", output);
+        Ok(output)
+    });
+    match result {
+        Ok(s) => Ok(s),
+        Err(e) => Err(format!("Database error executing q3: {e}")),
+    }
+}
 
 // Helper function to get rule configuration from the rules table
 fn get_rule_config(rule_code: &str) -> Result<(i64, i64, String), String> {
@@ -91,7 +146,7 @@ fn execute_q1_rule_dynamic(
         }
         Err(e) => {
             pgrx::debug1!(
-                "execute_q1_q2_rule_dynamic; Failed to get configuration for {}: {}",
+                "execute_q1_rule_dynamic; Failed to get configuration for {}: {}",
                 ruleid,
                 e
             );
@@ -251,7 +306,7 @@ fn get_rule_parameters(
 fn execute_q1_q2_rule_dynamic(
     ruleid: &str,
     q1: &str,
-    q2: &str,
+    q2: &str
 ) -> Result<Option<RuleResult>, String> {
     // Debug: Log function entry
     pgrx::debug1!(
@@ -318,6 +373,12 @@ fn execute_q1_q2_rule_dynamic(
             pgrx::debug1!("execute_q1_q2_rule_dynamic; Calculated percentage for {}: {}% (total: {}, problem: {})",
                         ruleid, percentage, q1, q2);
 
+            // Replace placeholders in rule message
+            let dataset_str = match execute_and_format_dataset(ruleid) {
+                Ok(s) => s,
+                Err(e) => format!("Error formatting dataset: {}", e),
+            };
+
             // Check error threshold first (higher severity)
             if percentage >= error_threshold {
                 pgrx::debug1!(
@@ -326,13 +387,13 @@ fn execute_q1_q2_rule_dynamic(
                     percentage,
                     error_threshold
                 );
-
-                // Replace placeholders in rule message
                 let formatted_message = rule_message
                     .replace("{0}", &q2.to_string())
                     .replace("{1}", &q1.to_string())
                     .replace("{2}", "error")
-                    .replace("{3}", &percentage.to_string());
+                    .replace("{3}", &percentage.to_string())
+                    .replace("{4}", &dataset_str)
+                    .replace("\\n", "\n");
 
                 pgrx::debug1!(
                     "execute_q1_q2_rule_dynamic; {} message template '{}' -> '{}'",
@@ -362,7 +423,9 @@ fn execute_q1_q2_rule_dynamic(
                     .replace("{0}", &q2.to_string())
                     .replace("{1}", &q1.to_string())
                     .replace("{2}", "warning")
-                    .replace("{3}", &percentage.to_string());
+                    .replace("{3}", &percentage.to_string())
+                    .replace("{4}", &dataset_str)
+                    .replace("\\n", "\n");
 
                 pgrx::debug1!(
                     "execute_q1_q2_rule_dynamic; {} message template '{}' -> '{}'",
@@ -417,8 +480,9 @@ fn execute_q1_q2_rule_dynamic(
 /// Execute all BASE scope rules regardless of q2 null status
 /// This function combines the logic from execute_q1_q2_rules and execute_q1_rules
 /// but filters for BASE scope rules only
-pub fn execute_rules(scope: &str) -> Result<Vec<RuleResult>, String> {
-    pgrx::debug1!("execute_rule; Starting execution of all {} rules", scope);
+pub fn execute_rules(ruleid: Option<&str>) -> Result<Vec<RuleResult>, String> {
+    pgrx::debug1!("execute_rule; Starting execution of all rules");
+    let filter = ruleid.unwrap_or("");
     let mut results = Vec::new();
 
     // Query to get all enabled BASE rules with their SQL queries
@@ -426,8 +490,7 @@ pub fn execute_rules(scope: &str) -> Result<Vec<RuleResult>, String> {
         SELECT code, q1, q2, scope
         FROM pglinter.rules
         WHERE enable = true
-        AND scope = $1
-        AND q1 IS NOT NULL
+        AND (code = $1 OR $1 = '')
         ORDER BY code";
 
     let rule_result: Result<Vec<RuleData>, spi::SpiError> = Spi::connect(|client| {
@@ -435,11 +498,10 @@ pub fn execute_rules(scope: &str) -> Result<Vec<RuleResult>, String> {
 
         // Fetch all enabled rules for the specified scope
         pgrx::debug1!(
-            "execute_rule; Fetching all enabled {} rules from database",
-            scope
+            "execute_rule; Fetching all enabled rules from database",
         );
 
-        for row in client.select(rules_query, None, &[scope.into()])? {
+        for row in client.select(rules_query, None, &[filter.into()])? {
             let code: String = row.get(1)?.unwrap_or_default();
             let q1: String = row.get(2)?.unwrap_or_default();
             let q2: Option<String> = row.get(3)?;
@@ -459,9 +521,8 @@ pub fn execute_rules(scope: &str) -> Result<Vec<RuleResult>, String> {
     match rule_result {
         Ok(rules) => {
             pgrx::debug1!(
-                "execute_rule; Found {} {} rules to execute",
-                rules.len(),
-                scope
+                "execute_rule; Found {} rules to execute",
+                rules.len()
             );
 
             for rule in rules {

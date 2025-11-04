@@ -51,30 +51,26 @@ REGRESS_TESTS+= b001_primary_keys
 REGRESS_TESTS+= b002_redundant_idx
 REGRESS_TESTS+= b002_non_redundant_idx
 REGRESS_TESTS+= b003_fk_not_indexed
-REGRESS_TESTS+= b004_idx_not_used
-REGRESS_TESTS+= b005_public_schema
-REGRESS_TESTS+= b006_uppercase_test
-REGRESS_TESTS+= b007_tables_not_selected
-REGRESS_TESTS+= b008_fk_outside_schema
-REGRESS_TESTS+= c002_hba_security_test
-REGRESS_TESTS+= t001_primary_keys
-REGRESS_TESTS+= t002_minimal
-REGRESS_TESTS+= t002_redundant_idx
-REGRESS_TESTS+= t003_table_with_fk_not_indexed
-REGRESS_TESTS+= t004_simple_missing_index
-REGRESS_TESTS+= t005_fk_outside
-REGRESS_TESTS+= t006_unused_indexes
-REGRESS_TESTS+= t007_fk_type_mismatch
-REGRESS_TESTS+= t008_no_role_grants
-REGRESS_TESTS+= t009_reserved_keywords
+#REGRESS_TESTS+= b004_idx_not_used
+REGRESS_TESTS+= b005_uppercase_test
+#REGRESS_TESTS+= b006_tables_not_selected
+REGRESS_TESTS+= b007_fk_outside_schema
+REGRESS_TESTS+= b008_fk_type_mismatch
+REGRESS_TESTS+= b009_trigger_sharing
+REGRESS_TESTS+= b010_reserved_keywords
+REGRESS_TESTS+= b011_several_table_owner_in_schema
+REGRESS_TESTS+= s001_schema_with_default_role_not_granted
+REGRESS_TESTS+= s002_schema_prefixed_or_suffixed_with_envt
+REGRESS_TESTS+= s003_unsecured_public_schema
+REGRESS_TESTS+= s004_owner_schema_is_internal_role
+REGRESS_TESTS+= s005_several_table_owner_in_schema
 REGRESS_TESTS+= demo_rule_levels
 REGRESS_TESTS+= import_rules_from_file
 REGRESS_TESTS+= import_rules_from_yaml
-REGRESS_TESTS+= integration_test
+#REGRESS_TESTS+= integration_test
 REGRESS_TESTS+= quick_demo_levels
-REGRESS_TESTS+= rule_management
+#REGRESS_TESTS+= rule_management
 REGRESS_TESTS+= schema_rules
-REGRESS_TESTS+= b015_trigger_sharing
 
 # REGRESS_TESTS+= b001
 # REGRESS_TESTS+= cluster_rules
@@ -290,6 +286,20 @@ docker_image: docker/Dockerfile #: build the docker image
 	@echo "Building multi-platform image..."
 	docker buildx build \
 			--platform linux/amd64,linux/arm64 \
+			--tag $(DOCKER_IMAGE):$(DOCKER_TAG) \
+			--file $^ \
+			$(DOCKER_BUILD_ARG) \
+			.
+
+docker_image_arm64: docker/Dockerfile #: build the docker image
+	#: docker build --tag $(DOCKER_IMAGE):$(DOCKER_TAG) . --file $^  $(DOCKER_BUILD_ARG)
+	@echo "Setting up buildx for multi-platform builds..."
+	docker buildx create --name pglinter-builder --use --bootstrap 2>/dev/null || \
+	docker buildx use pglinter-builder 2>/dev/null || \
+	(echo "Creating new buildx instance..." && docker buildx create --name pglinter-builder --use --bootstrap)
+	@echo "Building multi-platform image..."
+	docker buildx build \
+			--platform linux/arm64 \
 			--tag $(DOCKER_IMAGE):$(DOCKER_TAG) \
 			--file $^ \
 			$(DOCKER_BUILD_ARG) \

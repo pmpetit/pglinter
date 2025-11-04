@@ -29,9 +29,8 @@ This extension is built with **pgrx 0.16.1** and supports:
 
 ### Rule Categories
 
-- **B (Base/Database)**: Database-wide checks
+- **B (Base/Database)**: Database-wide checks including tables, indexes, constraints, and general database analysis
 - **C (Cluster)**: PostgreSQL cluster configuration checks
-- **T (Table)**: Individual table checks
 - **S (Schema)**: Schema-level checks
 
 ### Key Components
@@ -83,19 +82,21 @@ After installation, enable the extension in your PostgreSQL database:
 -- Create the extension
 CREATE EXTENSION pglinter;
 
--- Run a basic check
-SELECT pglinter.perform_base_check();
+-- Run a comprehensive check (all enabled rules)
+SELECT pglinter.check();
 
--- Check specific rules
-SELECT pglinter.check_rule('B001');  -- Tables without primary keys
-SELECT pglinter.check_rule('B002');  -- Redundant indexes
+-- Check a specific rule
+SELECT pglinter.check_rule('B001');
+
+-- Generate SARIF reports to file
+SELECT pglinter.check('/path/to/results.sarif');
+SELECT pglinter.check_rule('B001', '/path/to/b001_results.sarif');
 ```
 
 #### 📋 Available Rules
 
-- **B001-B008**: Base database rules (primary keys, indexes, schemas, etc.)
+- **B001-B008**: Base database rules (tables, primary keys, indexes, constraints, etc.)
 - **C002**: Cluster security rules
-- **T001-T010**: Individual table rules
 - **S001**: Schema rules
 
 For complete documentation, visit: https://github.com/pmpetit/pglinter/blob/main/docs/functions/README.md
@@ -124,23 +125,19 @@ psql -d your_database -c "CREATE EXTENSION pglinter;"
 
 ## Usage
 
-The extension provides comprehensive database analysis functions with optional file output:
+The extension provides comprehensive database analysis functions:
 
 ```sql
--- Quick comprehensive check (output to prompt)
-SELECT pglinter.check_all();
+-- Run all enabled rules (output to client)
+SELECT pglinter.check();
 
--- Individual category checks (output to prompt)
-SELECT pglinter.check_base();
-SELECT pglinter.check_cluster();
-SELECT pglinter.check_table();
-SELECT pglinter.check_schema();
+-- Run a specific rule only
+SELECT pglinter.check_rule('B001');              -- Check tables without primary keys
+SELECT pglinter.check_rule('b002');              -- Case-insensitive rule codes
 
--- Generate SARIF reports to files
-SELECT pglinter.perform_base_check('/path/to/base_results.sarif');
-SELECT pglinter.perform_cluster_check('/path/to/cluster_results.sarif');
-SELECT pglinter.perform_table_check('/path/to/table_results.sarif');
-SELECT pglinter.perform_schema_check('/path/to/schema_results.sarif');
+-- Generate SARIF reports to file
+SELECT pglinter.check('/path/to/results.sarif');
+SELECT pglinter.check_rule('B001', '/path/to/b001_results.sarif');
 
 -- Rule management
 SELECT pglinter.show_rules();                    -- Show all rules and status
@@ -148,6 +145,16 @@ SELECT pglinter.explain_rule('B001');            -- Get rule details and fixes
 SELECT pglinter.enable_rule('B001');             -- Enable specific rule
 SELECT pglinter.disable_rule('B001');            -- Disable specific rule
 SELECT pglinter.is_rule_enabled('B001');         -- Check rule status
+SELECT pglinter.enable_all_rules();              -- Enable all rules
+SELECT pglinter.disable_all_rules();             -- Disable all rules
+
+-- Rule configuration
+SELECT pglinter.update_rule_levels('B001', 30, 70);  -- Set warning/error thresholds
+SELECT pglinter.get_rule_levels('B001');             -- Get current thresholds
+
+-- YAML import/export
+SELECT pglinter.export_rules_to_yaml();              -- Export rules to YAML
+SELECT pglinter.import_rules_from_yaml('yaml...');   -- Import rules from YAML
 ```
 
 ## Implemented Rules
@@ -163,20 +170,6 @@ SELECT pglinter.is_rule_enabled('B001');         -- Check rule status
 ### Cluster Rules (C-series)
 - **C001**: max_connections * work_mem > available RAM
 - **C002**: Insecure pg_hba.conf entries
-
-### Table Rules (T-series)
-- **T001**: Individual tables without primary keys
-- **T002**: Tables without any indexes
-- **T003**: Tables with redundant indexes
-- **T004**: Tables with foreign keys not indexed
-- **T005**: Tables with potential missing indexes (high sequential scan usage)
-- **T006**: Tables with foreign keys referencing other schemas
-- **T007**: Tables with unused indexes
-- **T008**: Tables with foreign key type mismatches
-- **T009**: Tables with no roles granted
-- **T010**: Tables using reserved keywords
-- **T011**: Tables with uppercase names/columns
-- **T012**: Tables with sensitive columns (requires anon extension)
 
 ### Schema Rules (S-series)
 - **S001**: Schemas without default role grants

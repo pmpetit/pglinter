@@ -26,10 +26,10 @@ CREATE TABLE orders_table (
 );
 -- First, disable all rules to isolate B001 testing
 SELECT pglinter.disable_all_rules() AS all_rules_disabled;
-NOTICE:  🔴 Disabled 23 rule(s)
+NOTICE:  🔴 Disabled 19 rule(s)
  all_rules_disabled 
 --------------------
-                 23
+                 19
 (1 row)
 
 -- Enable only B002 for focused testing
@@ -41,9 +41,9 @@ NOTICE:  ✅ Rule B002 has been enabled
 (1 row)
 
 -- Test with file output
-SELECT pglinter.perform_base_check('/tmp/pglinter_b002_results.sarif');
- perform_base_check 
---------------------
+SELECT pglinter.check('/tmp/pglinter_b002_results.sarif');
+ check 
+-------
  t
 (1 row)
 
@@ -51,10 +51,10 @@ SELECT pglinter.perform_base_check('/tmp/pglinter_b002_results.sarif');
 \! md5sum /tmp/pglinter_b002_results.sarif
 7cd6073b52ee9a1173c05c016e2458f4  /tmp/pglinter_b002_results.sarif
 -- Test with no output file (should output to prompt)
-SELECT pglinter.perform_base_check();
+SELECT pglinter.check();
 NOTICE:  ✅ No issues found - database schema looks good!
- perform_base_check 
---------------------
+ check 
+-------
  t
 (1 row)
 
@@ -70,7 +70,7 @@ NOTICE:  📖 Rule Explanation for B002
 Count number of redundant index vs nb index.
 
 ⚠️  Message Template:
-{0}/{1} redundant(s) index exceed the {2} threshold: {3}%.
+{0}/{1} redundant(s) index exceed the {2} threshold: {3}%. Object list:\n{4}
 
 🔧 How to Fix:
    1. remove duplicated index or check if a constraint does not create a redundant index, or change warning/error threshold
@@ -95,10 +95,10 @@ NOTICE:  🔴 Rule B002 has been disabled
  t
 (1 row)
 
-SELECT pglinter.perform_base_check();
+SELECT pglinter.check();
 NOTICE:  ✅ No issues found - database schema looks good!
- perform_base_check 
---------------------
+ check 
+-------
  t
 (1 row)
 
