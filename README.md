@@ -54,21 +54,21 @@ This extension is built with **pgrx 0.16.1** and supports:
 
 ```bash
 # Download and install (replace XX with your PG version: 13, 14, 15, 16, 17, 18)
-wget https://github.com/pmpetit/pglinter/releases/download/0.0.17/postgresql_pglinter_XX_0.0.17_amd64.deb
-sudo dpkg -i postgresql_pglinter_XX_0.0.17_amd64.deb
-
-# Fix dependencies if needed
-sudo apt-get install -f
+PGVER=17
+PGLINTER=1.0.0
+wget https://github.com/pmpetit/pglinter/releases/download/${PGVER}/postgresql_pglinter_${PGVER}_${PGLINTER}_amd64.deb
+sudo dpkg -i postgresql_pglinter_${PGVER}_${PGLINTER}_amd64.deb
 ```
 
 **RHEL/CentOS/Fedora Systems:**
 
 ```bash
-# Download and install (replace XX with your PG version: 13, 14, 15, 16, 17, 18)
-wget https://github.com/pmpetit/pglinter/releases/download/0.0.17/postgresql_pglinter_XX-0.0.17-1.x86_64.rpm
-sudo rpm -i postgresql_pglinter_XX-0.0.17-1.x86_64.rpm
+PGVER=17
+PGLINTER=1.0.0
+wget https://github.com/pmpetit/pglinter/releases/download/${PGVER}/postgresql_pglinter_${PGVER}-${PGLINTER}-1.x86_64.rpm
+sudo rpm -i postgresql_pglinter_${PGVER}-${PGLINTER}-1.x86_64.rpm
 # or
-sudo yum localinstall postgresql_pglinter_XX-0.0.17-1.x86_64.rpm
+sudo yum localinstall postgresql_pglinter_${PGVER}-${PGLINTER}-1.x86_64.rpm
 ```
 
 #### 💻 Usage
@@ -92,12 +92,6 @@ SELECT pglinter.check_rule('B001');
 SELECT pglinter.check('/path/to/results.sarif');
 SELECT pglinter.check_rule('B001', '/path/to/b001_results.sarif');
 ```
-
-#### 📋 Available Rules
-
-- **B001-B008**: Base database rules (tables, primary keys, indexes, constraints, etc.)
-- **C002**: Cluster security rules
-- **S001**: Schema rules
 
 For complete documentation, visit: https://github.com/pmpetit/pglinter/blob/main/docs/functions/README.md
 
@@ -220,22 +214,6 @@ Results are generated in SARIF 2.1.0 format:
   }]
 }
 ```
-
-## Conversion from Python
-
-This Rust implementation maintains compatibility with the original Python pglinter while offering:
-
-### Advantages
-- **Performance**: 10-100x faster execution
-- **Memory Safety**: Rust's memory management
-- **Integration**: No external dependencies or connections needed
-- **Deployment**: Single extension installation
-
-### Migration Path
-1. **Rule Logic**: Direct translation of Python rule logic to Rust
-2. **Configuration**: Database-stored instead of YAML files
-3. **Output Format**: Same SARIF 2.1.0 format
-4. **API**: PostgreSQL functions instead of CLI interface
 
 ## Development
 
