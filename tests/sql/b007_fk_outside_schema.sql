@@ -172,7 +172,7 @@ SELECT 'Testing B007 rule - Tables with foreign keys outside schema...' AS test_
 
 -- Test the B007 rule with base check
 SELECT 'Running base check to test B007 rule:' AS test_step;
-SELECT pglinter.perform_base_check();
+SELECT pglinter.check();
 
 -- Test rule management for B007
 SELECT 'Testing B007 rule management...' AS test_step;
@@ -182,18 +182,18 @@ SELECT pglinter.is_rule_enabled('B007') AS B007_enabled;
 -- Test disabling B007
 SELECT 'Testing B007 disable...' AS test_step;
 SELECT pglinter.disable_rule('B007') AS B007_disabled;
-SELECT pglinter.perform_base_check(); -- Should skip B007
+SELECT pglinter.check(); -- Should skip B007
 
 -- Re-enable B007
 SELECT 'Testing B007 re-enable...' AS test_step;
 SELECT pglinter.enable_rule('B007') AS B007_reenabled;
-SELECT pglinter.perform_base_check(); -- Should include B007 again
+SELECT pglinter.check(); -- Should include B007 again
 
 -- Test with only B007 enabled
 SELECT 'Testing B007 in isolation...' AS test_step;
 SELECT pglinter.disable_all_rules() AS all_disabled;
 SELECT pglinter.enable_rule('B007') AS B007_only_enabled;
-SELECT pglinter.perform_base_check(); -- Should only run B007
+SELECT pglinter.check(); -- Should only run B007
 
 -- Show rule status
 SELECT 'Current B007 rule status:' AS status_info;
@@ -206,10 +206,10 @@ SELECT pglinter.get_rule_levels('B007') AS current_B007_levels;
 -- Make B007 more strict temporarily
 SELECT pglinter.update_rule_levels('B007', 10, 30) AS B007_strict_update;
 SELECT 'B007 with stricter thresholds (should trigger more easily):' AS strict_test;
-SELECT pglinter.perform_base_check();
+SELECT pglinter.check();
 
 -- Test if file exists and show checksum
-SELECT pglinter.perform_base_check('/tmp/pglinter_B007_results.sarif');
+SELECT pglinter.check('/tmp/pglinter_B007_results.sarif');
 \! md5sum /tmp/pglinter_B007_results.sarif
 
 -- Reset to original levels

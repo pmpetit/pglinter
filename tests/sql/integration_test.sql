@@ -76,18 +76,8 @@ CREATE TABLE dev_reports.summaries (
 SELECT '=== COMPREHENSIVE pglinter ANALYSIS ===' AS info;
 
 -- Test all rule categories
-SELECT 'BASE RULES:' AS category;
-SELECT pglinter.perform_base_check();
-
-SELECT 'SCHEMA RULES:' AS category;
-SELECT pglinter.perform_schema_check();
-
-SELECT 'CLUSTER RULES:' AS category;
-SELECT pglinter.perform_cluster_check();
-
--- Test comprehensive check
-SELECT 'COMPREHENSIVE CHECK:' AS category;
-SELECT pglinter.check_all();
+SELECT 'RULES:' AS category;
+SELECT pglinter.check();
 
 -- Test rule management features
 SELECT '=== RULE MANAGEMENT ===' AS info;
@@ -101,8 +91,7 @@ SELECT pglinter.explain_rule('S002');
 
 -- Test output to file functionality
 SELECT '=== OUTPUT TO FILE TEST ===' AS info;
-SELECT pglinter.perform_base_check('/tmp/integration_base.sarif');
-SELECT pglinter.perform_schema_check('/tmp/integration_schema.sarif');
+SELECT pglinter.check('/tmp/integration_base.sarif');
 
 -- Test rule disable/enable functionality
 SELECT '=== RULE TOGGLE TEST ===' AS info;
@@ -111,13 +100,13 @@ SELECT '=== RULE TOGGLE TEST ===' AS info;
 SELECT pglinter.disable_rule('B001');
 
 -- Run checks (should skip disabled rules)
-SELECT pglinter.perform_base_check();
+SELECT pglinter.check();
 
 -- Re-enable rules
 SELECT pglinter.enable_rule('B001');
 
 -- Final comprehensive check
-SELECT pglinter.check_all();
+SELECT pglinter.check();
 
 -- Clean up
 DROP SCHEMA prod_analytics CASCADE;

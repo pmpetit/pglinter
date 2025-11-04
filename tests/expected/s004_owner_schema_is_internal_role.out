@@ -27,20 +27,10 @@ NOTICE:  ✅ Rule S004 has been enabled
 (1 row)
 
 SELECT pglinter.perform_schema_check(); -- Should only run S004
-NOTICE:  🔍 pglinter found 1 issue(s):
-NOTICE:  ==================================================
-NOTICE:  ⚠️  [S004] WARNING: 1/2 schemas are owned by internal roles or superuser. Exceed the warning threshold: 50%. Object list:
-pmp is the owner of the schema public
-postgres is the owner of the schema s004_schema
-
-NOTICE:  ==================================================
-NOTICE:  📊 Summary: 0 error(s), 1 warning(s), 0 info
-NOTICE:  🟡 Some warnings found - consider reviewing for optimization
- perform_schema_check 
-----------------------
- t
-(1 row)
-
+ERROR:  function pglinter.perform_schema_check() does not exist
+LINE 1: SELECT pglinter.perform_schema_check();
+               ^
+HINT:  No function matches the given name and argument types. You might need to add explicit type casts.
 -- Cleanup
 DROP SCHEMA s004_schema CASCADE;
 DROP ROLE s004_owner;

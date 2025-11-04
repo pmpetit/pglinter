@@ -480,8 +480,9 @@ fn execute_q1_q2_rule_dynamic(
 /// Execute all BASE scope rules regardless of q2 null status
 /// This function combines the logic from execute_q1_q2_rules and execute_q1_rules
 /// but filters for BASE scope rules only
-pub fn execute_rules(scope: &str) -> Result<Vec<RuleResult>, String> {
-    pgrx::debug1!("execute_rule; Starting execution of all {} rules", scope);
+pub fn execute_rules(ruleid: Option<&str>) -> Result<Vec<RuleResult>, String> {
+    pgrx::debug1!("execute_rule; Starting execution of all rules");
+    let filter = ruleid.unwrap_or("");
     let mut results = Vec::new();
 
     // Query to get all enabled BASE rules with their SQL queries
@@ -489,8 +490,7 @@ pub fn execute_rules(scope: &str) -> Result<Vec<RuleResult>, String> {
         SELECT code, q1, q2, scope
         FROM pglinter.rules
         WHERE enable = true
-        AND scope = $1
-        AND q1 IS NOT NULL
+        AND (code = $1 OR $1 = '')
         ORDER BY code";
 
     let rule_result: Result<Vec<RuleData>, spi::SpiError> = Spi::connect(|client| {
@@ -498,11 +498,10 @@ pub fn execute_rules(scope: &str) -> Result<Vec<RuleResult>, String> {
 
         // Fetch all enabled rules for the specified scope
         pgrx::debug1!(
-            "execute_rule; Fetching all enabled {} rules from database",
-            scope
+            "execute_rule; Fetching all enabled rules from database",
         );
 
-        for row in client.select(rules_query, None, &[scope.into()])? {
+        for row in client.select(rules_query, None, &[filter.into()])? {
             let code: String = row.get(1)?.unwrap_or_default();
             let q1: String = row.get(2)?.unwrap_or_default();
             let q2: Option<String> = row.get(3)?;
@@ -522,9 +521,8 @@ pub fn execute_rules(scope: &str) -> Result<Vec<RuleResult>, String> {
     match rule_result {
         Ok(rules) => {
             pgrx::debug1!(
-                "execute_rule; Found {} {} rules to execute",
-                rules.len(),
-                scope
+                "execute_rule; Found {} rules to execute",
+                rules.len()
             );
 
             for rule in rules {

@@ -160,7 +160,7 @@ SELECT 'Running base check to detect B001 violations...' AS status;
  Running base check to detect B001 violations...
 (1 row)
 
-SELECT pglinter.perform_base_check();
+SELECT pglinter.check();
 NOTICE:  🔍 pglinter found 1 issue(s):
 NOTICE:  ==================================================
 NOTICE:  ⚠️  [B001] WARNING: 7/10 table(s) without primary key exceed the warning threshold: 70%. Object list:
@@ -175,8 +175,8 @@ public.payments_no_pk
 NOTICE:  ==================================================
 NOTICE:  📊 Summary: 0 error(s), 1 warning(s), 0 info
 NOTICE:  🟡 Some warnings found - consider reviewing for optimization
- perform_base_check 
---------------------
+ check 
+-------
  t
 (1 row)
 
@@ -208,10 +208,10 @@ SELECT 'Running base check with B001 disabled (should find no B001 violations)..
  Running base check with B001 disabled (should find no B001 violations)...
 (1 row)
 
-SELECT pglinter.perform_base_check();
+SELECT pglinter.check();
 NOTICE:  ✅ No issues found - database schema looks good!
- perform_base_check 
---------------------
+ check 
+-------
  t
 (1 row)
 
@@ -236,7 +236,7 @@ SELECT 'Running base check with B001 re-enabled...' AS status;
  Running base check with B001 re-enabled...
 (1 row)
 
-SELECT pglinter.perform_base_check();
+SELECT pglinter.check();
 NOTICE:  🔍 pglinter found 1 issue(s):
 NOTICE:  ==================================================
 NOTICE:  ⚠️  [B001] WARNING: 7/10 table(s) without primary key exceed the warning threshold: 70%. Object list:
@@ -251,8 +251,8 @@ public.payments_no_pk
 NOTICE:  ==================================================
 NOTICE:  📊 Summary: 0 error(s), 1 warning(s), 0 info
 NOTICE:  🟡 Some warnings found - consider reviewing for optimization
- perform_base_check 
---------------------
+ check 
+-------
  t
 (1 row)
 
@@ -278,7 +278,7 @@ SELECT 'Running B001 check after adding primary keys (should show improved perce
  Running B001 check after adding primary keys (should show improved percentage):
 (1 row)
 
-SELECT pglinter.perform_base_check();
+SELECT pglinter.check();
 NOTICE:  🔍 pglinter found 1 issue(s):
 NOTICE:  ==================================================
 NOTICE:  ⚠️  [B001] WARNING: 2/10 table(s) without primary key exceed the warning threshold: 20%. Object list:
@@ -288,14 +288,14 @@ public.payments_no_pk
 NOTICE:  ==================================================
 NOTICE:  📊 Summary: 0 error(s), 1 warning(s), 0 info
 NOTICE:  🟡 Some warnings found - consider reviewing for optimization
- perform_base_check 
---------------------
+ check 
+-------
  t
 (1 row)
 
-SELECT pglinter.perform_base_check('/tmp/pglinter_b001_results.sarif');
- perform_base_check 
---------------------
+SELECT pglinter.check('/tmp/pglinter_b001_results.sarif');
+ check 
+-------
  t
 (1 row)
 

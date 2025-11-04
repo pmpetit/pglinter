@@ -34,19 +34,10 @@ NOTICE:  ✅ Rule S005 has been enabled
 (1 row)
 
 SELECT pglinter.perform_schema_check(); -- Should only run S005
-NOTICE:  🔍 pglinter found 1 issue(s):
-NOTICE:  ==================================================
-NOTICE:  ⚠️  [S005] WARNING: 1/2 in the same schema, tables have different owners. They should be the same. Exceed the warning threshold: 50%. Object list:
-Owner of schema s005_schema is s005_owner1 but owner of table s005_schema.table2 is s005_owner2
-
-NOTICE:  ==================================================
-NOTICE:  📊 Summary: 0 error(s), 1 warning(s), 0 info
-NOTICE:  🟡 Some warnings found - consider reviewing for optimization
- perform_schema_check 
-----------------------
- t
-(1 row)
-
+ERROR:  function pglinter.perform_schema_check() does not exist
+LINE 1: SELECT pglinter.perform_schema_check();
+               ^
+HINT:  No function matches the given name and argument types. You might need to add explicit type casts.
 -- Cleanup
 DROP TABLE s005_schema.table1;
 DROP TABLE s005_schema.table2;

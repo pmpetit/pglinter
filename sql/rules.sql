@@ -439,7 +439,7 @@ $$,
     q3 = $$
 SELECT
     schemaname::text,
-    relname||' has '||
+    relname::text || 'has' ||
     LEAST(
         ROUND(
             (
@@ -454,7 +454,7 @@ WHERE
     schemaname NOT IN (
         'pg_toast', 'pg_catalog', 'information_schema', 'pglinter','_timescaledb', 'timescaledb'
     )
-ORDER BY 1
+ORDER BY 1, 2
 $$
 WHERE code = 'B004';
 
@@ -1234,15 +1234,15 @@ FROM
     pg_namespace n
 WHERE
     n.nspname NOT IN ( 'pg_toast', 'pg_catalog', 'information_schema', 'pglinter', '_timescaledb', 'timescaledb')
-    AND n.nspname NOT LIKE 'pg_%'
 $$,
     q2 = $$
+WITH C1 AS (
 SELECT coalesce(count(DISTINCT tableowner)::BIGINT, 0) AS diff_owners
 FROM pg_tables
 WHERE
     schemaname NOT IN ('pg_toast', 'pg_catalog', 'information_schema', 'pglinter', '_timescaledb', 'timescaledb')
-GROUP BY schemaname
-HAVING COUNT(DISTINCT tableowner) > 1
+GROUP BY schemaname)
+SELECT COUNT(1) from C1 where diff_owners > 1
 $$,
     q3 = $$
 WITH SchemaOwnerTable AS (
@@ -1414,6 +1414,7 @@ FROM pg_namespace n
 WHERE
     n.nspname NOT IN ('pg_toast', 'pg_catalog', 'information_schema', 'pglinter', '_timescaledb', 'timescaledb')
     AND HAS_SCHEMA_PRIVILEGE('public', n.nspname, 'CREATE')
+ORDER BY 1
 $$
 WHERE code = 'S003';
 
@@ -1453,7 +1454,7 @@ WHERE
         OR r.rolname = 'postgres' -- Explicitly include the default administrative account
     )
 ORDER BY
-    n.nspname
+    1
 $$
 WHERE code = 'S004';
 

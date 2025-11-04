@@ -150,10 +150,10 @@ SELECT pglinter.enable_rule('b006') AS b006_enabled;
 -- Verify b006 is enabled
 SELECT pglinter.is_rule_enabled('b006') AS b006_status;
 
-SELECT pglinter.perform_base_check();
+SELECT pglinter.check();
 
 -- Test with file output
-SELECT pglinter.perform_base_check('/tmp/pglinter_b006_results.sarif');
+SELECT pglinter.check('/tmp/pglinter_b006_results.sarif');
 \! md5sum /tmp/pglinter_b006_results.sarif
 
 -- Now simulate realistic usage patterns:
@@ -197,7 +197,7 @@ SELECT pg_sleep(5);
 -- Run base check to detect b006 violations
 -- Expected result: Should detect unused_config_table and completely_unused_table
 SELECT 'Running base check to detect b006 violations (tables never selected)...' as status;
-SELECT pglinter.perform_base_check();
+SELECT pglinter.check();
 
 
 SELECT 'b006 comprehensive test completed successfully!' as test_result;

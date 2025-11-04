@@ -138,7 +138,7 @@ SELECT 'Running base check to detect B003 violations...' AS status;
  Running base check to detect B003 violations...
 (1 row)
 
-SELECT pglinter.perform_base_check();
+SELECT pglinter.check();
 NOTICE:  🔍 pglinter found 1 issue(s):
 NOTICE:  ==================================================
 NOTICE:  ⚠️  [B003] WARNING: 2/3 table(s) without index on foreign key exceed the warning threshold: 66%. Object list:
@@ -150,15 +150,15 @@ public.reviews_no_index.fk_reviews_product
 NOTICE:  ==================================================
 NOTICE:  📊 Summary: 0 error(s), 1 warning(s), 0 info
 NOTICE:  🟡 Some warnings found - consider reviewing for optimization
- perform_base_check 
---------------------
+ check 
+-------
  t
 (1 row)
 
 -- Test with file output
-SELECT pglinter.perform_base_check('/tmp/pglinter_b003_results.sarif');
- perform_base_check 
---------------------
+SELECT pglinter.check('/tmp/pglinter_b003_results.sarif');
+ check 
+-------
  t
 (1 row)
 
@@ -212,10 +212,10 @@ SELECT 'Running B003 check after adding foreign key indexes (should show no viol
  Running B003 check after adding foreign key indexes (should show no violations):
 (1 row)
 
-SELECT pglinter.perform_base_check();
+SELECT pglinter.check();
 NOTICE:  ✅ No issues found - database schema looks good!
- perform_base_check 
---------------------
+ check 
+-------
  t
 (1 row)
 
@@ -237,7 +237,7 @@ SELECT 'B003 (base check) - Shows percentage-based foreign key index analysis:' 
  B003 (base check) - Shows percentage-based foreign key index analysis:
 (1 row)
 
-SELECT pglinter.perform_base_check();
+SELECT pglinter.check();
 NOTICE:  🔍 pglinter found 1 issue(s):
 NOTICE:  ==================================================
 NOTICE:  ⚠️  [B003] WARNING: 2/3 table(s) without index on foreign key exceed the warning threshold: 66%. Object list:
@@ -248,15 +248,15 @@ public.reviews_no_index.fk_reviews_product
 NOTICE:  ==================================================
 NOTICE:  📊 Summary: 0 error(s), 1 warning(s), 0 info
 NOTICE:  🟡 Some warnings found - consider reviewing for optimization
- perform_base_check 
---------------------
+ check 
+-------
  t
 (1 row)
 
 -- Test with file output
-SELECT pglinter.perform_base_check('/tmp/pglinter_b003_results.sarif');
- perform_base_check 
---------------------
+SELECT pglinter.check('/tmp/pglinter_b003_results.sarif');
+ check 
+-------
  t
 (1 row)
 

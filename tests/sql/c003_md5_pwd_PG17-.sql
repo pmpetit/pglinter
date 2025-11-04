@@ -51,7 +51,7 @@ WHERE name='password_encryption' AND setting='md5';
 
 -- Test 7: Export results to SARIF format
 SELECT '=== Test 7: Export to SARIF ===' AS test_section;
-SELECT pglinter.perform_base_check('/tmp/pglinter_c003_results.sarif');
+SELECT pglinter.check('/tmp/pglinter_c003_results.sarif');
 
 -- Show checksum of generated file if it exists
 \! test -f /tmp/pglinter_c003_results.sarif && md5sum /tmp/pglinter_c003_results.sarif || echo "SARIF file not generated"

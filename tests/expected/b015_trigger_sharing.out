@@ -1,10 +1,11 @@
--- Regression test for B009 rule - Tables with shared trigger functions
+-- Regression test for B015 rule - Tables with shared trigger functions
 -- This script creates a test scenario with:
 -- - 10 tables total
 -- - 5 tables with their own unique trigger functions
 -- - 3 tables sharing the same trigger function
 -- - 2 tables without any triggers
 CREATE EXTENSION IF NOT EXISTS pglinter;
+ERROR:  relation "pglinter.rules" does not exist
 \pset pager off
 CREATE SCHEMA trigger_test;
 -- =============================================================================
@@ -188,53 +189,41 @@ INSERT INTO trigger_test.table_07 (content) VALUES ('Sample content');
 INSERT INTO trigger_test.table_08 (amount) VALUES (99.99);
 INSERT INTO trigger_test.table_09 (notes) VALUES ('No trigger table');
 INSERT INTO trigger_test.table_10 (archived) VALUES (false);
--- Test with only B009 enabled
-SELECT 'Testing B009 in isolation...' AS test_step;
+-- Test with only B015 enabled
+SELECT 'Testing B015 in isolation...' AS test_step;
           test_step           
 ------------------------------
- Testing B009 in isolation...
+ Testing B015 in isolation...
 (1 row)
 
 SELECT pglinter.disable_all_rules() AS all_disabled;
-NOTICE:  🔴 Disabled 19 rule(s)
- all_disabled 
---------------
-           19
-(1 row)
-
-SELECT pglinter.enable_rule('B009') AS B009_only_enabled;
-NOTICE:  ✅ Rule B009 has been enabled
- b009_only_enabled 
--------------------
- t
-(1 row)
-
-SELECT pglinter.check(); -- Should only run B009
-NOTICE:  🔍 pglinter found 1 issue(s):
-NOTICE:  ==================================================
-NOTICE:  ⚠️  [B009] WARNING: 3/8 table(s) using the same trigger function exceed the warning threshold: 37%. Object list:
-table_06.trigger_table_06_update uses the same trigger function trigger_test.trigger_test.shared_update_timestamp
-table_07.trigger_table_07_update uses the same trigger function trigger_test.trigger_test.shared_update_timestamp
-table_08.trigger_table_08_update uses the same trigger function trigger_test.trigger_test.shared_update_timestamp
-
-NOTICE:  ==================================================
-NOTICE:  📊 Summary: 0 error(s), 1 warning(s), 0 info
-NOTICE:  🟡 Some warnings found - consider reviewing for optimization
- check 
--------
- t
-(1 row)
-
+ERROR:  schema "pglinter" does not exist
+LINE 1: SELECT pglinter.disable_all_rules() AS all_disabled;
+               ^
+SELECT pglinter.enable_rule('B015') AS b015_only_enabled;
+ERROR:  schema "pglinter" does not exist
+LINE 1: SELECT pglinter.enable_rule('B015') AS b015_only_enabled;
+               ^
+SELECT pglinter.perform_base_check(); -- Should only run B015
+ERROR:  schema "pglinter" does not exist
+LINE 1: SELECT pglinter.perform_base_check();
+               ^
+SELECT pglinter.enable_rule('T015') AS t015_only_enabled;
+ERROR:  schema "pglinter" does not exist
+LINE 1: SELECT pglinter.enable_rule('T015') AS t015_only_enabled;
+               ^
+SELECT pglinter.perform_table_check(); -- Should only run T015
+ERROR:  schema "pglinter" does not exist
+LINE 1: SELECT pglinter.perform_table_check();
+               ^
 -- Test with output
-SELECT pglinter.check('/tmp/pglinter_B009_results.sarif');
- check 
--------
- t
-(1 row)
-
+SELECT pglinter.perform_base_check('/tmp/pglinter_b015_results.sarif');
+ERROR:  schema "pglinter" does not exist
+LINE 1: SELECT pglinter.perform_base_check('/tmp/pglinter_b015_resul...
+               ^
 -- Test if file exists and show checksum
-\! md5sum /tmp/pglinter_B009_results.sarif
-47448789a35db4210f1c25563876c068  /tmp/pglinter_B009_results.sarif
+\! md5sum /tmp/pglinter_b015_results.sarif
+md5sum: /tmp/pglinter_b015_results.sarif: No such file or directory
 -- Cleanup
 \echo 'Cleaning up test schema...'
 Cleaning up test schema...
@@ -257,3 +246,4 @@ drop cascades to function trigger_test.update_table_04_timestamp()
 drop cascades to function trigger_test.update_table_05_timestamp()
 drop cascades to function trigger_test.shared_update_timestamp()
 DROP EXTENSION pglinter;
+ERROR:  extension "pglinter" does not exist

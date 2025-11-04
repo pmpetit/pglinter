@@ -228,10 +228,10 @@ INSERT INTO trigger_test.table_10 (archived) VALUES (false);
 SELECT 'Testing B009 in isolation...' AS test_step;
 SELECT pglinter.disable_all_rules() AS all_disabled;
 SELECT pglinter.enable_rule('B009') AS B009_only_enabled;
-SELECT pglinter.perform_base_check(); -- Should only run B009
+SELECT pglinter.check(); -- Should only run B009
 
 -- Test with output
-SELECT pglinter.perform_base_check('/tmp/pglinter_B009_results.sarif');
+SELECT pglinter.check('/tmp/pglinter_B009_results.sarif');
 -- Test if file exists and show checksum
 \! md5sum /tmp/pglinter_B009_results.sarif
 

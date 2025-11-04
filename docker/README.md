@@ -39,7 +39,8 @@ docker exec -it pglinter-pg17 psql -U postgres -d pglinter_test
 -- In psql
 SELECT pglinter.hello_pglinter();
 SELECT pglinter.list_rules();
-SELECT pglinter.check_all();
+SELECT pglinter.check();
+SELECT pglinter.check_rule('B001');
 ```
 
 ## 🛠️ Build Your Own Images
@@ -125,7 +126,8 @@ sleep 10
 # Run tests
 docker exec test-pglinter psql -U postgres -d pglinter_test -c "
   SELECT pglinter.hello_pglinter();
-  SELECT pglinter.check_all();
+  SELECT pglinter.check();
+  SELECT pglinter.check_rule('B001');
 "
 
 # Cleanup

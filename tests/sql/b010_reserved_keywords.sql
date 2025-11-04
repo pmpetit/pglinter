@@ -218,16 +218,16 @@ SELECT pglinter.enable_rule('B010') AS B010_enabled;
 
 -- Run table check (should detect objects with reserved keyword names)
 SELECT 'Running table check with only B010 enabled:' AS test_info;
-SELECT pglinter.perform_base_check();
+SELECT pglinter.check();
 
 -- Test disabling B010 temporarily
 SELECT 'Testing B010 disable/enable cycle:' AS test_info;
 SELECT pglinter.disable_rule('B010') AS B010_disabled;
-SELECT pglinter.perform_base_check(); -- Should skip B010
+SELECT pglinter.check(); -- Should skip B010
 
 -- Re-enable B010 and test again
 SELECT pglinter.enable_rule('B010') AS B010_re_enabled;
-SELECT pglinter.perform_base_check(); -- Should include B010 again
+SELECT pglinter.check(); -- Should include B010 again
 
 -- ROLLBACK;
 

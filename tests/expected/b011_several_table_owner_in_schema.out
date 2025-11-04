@@ -32,18 +32,18 @@ NOTICE:  ✅ Rule B011 has been enabled
  t
 (1 row)
 
-SELECT pglinter.perform_base_check(); -- Should only run B011
+SELECT pglinter.check(); -- Should only run B011
 NOTICE:  🔍 pglinter found 1 issue(s):
 NOTICE:  ==================================================
-NOTICE:  ❌ [B011] ERROR: 2/2 schemas have tables owned by different owners. Exceed the error threshold: 100%. Object list:
+NOTICE:  ⚠️  [B011] WARNING: 1/3 schemas have tables owned by different owners. Exceed the warning threshold: 33%. Object list:
 s005_schema.table1 owner is s005_owner1
 s005_schema.table2 owner is s005_owner2
 
 NOTICE:  ==================================================
-NOTICE:  📊 Summary: 1 error(s), 0 warning(s), 0 info
-NOTICE:  🔴 Critical issues found - please review and fix errors
- perform_base_check 
---------------------
+NOTICE:  📊 Summary: 0 error(s), 1 warning(s), 0 info
+NOTICE:  🟡 Some warnings found - consider reviewing for optimization
+ check 
+-------
  t
 (1 row)
 

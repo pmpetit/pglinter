@@ -20,7 +20,7 @@ ALTER TABLE s005_schema.table2 OWNER TO s005_owner2;
 SELECT 'Testing B011 in isolation...' AS test_step;
 SELECT pglinter.disable_all_rules() AS all_disabled;
 SELECT pglinter.enable_rule('B011') AS B011_only_enabled;
-SELECT pglinter.perform_base_check(); -- Should only run B011
+SELECT pglinter.check(); -- Should only run B011
 
 -- Cleanup
 DROP TABLE s005_schema.table1;

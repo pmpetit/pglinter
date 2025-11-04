@@ -19,7 +19,7 @@ SELECT pglinter.disable_rule('B001') AS b001_disabled;
 SELECT pglinter.is_rule_enabled('B001') AS b001_after_disable;
 
 -- Run base check (should skip B001)
-SELECT pglinter.perform_base_check();
+SELECT pglinter.check();
 
 -- Re-enable B001 rule
 SELECT pglinter.enable_rule('B001') AS b001_enabled;

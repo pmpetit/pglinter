@@ -19,11 +19,13 @@ NOTICE:  🔴 Disabled 19 rule(s)
 (1 row)
 
 -- Run table check to detect tables without PK
-SELECT pglinter.perform_table_check();
-ERROR:  function pglinter.perform_table_check() does not exist
-LINE 1: SELECT pglinter.perform_table_check();
-               ^
-HINT:  No function matches the given name and argument types. You might need to add explicit type casts.
+SELECT pglinter.check();
+NOTICE:  ✅ No issues found - database schema looks good!
+ check 
+-------
+ t
+(1 row)
+
 -- Test rule management for B001
 SELECT pglinter.explain_rule('B001');
 NOTICE:  📖 Rule Explanation for B001
@@ -53,23 +55,15 @@ SELECT pglinter.is_rule_enabled('B001') AS is_b001_enabled;
 (1 row)
 
 -- Test with file output
-SELECT pglinter.perform_base_check('/tmp/pglinter_base_results.sarif');
- perform_base_check 
---------------------
+SELECT pglinter.check('/tmp/pglinter_base_results.sarif');
+ check 
+-------
  t
 (1 row)
 
 -- Test if file exists
 \! md5sum /tmp/pglinter_base_results.sarif
 7cd6073b52ee9a1173c05c016e2458f4  /tmp/pglinter_base_results.sarif
--- Test with no output file (should output to prompt)
-SELECT pglinter.perform_base_check();
-NOTICE:  ✅ No issues found - database schema looks good!
- perform_base_check 
---------------------
- t
-(1 row)
-
 -- Re-enable B001 rule
 SELECT pglinter.enable_rule('B001') AS enable_b001;
 NOTICE:  ✅ Rule B001 has been enabled
@@ -79,7 +73,7 @@ NOTICE:  ✅ Rule B001 has been enabled
 (1 row)
 
 -- Test again with B001 enabled
-SELECT pglinter.perform_base_check();
+SELECT pglinter.check();
 NOTICE:  🔍 pglinter found 1 issue(s):
 NOTICE:  ==================================================
 NOTICE:  ❌ [B001] ERROR: 1/1 table(s) without primary key exceed the error threshold: 100%. Object list:
@@ -88,15 +82,15 @@ public.my_table_without_pk
 NOTICE:  ==================================================
 NOTICE:  📊 Summary: 1 error(s), 0 warning(s), 0 info
 NOTICE:  🔴 Critical issues found - please review and fix errors
- perform_base_check 
---------------------
+ check 
+-------
  t
 (1 row)
 
 -- Test with file output
-SELECT pglinter.perform_base_check('/tmp/pglinter_base_results.sarif');
- perform_base_check 
---------------------
+SELECT pglinter.check('/tmp/pglinter_base_results.sarif');
+ check 
+-------
  t
 (1 row)
 

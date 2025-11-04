@@ -29,20 +29,10 @@ NOTICE:  ✅ Rule S003 has been enabled
 (1 row)
 
 SELECT pglinter.perform_schema_check(); -- Should only run S003
-NOTICE:  🔍 pglinter found 1 issue(s):
-NOTICE:  ==================================================
-NOTICE:  ❌ [S003] ERROR: 2/2 schemas are unsecured, schemas where all users can create objects in, exceed the error threshold: 100%. Object list:
-public
-s003_schema
-
-NOTICE:  ==================================================
-NOTICE:  📊 Summary: 1 error(s), 0 warning(s), 0 info
-NOTICE:  🔴 Critical issues found - please review and fix errors
- perform_schema_check 
-----------------------
- t
-(1 row)
-
+ERROR:  function pglinter.perform_schema_check() does not exist
+LINE 1: SELECT pglinter.perform_schema_check();
+               ^
+HINT:  No function matches the given name and argument types. You might need to add explicit type casts.
 -- Cleanup
 REVOKE CREATE ON SCHEMA s003_schema FROM PUBLIC;
 DROP SCHEMA s003_schema CASCADE;

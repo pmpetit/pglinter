@@ -64,9 +64,9 @@ NOTICE:  ✅ Rule B002 has been enabled
 (1 row)
 
 -- Test with file output
-SELECT pglinter.perform_base_check('/tmp/pglinter_b002_results.sarif');
- perform_base_check 
---------------------
+SELECT pglinter.check('/tmp/pglinter_b002_results.sarif');
+ check 
+-------
  t
 (1 row)
 
@@ -74,7 +74,7 @@ SELECT pglinter.perform_base_check('/tmp/pglinter_b002_results.sarif');
 \! md5sum /tmp/pglinter_b002_results.sarif
 d33fa0746f8eacf2f90c32f1a9957845  /tmp/pglinter_b002_results.sarif
 -- Test with no output file (should output to prompt)
-SELECT pglinter.perform_base_check();
+SELECT pglinter.check();
 NOTICE:  🔍 pglinter found 1 issue(s):
 NOTICE:  ==================================================
 NOTICE:  ⚠️  [B002] WARNING: 6/14 redundant(s) index exceed the warning threshold: 42%. Object list:
@@ -92,8 +92,8 @@ public.test_table_with_redundant_indexes.idx_name_1(name) is redundant with idx_
 NOTICE:  ==================================================
 NOTICE:  📊 Summary: 0 error(s), 1 warning(s), 0 info
 NOTICE:  🟡 Some warnings found - consider reviewing for optimization
- perform_base_check 
---------------------
+ check 
+-------
  t
 (1 row)
 
@@ -134,10 +134,10 @@ NOTICE:  🔴 Rule B002 has been disabled
  t
 (1 row)
 
-SELECT pglinter.perform_base_check();
+SELECT pglinter.check();
 NOTICE:  ✅ No issues found - database schema looks good!
- perform_base_check 
---------------------
+ check 
+-------
  t
 (1 row)
 

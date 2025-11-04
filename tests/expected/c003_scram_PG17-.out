@@ -115,12 +115,10 @@ SELECT '=== Test 1: C003 Rule Execution with Current Setting ===' AS test_sectio
 (1 row)
 
 SELECT pglinter.perform_cluster_check();
-NOTICE:  ✅ No issues found - database schema looks good!
- perform_cluster_check 
------------------------
- t
-(1 row)
-
+ERROR:  function pglinter.perform_cluster_check() does not exist
+LINE 1: SELECT pglinter.perform_cluster_check();
+               ^
+HINT:  No function matches the given name and argument types. You might need to add explicit type casts.
 -- Test 2: Manual execution of C003 query
 SELECT '=== Test 2: Manual C003 Query Execution ===' AS test_section;
                 test_section                 
@@ -236,9 +234,9 @@ SELECT '=== Test 7: Export to SARIF ===' AS test_section;
  === Test 7: Export to SARIF ===
 (1 row)
 
-SELECT pglinter.perform_base_check('/tmp/pglinter_c003_scram_results.sarif');
- perform_base_check 
---------------------
+SELECT pglinter.check('/tmp/pglinter_c003_scram_results.sarif');
+ check 
+-------
  t
 (1 row)
 

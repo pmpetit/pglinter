@@ -133,10 +133,10 @@ SELECT pglinter.is_rule_enabled('B003') AS b003_status;
 -- Run base check to detect B003 violations
 -- Expected result: Should detect foreign keys without indexes in reviews_no_index and inventory_no_index tables
 SELECT 'Running base check to detect B003 violations...' AS status;
-SELECT pglinter.perform_base_check();
+SELECT pglinter.check();
 
 -- Test with file output
-SELECT pglinter.perform_base_check('/tmp/pglinter_b003_results.sarif');
+SELECT pglinter.check('/tmp/pglinter_b003_results.sarif');
 
 -- Test if file exists and show checksum
 \! md5sum /tmp/pglinter_b003_results.sarif
@@ -157,7 +157,7 @@ CREATE INDEX idx_inventory_category_id ON inventory_no_index (category_id);
 
 -- Run B003 check again (should show no violations or reduced violations)
 SELECT 'Running B003 check after adding foreign key indexes (should show no violations):' AS test_info;
-SELECT pglinter.perform_base_check();
+SELECT pglinter.check();
 
 -- Update B003 thresholds to produce message
 SELECT pglinter.update_rule_levels('B003', 60, 90);
@@ -168,10 +168,10 @@ DROP INDEX idx_reviews_product_id;
 DROP INDEX idx_inventory_product_id;
 
 SELECT 'B003 (base check) - Shows percentage-based foreign key index analysis:' AS b003_demo;
-SELECT pglinter.perform_base_check();
+SELECT pglinter.check();
 
 -- Test with file output
-SELECT pglinter.perform_base_check('/tmp/pglinter_b003_results.sarif');
+SELECT pglinter.check('/tmp/pglinter_b003_results.sarif');
 -- Test if file exists and show checksum
 \! md5sum /tmp/pglinter_b003_results.sarif
 

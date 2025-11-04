@@ -1,6 +1,6 @@
 # context
 
-In this section, i will create a new paitr of rules (B015/T015).
+In this section, i will create a new rule (B009).
 
 Let say we want to fix issue [#19](https://github.com/pmpetit/pglinter/issues/19), about odd triggers.
 
@@ -136,11 +136,11 @@ According to me this is not a good approach because:
 - You will have to deal with conflict resolution, each dev will work on the same file.
 - Hard to read.
 
-## Create the rules B015 and T015
+## Create the rule B009
 
-The rule number will be 15, so we will create B015 (for base checking) and T015 (for table checking)
+The rule number will be 9, so we will create B009 (for base checking).
 
-### B015
+### B009
 
 This base checking will be use later to create a global indicator of the database health (not implemented for the moment).
 
@@ -189,13 +189,49 @@ HAVING
     COUNT(DISTINCT t.event_object_table) > 1
 ```
 
-#### update rules.sql for B015
+q3 should be
+
+```sql
+WITH SharedFunctions AS (
+    -- 1. Identify all trigger functions that are used by more than one table
+    SELECT
+        SUBSTRING(t.action_statement FROM 'EXECUTE FUNCTION ([^()]+)') AS trigger_function_name
+    FROM
+        information_schema.triggers t
+    WHERE
+        t.trigger_schema NOT IN (
+            'pg_toast', 'pg_catalog', 'information_schema', 'pglinter', '_timescaledb', 'timescaledb'
+        )
+    GROUP BY
+        1
+    HAVING
+        COUNT(DISTINCT t.event_object_table) > 1
+)
+SELECT
+    t.event_object_table::TEXT AS table_name,
+    t.trigger_name::TEXT || ' uses the same trigger function ' ||
+    t.trigger_schema::TEXT,
+    s.trigger_function_name::TEXT
+FROM
+    information_schema.triggers t
+JOIN
+    SharedFunctions s ON s.trigger_function_name = SUBSTRING(t.action_statement FROM 'EXECUTE FUNCTION ([^()]+)')
+WHERE
+    t.trigger_schema NOT IN (
+        'pg_toast', 'pg_catalog', 'information_schema', 'pglinter', '_timescaledb', 'timescaledb'
+    )
+ORDER BY
+    s.trigger_function_name,
+    t.trigger_schema,
+    t.event_object_table
+```
+
+#### update rules.sql for B009
 
 go to sql/rules.sql and add
 
 ```sql
 INSERT INTO pglinter.rules (
-    id,
     name,
     code,
     warning_level,
@@ -206,7 +242,7 @@ INSERT INTO pglinter.rules (
     fixes
 ) VALUES
 (
-    45, 'HowManyTableSharingSameTrigger', 'B015', 20, 80, 'BASE',
+    'HowManyTableSharingSameTrigger', 'B009', 20, 80, 'BASE',
     'Count number of table that use the same trigger vs nb table with their own triggers.',
     '{0}/{1} table(s) using the same trigger function exceed the {2} threshold: {3}%.',
     ARRAY[
@@ -214,9 +250,8 @@ INSERT INTO pglinter.rules (
         'Sharing the same trigger function add more complexity.'
     ]
 );
-
 -- =============================================================================
--- B015 - Tables With same trigger
+-- B009 - Tables With same trigger
 -- =============================================================================
 UPDATE pglinter.rules
 SET q1 = $$
@@ -228,14 +263,8 @@ WHERE
     t.trigger_schema NOT IN (
     'pg_toast', 'pg_catalog', 'information_schema', 'pglinter'
 )
-$$
-WHERE code = 'B015';
-
--- =============================================================================
--- B015 - Tables With same trigger
--- =============================================================================
-UPDATE pglinter.rules
-SET q2 = $$
+$$,
+  q2 = $$
 SELECT
     COALESCE(SUM(shared_table_count), 0)::BIGINT AS table_using_same_trigger
 FROM (
@@ -258,123 +287,50 @@ FROM (
     HAVING
         COUNT(DISTINCT t.event_object_table) > 1
 ) shared_triggers
-$$
-WHERE code = 'B015';
-
-```
-
-### T015
-
-This table check is for dev/ops/dba, that needs to know which table(s) are concerned by this rule, to fix the trouble.
-
-"T" rules (table) do not need any warning or critical threshold, it only returns the message.
-
-That's why T* rules only have one q1 query.
-
-In our case it could be
-
-```sql
-SELECT
-    t.trigger_schema::text || '.' || t.event_object_table::text ||
-    ' shares trigger function ' || t.trigger_function_name::text ||
-    ' with other tables' AS problematic_object
-FROM (
+$$,
+  q3 = $$
+WITH SharedFunctions AS (
+    -- 1. Identify all trigger functions that are used by more than one table
     SELECT
-        t.trigger_schema,
-        t.event_object_table,
-        -- Extracts the function name from the action_statement (e.g., 'public.my_func()')
         SUBSTRING(t.action_statement FROM 'EXECUTE FUNCTION ([^()]+)') AS trigger_function_name
     FROM
         information_schema.triggers t
     WHERE
         t.trigger_schema NOT IN (
-            'pg_toast', 'pg_catalog', 'information_schema', 'pglinter'
-        )
-) t
-WHERE t.trigger_function_name IN (
-    -- Subquery to find trigger functions shared by multiple tables
-    SELECT
-        SUBSTRING(t2.action_statement FROM 'EXECUTE FUNCTION ([^()]+)') AS shared_function
-    FROM
-        information_schema.triggers t2
-    WHERE
-        t2.trigger_schema NOT IN (
-            'pg_toast', 'pg_catalog', 'information_schema', 'pglinter'
+            'pg_toast', 'pg_catalog', 'information_schema', 'pglinter', '_timescaledb', 'timescaledb'
         )
     GROUP BY
-        SUBSTRING(t2.action_statement FROM 'EXECUTE FUNCTION ([^()]+)')
+        1
     HAVING
-        COUNT(DISTINCT t2.event_object_table) > 1
+        COUNT(DISTINCT t.event_object_table) > 1
 )
-ORDER BY t.trigger_function_name, t.event_object_table
-```
-
-#### update rules.sql for T015
-
-so update the sql/rules.sql file with
-
-```sql
-(
-    32, 'TableSharingSameTrigger', 'T015', 1, 1, 'TABLE',
-    'Table shares the same trigger function with other tables.',
-    'Table shares trigger function with other tables.',
-    ARRAY[
-        'For more readability and other considerations use one trigger function per table.',
-        'Sharing the same trigger function add more complexity.'
-    ]
-),
-```
-
-and
-
-```sql
--- =============================================================================
--- T015 - Tables Sharing Same Trigger Function
--- =============================================================================
-UPDATE pglinter.rules
-SET q1 = $$
 SELECT
-    t.trigger_schema::text || '.' || t.event_object_table::text ||
-    ' shares trigger function ' || t.trigger_function_name::text ||
-    ' with other tables' AS problematic_object
-FROM (
-    SELECT
-        t.trigger_schema,
-        t.event_object_table,
-        -- Extracts the function name from the action_statement (e.g., 'public.my_func()')
-        SUBSTRING(t.action_statement FROM 'EXECUTE FUNCTION ([^()]+)') AS trigger_function_name
-    FROM
-        information_schema.triggers t
-    WHERE
-        t.trigger_schema NOT IN (
-            'pg_toast', 'pg_catalog', 'information_schema', 'pglinter'
-        )
-) t
-WHERE t.trigger_function_name IN (
-    -- Subquery to find trigger functions shared by multiple tables
-    SELECT
-        SUBSTRING(t2.action_statement FROM 'EXECUTE FUNCTION ([^()]+)') AS shared_function
-    FROM
-        information_schema.triggers t2
-    WHERE
-        t2.trigger_schema NOT IN (
-            'pg_toast', 'pg_catalog', 'information_schema', 'pglinter'
-        )
-    GROUP BY
-        SUBSTRING(t2.action_statement FROM 'EXECUTE FUNCTION ([^()]+)')
-    HAVING
-        COUNT(DISTINCT t2.event_object_table) > 1
-)
-ORDER BY t.trigger_function_name, t.event_object_table
+    t.event_object_table::TEXT AS table_name,
+    t.trigger_name::TEXT || ' uses the same trigger function ' ||
+    t.trigger_schema::TEXT,
+    s.trigger_function_name::TEXT
+FROM
+    information_schema.triggers t
+JOIN
+    SharedFunctions s ON s.trigger_function_name = SUBSTRING(t.action_statement FROM 'EXECUTE FUNCTION ([^()]+)')
+WHERE
+    t.trigger_schema NOT IN (
+        'pg_toast', 'pg_catalog', 'information_schema', 'pglinter', '_timescaledb', 'timescaledb'
+    )
+ORDER BY
+    s.trigger_function_name,
+    t.trigger_schema,
+    t.event_object_table
 $$
-WHERE code = 'T015';
+WHERE code = 'B009';
+
 ```
 
 ### regression test
 
-Now create some regress files, where you can raise the rule B015 and T015 message, for example
+Now create some regress files, where you can raise the rule B009 message, for example
 
-tests/sql/b015_trigger_sharing.sql
+tests/sql/b009_trigger_sharing.sql
 
 - create 10 tables
   - 5 of them with their own trigger.
@@ -385,20 +341,20 @@ edit the Makefile, to add the test:
 
 ```bash
 (...)
-REGRESS_TESTS+= b015_trigger_sharing
+REGRESS_TESTS+= b009_trigger_sharing
 (...)
 ```
 
 run only this test
 
 ```bash
-make installcheck REGRESS=b015_trigger_sharing
+make installcheck REGRESS=b009_trigger_sharing
 ```
 
 copy the result file
 
 ```bash
-cp results/b015_trigger_sharing.out tests/expected
+cp results/b009_trigger_sharing.out tests/expected
 ```
 
 test all the regress test using

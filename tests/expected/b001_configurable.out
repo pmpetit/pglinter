@@ -28,7 +28,7 @@ NOTICE:  ✅ Rule B001 has been enabled
 (1 row)
 
 -- Test B001 rule - should show it uses the configured thresholds
-SELECT pglinter.perform_base_check();
+SELECT pglinter.check();
 NOTICE:  🔍 pglinter found 1 issue(s):
 NOTICE:  ==================================================
 NOTICE:  ⚠️  [B001] WARNING: 1/2 table(s) without primary key exceed the warning threshold: 50%. Object list:
@@ -37,14 +37,14 @@ public.test_no_pk
 NOTICE:  ==================================================
 NOTICE:  📊 Summary: 0 error(s), 1 warning(s), 0 info
 NOTICE:  🟡 Some warnings found - consider reviewing for optimization
- perform_base_check 
---------------------
+ check 
+-------
  t
 (1 row)
 
-SELECT pglinter.perform_base_check('/tmp/pglinter_b001_results.sarif');
- perform_base_check 
---------------------
+SELECT pglinter.check('/tmp/pglinter_b001_results.sarif');
+ check 
+-------
  t
 (1 row)
 
@@ -70,10 +70,10 @@ WHERE code = 'B001';
 (1 row)
 
 -- Test B001 rule again - should now trigger with new thresholds
-SELECT pglinter.perform_base_check();
+SELECT pglinter.check();
 NOTICE:  ✅ No issues found - database schema looks good!
- perform_base_check 
---------------------
+ check 
+-------
  t
 (1 row)
 

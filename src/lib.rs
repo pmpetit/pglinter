@@ -23,110 +23,42 @@ mod pglinter {
     use pgrx::prelude::*;
 
     #[pg_extern(sql = "
-        CREATE FUNCTION pglinter.perform_base_check(output_file TEXT DEFAULT NULL)
+        CREATE FUNCTION pglinter.check(output_file TEXT DEFAULT NULL)
         RETURNS BOOLEAN
-        AS 'MODULE_PATHNAME', 'perform_base_check_wrapper'
+        AS 'MODULE_PATHNAME', 'check_wrapper'
         LANGUAGE C
         SECURITY DEFINER;
     ")]
-    fn perform_base_check(output_file: Option<&str>) -> Option<bool> {
-        match execute_rules("BASE")
+    fn check(output_file: Option<&str>) -> Option<bool> {
+        match execute_rules(None)
             .and_then(|results| generate_sarif_output_optional(results, output_file))
         {
             Ok(success) => Some(success),
             Err(e) => {
-                pgrx::warning!("pglinter base check failed: {}", e);
+                pgrx::warning!("pglinter check failed: {}", e);
                 Some(false)
             }
         }
     }
 
     #[pg_extern(sql = "
-        CREATE FUNCTION pglinter.perform_cluster_check(output_file TEXT DEFAULT NULL)
+        CREATE FUNCTION pglinter.check_rule(ruleId TEXT, output_file TEXT DEFAULT NULL)
         RETURNS BOOLEAN
-        AS 'MODULE_PATHNAME', 'perform_cluster_check_wrapper'
+        AS 'MODULE_PATHNAME', 'check_rule_wrapper'
         LANGUAGE C
         SECURITY DEFINER;
     ")]
-    fn perform_cluster_check(output_file: Option<&str>) -> Option<bool> {
-        match execute_rules("CLUSTER")
+    fn check_rule(rule_id: &str, output_file: Option<&str>) -> Option<bool> {
+        let rule_id_upper = rule_id.to_uppercase();
+        match execute_rules(Some(&rule_id_upper))
             .and_then(|results| generate_sarif_output_optional(results, output_file))
         {
             Ok(success) => Some(success),
             Err(e) => {
-                pgrx::warning!("pglinter cluster check failed: {}", e);
+                pgrx::warning!("pglinter check failed: {}", e);
                 Some(false)
             }
         }
-    }
-
-    #[pg_extern(sql = "
-        CREATE FUNCTION pglinter.perform_schema_check(output_file TEXT DEFAULT NULL)
-        RETURNS BOOLEAN
-        AS 'MODULE_PATHNAME', 'perform_schema_check_wrapper'
-        LANGUAGE C
-        SECURITY DEFINER;
-    ")]
-    fn perform_schema_check(output_file: Option<&str>) -> Option<bool> {
-        match execute_rules("SCHEMA")
-            .and_then(|results| generate_sarif_output_optional(results, output_file))
-        {
-            Ok(success) => Some(success),
-            Err(e) => {
-                pgrx::warning!("pglinter schema check failed: {}", e);
-                Some(false)
-            }
-        }
-    }
-
-    // Convenience functions that always output to prompt
-    #[pg_extern(security_definer)]
-    fn check_base() -> Option<bool> {
-        perform_base_check(None)
-    }
-
-    #[pg_extern(security_definer)]
-    fn check_cluster() -> Option<bool> {
-        perform_cluster_check(None)
-    }
-
-    #[pg_extern(security_definer)]
-    fn check_schema() -> Option<bool> {
-        perform_schema_check(None)
-    }
-
-    #[pg_extern(security_definer)]
-    fn check_all() -> Option<bool> {
-        pgrx::notice!("🔍 Running comprehensive pglinter check...");
-        pgrx::notice!("");
-
-        let mut all_success = true;
-
-        pgrx::notice!("📋 BASE CHECKS:");
-        if let Some(false) = perform_base_check(None) {
-            all_success = false;
-        }
-
-        pgrx::notice!("");
-        pgrx::notice!("🖥️  CLUSTER CHECKS:");
-        if let Some(false) = perform_cluster_check(None) {
-            all_success = false;
-        }
-
-        pgrx::notice!("");
-        pgrx::notice!("🗂️  SCHEMA CHECKS:");
-        if let Some(false) = perform_schema_check(None) {
-            all_success = false;
-        }
-
-        pgrx::notice!("");
-        if all_success {
-            pgrx::notice!("🎉 All pglinter checks completed successfully!");
-        } else {
-            pgrx::notice!("⚠️  Some pglinter checks found issues - please review above");
-        }
-
-        Some(all_success)
     }
 
     // Rule management functions
@@ -799,59 +731,6 @@ mod tests {
         fixtures::cleanup_test_rule("TEST017");
     }
 
-    // #[pg_test]
-    // fn test_sql_enable_disable_all_functions() {
-    //     // Test the SQL interface for enable_all_rules and disable_all_rules
-    //     fixtures::setup_test_rule("TEST018", 9018, "Test Rule 18", true, 20, 80);
-    //     fixtures::setup_test_rule("TEST019", 9019, "Test Rule 19", false, 20, 80);
-
-    //     // First, disable all rules to get a known state
-    //     let _ = Spi::get_one::<i32>("SELECT pglinter.disable_all_rules()").unwrap();
-
-    //     // Count total rules (they should all be disabled now)
-    //     let total_rules = Spi::get_one::<i64>("SELECT COUNT(*) FROM pglinter.rules")
-    //         .unwrap()
-    //         .unwrap_or(0);
-
-    //     // Test enable_all_rules SQL function - should enable all rules
-    //     let result = Spi::get_one::<i32>("SELECT pglinter.enable_all_rules()").unwrap();
-    //     assert!(result.is_some());
-    //     assert_eq!(result.unwrap() as i64, total_rules);
-
-    //     // Verify all rules are now enabled
-    //     let enabled_count_after =
-    //         Spi::get_one::<i64>("SELECT COUNT(*) FROM pglinter.rules WHERE enable = true")
-    //             .unwrap()
-    //             .unwrap_or(0);
-    //     assert_eq!(enabled_count_after, total_rules);
-
-    //     // Test disable_all_rules SQL function - should disable all rules
-    //     let result_disable = Spi::get_one::<i32>("SELECT pglinter.disable_all_rules()").unwrap();
-    //     assert!(result_disable.is_some());
-    //     assert_eq!(result_disable.unwrap() as i64, total_rules);
-
-    //     // Verify all rules are now disabled
-    //     let disabled_count_after =
-    //         Spi::get_one::<i64>("SELECT COUNT(*) FROM pglinter.rules WHERE enable = false")
-    //             .unwrap()
-    //             .unwrap_or(0);
-    //     assert_eq!(disabled_count_after, total_rules);
-
-    //     // Verify both test rules are now disabled using fixture helpers
-    //     let test018_enabled = fixtures::get_rule_bool_property("TEST018", "enable");
-    //     assert_eq!(test018_enabled, Some(false));
-    //     let test019_enabled = fixtures::get_rule_bool_property("TEST019", "enable");
-    //     assert_eq!(test019_enabled, Some(false));
-
-    //     // Test edge case: calling enable_all_rules when all are disabled
-    //     let result_enable_all = Spi::get_one::<i32>("SELECT pglinter.enable_all_rules()").unwrap();
-    //     assert!(result_enable_all.is_some());
-    //     assert_eq!(result_enable_all.unwrap() as i64, total_rules);
-
-    //     // Cleanup
-    //     fixtures::cleanup_test_rule("TEST018");
-    //     fixtures::cleanup_test_rule("TEST019");
-    // }
 
     #[pg_test]
     fn test_update_rule_levels() {
@@ -1301,7 +1180,7 @@ mod tests {
     }
 
     #[pg_test]
-    fn test_perform_base_check() {
+    fn test_perform_check() {
         // Setup test tables using fixture
         fixtures::setup_test_tables();
 
@@ -1310,7 +1189,7 @@ mod tests {
 
         // Perform base check via SQL interface - should return true (check completed successfully)
         // Note: The function returns true even if violations are found, false only on error
-        let result = Spi::get_one::<bool>("SELECT pglinter.perform_base_check()");
+        let result = Spi::get_one::<bool>("SELECT pglinter.check()");
         assert!(result.is_ok());
         let check_result = result.unwrap();
         assert!(check_result.is_some());
@@ -1318,7 +1197,7 @@ mod tests {
 
         // Test with output file parameter via SQL
         let result_with_file =
-            Spi::get_one::<bool>("SELECT pglinter.perform_base_check('/tmp/test_output.sarif')");
+            Spi::get_one::<bool>("SELECT pglinter.check('/tmp/test_output.sarif')");
         assert!(result_with_file.is_ok());
         let check_result_with_file = result_with_file.unwrap();
         assert!(check_result_with_file.is_some());
@@ -1328,28 +1207,6 @@ mod tests {
         fixtures::cleanup_test_tables();
     }
 
-    #[pg_test]
-    fn test_perform_cluster_check() {
-        // Ensure C002 rule is enabled (pg_hba.conf authentication methods)
-        let _ = Spi::run("UPDATE pglinter.rules SET enable = true WHERE code = 'C002'");
-
-        // Perform cluster check via SQL interface - should return true (check completed successfully)
-        // Note: The function returns true even if violations are found, false only on error
-        let result = Spi::get_one::<bool>("SELECT pglinter.perform_cluster_check()");
-        assert!(result.is_ok());
-        let check_result = result.unwrap();
-        assert!(check_result.is_some());
-        assert_eq!(check_result.unwrap(), true);
-
-        // Test with output file parameter via SQL
-        let result_with_file = Spi::get_one::<bool>(
-            "SELECT pglinter.perform_cluster_check('/tmp/test_cluster_output.sarif')",
-        );
-        assert!(result_with_file.is_ok());
-        let check_result_with_file = result_with_file.unwrap();
-        assert!(check_result_with_file.is_some());
-        assert_eq!(check_result_with_file.unwrap(), true);
-    }
 
     #[pg_test]
     fn test_perform_schema_check() {
@@ -1361,7 +1218,7 @@ mod tests {
 
         // Perform schema check via SQL interface
         // Note: The function returns true even if violations are found, false only on execution errors
-        let result = Spi::get_one::<bool>("SELECT pglinter.perform_schema_check()");
+        let result = Spi::get_one::<bool>("SELECT pglinter.check()");
         assert!(result.is_ok());
         let check_result = result.unwrap();
         assert!(check_result.is_some());
@@ -1377,7 +1234,7 @@ mod tests {
             let _ = Spi::run("UPDATE pglinter.rules SET enable = false WHERE code LIKE 'S%'");
             let _ = Spi::run("UPDATE pglinter.rules SET enable = true WHERE code = 'S001'");
 
-            let retry_result = Spi::get_one::<bool>("SELECT pglinter.perform_schema_check()");
+            let retry_result = Spi::get_one::<bool>("SELECT pglinter.check()");
             assert!(retry_result.is_ok());
             let retry_check = retry_result.unwrap();
             assert!(retry_check.is_some());
@@ -1388,7 +1245,7 @@ mod tests {
 
         // Test with output file parameter via SQL - use the same safe rule configuration
         let result_with_file = Spi::get_one::<bool>(
-            "SELECT pglinter.perform_schema_check('/tmp/test_schema_output.sarif')",
+            "SELECT pglinter.check('/tmp/test_schema_output.sarif')",
         );
         assert!(result_with_file.is_ok());
         let check_result_with_file = result_with_file.unwrap();
@@ -1426,29 +1283,17 @@ mod tests {
         // Test check_all() via SQL interface - should return true (all checks completed successfully)
         // Note: The function returns true even if violations are found in individual checks,
         // false only if any individual check function returns false due to errors
-        let result = Spi::get_one::<bool>("SELECT pglinter.check_all()");
+        let result = Spi::get_one::<bool>("SELECT pglinter.check()");
         assert!(result.is_ok());
         let check_result = result.unwrap();
         assert!(check_result.is_some());
         assert_eq!(check_result.unwrap(), true);
 
-        // Test the individual convenience functions that check_all() relies on
-        let base_result = Spi::get_one::<bool>("SELECT pglinter.check_base()");
-        assert!(base_result.is_ok());
-        assert_eq!(base_result.unwrap().unwrap(), true);
-
-        let cluster_result = Spi::get_one::<bool>("SELECT pglinter.check_cluster()");
-        assert!(cluster_result.is_ok());
-        assert_eq!(cluster_result.unwrap().unwrap(), true);
-
-        let schema_result = Spi::get_one::<bool>("SELECT pglinter.check_schema()");
-        assert!(schema_result.is_ok());
-        assert_eq!(schema_result.unwrap().unwrap(), true);
 
         // Test scenario where all rules are disabled (should still complete successfully)
         let _ = Spi::run("UPDATE pglinter.rules SET enable = false WHERE code IN ('B001', 'C002', 'S001')");
 
-        let result_disabled = Spi::get_one::<bool>("SELECT pglinter.check_all()");
+        let result_disabled = Spi::get_one::<bool>("SELECT pglinter.check()");
         assert!(result_disabled.is_ok());
         let check_result_disabled = result_disabled.unwrap();
         assert!(check_result_disabled.is_some());
@@ -1675,7 +1520,7 @@ mod tests {
         // Test 1: Test SARIF output generation with file output
         let sarif_file_path = "/tmp/pglinter_test_sarif.json";
         let result_with_file = Spi::get_one::<bool>(&format!(
-            "SELECT pglinter.perform_base_check('{}')",
+            "SELECT pglinter.check('{}')",
             sarif_file_path
         ))
         .unwrap();
@@ -1705,7 +1550,7 @@ mod tests {
             serde_json::from_str(&sarif_content).expect("SARIF output should be valid JSON");
 
         // Test 2: Test without file output (should not create file)
-        let result_no_file = Spi::get_one::<bool>("SELECT pglinter.perform_base_check()").unwrap();
+        let result_no_file = Spi::get_one::<bool>("SELECT pglinter.check()").unwrap();
         assert!(result_no_file.is_some());
         assert_eq!(result_no_file.unwrap(), true);
 
@@ -1713,7 +1558,7 @@ mod tests {
         let sarif_file_path_2 = "/tmp/pglinter_test_sarif_2.json";
         let _ = Spi::run("UPDATE pglinter.rules SET enable = true WHERE code = 'B002'");
         let result_base = Spi::get_one::<bool>(&format!(
-            "SELECT pglinter.perform_base_check('{}')",
+            "SELECT pglinter.check('{}')",
             sarif_file_path_2
         ))
         .unwrap();
@@ -1750,14 +1595,14 @@ mod tests {
 
         // Execute table check which internally uses execute_q1_rule_with_params
         // This should trigger violations from our test tables without primary keys
-        let result = Spi::get_one::<bool>("SELECT pglinter.perform_base_check()").unwrap();
+        let result = Spi::get_one::<bool>("SELECT pglinter.check()").unwrap();
         assert!(result.is_some());
         assert_eq!(result.unwrap(), true);
 
         // Test with SARIF output to verify the warning message format
         let test_sarif_file = "/tmp/test_q1_warning.json";
         let result_sarif = Spi::get_one::<bool>(&format!(
-            "SELECT pglinter.perform_base_check('{}')",
+            "SELECT pglinter.check('{}')",
             test_sarif_file
         ))
         .unwrap();
@@ -1849,7 +1694,7 @@ mod tests {
         // This should create a warning-level RuleResult using the format on lines 171-177
         let test_sarif_file = "/tmp/test_warning_format.json";
         let result = Spi::get_one::<bool>(&format!(
-            "SELECT pglinter.perform_base_check('{}')",
+            "SELECT pglinter.check('{}')",
             test_sarif_file
         ))
         .unwrap();
@@ -1880,25 +1725,6 @@ mod tests {
                         let _formatted_message = format!("{}", message);
 
                         pgrx::notice!("<{}>", _formatted_message);
-
-
-                        // // Should contain the specific format pattern: " : \n"
-                        // assert!(
-                        //     message.contains(" : \n"),
-                        //     "Message should contain ' : \\n' from format string"
-                        // );
-
-                        // // Should end with " \n" (from the format string)
-                        // assert!(
-                        //     message.ends_with(" \n"),
-                        //     "Message should end with ' \\n' from format string"
-                        // );
-
-                        // // Should contain a number (the count)
-                        // assert!(
-                        //     message.chars().any(char::is_numeric),
-                        //     "Message should contain count number"
-                        // );
 
                         // Verify the count field if it exists (might be optional in SARIF format)
                         if result["count"].is_number() {

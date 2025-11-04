@@ -41,9 +41,9 @@ NOTICE:  ✅ Rule B002 has been enabled
 (1 row)
 
 -- Test with file output
-SELECT pglinter.perform_base_check('/tmp/pglinter_b002_results.sarif');
- perform_base_check 
---------------------
+SELECT pglinter.check('/tmp/pglinter_b002_results.sarif');
+ check 
+-------
  t
 (1 row)
 
@@ -51,10 +51,10 @@ SELECT pglinter.perform_base_check('/tmp/pglinter_b002_results.sarif');
 \! md5sum /tmp/pglinter_b002_results.sarif
 7cd6073b52ee9a1173c05c016e2458f4  /tmp/pglinter_b002_results.sarif
 -- Test with no output file (should output to prompt)
-SELECT pglinter.perform_base_check();
+SELECT pglinter.check();
 NOTICE:  ✅ No issues found - database schema looks good!
- perform_base_check 
---------------------
+ check 
+-------
  t
 (1 row)
 
@@ -95,10 +95,10 @@ NOTICE:  🔴 Rule B002 has been disabled
  t
 (1 row)
 
-SELECT pglinter.perform_base_check();
+SELECT pglinter.check();
 NOTICE:  ✅ No issues found - database schema looks good!
- perform_base_check 
---------------------
+ check 
+-------
  t
 (1 row)
 

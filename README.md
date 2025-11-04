@@ -82,12 +82,15 @@ After installation, enable the extension in your PostgreSQL database:
 -- Create the extension
 CREATE EXTENSION pglinter;
 
--- Run a basic check
-SELECT pglinter.perform_base_check();
+-- Run a comprehensive check (all enabled rules)
+SELECT pglinter.check();
 
--- Check specific rules
-SELECT pglinter.check_rule('B001');  -- Tables without primary keys
-SELECT pglinter.check_rule('B002');  -- Redundant indexes
+-- Check a specific rule
+SELECT pglinter.check_rule('B001');
+
+-- Generate SARIF reports to file
+SELECT pglinter.check('/path/to/results.sarif');
+SELECT pglinter.check_rule('B001', '/path/to/b001_results.sarif');
 ```
 
 #### 📋 Available Rules
@@ -122,21 +125,19 @@ psql -d your_database -c "CREATE EXTENSION pglinter;"
 
 ## Usage
 
-The extension provides comprehensive database analysis functions with optional file output:
+The extension provides comprehensive database analysis functions:
 
 ```sql
--- Quick comprehensive check (output to prompt)
-SELECT pglinter.check_all();
+-- Run all enabled rules (output to client)
+SELECT pglinter.check();
 
--- Individual category checks (output to prompt)
-SELECT pglinter.check_base();
-SELECT pglinter.check_cluster();
-SELECT pglinter.check_schema();
+-- Run a specific rule only
+SELECT pglinter.check_rule('B001');              -- Check tables without primary keys
+SELECT pglinter.check_rule('b002');              -- Case-insensitive rule codes
 
--- Generate SARIF reports to files
-SELECT pglinter.perform_base_check('/path/to/base_results.sarif');
-SELECT pglinter.perform_cluster_check('/path/to/cluster_results.sarif');
-SELECT pglinter.perform_schema_check('/path/to/schema_results.sarif');
+-- Generate SARIF reports to file
+SELECT pglinter.check('/path/to/results.sarif');
+SELECT pglinter.check_rule('B001', '/path/to/b001_results.sarif');
 
 -- Rule management
 SELECT pglinter.show_rules();                    -- Show all rules and status
@@ -144,6 +145,16 @@ SELECT pglinter.explain_rule('B001');            -- Get rule details and fixes
 SELECT pglinter.enable_rule('B001');             -- Enable specific rule
 SELECT pglinter.disable_rule('B001');            -- Disable specific rule
 SELECT pglinter.is_rule_enabled('B001');         -- Check rule status
+SELECT pglinter.enable_all_rules();              -- Enable all rules
+SELECT pglinter.disable_all_rules();             -- Disable all rules
+
+-- Rule configuration
+SELECT pglinter.update_rule_levels('B001', 30, 70);  -- Set warning/error thresholds
+SELECT pglinter.get_rule_levels('B001');             -- Get current thresholds
+
+-- YAML import/export
+SELECT pglinter.export_rules_to_yaml();              -- Export rules to YAML
+SELECT pglinter.import_rules_from_yaml('yaml...');   -- Import rules from YAML
 ```
 
 ## Implemented Rules
