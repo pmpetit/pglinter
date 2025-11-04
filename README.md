@@ -53,22 +53,22 @@ This extension is built with **pgrx 0.16.1** and supports:
 **Debian/Ubuntu Systems:**
 
 ```bash
-# Download and install (replace XX with your PG version: 13, 14, 15, 16, 17, 18)
-wget https://github.com/pmpetit/pglinter/releases/download/0.0.17/postgresql_pglinter_XX_0.0.17_amd64.deb
-sudo dpkg -i postgresql_pglinter_XX_0.0.17_amd64.deb
+PGVER=17
+PGLINTER=1.0.0
 
-# Fix dependencies if needed
-sudo apt-get install -f
+wget https://github.com/pmpetit/pglinter/releases/download/${PGVER}/postgresql_pglinter_${PGVER}_${PGLINTER}_amd64.deb
+sudo dpkg -i postgresql_pglinter_${PGVER}_${PGLINTER}_amd64.deb
 ```
 
 **RHEL/CentOS/Fedora Systems:**
 
 ```bash
-# Download and install (replace XX with your PG version: 13, 14, 15, 16, 17, 18)
-wget https://github.com/pmpetit/pglinter/releases/download/0.0.17/postgresql_pglinter_XX-0.0.17-1.x86_64.rpm
-sudo rpm -i postgresql_pglinter_XX-0.0.17-1.x86_64.rpm
+PGVER=17
+PGLINTER=1.0.0
+wget https://github.com/pmpetit/pglinter/releases/download/${PGVER}/postgresql_pglinter_${PGVER}-${PGLINTER}-1.x86_64.rpm
+sudo rpm -i postgresql_pglinter_${PGVER}-${PGLINTER}-1.x86_64.rpm
 # or
-sudo yum localinstall postgresql_pglinter_XX-0.0.17-1.x86_64.rpm
+sudo yum localinstall postgresql_pglinter_${PGVER}-${PGLINTER}-1.x86_64.rpm
 ```
 
 #### 💻 Usage
