@@ -187,32 +187,7 @@ SELECT pglinter.import_rules_from_yaml('yaml...');   -- Import rules from YAML
 
 ## Rule Implementation
 
-Adding a new rule is straightforward:
-
-```rust
-pub struct B007Rule; // New rule
-
-impl DatabaseRule for B007Rule {
-    fn execute(&self, params: &[RuleParam]) -> spi::Result<Option<RuleResult>> {
-        // Your rule logic here
-        let query = "SELECT count(*) FROM problematic_tables";
-
-        let result = Spi::connect(|client| {
-            // Execute query and analyze results
-            // Return RuleResult if issues found
-        })?;
-
-        Ok(result)
-    }
-
-    fn rule_id(&self) -> &str { "B007" }
-    fn scope(&self) -> RuleScope { RuleScope::Base }
-    fn name(&self) -> &str { "YourRuleName" }
-}
-
-// Register in RuleEngine::new()
-rules.insert("B007".to_string(), Box::new(B007Rule));
-```
+Adding a new rule is straightforward. For a comprehensive step-by-step guide, see the [How to Create Rules Tutorial](https://pglinter.readthedocs.io/en/latest/tutorial/how_to_create_rules/) in the documentation.
 
 ## SARIF Output
 
