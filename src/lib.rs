@@ -1767,7 +1767,7 @@ mod tests {
         // Test 1: Test check_rule with valid rule ID
         // Enable B001 rule (tables without primary keys)
         let _ = Spi::run("UPDATE pglinter.rules SET enable = true WHERE code = 'B001'");
-        
+
         // Test check_rule function with B001 rule
         let result = Spi::get_one::<bool>("SELECT pglinter.check_rule('B001')").unwrap();
         assert!(result.is_some());
@@ -1796,16 +1796,16 @@ mod tests {
         // Read and verify SARIF file contains rule-specific results
         let sarif_content = std::fs::read_to_string(test_file_path)
             .expect("Failed to read SARIF file");
-        
+
         // Basic SARIF structure validation
         assert!(!sarif_content.is_empty(), "SARIF file should not be empty");
         assert!(sarif_content.contains("version"), "SARIF should contain version");
         assert!(sarif_content.contains("runs"), "SARIF should contain runs");
-        
+
         // Parse as JSON to ensure it's valid
         let sarif_json: serde_json::Value = serde_json::from_str(&sarif_content)
             .expect("SARIF output should be valid JSON");
-        
+
         // Check that results contain B001 rule violations
         if let Some(results) = sarif_json["runs"][0]["results"].as_array() {
             if !results.is_empty() {
@@ -1835,7 +1835,7 @@ mod tests {
         assert!(result_cluster.is_some());
         assert_eq!(result_cluster.unwrap(), true);
 
-        // Enable a schema rule (S001) 
+        // Enable a schema rule (S001)
         let _ = Spi::run("UPDATE pglinter.rules SET enable = true WHERE code = 'S001'");
         let result_schema = Spi::get_one::<bool>("SELECT pglinter.check_rule('S001')").unwrap();
         assert!(result_schema.is_some());
@@ -1856,7 +1856,7 @@ mod tests {
         let result1 = Spi::get_one::<bool>("SELECT pglinter.check_rule('B001')").unwrap();
         let result2 = Spi::get_one::<bool>("SELECT pglinter.check_rule('B002')").unwrap();
         let result3 = Spi::get_one::<bool>("SELECT pglinter.check_rule('C002')").unwrap();
-        
+
         assert!(result1.is_some() && result1.unwrap());
         assert!(result2.is_some() && result2.unwrap());
         assert!(result3.is_some() && result3.unwrap());
