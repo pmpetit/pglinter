@@ -164,16 +164,26 @@ SELECT pglinter.import_rules_from_yaml('yaml...');   -- Import rules from YAML
 - **B002**: Redundant indexes
 - **B003**: Tables without indexes on foreign keys
 - **B004**: Unused indexes
-- **B005**: Unsecured public schema
-- **B006**: Tables with uppercase names/columns
+- **B005**: Tables with uppercase names/columns
+- **B006**: Tables not selected (unused tables)
+- **B007**: Foreign keys outside schema boundaries
+- **B008**: Foreign key type mismatches
+- **B009**: Tables sharing trigger functions
+- **B010**: Reserved keywords in object names
+- **B011**: Multiple table owners in same schema
 
 ### Cluster Rules (C-series)
-- **C001**: max_connections * work_mem > available RAM
+
 - **C002**: Insecure pg_hba.conf entries
+- **C003**: MD5 password encryption (deprecated/insecure)
 
 ### Schema Rules (S-series)
+
 - **S001**: Schemas without default role grants
 - **S002**: Schemas with environment prefixes/suffixes
+- **S003**: Unsecured public schema
+- **S004**: Schema owned by internal/system roles
+- **S005**: Multiple table owners in same schema
 
 ## Rule Implementation
 
