@@ -210,10 +210,10 @@ NOTICE:  🔍 pglinter found 1 issue(s):
 NOTICE:  ==================================================
 NOTICE:  ⚠️  [B008] WARNING: 5/8 table(s) with foreign key mismatch exceed the warning threshold: 62%. Object list:
 public.test_orders_int_to_bigint constraint test_orders_int_to_bigint_user_id_fkey column user_id type is integer but test_users_bigint.user_id type is bigint
-public.test_discounts_smallint_to_int constraint test_discounts_smallint_to_int_category_id_fkey column category_id type is smallint but test_categories_integer.category_id type is integer
 public.test_reviews_bigint_to_int constraint test_reviews_bigint_to_int_category_id_fkey column category_id type is bigint but test_categories_integer.category_id type is integer
 public.test_inventory_int_to_smallint constraint test_inventory_int_to_smallint_product_id_fkey column product_id type is integer but test_products_smallint.product_id type is smallint
 public.test_stores_varchar_to_text constraint test_stores_varchar_to_text_region_code_fkey column region_code type is character varying but test_regions_text.region_code type is text
+public.test_discounts_smallint_to_int constraint test_discounts_smallint_to_int_category_id_fkey column category_id type is smallint but test_categories_integer.category_id type is integer
 
 NOTICE:  ==================================================
 NOTICE:  📊 Summary: 0 error(s), 1 warning(s), 0 info
@@ -257,10 +257,10 @@ NOTICE:  🔍 pglinter found 1 issue(s):
 NOTICE:  ==================================================
 NOTICE:  ⚠️  [B008] WARNING: 5/8 table(s) with foreign key mismatch exceed the warning threshold: 62%. Object list:
 public.test_orders_int_to_bigint constraint test_orders_int_to_bigint_user_id_fkey column user_id type is integer but test_users_bigint.user_id type is bigint
-public.test_discounts_smallint_to_int constraint test_discounts_smallint_to_int_category_id_fkey column category_id type is smallint but test_categories_integer.category_id type is integer
 public.test_reviews_bigint_to_int constraint test_reviews_bigint_to_int_category_id_fkey column category_id type is bigint but test_categories_integer.category_id type is integer
 public.test_inventory_int_to_smallint constraint test_inventory_int_to_smallint_product_id_fkey column product_id type is integer but test_products_smallint.product_id type is smallint
 public.test_stores_varchar_to_text constraint test_stores_varchar_to_text_region_code_fkey column region_code type is character varying but test_regions_text.region_code type is text
+public.test_discounts_smallint_to_int constraint test_discounts_smallint_to_int_category_id_fkey column category_id type is smallint but test_categories_integer.category_id type is integer
 
 NOTICE:  ==================================================
 NOTICE:  📊 Summary: 0 error(s), 1 warning(s), 0 info

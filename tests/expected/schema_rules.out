@@ -109,7 +109,7 @@ HINT:  No function matches the given name and argument types. You might need to 
 SELECT pglinter.check();
 NOTICE:  🔍 pglinter found 1 issue(s):
 NOTICE:  ==================================================
-NOTICE:  ❌ [S002] ERROR: 3/7 schemas are prefixed or suffixed with environment names. It exceed the error threshold: 42%. Prefer prefix or suffix the database name instead. Object list:
+NOTICE:  ❌ [S002] ERROR: 3/6 schemas are prefixed or suffixed with environment names. It exceed the error threshold: 50%. Prefer prefix or suffix the database name instead. Object list:
 dev_analytics
 prod_sales
 reports_staging

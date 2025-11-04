@@ -291,6 +291,20 @@ docker_image: docker/Dockerfile #: build the docker image
 			$(DOCKER_BUILD_ARG) \
 			.
 
+docker_image_arm64: docker/Dockerfile #: build the docker image
+	#: docker build --tag $(DOCKER_IMAGE):$(DOCKER_TAG) . --file $^  $(DOCKER_BUILD_ARG)
+	@echo "Setting up buildx for multi-platform builds..."
+	docker buildx create --name pglinter-builder --use --bootstrap 2>/dev/null || \
+	docker buildx use pglinter-builder 2>/dev/null || \
+	(echo "Creating new buildx instance..." && docker buildx create --name pglinter-builder --use --bootstrap)
+	@echo "Building multi-platform image..."
+	docker buildx build \
+			--platform linux/arm64 \
+			--tag $(DOCKER_IMAGE):$(DOCKER_TAG) \
+			--file $^ \
+			$(DOCKER_BUILD_ARG) \
+			.
+
 # Build AMD64 pgrx image separately
 pgrx_image_amd64_only: docker/pgrx/Dockerfile
 	@echo "Building AMD64 pgrx image..."

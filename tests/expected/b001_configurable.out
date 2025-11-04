@@ -1,4 +1,6 @@
 -- Quick test to verify B001 rule uses configurable thresholds
+DROP EXTENSION IF EXISTS pglinter CASCADE;
+NOTICE:  extension "pglinter" does not exist, skipping
 CREATE EXTENSION pglinter;
 \pset pager off
 -- Create a table without primary key

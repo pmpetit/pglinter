@@ -35,7 +35,7 @@ NOTICE:  ✅ Rule B011 has been enabled
 SELECT pglinter.check(); -- Should only run B011
 NOTICE:  🔍 pglinter found 1 issue(s):
 NOTICE:  ==================================================
-NOTICE:  ⚠️  [B011] WARNING: 1/3 schemas have tables owned by different owners. Exceed the warning threshold: 33%. Object list:
+NOTICE:  ⚠️  [B011] WARNING: 1/2 schemas have tables owned by different owners. Exceed the warning threshold: 50%. Object list:
 s005_schema.table1 owner is s005_owner1
 s005_schema.table2 owner is s005_owner2
 

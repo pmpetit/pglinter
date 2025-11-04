@@ -1,4 +1,5 @@
 -- Quick test to verify B001 rule uses configurable thresholds
+DROP EXTENSION IF EXISTS pglinter CASCADE;
 CREATE EXTENSION pglinter;
 
 \pset pager off

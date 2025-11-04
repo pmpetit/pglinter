@@ -181,16 +181,15 @@ NOTICE:  ❌ [C002] ERROR: 6 entries in pg_hba.conf with trust or password authe
 NOTICE:  ⚠️  [C003] WARNING: CLUSTER Encrypted passwords with MD5. 1 : 
 password_encryption is md5 
 
-NOTICE:  ❌ [S001] ERROR: No default role grantee on schema 7.7. It means that each time a table is created, you must grant it to roles. Object list:
+NOTICE:  ❌ [S001] ERROR: No default role grantee on schema 6.6. It means that each time a table is created, you must grant it to roles. Object list:
 audit_schema
 clean_schema
 inventory_schema
 public
 public_schema
 sales_schema
-tests
 
-NOTICE:  ⚠️  [S003] WARNING: 1/7 schemas are unsecured, schemas where all users can create objects in, exceed the warning threshold: 14%. Object list:
+NOTICE:  ⚠️  [S003] WARNING: 1/6 schemas are unsecured, schemas where all users can create objects in, exceed the warning threshold: 16%. Object list:
 public
 
 NOTICE:  ==================================================
@@ -269,16 +268,15 @@ NOTICE:  ❌ [C002] ERROR: 6 entries in pg_hba.conf with trust or password authe
 NOTICE:  ⚠️  [C003] WARNING: CLUSTER Encrypted passwords with MD5. 1 : 
 password_encryption is md5 
 
-NOTICE:  ❌ [S001] ERROR: No default role grantee on schema 7.7. It means that each time a table is created, you must grant it to roles. Object list:
+NOTICE:  ❌ [S001] ERROR: No default role grantee on schema 6.6. It means that each time a table is created, you must grant it to roles. Object list:
 audit_schema
 clean_schema
 inventory_schema
 public
 public_schema
 sales_schema
-tests
 
-NOTICE:  ⚠️  [S003] WARNING: 1/7 schemas are unsecured, schemas where all users can create objects in, exceed the warning threshold: 14%. Object list:
+NOTICE:  ⚠️  [S003] WARNING: 1/6 schemas are unsecured, schemas where all users can create objects in, exceed the warning threshold: 16%. Object list:
 public
 
 NOTICE:  ==================================================
@@ -328,16 +326,15 @@ NOTICE:  ❌ [C002] ERROR: 6 entries in pg_hba.conf with trust or password authe
 NOTICE:  ⚠️  [C003] WARNING: CLUSTER Encrypted passwords with MD5. 1 : 
 password_encryption is md5 
 
-NOTICE:  ❌ [S001] ERROR: No default role grantee on schema 7.7. It means that each time a table is created, you must grant it to roles. Object list:
+NOTICE:  ❌ [S001] ERROR: No default role grantee on schema 6.6. It means that each time a table is created, you must grant it to roles. Object list:
 audit_schema
 clean_schema
 inventory_schema
 public
 public_schema
 sales_schema
-tests
 
-NOTICE:  ⚠️  [S003] WARNING: 1/7 schemas are unsecured, schemas where all users can create objects in, exceed the warning threshold: 14%. Object list:
+NOTICE:  ⚠️  [S003] WARNING: 1/6 schemas are unsecured, schemas where all users can create objects in, exceed the warning threshold: 16%. Object list:
 public
 
 NOTICE:  ==================================================
