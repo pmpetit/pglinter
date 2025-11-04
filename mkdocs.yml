@@ -26,6 +26,8 @@ nav:
     - 'Rules': rules/README.md
   - Tutorial:
     - 'Create rules': tutorial/how_to_create_rules.md
+  - Examples:
+    - 'Examples': examples/README.md
 
 # Markdown settings
 markdown_extensions:
