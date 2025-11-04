@@ -234,11 +234,8 @@ Here's how to create a test named `new_test`:
    CREATE TABLE test_table (id INT, name TEXT);
    CREATE EXTENSION IF NOT EXISTS pglinter;
 
-   -- Test with file output
-   SELECT pglinter.perform_base_check('/tmp/test_results.sarif');
-
    -- Test with prompt output
-   SELECT pglinter.perform_base_check();
+   SELECT pglinter.check();
 
    ROLLBACK;
    ```
@@ -275,21 +272,15 @@ pglinter supports two output modes:
 ### File Output (SARIF format)
 
 ```sql
-SELECT pglinter.perform_base_check('/tmp/results.sarif');
+SELECT pglinter.check('/tmp/results.sarif');
 ```
 
 ### Prompt Output (formatted notices)
 
 ```sql
 -- Using NULL or no parameter
-SELECT pglinter.perform_base_check();
+SELECT pglinter.check();
 
--- Using convenience functions
-SELECT pglinter.check_base();
-SELECT pglinter.check_cluster();
-SELECT pglinter.check_table();
-SELECT pglinter.check_schema();
-SELECT pglinter.check_all();
 ```
 
 ### Testing with the Makefile
