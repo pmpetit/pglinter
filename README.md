@@ -93,12 +93,6 @@ SELECT pglinter.check('/path/to/results.sarif');
 SELECT pglinter.check_rule('B001', '/path/to/b001_results.sarif');
 ```
 
-#### 📋 Available Rules
-
-- **B001-B008**: Base database rules (tables, primary keys, indexes, constraints, etc.)
-- **C002**: Cluster security rules
-- **S001**: Schema rules
-
 For complete documentation, visit: https://github.com/pmpetit/pglinter/blob/main/docs/functions/README.md
 
 ### Build and Install
