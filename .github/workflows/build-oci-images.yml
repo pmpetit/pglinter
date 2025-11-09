@@ -1,0 +1,160 @@
+name: Build and Push OCI Extension Images
+
+on:
+  push:
+    branches:
+      - main
+      - 'feat/build_oci'
+    tags:
+      - 'v*'
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+    inputs:
+      postgresql_versions:
+        description: 'PostgreSQL versions to build (comma-separated)'
+        required: false
+        default: '18'
+      push_images:
+        description: 'Push images to registry'
+        type: boolean
+        required: false
+        default: false
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: pglinter
+
+jobs:
+  build-oci-images:
+    name: Build OCI Images
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        postgresql-version: [18]  # Can be expanded: [16, 17, 18]
+        
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Log in to Container Registry
+        if: github.event_name != 'pull_request'
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata
+        id: meta
+        run: |
+          # Determine if we should push based on event type and inputs
+          SHOULD_PUSH="false"
+          
+          if [[ "${{ github.event_name }}" == "push" && "${{ github.ref }}" == "refs/heads/main" ]]; then
+            SHOULD_PUSH="true"
+          elif [[ "${{ github.event_name }}" == "push" && "${{ github.ref }}" =~ ^refs/tags/v.* ]]; then
+            SHOULD_PUSH="true"
+          elif [[ "${{ github.event_name }}" == "workflow_dispatch" && "${{ inputs.push_images }}" == "true" ]]; then
+            SHOULD_PUSH="true"
+          fi
+          
+          echo "should_push=$SHOULD_PUSH" >> $GITHUB_OUTPUT
+          echo "Will push images: $SHOULD_PUSH"
+
+      - name: Build OCI Extension Image (Local Build)
+        if: github.event_name == 'pull_request' || github.ref == 'refs/heads/feat/build_oci'
+        uses: ./.github/actions/build-oci-image
+        with:
+          postgresql-version: ${{ matrix.postgresql-version }}
+          registry: ${{ env.REGISTRY }}/${{ github.repository_owner }}
+          image-name: ${{ env.IMAGE_NAME }}
+          push: ${{ steps.meta.outputs.should_push }}
+          build-local: 'true'
+          platforms: linux/amd64  # Use single platform for local builds to speed up
+
+      - name: Build OCI Extension Image (Release Build)
+        if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v'))
+        uses: ./.github/actions/build-oci-image
+        with:
+          postgresql-version: ${{ matrix.postgresql-version }}
+          registry: ${{ env.REGISTRY }}/${{ github.repository_owner }}
+          image-name: ${{ env.IMAGE_NAME }}
+          push: ${{ steps.meta.outputs.should_push }}
+          build-local: 'false'
+          platforms: linux/amd64,linux/arm64  # Multi-platform for releases
+
+  test-oci-image:
+    name: Test OCI Image
+    runs-on: ubuntu-latest
+    needs: build-oci-images
+    if: always() && (needs.build-oci-images.result == 'success')
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build test image locally
+        uses: ./.github/actions/build-oci-image
+        with:
+          postgresql-version: '18'
+          registry: 'local'
+          image-name: 'pglinter-test'
+          push: 'false'
+          build-local: 'true'
+          platforms: linux/amd64
+
+      - name: Test image structure
+        run: |
+          # Basic image inspection
+          docker images | grep pglinter-test
+          
+          # Check image size (should be reasonable)
+          IMAGE_SIZE=$(docker image inspect local/pglinter-test:latest --format '{{.Size}}')
+          echo "Image size: $IMAGE_SIZE bytes"
+          
+          # Verify image has proper labels
+          docker image inspect local/pglinter-test:latest --format '{{range $k, $v := .Config.Labels}}{{$k}}: {{$v}}{{"\n"}}{{end}}' | grep -E "(extension\.|org\.opencontainers\.image\.)"
+          
+          echo "✅ OCI image tests passed"
+
+  security-scan:
+    name: Security Scan
+    runs-on: ubuntu-latest
+    needs: build-oci-images
+    if: always() && (needs.build-oci-images.result == 'success')
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Build image for scanning
+        uses: ./.github/actions/build-oci-image
+        with:
+          postgresql-version: '18'
+          registry: 'local'
+          image-name: 'pglinter-scan'
+          push: 'false'
+          build-local: 'true'
+          platforms: linux/amd64
+
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: 'local/pglinter-scan:latest'
+          format: 'sarif'
+          output: 'trivy-results.sarif'
+
+      - name: Upload Trivy scan results to GitHub Security tab
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: 'trivy-results.sarif'

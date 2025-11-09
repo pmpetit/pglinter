@@ -374,6 +374,186 @@ pgrx_clean:
 	docker rmi $(PGRX_IMAGE):latest-arm64 2>/dev/null || true
 
 ##
+## O C I   I M A G E S
+##
+
+# OCI image configuration - CloudNative-PG extension images
+OCI_REGISTRY?=ghcr.io/pmpetit
+OCI_IMAGE_NAME?=pglinter
+OCI_BASE_TAG?=$(PGLINTER_MINOR_VERSION)
+DISTRO?=bookworm
+TIMESTAMP?=$(shell date +%Y%m%d%H%M%S)
+PG_VERSION_OCI?=18
+OCI_TAG?=$(OCI_BASE_TAG)-$(TIMESTAMP)-pg$(PG_VERSION_OCI)-$(DISTRO)
+
+# Ensure buildx is available for OCI builds
+oci_setup:
+	@echo "Setting up Docker buildx for multi-platform builds..."
+	@docker buildx create --name pglinter-oci-builder --use --bootstrap 2>/dev/null || \
+	docker buildx use pglinter-oci-builder 2>/dev/null || \
+	(echo "Creating new buildx instance..." && docker buildx create --name pglinter-oci-builder --use --bootstrap)
+
+# Build OCI extension image for PostgreSQL 18
+oci_build: oci_setup deb
+	@echo "Building OCI image: $(OCI_REGISTRY)/$(OCI_IMAGE_NAME):$(OCI_TAG)"
+	@echo "  PostgreSQL Version: $(PG_VERSION_OCI)"
+	@echo "  Extension Version: $(PGLINTER_MINOR_VERSION)"
+	@echo "  Distro: $(DISTRO)"
+	@echo "  Timestamp: $(TIMESTAMP)"
+	@echo "Checking if .deb package exists locally..."
+	@if [ -f $(TARGET_DIR)/*.deb ]; then \
+		echo "✅ Local .deb package found, will use for build"; \
+		DEB_PATH=$$(find $(TARGET_DIR) -name "*.deb" | head -1); \
+		echo "Using package: $$DEB_PATH"; \
+	else \
+		echo "❌ No local .deb package found in $(TARGET_DIR)"; \
+		echo "Will attempt to download from GitHub releases"; \
+	fi
+	docker buildx build \
+		--platform linux/amd64,linux/arm64 \
+		--build-arg PG_VERSION=$(PG_VERSION_OCI) \
+		--build-arg DISTRO=$(DISTRO) \
+		--build-arg PGLINTER_VERSION=$(PGLINTER_MINOR_VERSION) \
+		--build-arg TIMESTAMP=$(TIMESTAMP) \
+		--build-arg EXT_VERSION=$(PGLINTER_MINOR_VERSION) \
+		--tag $(OCI_REGISTRY)/$(OCI_IMAGE_NAME):$(OCI_TAG) \
+		--tag $(OCI_REGISTRY)/$(OCI_IMAGE_NAME):latest \
+		--tag $(OCI_REGISTRY)/$(OCI_IMAGE_NAME):$(OCI_BASE_TAG) \
+		--file docker/oci/Dockerfile \
+		--load \
+		.
+	@echo "✅ OCI image built successfully"
+
+# Build and push OCI extension image to GitHub Container Registry
+oci_push: oci_build
+	@echo "Pushing OCI images to registry..."
+	docker push $(OCI_REGISTRY)/$(OCI_IMAGE_NAME):$(OCI_TAG)
+	docker push $(OCI_REGISTRY)/$(OCI_IMAGE_NAME):latest
+	docker push $(OCI_REGISTRY)/$(OCI_IMAGE_NAME):$(OCI_BASE_TAG)
+	@echo "✅ OCI images pushed successfully"
+	@echo "  Main tag: $(OCI_REGISTRY)/$(OCI_IMAGE_NAME):$(OCI_TAG)"
+	@echo "  Latest tag: $(OCI_REGISTRY)/$(OCI_IMAGE_NAME):latest"
+	@echo "  Version tag: $(OCI_REGISTRY)/$(OCI_IMAGE_NAME):$(OCI_BASE_TAG)"
+
+# Build OCI image for local testing (AMD64 only)
+oci_build_local: oci_setup
+	@echo "Building local OCI image for testing..."
+	@echo "Ensuring .deb package exists for PostgreSQL $(PG_VERSION_OCI)..."
+	@if [ ! -f target/release/pglinter-pg$(PG_VERSION_OCI)/postgresql_pglinter_$(PG_VERSION_OCI)_$(PGLINTER_MINOR_VERSION)_amd64.deb ]; then \
+		echo "❌ No .deb package found. Building package first..."; \
+		$(MAKE) deb PGVER=pg$(PG_VERSION_OCI) PG_MAJOR_VERSION=$(PG_VERSION_OCI); \
+	fi
+	@echo "Preparing .deb package for Docker build..."
+	@mkdir -p docker/oci/packages
+	@cp target/release/pglinter-pg$(PG_VERSION_OCI)/postgresql_pglinter_$(PG_VERSION_OCI)_$(PGLINTER_MINOR_VERSION)_amd64.deb docker/oci/packages/pglinter.deb
+	@echo "Using local .deb package for build..."
+	cd docker/oci && docker buildx build \
+		--platform linux/amd64 \
+		--build-arg PG_VERSION=$(PG_VERSION_OCI) \
+		--build-arg DISTRO=$(DISTRO) \
+		--build-arg PGLINTER_VERSION=$(PGLINTER_MINOR_VERSION) \
+		--build-arg TIMESTAMP=$(TIMESTAMP) \
+		--build-arg EXT_VERSION=$(PGLINTER_MINOR_VERSION) \
+		--tag $(OCI_REGISTRY)/$(OCI_IMAGE_NAME):local \
+		--file Dockerfile.local \
+		--load \
+		.
+	@rm -rf docker/oci/packages
+	@echo "✅ Local OCI image built: $(OCI_REGISTRY)/$(OCI_IMAGE_NAME):local"
+
+# Test the OCI image locally
+oci_test: oci_build_local
+	@echo "Testing OCI image locally..."
+	@echo "Verifying image was built successfully..."
+	docker image inspect $(OCI_REGISTRY)/$(OCI_IMAGE_NAME):local --format '{{.Size}}' | \
+		awk '{if($$1 > 0) print "✅ Image size: " $$1 " bytes"; else print "❌ Image appears empty"}'
+	@echo "Checking image labels..."
+	docker image inspect $(OCI_REGISTRY)/$(OCI_IMAGE_NAME):local --format '{{range $$k, $$v := .Config.Labels}}{{$$k}}: {{$$v}}{{"\n"}}{{end}}' | \
+		grep -E "(extension\.|org\.opencontainers\.image\.)" || echo "❌ Missing expected labels"
+	@echo "Extracting and examining image contents..."
+	@mkdir -p /tmp/pglinter-test
+	@if docker save $(OCI_REGISTRY)/$(OCI_IMAGE_NAME):local -o /tmp/pglinter-test/image.tar 2>/dev/null; then \
+		cd /tmp/pglinter-test && tar -tf image.tar | head -10 && \
+		echo "✅ Image successfully saved and contains layers"; \
+	else \
+		echo "❌ Failed to save image"; \
+	fi
+	@rm -rf /tmp/pglinter-test
+	@echo "✅ OCI image validation completed"
+
+# Detailed test using crane or direct layer inspection
+oci_test_detailed: oci_build_local
+	@echo "Running detailed OCI image test..."
+	@echo "Using dive to inspect image layers (if available)..."
+	@if command -v dive >/dev/null 2>&1; then \
+		dive $(OCI_REGISTRY)/$(OCI_IMAGE_NAME):local --ci; \
+	else \
+		echo "Dive not available, using basic inspection..."; \
+		echo "Checking image history:"; \
+		docker history $(OCI_REGISTRY)/$(OCI_IMAGE_NAME):local; \
+		echo ""; \
+		echo "Image configuration:"; \
+		docker image inspect $(OCI_REGISTRY)/$(OCI_IMAGE_NAME):local --format '{{json .RootFS}}' | jq '.' 2>/dev/null || docker image inspect $(OCI_REGISTRY)/$(OCI_IMAGE_NAME):local --format '{{.RootFS}}'; \
+	fi
+	@echo "✅ Detailed OCI image test completed"
+
+# Clean OCI images
+oci_clean:
+	@echo "Cleaning OCI images..."
+	@docker images --format "table {{.Repository}}:{{.Tag}}" | \
+		grep "$(OCI_REGISTRY)/$(OCI_IMAGE_NAME)" | \
+		xargs -r docker rmi 2>/dev/null || true
+	@echo "✅ OCI images cleaned"
+
+# Show OCI image information
+oci_info:
+	@echo "OCI Image Configuration (PostgreSQL 18 only):"
+	@echo "  Registry: $(OCI_REGISTRY)"
+	@echo "  Image Name: $(OCI_IMAGE_NAME)"
+	@echo "  Extension Version: $(PGLINTER_MINOR_VERSION)"
+	@echo "  PostgreSQL Version: $(PG_VERSION_OCI)"
+	@echo "  Distro: $(DISTRO)"
+	@echo "  Timestamp: $(TIMESTAMP)"
+	@echo "  Full Tag: $(OCI_TAG)"
+	@echo ""
+	@echo "Tags that will be created:"
+	@echo "  - $(OCI_REGISTRY)/$(OCI_IMAGE_NAME):$(OCI_TAG)"
+	@echo "  - $(OCI_REGISTRY)/$(OCI_IMAGE_NAME):latest"
+	@echo "  - $(OCI_REGISTRY)/$(OCI_IMAGE_NAME):$(OCI_BASE_TAG)"
+
+# Validate required dependencies for OCI builds
+oci_validate:
+	@echo "Validating OCI build dependencies..."
+	@command -v docker >/dev/null 2>&1 || { echo "❌ Docker not found"; exit 1; }
+	@docker buildx version >/dev/null 2>&1 || { echo "❌ Docker buildx not available"; exit 1; }
+	@echo "✅ Docker and buildx are available"
+	@if [ ! -f docker/oci/Dockerfile ]; then \
+		echo "❌ OCI Dockerfile not found at docker/oci/Dockerfile"; \
+		exit 1; \
+	fi
+	@echo "✅ OCI Dockerfile found"
+	@echo "✅ All dependencies validated"
+
+# Help target for OCI commands
+oci_help:
+	@echo "OCI Docker Image Targets (PostgreSQL 18 only):"
+	@echo "  oci_info           - Show OCI image configuration"
+	@echo "  oci_validate       - Validate build dependencies"
+	@echo "  oci_setup          - Set up Docker buildx"
+	@echo "  oci_build          - Build OCI image for PostgreSQL 18"
+	@echo "  oci_build_local    - Build local test image (AMD64 only)"
+	@echo "  oci_push           - Build and push OCI image to GitHub"
+	@echo "  oci_test           - Test local OCI image (basic validation)"
+	@echo "  oci_test_detailed  - Test local OCI image (detailed file inspection)"
+	@echo "  oci_clean          - Clean OCI images"
+	@echo ""
+	@echo "Examples:"
+	@echo "  make oci_build"
+	@echo "  make oci_push OCI_REGISTRY=ghcr.io/yourusername"
+	@echo "  make oci_test"
+	@echo "  make oci_test_detailed"
+
+##
 ## L I N T
 ##
 

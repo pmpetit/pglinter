@@ -1,0 +1,81 @@
+# CloudNative-PG Extension Image for pglinter
+# Follows the Image Specifications from:
+# https://cloudnative-pg.io/documentation/preview/imagevolume_extensions/#image-specifications
+
+ARG PG_VERSION=18
+ARG DISTRO=bookworm
+ARG PGLINTER_VERSION=1.0.0
+ARG TIMESTAMP
+ARG EXT_VERSION
+
+# Build stage - extract extension files from .deb package
+FROM ghcr.io/cloudnative-pg/postgresql:${PG_VERSION}-minimal-${DISTRO} AS builder
+
+ARG PG_VERSION
+ARG DISTRO
+ARG PGLINTER_VERSION
+ARG TIMESTAMP
+ARG EXT_VERSION
+
+USER 0
+
+# Download and extract pglinter .deb package
+# Support multi-arch by detecting architecture
+RUN set -eux; \
+	ARCH=$(dpkg --print-architecture); \
+	mkdir -p /extension-build && \
+	apt-get update && \
+	apt-get install -y --no-install-recommends wget ca-certificates && \
+	cd /tmp && \
+	DOWNLOAD_URL="https://github.com/pmpetit/pglinter/releases/download/${PGLINTER_VERSION}/postgresql_pglinter_${PG_VERSION}_${PGLINTER_VERSION}_${ARCH}.deb" && \
+	echo "Downloading pglinter from: $DOWNLOAD_URL" && \
+	wget -O pglinter.deb "$DOWNLOAD_URL" && \
+	dpkg-deb -x pglinter.deb /tmp/extracted && \
+	echo "Contents of extracted package:" && \
+	find /tmp/extracted -type f && \
+	# Create CloudNative-PG compliant directory structure
+	mkdir -p /extension-build/lib /extension-build/share/extension && \
+	# Copy shared libraries (.so files)
+	if [ -d /tmp/extracted/usr/lib/postgresql/${PG_VERSION}/lib ]; then \
+		echo "Copying libraries from /usr/lib/postgresql/${PG_VERSION}/lib/"; \
+		find /tmp/extracted/usr/lib/postgresql/${PG_VERSION}/lib/ -name "*.so" -exec cp {} /extension-build/lib/ \; ; \
+	fi && \
+	# Copy extension control and SQL files
+	if [ -d /tmp/extracted/usr/share/postgresql/${PG_VERSION}/extension ]; then \
+		echo "Copying extension files from /usr/share/postgresql/${PG_VERSION}/extension/"; \
+		cp /tmp/extracted/usr/share/postgresql/${PG_VERSION}/extension/* /extension-build/share/extension/ ; \
+	fi && \
+	echo "Final extension structure:" && \
+	find /extension-build -type f
+
+# Final image - scratch base following CloudNative-PG specifications
+FROM scratch
+
+# Import build arguments for labeling
+ARG PG_VERSION
+ARG DISTRO
+ARG PGLINTER_VERSION
+ARG TIMESTAMP
+ARG EXT_VERSION
+
+# CloudNative-PG compatible labels
+LABEL org.opencontainers.image.title="pglinter"
+LABEL org.opencontainers.image.description="PostgreSQL Linter Extension for CloudNative-PG"
+LABEL org.opencontainers.image.version="${EXT_VERSION:-${PGLINTER_VERSION}}"
+LABEL org.opencontainers.image.url="https://github.com/pmpetit/pglinter"
+LABEL org.opencontainers.image.source="https://github.com/pmpetit/pglinter"
+LABEL org.opencontainers.image.documentation="https://github.com/pmpetit/pglinter/blob/main/README.md"
+
+# Extension metadata labels
+LABEL extension.name="pglinter"
+LABEL extension.version="${EXT_VERSION:-${PGLINTER_VERSION}}"
+LABEL extension.timestamp="${TIMESTAMP}"
+LABEL extension.pg_version="${PG_VERSION}"
+LABEL extension.distro="${DISTRO}"
+LABEL extension.tag="pglinter:${EXT_VERSION:-${PGLINTER_VERSION}}-${TIMESTAMP}-${PG_VERSION}-${DISTRO}"
+
+# CloudNative-PG Image Specifications compliance:
+# - /lib/ contains shared libraries (.so files)
+# - /share/ contains extension subdirectory with control files and SQL scripts
+COPY --from=builder /extension-build/lib/ /lib/
+COPY --from=builder /extension-build/share/ /share/
