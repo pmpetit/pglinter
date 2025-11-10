@@ -11,7 +11,7 @@ A reusable action that builds OCI extension images following CloudNative-PG spec
 **Inputs:**
 
 - `postgresql-version`: PostgreSQL major version (default: '18')
-- `distro`: Linux distribution (default: 'bookworm')  
+- `distro`: Linux distribution (default: 'bookworm')
 - `registry`: Container registry (default: 'ghcr.io/pmpetit')
 - `image-name`: Image name (default: 'pglinter')
 - `push`: Whether to push to registry (default: 'false')
@@ -30,7 +30,7 @@ A reusable action that builds OCI extension images following CloudNative-PG spec
 Main workflow that builds OCI images on:
 
 - Push to `main` branch
-- Pull requests  
+- Pull requests
 - Tagged releases
 - Manual dispatch
 
@@ -78,7 +78,7 @@ gh workflow run test-oci-build.yml -f postgresql_version=18 -f push_to_registry=
 ```yaml
 steps:
   - uses: actions/checkout@v4
-  
+
   - name: Build OCI Image
     uses: ./.github/actions/build-oci-image
     with:
@@ -131,7 +131,7 @@ To test locally:
 # Build local test image
 make oci_build_local
 
-# Test image structure  
+# Test image structure
 make oci_test
 
 # Clean up

@@ -21,15 +21,15 @@ jobs:
   release-oci-images:
     name: Release OCI Images
     runs-on: ubuntu-latest
-    
+
     strategy:
       matrix:
         postgresql-version: ['18']  # Add more versions as needed: ['16', '17', '18']
-    
+
     permissions:
       contents: read
       packages: write
-      
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -49,10 +49,10 @@ jobs:
           else
             VERSION="${{ inputs.version }}"
           fi
-          
+
           # Remove 'v' prefix if present
           VERSION=${VERSION#v}
-          
+
           echo "version=$VERSION" >> $GITHUB_OUTPUT
           echo "Building for version: $VERSION"
 
@@ -70,11 +70,11 @@ jobs:
         if: github.event_name == 'release'
         run: |
           cat >> release_notes.md << EOF
-          
+
           ## Container Images
-          
+
           CloudNative-PG compatible OCI extension images are available:
-          
+
           \`\`\`yaml
           # Example usage in CloudNative-PG Cluster
           apiVersion: postgresql.cnpg.io/v1
@@ -88,13 +88,13 @@ jobs:
                   image:
                     reference: ${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}:${{ steps.version.outputs.version }}
           \`\`\`
-          
+
           Available tags:
           - \`${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}:${{ steps.version.outputs.version }}\`
           - \`${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}:latest\`
-          
+
           Supported PostgreSQL versions: ${{ matrix.postgresql-version }}
           Supported architectures: linux/amd64, linux/arm64
           EOF
-          
+
           echo "Release notes updated with container image information"

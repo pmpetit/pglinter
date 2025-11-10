@@ -26,11 +26,11 @@ jobs:
   test-build:
     name: Test OCI Build
     runs-on: ubuntu-latest
-    
+
     permissions:
       contents: read
       packages: write
-      
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -57,28 +57,28 @@ jobs:
       - name: Test image locally
         run: |
           echo "Testing built image..."
-          
+
           # Check if image exists
           docker images | grep pglinter-test || echo "No test image found"
-          
+
           # Get image info
           if docker images | grep -q pglinter-test; then
             IMAGE_ID=$(docker images --format "table {{.Repository}}:{{.Tag}}\t{{.ID}}" | grep pglinter-test | head -1 | awk '{print $2}')
             echo "Image ID: $IMAGE_ID"
-            
+
             # Check image size
             SIZE=$(docker image inspect $IMAGE_ID --format '{{.Size}}')
             echo "Image size: $SIZE bytes ($(($SIZE / 1024 / 1024)) MB)"
-            
+
             # Check labels
             echo "Extension labels:"
             docker image inspect $IMAGE_ID --format '{{range $k, $v := .Config.Labels}}{{if or (hasPrefix $k "extension.") (hasPrefix $k "org.opencontainers.image.")}}{{$k}}: {{$v}}{{"\n"}}{{end}}{{end}}'
-            
+
             # Image history
             echo "Image layers:"
             docker history $IMAGE_ID --format "table {{.CreatedBy}}\t{{.Size}}"
           fi
-          
+
           echo "✅ OCI image test completed"
 
       - name: Output results

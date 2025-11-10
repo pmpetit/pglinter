@@ -6,32 +6,32 @@ inputs:
     description: 'PostgreSQL major version (e.g., 18)'
     required: true
     default: '18'
-  
+
   distro:
     description: 'Linux distribution (e.g., bookworm)'
     required: true
     default: 'bookworm'
-  
+
   registry:
     description: 'Container registry (e.g., ghcr.io/pmpetit)'
     required: true
     default: 'ghcr.io/pmpetit'
-  
+
   image-name:
     description: 'Image name (e.g., pglinter)'
     required: true
     default: 'pglinter'
-  
+
   push:
     description: 'Whether to push the image to registry'
     required: false
     default: 'false'
-  
+
   platforms:
     description: 'Target platforms for multi-arch build'
     required: false
     default: 'linux/amd64,linux/arm64'
-  
+
   build-local:
     description: 'Use local .deb packages instead of downloading from releases'
     required: false
@@ -41,7 +41,7 @@ outputs:
   image-tags:
     description: 'Generated image tags'
     value: ${{ steps.build.outputs.image-tags }}
-  
+
   image-digest:
     description: 'Image digest'
     value: ${{ steps.build.outputs.digest }}
@@ -54,54 +54,54 @@ runs:
       with:
         driver-opts: network=host
 
-    - name: Setup Rust toolchain
+    - name: Build .deb package using pgrx image
       if: inputs.build-local == 'true'
-      uses: dtolnay/rust-toolchain@stable
+      shell: bash
+      run: |
+        echo "Building .deb package using pgrx image: ghcr.io/pmpetit/postgresql_pglinter:pgrx"
 
-    - name: Install pgrx and dependencies
-      if: inputs.build-local == 'true'
-      shell: bash
-      run: |
-        cargo install --locked cargo-pgrx --version 0.16.1
-        
-    - name: Initialize pgrx
-      if: inputs.build-local == 'true'
-      shell: bash
-      run: |
-        cargo pgrx init --pg${{ inputs.postgresql-version }} download
+        # Create output directory for packages
+        mkdir -p ./target/release/pglinter-pg${{ inputs.postgresql-version }}/
 
-    - name: Install nfpm for package building
-      if: inputs.build-local == 'true'
-      shell: bash
-      run: |
-        # Install nfpm for .deb package creation
-        echo 'deb [trusted=yes] https://repo.goreleaser.com/apt/ /' | sudo tee /etc/apt/sources.list.d/goreleaser.list
-        sudo apt-get update
-        sudo apt-get install -y nfpm
+        # Run the build in the pgrx container
+        docker run --rm \
+          --volume "$(pwd):/pgrx" \
+          --workdir /pgrx \
+          --user $(id -u):$(id -g) \
+          ghcr.io/pmpetit/postgresql_pglinter:pgrx \
+          bash -c "
+            echo 'Building pglinter extension...' &&
+            make deb PGVER=pg${{ inputs.postgresql-version }} PG_MAJOR_VERSION=${{ inputs.postgresql-version }} &&
+            echo 'Package build completed.' &&
+            ls -la target/release/pglinter-pg${{ inputs.postgresql-version }}/ || echo 'No packages found'
+          "
 
-    - name: Build .deb package
-      if: inputs.build-local == 'true'
-      shell: bash
-      run: |
-        make deb PGVER=pg${{ inputs.postgresql-version }} PG_MAJOR_VERSION=${{ inputs.postgresql-version }}
+        # Verify the package was built
+        if [ ! -f target/release/pglinter-pg${{ inputs.postgresql-version }}/postgresql_pglinter_${{ inputs.postgresql-version }}_*.deb ]; then
+          echo "❌ .deb package not found after build"
+          exit 1
+        fi
+
+        echo "✅ .deb package built successfully"
+        ls -la target/release/pglinter-pg${{ inputs.postgresql-version }}/
 
     - name: Prepare build context
       shell: bash
       run: |
         # Generate timestamp for tagging
         echo "TIMESTAMP=$(date +%Y%m%d%H%M%S)" >> $GITHUB_ENV
-        
+
         # Extract version from Cargo.toml
         PGLINTER_VERSION=$(grep '^version *= *' Cargo.toml | sed 's/^version *= *//' | tr -d '"' | tr -d ' ')
         echo "PGLINTER_VERSION=$PGLINTER_VERSION" >> $GITHUB_ENV
-        
+
         # Set image tags
         BASE_TAG="$PGLINTER_VERSION"
         FULL_TAG="$PGLINTER_VERSION-$(date +%Y%m%d%H%M%S)-pg${{ inputs.postgresql-version }}-${{ inputs.distro }}"
-        
+
         echo "BASE_TAG=$BASE_TAG" >> $GITHUB_ENV
         echo "FULL_TAG=$FULL_TAG" >> $GITHUB_ENV
-        
+
         # Determine Dockerfile to use
         if [[ "${{ inputs.build-local }}" == "true" ]]; then
           # For local builds, prepare .deb package
