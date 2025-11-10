@@ -394,7 +394,7 @@ oci_setup:
 	(echo "Creating new buildx instance..." && docker buildx create --name pglinter-oci-builder --use --bootstrap)
 
 # Build OCI extension image for PostgreSQL 18
-oci_build: oci_setup deb
+oci_image: oci_setup deb
 	@echo "Building OCI image: $(OCI_REGISTRY)/$(OCI_IMAGE_NAME):$(OCI_TAG)"
 	@echo "  PostgreSQL Version: $(PG_VERSION_OCI)"
 	@echo "  Extension Version: $(PGLINTER_MINOR_VERSION)"
@@ -520,38 +520,6 @@ oci_info:
 	@echo "  - $(OCI_REGISTRY)/$(OCI_IMAGE_NAME):$(OCI_TAG)"
 	@echo "  - $(OCI_REGISTRY)/$(OCI_IMAGE_NAME):latest"
 	@echo "  - $(OCI_REGISTRY)/$(OCI_IMAGE_NAME):$(OCI_BASE_TAG)"
-
-# Validate required dependencies for OCI builds
-oci_validate:
-	@echo "Validating OCI build dependencies..."
-	@command -v docker >/dev/null 2>&1 || { echo "❌ Docker not found"; exit 1; }
-	@docker buildx version >/dev/null 2>&1 || { echo "❌ Docker buildx not available"; exit 1; }
-	@echo "✅ Docker and buildx are available"
-	@if [ ! -f docker/oci/Dockerfile ]; then \
-		echo "❌ OCI Dockerfile not found at docker/oci/Dockerfile"; \
-		exit 1; \
-	fi
-	@echo "✅ OCI Dockerfile found"
-	@echo "✅ All dependencies validated"
-
-# Help target for OCI commands
-oci_help:
-	@echo "OCI Docker Image Targets (PostgreSQL 18 only):"
-	@echo "  oci_info           - Show OCI image configuration"
-	@echo "  oci_validate       - Validate build dependencies"
-	@echo "  oci_setup          - Set up Docker buildx"
-	@echo "  oci_build          - Build OCI image for PostgreSQL 18"
-	@echo "  oci_build_local    - Build local test image (AMD64 only)"
-	@echo "  oci_push           - Build and push OCI image to GitHub"
-	@echo "  oci_test           - Test local OCI image (basic validation)"
-	@echo "  oci_test_detailed  - Test local OCI image (detailed file inspection)"
-	@echo "  oci_clean          - Clean OCI images"
-	@echo ""
-	@echo "Examples:"
-	@echo "  make oci_build"
-	@echo "  make oci_push OCI_REGISTRY=ghcr.io/yourusername"
-	@echo "  make oci_test"
-	@echo "  make oci_test_detailed"
 
 ##
 ## L I N T

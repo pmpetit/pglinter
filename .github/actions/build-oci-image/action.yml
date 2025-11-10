@@ -8,7 +8,7 @@ inputs:
     default: '18'
 
   distro:
-    description: 'Linux distribution (e.g., bookworm)'
+    description: 'Linux distribution (e.g., bookworm for deb, el9 for rpm)'
     required: true
     default: 'bookworm'
 
@@ -32,11 +32,6 @@ inputs:
     required: false
     default: 'linux/amd64,linux/arm64'
 
-  build-local:
-    description: 'Use local .deb packages instead of downloading from releases'
-    required: false
-    default: 'false'
-
 outputs:
   image-tags:
     description: 'Generated image tags'
@@ -54,37 +49,6 @@ runs:
       with:
         driver-opts: network=host
 
-    - name: Build .deb package using pgrx image
-      if: inputs.build-local == 'true'
-      shell: bash
-      run: |
-        echo "Building .deb package using pgrx image: ghcr.io/pmpetit/postgresql_pglinter:pgrx"
-
-        # Create output directory for packages
-        mkdir -p ./target/release/pglinter-pg${{ inputs.postgresql-version }}/
-
-        # Run the build in the pgrx container
-        docker run --rm \
-          --volume "$(pwd):/pgrx" \
-          --workdir /pgrx \
-          --user $(id -u):$(id -g) \
-          ghcr.io/pmpetit/postgresql_pglinter:pgrx \
-          bash -c "
-            echo 'Building pglinter extension...' &&
-            make deb PGVER=pg${{ inputs.postgresql-version }} PG_MAJOR_VERSION=${{ inputs.postgresql-version }} &&
-            echo 'Package build completed.' &&
-            ls -la target/release/pglinter-pg${{ inputs.postgresql-version }}/ || echo 'No packages found'
-          "
-
-        # Verify the package was built
-        if [ ! -f target/release/pglinter-pg${{ inputs.postgresql-version }}/postgresql_pglinter_${{ inputs.postgresql-version }}_*.deb ]; then
-          echo "❌ .deb package not found after build"
-          exit 1
-        fi
-
-        echo "✅ .deb package built successfully"
-        ls -la target/release/pglinter-pg${{ inputs.postgresql-version }}/
-
     - name: Prepare build context
       shell: bash
       run: |
@@ -95,31 +59,40 @@ runs:
         PGLINTER_VERSION=$(grep '^version *= *' Cargo.toml | sed 's/^version *= *//' | tr -d '"' | tr -d ' ')
         echo "PGLINTER_VERSION=$PGLINTER_VERSION" >> $GITHUB_ENV
 
+        # Determine package type and Dockerfile based on distro
+        case "${{ inputs.distro }}" in
+          bookworm|bullseye|buster|jammy|focal|noble)
+            PKGTYPE="deb"
+            echo "DOCKERFILE=docker/oci/Dockerfile.pg-deb" >> $GITHUB_ENV
+            echo "Using Debian/Ubuntu Dockerfile for .deb packages (distro: ${{ inputs.distro }})"
+            ;;
+          el8|el9|fedora*|centos*|rocky*|alma*)
+            PKGTYPE="rpm"
+            echo "DOCKERFILE=docker/oci/Dockerfile.nodeb" >> $GITHUB_ENV
+            echo "Using RPM-based Dockerfile for .rpm packages (distro: ${{ inputs.distro }})"
+            ;;
+          *)
+            echo "❌ Unsupported distro: ${{ inputs.distro }}"
+            echo "Supported deb distros: bookworm, bullseye, buster, jammy, focal, noble"
+            echo "Supported rpm distros: el8, el9, fedora*, centos*, rocky*, alma*"
+            exit 1
+            ;;
+        esac
+
+        echo "PKGTYPE=$PKGTYPE" >> $GITHUB_ENV
+
         # Set image tags
-        BASE_TAG="$PGLINTER_VERSION"
-        FULL_TAG="$PGLINTER_VERSION-$(date +%Y%m%d%H%M%S)-pg${{ inputs.postgresql-version }}-${{ inputs.distro }}"
+        BASE_TAG="$PGLINTER_VERSION-$PKGTYPE"
+        FULL_TAG="$PGLINTER_VERSION-$(date +%Y%m%d%H%M%S)-pg${{ inputs.postgresql-version }}-${{ inputs.distro }}-$PKGTYPE"
 
         echo "BASE_TAG=$BASE_TAG" >> $GITHUB_ENV
         echo "FULL_TAG=$FULL_TAG" >> $GITHUB_ENV
-
-        # Determine Dockerfile to use
-        if [[ "${{ inputs.build-local }}" == "true" ]]; then
-          # For local builds, prepare .deb package
-          mkdir -p docker/oci/packages
-          cp target/release/pglinter-pg${{ inputs.postgresql-version }}/postgresql_pglinter_${{ inputs.postgresql-version }}_${PGLINTER_VERSION}_amd64.deb docker/oci/packages/pglinter.deb
-          echo "DOCKERFILE=docker/oci/Dockerfile.local" >> $GITHUB_ENV
-          echo "BUILD_CONTEXT=docker/oci" >> $GITHUB_ENV
-        else
-          # For release builds, use GitHub releases
-          echo "DOCKERFILE=docker/oci/Dockerfile" >> $GITHUB_ENV
-          echo "BUILD_CONTEXT=." >> $GITHUB_ENV
-        fi
 
     - name: Build and push OCI image
       id: build
       uses: docker/build-push-action@v5
       with:
-        context: ${{ env.BUILD_CONTEXT }}
+        context: .
         file: ${{ env.DOCKERFILE }}
         platforms: ${{ inputs.platforms }}
         push: ${{ inputs.push }}
@@ -144,9 +117,3 @@ runs:
         echo "  - ${{ inputs.registry }}/${{ inputs.image-name }}:${{ env.FULL_TAG }}"
         echo "  - ${{ inputs.registry }}/${{ inputs.image-name }}:latest"
         echo "  - ${{ inputs.registry }}/${{ inputs.image-name }}:${{ env.BASE_TAG }}"
-
-    - name: Clean up build context
-      if: always() && inputs.build-local == 'true'
-      shell: bash
-      run: |
-        rm -rf docker/oci/packages || true
