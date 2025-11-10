@@ -67,6 +67,36 @@ jobs:
           echo "should_push=$SHOULD_PUSH" >> $GITHUB_OUTPUT
           echo "Will push images: $SHOULD_PUSH"
 
+      - name: Set up Rust toolchain for local build
+        if: github.event_name == 'pull_request' || github.ref == 'refs/heads/feat/build_oci'
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          override: true
+
+      - name: Install pgrx and build dependencies for local build
+        if: github.event_name == 'pull_request' || github.ref == 'refs/heads/feat/build_oci'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y postgresql-server-dev-${{ matrix.postgresql-version }} build-essential
+          cargo install cargo-pgrx --version=0.16.1
+          cargo pgrx init --pg${{ matrix.postgresql-version }} $(which pg_config)
+
+          # Install nfpm for packaging
+          curl -sfL https://install.goreleaser.com/github.com/goreleaser/nfpm.git | sh
+          sudo mv ./bin/nfpm /usr/local/bin/
+
+      - name: Build .deb package for local build
+        if: github.event_name == 'pull_request' || github.ref == 'refs/heads/feat/build_oci'
+        run: |
+          export PGVER=pg${{ matrix.postgresql-version }}
+          make deb
+
+          # Create packages directory and copy the built .deb file
+          mkdir -p packages
+          find ./target -name "*.deb" -exec cp {} packages/pglinter.deb \;
+          ls -la packages/
+
       - name: Build OCI Extension Image (Local Build)
         if: github.event_name == 'pull_request' || github.ref == 'refs/heads/feat/build_oci'
         uses: ./.github/actions/build-oci-image
@@ -83,6 +113,7 @@ jobs:
         uses: ./.github/actions/build-oci-image
         with:
           postgresql-version: ${{ matrix.postgresql-version }}
+          distro: 'bookworm'  # Default to Debian bookworm for releases
           registry: ${{ env.REGISTRY }}/${{ github.repository_owner }}
           image-name: ${{ env.IMAGE_NAME }}
           push: ${{ steps.meta.outputs.should_push }}
@@ -101,6 +132,33 @@ jobs:
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
+
+      - name: Set up Rust toolchain for test
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          override: true
+
+      - name: Install pgrx and build dependencies for test
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y postgresql-server-dev-18 build-essential
+          cargo install cargo-pgrx --version=0.16.1
+          cargo pgrx init --pg18 $(which pg_config)
+
+          # Install nfpm for packaging
+          curl -sfL https://install.goreleaser.com/github.com/goreleaser/nfpm.git | sh
+          sudo mv ./bin/nfpm /usr/local/bin/
+
+      - name: Build .deb package for test
+        run: |
+          export PGVER=pg18
+          make deb
+
+          # Create packages directory and copy the built .deb file
+          mkdir -p packages
+          find ./target -name "*.deb" -exec cp {} packages/pglinter.deb \;
+          ls -la packages/
 
       - name: Build test image locally
         uses: ./.github/actions/build-oci-image
