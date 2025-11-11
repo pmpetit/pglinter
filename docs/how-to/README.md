@@ -52,3 +52,81 @@ SELECT pglinter.check_rule('B002');  -- Redundant indexes
 - **B00**: Base database rules (primary keys, indexes, schemas, etc.)
 - **C00**: Cluster security rules
 - **S00**: Schema rules
+
+## install from oci image
+
+on kubernetes with ImageVolume enabled
+
+```yaml
+apiVersion: postgresql.cnpg.io/v1
+kind: Cluster
+metadata:
+  name: cluster-pglinter
+spec:
+  imageName: ghcr.io/cloudnative-pg/postgresql:18-minimal-trixie
+  instances: 1
+
+  storage:
+    size: 1Gi
+
+  postgresql:
+    extensions:
+    - name: pglinter
+      image:
+        reference: ghcr.io/pmpetit/pglinter:1.0.0-18-trixie
+```
+
+and
+
+```yaml
+apiVersion: postgresql.cnpg.io/v1
+kind: Database
+metadata:
+  name: cluster-pglinter-app
+spec:
+  name: app
+  owner: app
+  cluster:
+    name: cluster-pglinter
+  extensions:
+  - name: pglinter
+```
+
+then
+
+```log
+postgres=# \dx
+                          List of installed extensions
+  Name   | Version | Default version |   Schema   |         Description
+---------+---------+-----------------+------------+------------------------------
+ plpgsql | 1.0     | 1.0             | pg_catalog | PL/pgSQL procedural language
+(1 row)
+
+postgres=# \l
+                                                List of databases
+   Name    |  Owner   | Encoding | Locale Provider | Collate | Ctype | Locale | ICU Rules |   Access privileges
+-----------+----------+----------+-----------------+---------+-------+--------+-----------+-----------------------
+ app       | app      | UTF8     | libc            | C       | C     |        |           |
+ postgres  | postgres | UTF8     | libc            | C       | C     |        |           |
+ template0 | postgres | UTF8     | libc            | C       | C     |        |           | =c/postgres          +
+           |          |          |                 |         |       |        |           | postgres=CTc/postgres
+ template1 | postgres | UTF8     | libc            | C       | C     |        |           | =c/postgres          +
+           |          |          |                 |         |       |        |           | postgres=CTc/postgres
+(4 rows)
+
+postgres=# \c app
+You are now connected to database "app" as user "postgres".
+app=# \dx
+                                           List of installed extensions
+   Name   | Version | Default version |   Schema   |                         Description
+----------+---------+-----------------+------------+--------------------------------------------------------------
+ pglinter | 1.0.0   | 1.0.0           | public     | pglinter: PostgreSQL Database Linting and Analysis Extension
+ plpgsql  | 1.0     | 1.0             | pg_catalog | PL/pgSQL procedural language
+(2 rows)
+
+app=#
+
+```
+
+pglinter extension is installed.
+
