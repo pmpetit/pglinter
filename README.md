@@ -71,30 +71,6 @@ sudo rpm -i postgresql_pglinter_${PGVER}-${PGLINTER}-1.x86_64.rpm
 sudo yum localinstall postgresql_pglinter_${PGVER}-${PGLINTER}-1.x86_64.rpm
 ```
 
-#### 💻 Usage
-
-After installation, enable the extension in your PostgreSQL database:
-
-```sql
--- Connect to your database
-\c your_database
-
--- Create the extension
-CREATE EXTENSION pglinter;
-
--- Run a comprehensive check (all enabled rules)
-SELECT pglinter.check();
-
--- Check a specific rule
-SELECT pglinter.check_rule('B001');
-
--- Generate SARIF reports to file
-SELECT pglinter.check('/path/to/results.sarif');
-SELECT pglinter.check_rule('B001', '/path/to/b001_results.sarif');
-```
-
-For complete documentation, visit: https://github.com/pmpetit/pglinter/blob/main/docs/functions/README.md
-
 ### Build and Install
 
 ```bash
