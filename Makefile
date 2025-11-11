@@ -414,8 +414,6 @@ oci_image: oci_setup deb
 		--build-arg PGLINTER_VERSION=$(PGLINTER_MINOR_VERSION) \
 		--build-arg EXT_VERSION=$(PGLINTER_MINOR_VERSION) \
 		--tag $(OCI_REGISTRY)/$(OCI_IMAGE_NAME):$(OCI_TAG) \
-		--tag $(OCI_REGISTRY)/$(OCI_IMAGE_NAME):latest \
-		--tag $(OCI_REGISTRY)/$(OCI_IMAGE_NAME):$(OCI_BASE_TAG) \
 		--file docker/oci/Dockerfile.pg-deb \
 		--load \
 		.
@@ -443,8 +441,6 @@ oci_image_amd64: oci_setup deb
 		--build-arg PGLINTER_VERSION=$(PGLINTER_MINOR_VERSION) \
 		--build-arg EXT_VERSION=$(PGLINTER_MINOR_VERSION) \
 		--tag $(OCI_REGISTRY)/$(OCI_IMAGE_NAME):$(OCI_TAG) \
-		--tag $(OCI_REGISTRY)/$(OCI_IMAGE_NAME):latest \
-		--tag $(OCI_REGISTRY)/$(OCI_IMAGE_NAME):$(OCI_BASE_TAG) \
 		--file docker/oci/Dockerfile.pg-deb \
 		--load \
 		.
@@ -454,12 +450,8 @@ oci_image_amd64: oci_setup deb
 oci_push_amd64: oci_image_amd64
 	@echo "Pushing OCI images to registry..."
 	docker push $(OCI_REGISTRY)/$(OCI_IMAGE_NAME):$(OCI_TAG)
-	docker push $(OCI_REGISTRY)/$(OCI_IMAGE_NAME):latest
-	docker push $(OCI_REGISTRY)/$(OCI_IMAGE_NAME):$(OCI_BASE_TAG)
 	@echo "✅ OCI images pushed successfully"
 	@echo "  Main tag: $(OCI_REGISTRY)/$(OCI_IMAGE_NAME):$(OCI_TAG)"
-	@echo "  Latest tag: $(OCI_REGISTRY)/$(OCI_IMAGE_NAME):latest"
-	@echo "  Version tag: $(OCI_REGISTRY)/$(OCI_IMAGE_NAME):$(OCI_BASE_TAG)"
 
 # Build OCI image for local testing (AMD64 only)
 oci_build_local: oci_setup

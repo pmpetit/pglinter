@@ -3,7 +3,7 @@
 # https://cloudnative-pg.io/documentation/preview/imagevolume_extensions/#image-specifications
 
 ARG PG_VERSION=18
-ARG DISTRO=trixie
+ARG DISTRO
 ARG PGLINTER_VERSION=1.0.0
 ARG EXT_VERSION
 

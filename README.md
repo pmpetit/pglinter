@@ -107,7 +107,6 @@ kind: Cluster
 metadata:
   name: cluster-pglinter
 spec:
-  imageName: ghcr.io/cloudnative-pg/postgresql:18-minimal-trixie
   instances: 1
 
   storage:
@@ -115,12 +114,44 @@ spec:
 
   postgresql:
     extensions:
-    - name: pglinter
-      image:
-        reference: ghcr.io/pmpetit/pglinter:1.0.0-18-trixie
+      - name: pglinter
+        image:
+          reference: ghcr.io/pmpetit/pglinter:1.0.0-18-bookworm
+
 ```
 
-and
+#### Enable Extension in Database
+
+```yaml
+apiVersion: postgresql.cnpg.io/v1
+kind: Database
+metadata:
+  name: cluster-pglinter-app
+spec:
+  name: app
+  owner: app
+  cluster:
+    name: postgres-with-pglinter
+  extensions:
+  - name: pglinter
+```
+
+After the cluster is running, connect and enable the extension:
+
+```sql
+-- Connect to your database
+\c app
+
+-- Create the extension
+CREATE EXTENSION pglinter;
+
+-- Verify installation
+SELECT pglinter.check();
+```
+
+#### Declarative Extension Management
+
+You can also use CloudNative-PG's declarative database management:
 
 ```yaml
 apiVersion: postgresql.cnpg.io/v1
