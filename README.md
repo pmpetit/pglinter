@@ -131,7 +131,7 @@ spec:
   name: app
   owner: app
   cluster:
-    name: postgres-with-pglinter
+    name: cluster-pglinter
   extensions:
   - name: pglinter
 ```
