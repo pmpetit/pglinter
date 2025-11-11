@@ -93,9 +93,13 @@ sudo PGVER=pg16 make install
 psql -d your_database -c "CREATE EXTENSION pglinter;"
 ```
 
-### install from oci image
+### kubernetes : install from oci image
 
-on kubernetes with ImageVolume enabled
+on kubernetes, prerequisite are
+
+- pg18
+- k8s >= 1.33
+- K8s feature ImageVolume enable
 
 ```yaml
 apiVersion: postgresql.cnpg.io/v1
@@ -169,7 +173,6 @@ app=#
 ```
 
 pglinter extension is installed.
-
 
 ## Usage
 
