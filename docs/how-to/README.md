@@ -53,9 +53,36 @@ SELECT pglinter.check_rule('B002');  -- Redundant indexes
 - **C00**: Cluster security rules
 - **S00**: Schema rules
 
-## install from oci image
+## kubernetes install from oci image
 
-on kubernetes with ImageVolume enabled
+### example with kind
+
+from this kind-with-imagevolume.yaml
+
+```yaml
+kind: Cluster
+apiVersion: kind.x-k8s.io/v1alpha4
+name: imagevolume-cluster
+# -----------------------------------------------
+# 1. Enable the Feature Gate cluster-wide
+# -----------------------------------------------
+featureGates:
+  ImageVolume: true
+# -----------------------------------------------
+```
+
+```bash
+kind create cluster --config kind-with-imagevolume.yaml
+```
+
+### install pcn
+
+```bash
+kubectl apply --server-side -f \
+  https://raw.githubusercontent.com/cloudnative-pg/cloudnative-pg/main/releases/cnpg-1.28.0-rc1.yam
+```
+
+### create cluster
 
 ```yaml
 apiVersion: postgresql.cnpg.io/v1
@@ -76,7 +103,7 @@ spec:
         reference: ghcr.io/pmpetit/pglinter:1.0.0-18-trixie
 ```
 
-and
+and its database
 
 ```yaml
 apiVersion: postgresql.cnpg.io/v1
@@ -129,4 +156,3 @@ app=#
 ```
 
 pglinter extension is installed.
-
