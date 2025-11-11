@@ -381,10 +381,9 @@ pgrx_clean:
 OCI_REGISTRY?=ghcr.io/pmpetit
 OCI_IMAGE_NAME?=pglinter
 OCI_BASE_TAG?=$(PGLINTER_MINOR_VERSION)
-DISTRO?=bookworm
-TIMESTAMP?=$(shell date +%Y%m%d%H%M%S)
+DISTRO?=trixie
 PG_VERSION_OCI?=18
-OCI_TAG?=$(OCI_BASE_TAG)-$(TIMESTAMP)-pg$(PG_VERSION_OCI)-$(DISTRO)
+OCI_TAG?=$(OCI_BASE_TAG)-$(PG_VERSION_OCI)-$(DISTRO)
 
 # Ensure buildx is available for OCI builds
 oci_setup:
@@ -394,12 +393,11 @@ oci_setup:
 	(echo "Creating new buildx instance..." && docker buildx create --name pglinter-oci-builder --use --bootstrap)
 
 # Build OCI extension image for PostgreSQL 18
-oci_build: oci_setup deb
+oci_image: oci_setup deb
 	@echo "Building OCI image: $(OCI_REGISTRY)/$(OCI_IMAGE_NAME):$(OCI_TAG)"
 	@echo "  PostgreSQL Version: $(PG_VERSION_OCI)"
 	@echo "  Extension Version: $(PGLINTER_MINOR_VERSION)"
 	@echo "  Distro: $(DISTRO)"
-	@echo "  Timestamp: $(TIMESTAMP)"
 	@echo "Checking if .deb package exists locally..."
 	@if [ -f $(TARGET_DIR)/*.deb ]; then \
 		echo "✅ Local .deb package found, will use for build"; \
@@ -414,26 +412,46 @@ oci_build: oci_setup deb
 		--build-arg PG_VERSION=$(PG_VERSION_OCI) \
 		--build-arg DISTRO=$(DISTRO) \
 		--build-arg PGLINTER_VERSION=$(PGLINTER_MINOR_VERSION) \
-		--build-arg TIMESTAMP=$(TIMESTAMP) \
 		--build-arg EXT_VERSION=$(PGLINTER_MINOR_VERSION) \
 		--tag $(OCI_REGISTRY)/$(OCI_IMAGE_NAME):$(OCI_TAG) \
-		--tag $(OCI_REGISTRY)/$(OCI_IMAGE_NAME):latest \
-		--tag $(OCI_REGISTRY)/$(OCI_IMAGE_NAME):$(OCI_BASE_TAG) \
-		--file docker/oci/Dockerfile \
+		--file docker/oci/Dockerfile.pg-deb \
 		--load \
 		.
 	@echo "✅ OCI image built successfully"
 
+# Build OCI extension image for AMD64 platform only (can be loaded locally)
+oci_image_amd64: oci_setup deb
+	@echo "Building OCI image for AMD64 only: $(OCI_REGISTRY)/$(OCI_IMAGE_NAME):$(OCI_TAG)"
+	@echo "  PostgreSQL Version: $(PG_VERSION_OCI)"
+	@echo "  Extension Version: $(PGLINTER_MINOR_VERSION)"
+	@echo "  Distro: $(DISTRO)"
+	@echo "Checking if .deb package exists locally..."
+	@if [ -f $(TARGET_DIR)/*.deb ]; then \
+		echo "✅ Local .deb package found, will use for build"; \
+		DEB_PATH=$$(find $(TARGET_DIR) -name "*.deb" | head -1); \
+		echo "Using package: $$DEB_PATH"; \
+	else \
+		echo "❌ No local .deb package found in $(TARGET_DIR)"; \
+		echo "Will attempt to download from GitHub releases"; \
+	fi
+	docker buildx build \
+		--platform linux/amd64 \
+		--build-arg PG_VERSION=$(PG_VERSION_OCI) \
+		--build-arg DISTRO=$(DISTRO) \
+		--build-arg PGLINTER_VERSION=$(PGLINTER_MINOR_VERSION) \
+		--build-arg EXT_VERSION=$(PGLINTER_MINOR_VERSION) \
+		--tag $(OCI_REGISTRY)/$(OCI_IMAGE_NAME):$(OCI_TAG) \
+		--file docker/oci/Dockerfile.pg-deb \
+		--load \
+		.
+	@echo "✅ OCI image built successfully for AMD64"
+
 # Build and push OCI extension image to GitHub Container Registry
-oci_push: oci_build
+oci_push_amd64: oci_image_amd64
 	@echo "Pushing OCI images to registry..."
 	docker push $(OCI_REGISTRY)/$(OCI_IMAGE_NAME):$(OCI_TAG)
-	docker push $(OCI_REGISTRY)/$(OCI_IMAGE_NAME):latest
-	docker push $(OCI_REGISTRY)/$(OCI_IMAGE_NAME):$(OCI_BASE_TAG)
 	@echo "✅ OCI images pushed successfully"
 	@echo "  Main tag: $(OCI_REGISTRY)/$(OCI_IMAGE_NAME):$(OCI_TAG)"
-	@echo "  Latest tag: $(OCI_REGISTRY)/$(OCI_IMAGE_NAME):latest"
-	@echo "  Version tag: $(OCI_REGISTRY)/$(OCI_IMAGE_NAME):$(OCI_BASE_TAG)"
 
 # Build OCI image for local testing (AMD64 only)
 oci_build_local: oci_setup
@@ -452,7 +470,6 @@ oci_build_local: oci_setup
 		--build-arg PG_VERSION=$(PG_VERSION_OCI) \
 		--build-arg DISTRO=$(DISTRO) \
 		--build-arg PGLINTER_VERSION=$(PGLINTER_MINOR_VERSION) \
-		--build-arg TIMESTAMP=$(TIMESTAMP) \
 		--build-arg EXT_VERSION=$(PGLINTER_MINOR_VERSION) \
 		--tag $(OCI_REGISTRY)/$(OCI_IMAGE_NAME):local \
 		--file Dockerfile.local \
@@ -497,61 +514,6 @@ oci_test_detailed: oci_build_local
 	fi
 	@echo "✅ Detailed OCI image test completed"
 
-# Clean OCI images
-oci_clean:
-	@echo "Cleaning OCI images..."
-	@docker images --format "table {{.Repository}}:{{.Tag}}" | \
-		grep "$(OCI_REGISTRY)/$(OCI_IMAGE_NAME)" | \
-		xargs -r docker rmi 2>/dev/null || true
-	@echo "✅ OCI images cleaned"
-
-# Show OCI image information
-oci_info:
-	@echo "OCI Image Configuration (PostgreSQL 18 only):"
-	@echo "  Registry: $(OCI_REGISTRY)"
-	@echo "  Image Name: $(OCI_IMAGE_NAME)"
-	@echo "  Extension Version: $(PGLINTER_MINOR_VERSION)"
-	@echo "  PostgreSQL Version: $(PG_VERSION_OCI)"
-	@echo "  Distro: $(DISTRO)"
-	@echo "  Timestamp: $(TIMESTAMP)"
-	@echo "  Full Tag: $(OCI_TAG)"
-	@echo ""
-	@echo "Tags that will be created:"
-	@echo "  - $(OCI_REGISTRY)/$(OCI_IMAGE_NAME):$(OCI_TAG)"
-	@echo "  - $(OCI_REGISTRY)/$(OCI_IMAGE_NAME):latest"
-	@echo "  - $(OCI_REGISTRY)/$(OCI_IMAGE_NAME):$(OCI_BASE_TAG)"
-
-# Validate required dependencies for OCI builds
-oci_validate:
-	@echo "Validating OCI build dependencies..."
-	@command -v docker >/dev/null 2>&1 || { echo "❌ Docker not found"; exit 1; }
-	@docker buildx version >/dev/null 2>&1 || { echo "❌ Docker buildx not available"; exit 1; }
-	@echo "✅ Docker and buildx are available"
-	@if [ ! -f docker/oci/Dockerfile ]; then \
-		echo "❌ OCI Dockerfile not found at docker/oci/Dockerfile"; \
-		exit 1; \
-	fi
-	@echo "✅ OCI Dockerfile found"
-	@echo "✅ All dependencies validated"
-
-# Help target for OCI commands
-oci_help:
-	@echo "OCI Docker Image Targets (PostgreSQL 18 only):"
-	@echo "  oci_info           - Show OCI image configuration"
-	@echo "  oci_validate       - Validate build dependencies"
-	@echo "  oci_setup          - Set up Docker buildx"
-	@echo "  oci_build          - Build OCI image for PostgreSQL 18"
-	@echo "  oci_build_local    - Build local test image (AMD64 only)"
-	@echo "  oci_push           - Build and push OCI image to GitHub"
-	@echo "  oci_test           - Test local OCI image (basic validation)"
-	@echo "  oci_test_detailed  - Test local OCI image (detailed file inspection)"
-	@echo "  oci_clean          - Clean OCI images"
-	@echo ""
-	@echo "Examples:"
-	@echo "  make oci_build"
-	@echo "  make oci_push OCI_REGISTRY=ghcr.io/yourusername"
-	@echo "  make oci_test"
-	@echo "  make oci_test_detailed"
 
 ##
 ## L I N T
