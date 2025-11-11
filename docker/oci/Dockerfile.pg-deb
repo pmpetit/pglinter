@@ -3,9 +3,8 @@
 # https://cloudnative-pg.io/documentation/preview/imagevolume_extensions/#image-specifications
 
 ARG PG_VERSION=18
-ARG DISTRO=bookworm
+ARG DISTRO=trixie
 ARG PGLINTER_VERSION=1.0.0
-ARG TIMESTAMP
 ARG EXT_VERSION
 
 # Build stage - extract extension files from .deb package
@@ -14,7 +13,6 @@ FROM ghcr.io/cloudnative-pg/postgresql:${PG_VERSION}-minimal-${DISTRO} AS builde
 ARG PG_VERSION
 ARG DISTRO
 ARG PGLINTER_VERSION
-ARG TIMESTAMP
 ARG EXT_VERSION
 
 USER 0
@@ -55,7 +53,6 @@ FROM scratch
 ARG PG_VERSION
 ARG DISTRO
 ARG PGLINTER_VERSION
-ARG TIMESTAMP
 ARG EXT_VERSION
 
 # CloudNative-PG compatible labels
@@ -69,10 +66,9 @@ LABEL org.opencontainers.image.documentation="https://github.com/pmpetit/pglinte
 # Extension metadata labels
 LABEL extension.name="pglinter"
 LABEL extension.version="${EXT_VERSION:-${PGLINTER_VERSION}}"
-LABEL extension.timestamp="${TIMESTAMP}"
 LABEL extension.pg_version="${PG_VERSION}"
 LABEL extension.distro="${DISTRO}"
-LABEL extension.tag="pglinter:${EXT_VERSION:-${PGLINTER_VERSION}}-${TIMESTAMP}-${PG_VERSION}-${DISTRO}"
+LABEL extension.tag="pglinter:${EXT_VERSION:-${PGLINTER_VERSION}}-${PG_VERSION}-${DISTRO}"
 
 # CloudNative-PG Image Specifications compliance:
 # - /lib/ contains shared libraries (.so files)
