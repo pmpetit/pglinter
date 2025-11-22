@@ -138,7 +138,7 @@ jobs:
           sudo apt-get update
           # sudo apt-get install -y postgresql-server-dev-all build-essential
           cargo install cargo-pgrx --version=0.16.1
-          cargo pgrx init --pg18 $(which pg_config)
+          cargo pgrx init --pg18 download
 
           # Install nfpm for packaging
           curl -sfL https://install.goreleaser.com/github.com/goreleaser/nfpm.git | sh
