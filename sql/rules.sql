@@ -10,7 +10,6 @@
 --   B-series: Base Database Rules (tables, indexes, primary keys, etc.)
 --   C-series: Cluster Rules (configuration, security, performance)
 --   S-series: Schema Rules (permissions, ownership, security)
---   T-series: Table Rules (specific table-level analysis)
 --
 -- Each rule includes:
 --   - Rule code (e.g., B001, T003)
