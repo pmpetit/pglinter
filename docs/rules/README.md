@@ -428,6 +428,41 @@ ALTER TABLE schema_name.table1 OWNER TO schema_owner_role;
 ALTER TABLE schema_name.table2 OWNER TO schema_owner_role;
 ```
 
+### B012: Composite Primary Key
+
+**Rule Code**: B012
+**Name**: CompositePrimaryKeyTooManyColumns
+**Severity**: Warning at 1%, Error at 80%
+**Scope**: BASE
+
+**Description** Detect tables with composite primary keys involving more than 4 columns. This rule checks for tables with composite primary keys involving more than 4 columns. Having such a composite key is considered problematic.
+
+**Message Template** `{0} table(s) have composite primary keys with more than 4 columns. Object list:\n{4}`
+
+**Why This Matters**:
+
+- Performance: Index lookups and maintenance become less efficient as the number of key columns increases.
+- Referential Integrity: When a composite primary key is referenced as a foreign key in another table, the foreign key must include all the columns from the composite primary key. A very large foreign key makes the child table significantly wider, slowing down joins and increasing storage.
+
+**How to Fix**:
+
+- Consider redesigning the table to avoid composite primary keys with more than 4 columns.
+- Surrogate Key: Introducing a single, simple, auto-incrementing integer (or GUID/UUID) column as the primary key, and defining the large combination of columns as a unique constraint instead to enforce uniqueness.
+
+**SQL Example:**
+
+```sql
+SELECT table_schema || '.' || table_name AS table_fullname
+FROM information_schema.table_constraints tc
+JOIN information_schema.key_column_usage kcu
+  ON tc.constraint_name = kcu.constraint_name
+ AND tc.table_schema = kcu.table_schema
+ AND tc.table_name = kcu.table_name
+WHERE tc.constraint_type = 'PRIMARY KEY'
+GROUP BY table_schema, table_name, tc.constraint_name
+HAVING COUNT(kcu.column_name) > 4;
+```
+
 ---
 
 ## Schema Rules (S-series)

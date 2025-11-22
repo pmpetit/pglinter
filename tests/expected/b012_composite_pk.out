@@ -1,0 +1,2 @@
+B012 warning: 1 table(s) have composite primary keys with more than 4 columns. Object list:
+test_composite_pk

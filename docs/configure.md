@@ -31,10 +31,6 @@ SELECT pglinter.disable_rule('B004');
 
 ```
 
-### Rules Categories
-
-You can manage rules by category:
-
 ```sql
 -- Disable all base rules
 SELECT pglinter.disable_rule(rule_code)

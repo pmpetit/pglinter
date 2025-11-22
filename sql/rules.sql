@@ -138,6 +138,15 @@ INSERT INTO pglinter.rules (
     ARRAY['change table owners to the same functional role']
 ),
 (
+    'CompositePrimaryKeyTooManyColumns', 'B012', 1, 80, 'BASE',
+    'Detect tables with composite primary keys involving more than 4 columns',
+    '{0} table(s) have composite primary keys with more than 4 columns. Object list:\n{4}',
+    ARRAY[
+      'Consider redesigning the table to avoid composite primary keys with more than 4 columns',
+      'Use surrogate keys (e.g., serial, UUID) instead of composite primary keys, and establish unique constraints on necessary column combinations, to enforce uniqueness.'
+    ]
+),
+(
     'SchemaWithDefaultRoleNotGranted', 'S001', 1, 1, 'SCHEMA',
     'The schema has no default role. Means that futur table will not be granted through a role. So you will have to re-execute grants on it.',
     'No default role grantee on schema {0}.{1}. It means that each time a table is created, you must grant it to roles. Object list:\n{4}',
@@ -1220,7 +1229,6 @@ ORDER BY
 $$
 WHERE code = 'B010';
 
-
 -- =============================================================================
 -- B011 - Several tables in schema have different owners
 -- =============================================================================
@@ -1285,6 +1293,61 @@ ORDER BY
 $$
 WHERE code = 'B011';
 
+-- =============================================================================
+-- B012 - Composite primary keys with more than 4 columns
+-- =============================================================================
+
+UPDATE pglinter.rules
+SET
+    q1 = $$
+SELECT COUNT(*)::BIGINT AS total_composite_pk_tables
+FROM (
+    SELECT tc.table_schema, tc.table_name, COUNT(kcu.column_name) AS pk_col_count
+    FROM information_schema.table_constraints tc
+    JOIN information_schema.key_column_usage kcu
+      ON tc.constraint_name = kcu.constraint_name
+     AND tc.table_schema = kcu.table_schema
+     AND tc.table_name = kcu.table_name
+    WHERE tc.constraint_type = 'PRIMARY KEY'
+      AND tc.table_schema NOT IN ('pg_toast', 'pg_catalog', 'information_schema', 'pglinter', '_timescaledb', 'timescaledb')
+    GROUP BY tc.table_schema, tc.table_name, tc.constraint_name
+) sub
+$$,
+    q2 = $$
+SELECT COUNT(*)::BIGINT AS total_composite_pk_tables
+FROM (
+    SELECT tc.table_schema, tc.table_name, COUNT(kcu.column_name) AS pk_col_count
+    FROM information_schema.table_constraints tc
+    JOIN information_schema.key_column_usage kcu
+      ON tc.constraint_name = kcu.constraint_name
+     AND tc.table_schema = kcu.table_schema
+     AND tc.table_name = kcu.table_name
+    WHERE tc.constraint_type = 'PRIMARY KEY'
+      AND tc.table_schema NOT IN ('pg_toast', 'pg_catalog', 'information_schema', 'pglinter', '_timescaledb', 'timescaledb')
+    GROUP BY tc.table_schema, tc.table_name, tc.constraint_name
+    HAVING COUNT(kcu.column_name) > 4
+) sub
+$$,
+    q3 = $$
+SELECT
+    sub.table_schema || '.' || sub.table_name ||'('||string_agg(sub.column_name, ', ')||')' AS pk_columns
+FROM (
+    SELECT
+        tc.table_schema,
+        tc.table_name,
+        kcu.column_name
+    FROM information_schema.table_constraints tc
+    JOIN information_schema.key_column_usage kcu
+      ON tc.constraint_name = kcu.constraint_name
+     AND tc.table_schema = kcu.table_schema
+     AND tc.table_name = kcu.table_name
+    WHERE tc.constraint_type = 'PRIMARY KEY'
+      AND tc.table_schema NOT IN ('pg_toast', 'pg_catalog', 'information_schema', 'pglinter', '_timescaledb', 'timescaledb')
+) sub
+GROUP BY sub.table_schema, sub.table_name
+HAVING COUNT(sub.column_name) > 4
+$$
+WHERE code = 'B012';
 
 -- =============================================================================
 -- S001 - Schema Permission Analysis
