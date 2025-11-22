@@ -3,6 +3,12 @@ name: Build and Test OCI Images for pg18
 
 on:
   workflow_dispatch:
+    inputs:
+      pgversions:
+        description: 'PostgreSQL versions to build (comma-separated: pg13,pg14,pg15,pg16,pg17,pg18)'
+        required: false
+        default: 'pg18'
+        type: string
 jobs:
   setup-matrix:
     runs-on: ubuntu-latest
@@ -17,6 +23,7 @@ jobs:
       - name: Generate matrix
         id: matrix
         run: |
+          echo input_pgversions="${{ inputs.pgversions }}"
           if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
             PGVERSIONS="${{ inputs.pgversions }}"
             echo "Using workflow_dispatch pgversions: $PGVERSIONS"
