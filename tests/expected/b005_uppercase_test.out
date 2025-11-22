@@ -78,10 +78,10 @@ SELECT 'Testing B005 rule - Comprehensive uppercase object detection...' AS test
 
 -- First, disable all rules to isolate B005 testing
 SELECT pglinter.disable_all_rules() AS all_rules_disabled;
-NOTICE:  🔴 Disabled 19 rule(s)
+NOTICE:  🔴 Disabled 20 rule(s)
  all_rules_disabled 
 --------------------
-                 19
+                 20
 (1 row)
 
 -- Enable only B005 for focused testing

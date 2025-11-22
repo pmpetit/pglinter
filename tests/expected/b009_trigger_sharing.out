@@ -196,10 +196,10 @@ SELECT 'Testing B009 in isolation...' AS test_step;
 (1 row)
 
 SELECT pglinter.disable_all_rules() AS all_disabled;
-NOTICE:  🔴 Disabled 19 rule(s)
+NOTICE:  🔴 Disabled 20 rule(s)
  all_disabled 
 --------------
-           19
+           20
 (1 row)
 
 SELECT pglinter.enable_rule('B009') AS B009_only_enabled;

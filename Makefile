@@ -59,6 +59,7 @@ REGRESS_TESTS+= b008_fk_type_mismatch
 REGRESS_TESTS+= b009_trigger_sharing
 REGRESS_TESTS+= b010_reserved_keywords
 REGRESS_TESTS+= b011_several_table_owner_in_schema
+REGRESS_TESTS+= b012_composite_pk
 REGRESS_TESTS+= s001_schema_with_default_role_not_granted
 REGRESS_TESTS+= s002_schema_prefixed_or_suffixed_with_envt
 REGRESS_TESTS+= s003_unsecured_public_schema
