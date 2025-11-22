@@ -10,13 +10,6 @@ on:
       - '*.md'
       - 'README.md'
       - 'mkdocs.yml'
-  workflow_dispatch:
-    # inputs:
-    #   pgver:
-    #     description: 'PostgreSQL version with pg prefix (e.g., pg13, pg16)'
-    #     required: true
-    #     default: 'pg13'
-    #     type: string
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
