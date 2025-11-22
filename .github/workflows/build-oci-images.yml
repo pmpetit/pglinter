@@ -136,7 +136,7 @@ jobs:
       - name: Install pgrx and build dependencies for test
         run: |
           sudo apt-get update
-          sudo apt-get install -y postgresql-server-dev-all build-essential
+          sudo apt-get install -y postgresql-common=257build1.1 postgresql-server-dev-all build-essential
           cargo install cargo-pgrx --version=0.16.1
           cargo pgrx init --pg18 $(which pg_config)
 
