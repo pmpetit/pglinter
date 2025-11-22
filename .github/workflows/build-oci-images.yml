@@ -7,9 +7,6 @@ on:
       - 'feat/build_oci'
     tags:
       - 'v*'
-  pull_request:
-    branches:
-      - main
   workflow_dispatch:
     inputs:
       postgresql_versions:
