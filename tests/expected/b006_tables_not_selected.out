@@ -157,17 +157,17 @@ SELECT pglinter.is_rule_enabled('b006') AS b006_status;
  f
 (1 row)
 
-SELECT pglinter.check();
+SELECT pglinter.perform_base_check();
 NOTICE:  ✅ No issues found - database schema looks good!
- check 
--------
+ perform_base_check 
+--------------------
  t
 (1 row)
 
 -- Test with file output
-SELECT pglinter.check('/tmp/pglinter_b006_results.sarif');
- check 
--------
+SELECT pglinter.perform_base_check('/tmp/pglinter_b006_results.sarif');
+ perform_base_check 
+--------------------
  t
 (1 row)
 
@@ -466,10 +466,10 @@ SELECT 'Running base check to detect b006 violations (tables never selected)...'
  Running base check to detect b006 violations (tables never selected)...
 (1 row)
 
-SELECT pglinter.check();
+SELECT pglinter.perform_base_check();
 NOTICE:  ✅ No issues found - database schema looks good!
- check 
--------
+ perform_base_check 
+--------------------
  t
 (1 row)
 

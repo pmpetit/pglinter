@@ -1,2 +1,44 @@
-B012 warning: 1 table(s) have composite primary keys with more than 4 columns. Object list:
-test_composite_pk
+-- Test for B012: Composite primary keys with more than 4 columns
+CREATE EXTENSION IF NOT EXISTS pglinter;
+-- First, disable all rules to isolate B001 testing
+SELECT pglinter.disable_all_rules() AS all_rules_disabled;
+NOTICE:  🔴 Disabled 20 rule(s)
+ all_rules_disabled 
+--------------------
+                 20
+(1 row)
+
+-- Enable only B012 for focused testing
+SELECT pglinter.enable_rule('B012') AS b012_enabled;
+NOTICE:  ✅ Rule B012 has been enabled
+ b012_enabled 
+--------------
+ t
+(1 row)
+
+CREATE TABLE test_composite_pk (
+    a INT,
+    b INT,
+    c INT,
+    d INT,
+    e INT,
+    f INT,
+    PRIMARY KEY (a, b, c, d, e, f)
+);
+-- Run pglinter check
+SELECT pglinter.check();
+NOTICE:  🔍 pglinter found 1 issue(s):
+NOTICE:  ==================================================
+NOTICE:  ❌ [B012] ERROR: 1 table(s) have composite primary keys with more than 4 columns. Object list:
+public.test_composite_pk(a, b, c, d, e, f)
+
+NOTICE:  ==================================================
+NOTICE:  📊 Summary: 1 error(s), 0 warning(s), 0 info
+NOTICE:  🔴 Critical issues found - please review and fix errors
+ check 
+-------
+ t
+(1 row)
+
+DROP TABLE test_composite_pk CASCADE;
+DROP EXTENSION pglinter CASCADE;
