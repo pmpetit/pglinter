@@ -28,7 +28,7 @@ SELECT pglinter.enable_rule('B001');
 
 -- Disable multiple rules
 SELECT pglinter.disable_rule('B004');
-SELECT pglinter.disable_rule('T007');
+
 ```
 
 ### Rules Categories
@@ -41,10 +41,7 @@ SELECT pglinter.disable_rule(rule_code)
 FROM pglinter.show_rules()
 WHERE rule_code LIKE 'B%';
 
--- Enable only base/database rules (including table checks)
-SELECT pglinter.enable_rule(rule_code)
-FROM pglinter.show_rules()
-WHERE rule_code LIKE 'B%';
+
 ```
 
 ### Export/Import Rules
