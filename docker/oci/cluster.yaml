@@ -1,0 +1,17 @@
+
+apiVersion: postgresql.cnpg.io/v1
+kind: Cluster
+metadata:
+  name: cluster-pglinter
+spec:
+  imageName: ghcr.io/cloudnative-pg/postgresql:18-minimal-trixie
+  instances: 1
+
+  storage:
+    size: 1Gi
+
+  postgresql:
+    extensions:
+    - name: pglinter
+      image:
+        reference: pglinter:local
