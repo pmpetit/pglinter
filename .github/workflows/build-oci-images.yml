@@ -48,7 +48,7 @@ jobs:
 
           echo "matrix_include=$MATRIX_JSON" >> $GITHUB_OUTPUT
 
-  oci_image:
+  oci-image-build:
     needs: setup-matrix
     strategy:
       matrix:
@@ -59,7 +59,7 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-      - name: create package
+      - name: build oci image
         uses: ./.github/actions/build-oci-make
         with:
           pgver: ${{ matrix.pgver }}
@@ -67,10 +67,10 @@ jobs:
           distro: ${{ matrix.distro }}
           ocipgversion: ${{ matrix.pgver }}
 
-  test-package:
+  oci-image-test:
     needs:
       - setup-matrix
-      - oci_image
+      - oci-image-build
     strategy:
       matrix:
         include: ${{ fromJSON(needs.setup-matrix.outputs.matrix_include) }}
