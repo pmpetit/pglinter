@@ -1,3 +1,4 @@
+
 ##
 ## pglinter Makefile
 ##
@@ -463,42 +464,54 @@ oci_build_local: oci_setup
 	@rm -rf docker/oci/packages
 	@echo "✅ Local OCI image built: $(OCI_REGISTRY)/$(OCI_IMAGE_NAME):local"
 
-# Test the OCI image locally
-oci_test: oci_build_local
-	@echo "Testing OCI image locally..."
-	@echo "Verifying image was built successfully..."
-	docker image inspect $(OCI_REGISTRY)/$(OCI_IMAGE_NAME):local --format '{{.Size}}' | \
-		awk '{if($$1 > 0) print "✅ Image size: " $$1 " bytes"; else print "❌ Image appears empty"}'
-	@echo "Checking image labels..."
-	docker image inspect $(OCI_REGISTRY)/$(OCI_IMAGE_NAME):local --format '{{range $$k, $$v := .Config.Labels}}{{$$k}}: {{$$v}}{{"\n"}}{{end}}' | \
-		grep -E "(extension\.|org\.opencontainers\.image\.)" || echo "❌ Missing expected labels"
-	@echo "Extracting and examining image contents..."
-	@mkdir -p /tmp/pglinter-test
-	@if docker save $(OCI_REGISTRY)/$(OCI_IMAGE_NAME):local -o /tmp/pglinter-test/image.tar 2>/dev/null; then \
-		cd /tmp/pglinter-test && tar -tf image.tar | head -10 && \
-		echo "✅ Image successfully saved and contains layers"; \
-	else \
-		echo "❌ Failed to save image"; \
-	fi
-	@rm -rf /tmp/pglinter-test
-	@echo "✅ OCI image validation completed"
+oci_test:
+	@echo "Testing OCI image in kind Kubernetes cluster..."
+	kind create cluster --name pglinter-test --config docker/oci/kind.yaml
+	docker tag $(OCI_REGISTRY)/$(OCI_IMAGE_NAME):$(OCI_TAG)-amd64 pglinter:local
+	kind load docker-image pglinter:local --name pglinter-test
+	kubectl apply --server-side -f https://raw.githubusercontent.com/cloudnative-pg/cloudnative-pg/release-1.27/releases/cnpg-1.27.1.yaml
+	# Wait for CloudNativePG operator pod to be ready
+	echo "Waiting for CloudNativePG operator pod to be ready..."
+	for i in $$(seq 1 120); do \
+		webhook_ip=$$(kubectl get svc -n cnpg-system cnpg-webhook-service -o jsonpath='{.spec.clusterIP}'); \
+		if [ -n "$$webhook_ip" ] && \
+			kubectl run --rm -i --restart=Never --image=appropriate/curl test-curl --namespace=cnpg-system -- \
+			curl -k --connect-timeout 2 https://$$webhook_ip:443/mutate-postgresql-cnpg-io-v1-cluster || true; then \
+			echo "Webhook endpoint is reachable."; \
+			sleep 10; \
+			break; \
+		fi; \
+		echo "Waiting for webhook endpoint at $$webhook_ip:443 ..."; \
+		sleep 5; \
+	done
+	sleep 10;
+	kubectl apply -f docker/oci/cluster.yaml
+	kubectl apply -f docker/oci/database.yaml
+	# Wait for cluster-pglinter pod to be ready
+	echo "Waiting for cluster-pglinter pod to be ready..."
+	for i in $$(seq 1 60); do \
+		pod_name=$$(kubectl get pods -l cnpg.io/cluster=cluster-pglinter -o jsonpath='{.items[0].metadata.name}'); \
+		pod_status=$$(kubectl get pods -l cnpg.io/cluster=cluster-pglinter -o jsonpath='{.items[0].status.phase}'); \
+		if [ "$$pod_status" = "Running" ]; then \
+			if kubectl exec $$pod_name -- psql -U postgres -d postgres -c "select 1;"; then \
+				echo "PostgreSQL is up and accepting connections."; \
+				break; \
+			else \
+				echo "Pod is running but PostgreSQL not ready yet (waiting)"; \
+			fi; \
+		else \
+			echo "Pod status: $$pod_status (waiting)"; \
+		fi; \
+		sleep 5; \
+	done
+	pod_name=$$(kubectl get pods -l cnpg.io/cluster=cluster-pglinter -o jsonpath='{.items[0].metadata.name}') && \
+	kubectl exec -it $$pod_name -- psql -U postgres -d postgres -c "CREATE EXTENSION IF NOT EXISTS pglinter; SELECT hello_pglinter();"
 
-# Detailed test using crane or direct layer inspection
-oci_test_detailed: oci_build_local
-	@echo "Running detailed OCI image test..."
-	@echo "Using dive to inspect image layers (if available)..."
-	@if command -v dive >/dev/null 2>&1; then \
-		dive $(OCI_REGISTRY)/$(OCI_IMAGE_NAME):local --ci; \
-	else \
-		echo "Dive not available, using basic inspection..."; \
-		echo "Checking image history:"; \
-		docker history $(OCI_REGISTRY)/$(OCI_IMAGE_NAME):local; \
-		echo ""; \
-		echo "Image configuration:"; \
-		docker image inspect $(OCI_REGISTRY)/$(OCI_IMAGE_NAME):local --format '{{json .RootFS}}' | jq '.' 2>/dev/null || docker image inspect $(OCI_REGISTRY)/$(OCI_IMAGE_NAME):local --format '{{.RootFS}}'; \
-	fi
-	@echo "✅ Detailed OCI image test completed"
-
+# Cleanup kind cluster and resources
+oci_test_cleanup:
+	kubectl delete -f docker/oci/database.yaml || true
+	kubectl delete -f docker/oci/cluster.yaml || true
+	kind delete cluster --name pglinter-test || true
 
 ##
 ## L I N T

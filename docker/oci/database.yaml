@@ -1,0 +1,12 @@
+
+apiVersion: postgresql.cnpg.io/v1
+kind: Database
+metadata:
+  name: cluster-pglinter-app
+spec:
+  name: app
+  owner: app
+  cluster:
+    name: cluster-pglinter
+  extensions:
+  - name: pglinter

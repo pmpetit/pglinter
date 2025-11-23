@@ -48,24 +48,24 @@ jobs:
 
           echo "matrix_include=$MATRIX_JSON" >> $GITHUB_OUTPUT
 
-  # oci-image-build:
-  #   needs: setup-matrix
-  #   strategy:
-  #     matrix:
-  #       include: ${{ fromJSON(needs.setup-matrix.outputs.matrix_include) }}
-  #     fail-fast: false
-  #   name: '${{ matrix.pgver }}-${{ matrix.arch }}-${{ matrix.pkgtype }}-oci-build'
-  #   runs-on: ${{ matrix.runs_on }}
-  #   steps:
-  #     - name: Checkout repository
-  #       uses: actions/checkout@v4
-  #     - name: build oci image
-  #       uses: ./.github/actions/build-oci-make
-  #       with:
-  #         pgver: ${{ matrix.pgver }}
-  #         arch: ${{ matrix.arch }}
-  #         distro: ${{ matrix.distro }}
-  #         ocipgversion: ${{ matrix.pgver }}
+  oci-image-build:
+    needs: setup-matrix
+    strategy:
+      matrix:
+        include: ${{ fromJSON(needs.setup-matrix.outputs.matrix_include) }}
+      fail-fast: false
+    name: '${{ matrix.pgver }}-${{ matrix.arch }}-${{ matrix.pkgtype }}-oci-build'
+    runs-on: ${{ matrix.runs_on }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: build oci image
+        uses: ./.github/actions/build-oci-make
+        with:
+          pgver: ${{ matrix.pgver }}
+          arch: ${{ matrix.arch }}
+          distro: ${{ matrix.distro }}
+          ocipgversion: ${{ matrix.pgver }}
 
   oci-image-test:
     needs:
@@ -87,7 +87,13 @@ jobs:
           arch: ${{ matrix.arch }}
           distro: ${{ matrix.distro }}
           ocipgversion: ${{ matrix.pgver }}
-
+      - name: oci cleanup
+        uses: ./.github/actions/build-oci-test-cleanup
+        with:
+          pgver: ${{ matrix.pgver }}
+          arch: ${{ matrix.arch }}
+          distro: ${{ matrix.distro }}
+          ocipgversion: ${{ matrix.pgver }}
 
   # build-and-test-oci:
   #   name: Build and Test OCI Image for pg18
