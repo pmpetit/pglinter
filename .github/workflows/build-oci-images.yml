@@ -39,7 +39,7 @@ jobs:
             VERSION=${PG#pg}
             MATRIX_JSON+="{\"pgver\": \"$PG\", \"VERSION\": \"$VERSION\", \"arch\": \"amd64\", \"runs_on\": \"ubuntu-latest\", \"pkgtype\": \"deb\", \"distro\": \"bookworm\"},"
             #MATRIX_JSON+="{\"pgver\": \"$PG\", \"VERSION\": \"$VERSION\", \"arch\": \"arm64\", \"runs_on\": \"ubuntu-24.04-arm\", \"pkgtype\": \"deb\", \"distro\": \"bookworm\"},"
-            #MATRIX_JSON+="{\"pgver\": \"$PG\", \"VERSION\": \"$VERSION\", \"arch\": \"amd64\", \"runs_on\": \"ubuntu-latest\", \"pkgtype\": \"deb\", \"distro\": \"trixie\"},"
+            MATRIX_JSON+="{\"pgver\": \"$PG\", \"VERSION\": \"$VERSION\", \"arch\": \"amd64\", \"runs_on\": \"ubuntu-latest\", \"pkgtype\": \"deb\", \"distro\": \"trixie\"},"
             #MATRIX_JSON+="{\"pgver\": \"$PG\", \"VERSION\": \"$VERSION\", \"arch\": \"arm64\", \"runs_on\": \"ubuntu-24.04-arm\", \"pkgtype\": \"deb\", \"distro\": \"trixie\"},"
           done
           # Remove trailing comma and close array
@@ -62,14 +62,12 @@ jobs:
       - name: build oci image
         uses: ./.github/actions/build-oci-make
         with:
-          pgver: ${{ matrix.pgver }}
           arch: ${{ matrix.arch }}
           distro: ${{ matrix.distro }}
           ocipgversion: ${{ matrix.pgver }}
       - name: test oci image
         uses: ./.github/actions/build-oci-test
         with:
-          pgver: ${{ matrix.pgver }}
           arch: ${{ matrix.arch }}
           distro: ${{ matrix.distro }}
           ocipgversion: ${{ matrix.pgver }}
