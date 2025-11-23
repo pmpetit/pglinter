@@ -67,33 +67,33 @@ jobs:
           distro: ${{ matrix.distro }}
           ocipgversion: ${{ matrix.pgver }}
 
-  oci-image-test:
-    needs:
-      - setup-matrix
-      #- oci-image-build
-    strategy:
-      matrix:
-        include: ${{ fromJSON(needs.setup-matrix.outputs.matrix_include) }}
-      fail-fast: false
-    name: '${{ matrix.pgver }}-${{ matrix.arch }}-${{ matrix.pkgtype }}-package-test'
-    runs-on: ${{ matrix.runs_on }}
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-      - name: Test oci image
-        uses: ./.github/actions/build-oci-test
-        with:
-          pgver: ${{ matrix.pgver }}
-          arch: ${{ matrix.arch }}
-          distro: ${{ matrix.distro }}
-          ocipgversion: ${{ matrix.pgver }}
-      - name: oci cleanup
-        uses: ./.github/actions/build-oci-test-cleanup
-        with:
-          pgver: ${{ matrix.pgver }}
-          arch: ${{ matrix.arch }}
-          distro: ${{ matrix.distro }}
-          ocipgversion: ${{ matrix.pgver }}
+  # oci-image-test:
+  #   needs:
+  #     - setup-matrix
+  #     #- oci-image-build
+  #   strategy:
+  #     matrix:
+  #       include: ${{ fromJSON(needs.setup-matrix.outputs.matrix_include) }}
+  #     fail-fast: false
+  #   name: '${{ matrix.pgver }}-${{ matrix.arch }}-${{ matrix.pkgtype }}-package-test'
+  #   runs-on: ${{ matrix.runs_on }}
+  #   steps:
+  #     - name: Checkout repository
+  #       uses: actions/checkout@v4
+  #     - name: Test oci image
+  #       uses: ./.github/actions/build-oci-test
+  #       with:
+  #         pgver: ${{ matrix.pgver }}
+  #         arch: ${{ matrix.arch }}
+  #         distro: ${{ matrix.distro }}
+  #         ocipgversion: ${{ matrix.pgver }}
+  #     - name: oci cleanup
+  #       uses: ./.github/actions/build-oci-test-cleanup
+  #       with:
+  #         pgver: ${{ matrix.pgver }}
+  #         arch: ${{ matrix.arch }}
+  #         distro: ${{ matrix.distro }}
+  #         ocipgversion: ${{ matrix.pgver }}
 
   # build-and-test-oci:
   #   name: Build and Test OCI Image for pg18

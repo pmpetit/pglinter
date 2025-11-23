@@ -26,6 +26,16 @@ runs:
           echo "Unsupported arch: ${{ inputs.arch }}" && exit 1
         fi
       shell: bash
-    - name: List built images
-      run: docker images | grep pglinter
+    - name: Test OCI image for ${{ inputs.arch }}
+      run: |
+        export DISTRO="${{ inputs.distro || 'bookworm' }}"
+        export OCIPGVERSION="${{ inputs.ocipgversion }}"
+        export PG_VERSION_OCI="${OCIPGVERSION#pg}"
+        if [ "${{ inputs.arch }}" = "amd64" ]; then
+          make oci_test
+        elif [ "${{ inputs.arch }}" = "arm64" ]; then
+          make oci_test
+        else
+          echo "Unsupported arch: ${{ inputs.arch }}" && exit 1
+        fi
       shell: bash
