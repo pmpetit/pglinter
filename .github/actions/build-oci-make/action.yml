@@ -10,6 +10,9 @@ inputs:
   ocipgversion:
     description: 'PostgreSQL version (e.g., pg18)'
     required: false
+  github-token:
+    description: 'GitHub token for authentication'
+    required: true
 runs:
   using: 'composite'
   steps:
@@ -27,6 +30,8 @@ runs:
         fi
       shell: bash
     - name: Test OCI image for ${{ inputs.arch }}
+      env:
+        GITHUB_TOKEN: ${{ inputs.github-token }}
       run: |
         export DISTRO="${{ inputs.distro || 'bookworm' }}"
         export OCIPGVERSION="${{ inputs.ocipgversion }}"
