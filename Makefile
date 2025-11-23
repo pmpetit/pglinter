@@ -394,7 +394,7 @@ oci_setup:
 	(echo "Creating new buildx instance..." && docker buildx create --name pglinter-oci-builder --use --bootstrap)
 
 # Build OCI extension image for PostgreSQL 18
-oci_image_arm64: oci_setup deb
+oci_image_arm64: oci_setup
 	@echo "Building OCI image for ARM64: $(OCI_REGISTRY)/$(OCI_IMAGE_NAME):$(OCI_TAG)"
 	@echo "  PostgreSQL Version: $(PG_VERSION_OCI)"
 	@echo "  Extension Version: $(PGLINTER_MINOR_VERSION)"
@@ -412,7 +412,7 @@ oci_image_arm64: oci_setup deb
 	@echo "✅ OCI image built successfully"
 
 # Build OCI extension image for AMD64 platform only (can be loaded locally)
-oci_image_amd64: oci_setup deb
+oci_image_amd64: oci_setup
 	@echo "Building OCI image for AMD64: $(OCI_REGISTRY)/$(OCI_IMAGE_NAME):$(OCI_TAG)"
 	@echo "  PostgreSQL Version: $(PG_VERSION_OCI)"
 	@echo "  Extension Version: $(PGLINTER_MINOR_VERSION)"
