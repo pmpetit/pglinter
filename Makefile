@@ -464,17 +464,17 @@ oci_build_local: oci_setup
 	@echo "✅ Local OCI image built: $(OCI_REGISTRY)/$(OCI_IMAGE_NAME):local"
 
 # Test the OCI image locally
-oci_test:
+oci_test: oci_build_local
 	@echo "Testing OCI image locally..."
 	@echo "Verifying image was built successfully..."
-	docker image inspect $(OCI_REGISTRY)/$(OCI_IMAGE_NAME):$(OCI_TAG)-amd64 --format '{{.Size}}' | \
+	docker image inspect $(OCI_REGISTRY)/$(OCI_IMAGE_NAME):local --format '{{.Size}}' | \
 		awk '{if($$1 > 0) print "✅ Image size: " $$1 " bytes"; else print "❌ Image appears empty"}'
 	@echo "Checking image labels..."
-	docker image inspect $(OCI_REGISTRY)/$(OCI_IMAGE_NAME):$(OCI_TAG)-amd64 --format '{{range $$k, $$v := .Config.Labels}}{{$$k}}: {{$$v}}{{"\n"}}{{end}}' | \
+	docker image inspect $(OCI_REGISTRY)/$(OCI_IMAGE_NAME):local --format '{{range $$k, $$v := .Config.Labels}}{{$$k}}: {{$$v}}{{"\n"}}{{end}}' | \
 		grep -E "(extension\.|org\.opencontainers\.image\.)" || echo "❌ Missing expected labels"
 	@echo "Extracting and examining image contents..."
 	@mkdir -p /tmp/pglinter-test
-	@if docker save $(OCI_REGISTRY)/$(OCI_IMAGE_NAME):$(OCI_TAG)-amd64 -o /tmp/pglinter-test/image.tar 2>/dev/null; then \
+	@if docker save $(OCI_REGISTRY)/$(OCI_IMAGE_NAME):local -o /tmp/pglinter-test/image.tar 2>/dev/null; then \
 		cd /tmp/pglinter-test && tar -tf image.tar | head -10 && \
 		echo "✅ Image successfully saved and contains layers"; \
 	else \
