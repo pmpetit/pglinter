@@ -79,5 +79,6 @@ jobs:
           arch: ${{ matrix.arch }}
           distro: ${{ matrix.distro }}
           ocipgversion: ${{ matrix.pgver }}
+          github_token: ${{ secrets.GH_TOKEN }}
       - name: clean oci image
         uses: ./.github/actions/build-oci-clean
