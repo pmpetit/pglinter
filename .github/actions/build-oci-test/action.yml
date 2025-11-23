@@ -19,9 +19,9 @@ runs:
         export OCIPGVERSION="${{ inputs.ocipgversion }}"
         export PG_VERSION_OCI="${OCIPGVERSION#pg}"
         if [ "${{ inputs.arch }}" = "amd64" ]; then
-          make oci_image_amd64
+          make oci_test
         elif [ "${{ inputs.arch }}" = "arm64" ]; then
-          make oci_image_arm64
+          make oci_test
         else
           echo "Unsupported arch: ${{ inputs.arch }}" && exit 1
         fi
