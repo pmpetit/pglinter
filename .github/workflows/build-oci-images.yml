@@ -59,82 +59,10 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-      - name: build oci image
+      - name: build and test oci image
         uses: ./.github/actions/build-oci-make
         with:
           pgver: ${{ matrix.pgver }}
           arch: ${{ matrix.arch }}
           distro: ${{ matrix.distro }}
           ocipgversion: ${{ matrix.pgver }}
-
-  # oci-image-test:
-  #   needs:
-  #     - setup-matrix
-  #     #- oci-image-build
-  #   strategy:
-  #     matrix:
-  #       include: ${{ fromJSON(needs.setup-matrix.outputs.matrix_include) }}
-  #     fail-fast: false
-  #   name: '${{ matrix.pgver }}-${{ matrix.arch }}-${{ matrix.pkgtype }}-package-test'
-  #   runs-on: ${{ matrix.runs_on }}
-  #   steps:
-  #     - name: Checkout repository
-  #       uses: actions/checkout@v4
-  #     - name: Test oci image
-  #       uses: ./.github/actions/build-oci-test
-  #       with:
-  #         pgver: ${{ matrix.pgver }}
-  #         arch: ${{ matrix.arch }}
-  #         distro: ${{ matrix.distro }}
-  #         ocipgversion: ${{ matrix.pgver }}
-  #     - name: oci cleanup
-  #       uses: ./.github/actions/build-oci-test-cleanup
-  #       with:
-  #         pgver: ${{ matrix.pgver }}
-  #         arch: ${{ matrix.arch }}
-  #         distro: ${{ matrix.distro }}
-  #         ocipgversion: ${{ matrix.pgver }}
-
-  # build-and-test-oci:
-  #   name: Build and Test OCI Image for pg18
-  #   runs-on: ubuntu-latest
-  #   strategy:
-  #     matrix:
-  #       arch: [amd64, arm64]
-  #       distro: [bookworm, trixie]
-  #   container:
-  #     image: ghcr.io/pmpetit/postgresql_pglinter:pgrx-${{ matrix.arch }}
-  #     options: --user root
-  #     credentials:
-  #       username: ${{ github.actor }}
-  #       password: ${{ secrets.GH_TOKEN }}
-  #   steps:
-  #     - name: Checkout repository
-  #       uses: actions/checkout@v4
-  #     - name: Set up Docker Buildx
-  #       uses: docker/setup-buildx-action@v3
-  #     - name: Build .deb package
-  #       run: |
-  #         export PGVER=pg18
-  #         make deb
-  #         mkdir -p packages
-  #         find ./target -name "*.deb" -exec cp {} packages/pglinter.deb \;
-  #         ls -la packages/
-  #     - name: Build OCI Extension Image
-  #       uses: ./.github/actions/build-oci-image
-  #       with:
-  #         postgresql-version: '18'
-  #         distro: ${{ matrix.distro }}
-  #         registry: ghcr.io/${{ github.repository_owner }}
-  #         image-name: pglinter
-  #         push: false
-  #         build-local: 'true'
-  #         platforms: "linux/${{ matrix.arch }}"
-  #     - name: Test OCI Image
-  #       run: |
-  #         docker images | grep pglinter
-  #         IMAGE_SIZE=$(docker image inspect ghcr.io/${{ github.repository_owner }}/pglinter:latest --format '{{.Size}}')
-  #         echo "Image size: $IMAGE_SIZE bytes"
-  #         docker image inspect ghcr.io/${{ github.repository_owner }}/pglinter:latest --format '{{range $k, $v := .Config.Labels}}{{$k}}: {{$v}}{{"\n"}}{{end}}' | grep -E "(extension\.|org\.opencontainers\.image\.)"
-  #         echo "✅ OCI image tests passed"
-  #         registry: ghcr.io/${{ github.repository_owner }}
