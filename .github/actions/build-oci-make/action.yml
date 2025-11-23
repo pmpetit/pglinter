@@ -29,35 +29,3 @@ runs:
           echo "Unsupported arch: ${{ inputs.arch }}" && exit 1
         fi
       shell: bash
-    - name: Test OCI image for ${{ inputs.arch }}
-      env:
-        GITHUB_TOKEN: ${{ inputs.github-token }}
-      run: |
-        export DISTRO="${{ inputs.distro || 'bookworm' }}"
-        export OCIPGVERSION="${{ inputs.ocipgversion }}"
-        export PG_VERSION_OCI="${OCIPGVERSION#pg}"
-        if [ "${{ inputs.arch }}" = "amd64" ]; then
-          make oci_test
-        elif [ "${{ inputs.arch }}" = "arm64" ]; then
-          make oci_test
-        else
-          echo "Unsupported arch: ${{ inputs.arch }}" && exit 1
-        fi
-      shell: bash
-    - name: Push OCI image for ${{ inputs.arch }}
-      run: |
-        export DISTRO="${{ inputs.distro || 'bookworm' }}"
-        export OCIPGVERSION="${{ inputs.ocipgversion }}"
-        export PG_VERSION_OCI="${OCIPGVERSION#pg}"
-        if [ "${{ inputs.arch }}" = "amd64" ]; then
-          make oci_push_amd64
-        elif [ "${{ inputs.arch }}" = "arm64" ]; then
-          make oci_push_arm64
-        else
-          echo "Unsupported arch: ${{ inputs.arch }}" && exit 1
-        fi
-      shell: bash
-    - name: CLeanup OCI image for ${{ inputs.arch }}
-      run: |
-        make oci_test_cleanup
-      shell: bash
