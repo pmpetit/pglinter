@@ -54,7 +54,7 @@ jobs:
       matrix:
         include: ${{ fromJSON(needs.setup-matrix.outputs.matrix_include) }}
       fail-fast: false
-    name: '${{ matrix.pgver }}-${{ matrix.arch }}-${{ matrix.pkgtype }}-oci-build'
+    name: '${{ matrix.pgver }}-${{ matrix.arch }}-${{ matrix.pkgtype }}-${{ matrix.distro }}-oci-build'
     runs-on: ${{ matrix.runs_on }}
     steps:
       - name: Checkout repository
