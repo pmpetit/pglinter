@@ -76,14 +76,8 @@ jobs:
       - name: push oci image
         uses: ./.github/actions/build-oci-push
         with:
-          pgver: ${{ matrix.pgver }}
           arch: ${{ matrix.arch }}
           distro: ${{ matrix.distro }}
           ocipgversion: ${{ matrix.pgver }}
       - name: clean oci image
         uses: ./.github/actions/build-oci-clean
-        with:
-          arch: ${{ matrix.arch }}
-          distro: ${{ matrix.distro }}
-          ocipgversion: ${{ matrix.pgver }}
-          github_token: ${{ secrets.GH_TOKEN }}
