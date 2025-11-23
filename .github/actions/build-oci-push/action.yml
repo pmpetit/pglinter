@@ -10,14 +10,14 @@ inputs:
   ocipgversion:
     description: 'PostgreSQL version (e.g., pg18)'
     required: false
-  github-token:
+  github_token:
     description: 'GitHub token for authentication'
     required: true
 runs:
   using: 'composite'
   steps:
     - name: Login to GitHub Container Registry
-      run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+      run: echo "${{ inputs.github_token }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
       shell: bash
     - name: Push OCI image for ${{ inputs.arch }}
       run: |
