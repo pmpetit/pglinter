@@ -38,9 +38,9 @@ jobs:
           for PG in $(echo $PGVERSIONS | tr ',' ' '); do
             VERSION=${PG#pg}
             MATRIX_JSON+="{\"pgver\": \"$PG\", \"VERSION\": \"$VERSION\", \"arch\": \"amd64\", \"runs_on\": \"ubuntu-latest\", \"pkgtype\": \"deb\", \"distro\": \"bookworm\"},"
-            #MATRIX_JSON+="{\"pgver\": \"$PG\", \"VERSION\": \"$VERSION\", \"arch\": \"arm64\", \"runs_on\": \"ubuntu-24.04-arm\", \"pkgtype\": \"deb\", \"distro\": \"bookworm\"},"
+            MATRIX_JSON+="{\"pgver\": \"$PG\", \"VERSION\": \"$VERSION\", \"arch\": \"arm64\", \"runs_on\": \"ubuntu-24.04-arm\", \"pkgtype\": \"deb\", \"distro\": \"bookworm\"},"
             MATRIX_JSON+="{\"pgver\": \"$PG\", \"VERSION\": \"$VERSION\", \"arch\": \"amd64\", \"runs_on\": \"ubuntu-latest\", \"pkgtype\": \"deb\", \"distro\": \"trixie\"},"
-            #MATRIX_JSON+="{\"pgver\": \"$PG\", \"VERSION\": \"$VERSION\", \"arch\": \"arm64\", \"runs_on\": \"ubuntu-24.04-arm\", \"pkgtype\": \"deb\", \"distro\": \"trixie\"},"
+            MATRIX_JSON+="{\"pgver\": \"$PG\", \"VERSION\": \"$VERSION\", \"arch\": \"arm64\", \"runs_on\": \"ubuntu-24.04-arm\", \"pkgtype\": \"deb\", \"distro\": \"trixie\"},"
           done
           # Remove trailing comma and close array
           MATRIX_JSON=${MATRIX_JSON%,}
