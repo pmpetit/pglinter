@@ -1,0 +1,33 @@
+name: 'Build OCI Image (Make)'
+description: 'Builds OCI image using make oci_image_amd64 or oci_image_arm64 depending on arch.'
+inputs:
+  arch:
+    description: 'Target architecture (amd64 or arm64)'
+    required: true
+  distro:
+    description: 'Target distribution (e.g., bookworm, trixie)'
+    required: false
+  ocipgversion:
+    description: 'PostgreSQL version (e.g., pg18)'
+    required: false
+  github-token:
+    description: 'GitHub token for authentication'
+    required: true
+runs:
+  using: 'composite'
+  steps:
+    - name: Test OCI image for ${{ inputs.arch }}
+      env:
+        GITHUB_TOKEN: ${{ inputs.github-token }}
+      run: |
+        export DISTRO="${{ inputs.distro || 'bookworm' }}"
+        export OCIPGVERSION="${{ inputs.ocipgversion }}"
+        export PG_VERSION_OCI="${OCIPGVERSION#pg}"
+        if [ "${{ inputs.arch }}" = "amd64" ]; then
+          make oci_test
+        elif [ "${{ inputs.arch }}" = "arm64" ]; then
+          make oci_test
+        else
+          echo "Unsupported arch: ${{ inputs.arch }}" && exit 1
+        fi
+      shell: bash
