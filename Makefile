@@ -435,9 +435,9 @@ oci_image_amd64: oci_setup
 # Build and push OCI extension image to GitHub Container Registry
 oci_push_amd64: oci_image_amd64
 	@echo "Pushing OCI images to registry..."
-	docker push $(OCI_REGISTRY)/$(OCI_IMAGE_NAME):$(OCI_TAG)
+	docker push $(OCI_REGISTRY)/$(OCI_IMAGE_NAME):$(OCI_TAG)-amd64
 	@echo "✅ OCI images pushed successfully"
-	@echo "  Main tag: $(OCI_REGISTRY)/$(OCI_IMAGE_NAME):$(OCI_TAG)"
+	@echo "  Main tag: $(OCI_REGISTRY)/$(OCI_IMAGE_NAME):$(OCI_TAG)-amd64"
 
 # Build OCI image for local testing (AMD64 only)
 oci_build_local: oci_setup
