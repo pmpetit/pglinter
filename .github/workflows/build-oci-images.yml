@@ -83,7 +83,6 @@ jobs:
       - name: clean oci image
         uses: ./.github/actions/build-oci-clean
         with:
-          pgver: ${{ matrix.pgver }}
           arch: ${{ matrix.arch }}
           distro: ${{ matrix.distro }}
           ocipgversion: ${{ matrix.pgver }}
