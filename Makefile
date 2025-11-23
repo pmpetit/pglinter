@@ -396,27 +396,18 @@ oci_setup:
 	(echo "Creating new buildx instance..." && docker buildx create --name pglinter-oci-builder --use --bootstrap)
 
 # Build OCI extension image for PostgreSQL 18
-oci_image: oci_setup deb
-	@echo "Building OCI image: $(OCI_REGISTRY)/$(OCI_IMAGE_NAME):$(OCI_TAG)"
+oci_image_arm64: oci_setup deb
+	@echo "Building OCI image for ARM64: $(OCI_REGISTRY)/$(OCI_IMAGE_NAME):$(OCI_TAG)"
 	@echo "  PostgreSQL Version: $(PG_VERSION_OCI)"
 	@echo "  Extension Version: $(PGLINTER_MINOR_VERSION)"
 	@echo "  Distro: $(DISTRO)"
-	@echo "Checking if .deb package exists locally..."
-	@if [ -f $(TARGET_DIR)/*.deb ]; then \
-		echo "✅ Local .deb package found, will use for build"; \
-		DEB_PATH=$$(find $(TARGET_DIR) -name "*.deb" | head -1); \
-		echo "Using package: $$DEB_PATH"; \
-	else \
-		echo "❌ No local .deb package found in $(TARGET_DIR)"; \
-		echo "Will attempt to download from GitHub releases"; \
-	fi
 	docker buildx build \
-		--platform linux/amd64,linux/arm64 \
+		--platform linux/arm64 \
 		--build-arg PG_VERSION=$(PG_VERSION_OCI) \
 		--build-arg DISTRO=$(DISTRO) \
 		--build-arg PGLINTER_VERSION=$(PGLINTER_MINOR_VERSION) \
 		--build-arg EXT_VERSION=$(PGLINTER_MINOR_VERSION) \
-		--tag $(OCI_REGISTRY)/$(OCI_IMAGE_NAME):$(OCI_TAG) \
+		--tag $(OCI_REGISTRY)/$(OCI_IMAGE_NAME):$(OCI_TAG)-arm64 \
 		--file docker/oci/Dockerfile.pg-deb \
 		--load \
 		.
@@ -424,26 +415,17 @@ oci_image: oci_setup deb
 
 # Build OCI extension image for AMD64 platform only (can be loaded locally)
 oci_image_amd64: oci_setup deb
-	@echo "Building OCI image for AMD64 only: $(OCI_REGISTRY)/$(OCI_IMAGE_NAME):$(OCI_TAG)"
+	@echo "Building OCI image for AMD64: $(OCI_REGISTRY)/$(OCI_IMAGE_NAME):$(OCI_TAG)"
 	@echo "  PostgreSQL Version: $(PG_VERSION_OCI)"
 	@echo "  Extension Version: $(PGLINTER_MINOR_VERSION)"
 	@echo "  Distro: $(DISTRO)"
-	@echo "Checking if .deb package exists locally..."
-	@if [ -f $(TARGET_DIR)/*.deb ]; then \
-		echo "✅ Local .deb package found, will use for build"; \
-		DEB_PATH=$$(find $(TARGET_DIR) -name "*.deb" | head -1); \
-		echo "Using package: $$DEB_PATH"; \
-	else \
-		echo "❌ No local .deb package found in $(TARGET_DIR)"; \
-		echo "Will attempt to download from GitHub releases"; \
-	fi
 	docker buildx build \
 		--platform linux/amd64 \
 		--build-arg PG_VERSION=$(PG_VERSION_OCI) \
 		--build-arg DISTRO=$(DISTRO) \
 		--build-arg PGLINTER_VERSION=$(PGLINTER_MINOR_VERSION) \
 		--build-arg EXT_VERSION=$(PGLINTER_MINOR_VERSION) \
-		--tag $(OCI_REGISTRY)/$(OCI_IMAGE_NAME):$(OCI_TAG) \
+		--tag $(OCI_REGISTRY)/$(OCI_IMAGE_NAME):$(OCI_TAG)-amd64 \
 		--file docker/oci/Dockerfile.pg-deb \
 		--load \
 		.
