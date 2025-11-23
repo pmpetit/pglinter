@@ -24,7 +24,7 @@ runs:
         if [ "${{ inputs.arch }}" = "amd64" ]; then
           make oci_image_amd64
         elif [ "${{ inputs.arch }}" = "arm64" ]; then
-          make oci_image_arm64
+          sudo make oci_image_arm64
         else
           echo "Unsupported arch: ${{ inputs.arch }}" && exit 1
         fi
