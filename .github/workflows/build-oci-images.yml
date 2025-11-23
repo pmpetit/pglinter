@@ -59,8 +59,29 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-      - name: build and test oci image
+      - name: build oci image
         uses: ./.github/actions/build-oci-make
+        with:
+          pgver: ${{ matrix.pgver }}
+          arch: ${{ matrix.arch }}
+          distro: ${{ matrix.distro }}
+          ocipgversion: ${{ matrix.pgver }}
+      - name: test oci image
+        uses: ./.github/actions/build-oci-test
+        with:
+          pgver: ${{ matrix.pgver }}
+          arch: ${{ matrix.arch }}
+          distro: ${{ matrix.distro }}
+          ocipgversion: ${{ matrix.pgver }}
+      - name: push oci image
+        uses: ./.github/actions/build-oci-push
+        with:
+          pgver: ${{ matrix.pgver }}
+          arch: ${{ matrix.arch }}
+          distro: ${{ matrix.distro }}
+          ocipgversion: ${{ matrix.pgver }}
+      - name: clean oci image
+        uses: ./.github/actions/build-oci-clean
         with:
           pgver: ${{ matrix.pgver }}
           arch: ${{ matrix.arch }}
