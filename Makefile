@@ -411,7 +411,7 @@ oci_image: oci_setup
 		--build-arg EXT_VERSION=$(PGLINTER_MINOR_VERSION) \
 		--tag $(OCI_REGISTRY)/$(OCI_IMAGE_NAME):$(OCI_TAG) \
 		--file docker/oci/Dockerfile.pg-deb \
-		--output=type=docker \
+		--push \
 		.
 	@echo "✅ OCI image built successfully"
 

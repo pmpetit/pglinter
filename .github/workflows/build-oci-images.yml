@@ -64,23 +64,23 @@ jobs:
           distro: ${{ matrix.distro }}
           ocipgversion: ${{ matrix.pgver }}
 
-  # oci-image-test:
-  #   needs: oci-image-build
-  #   strategy:
-  #     matrix:
-  #       runs_on: [ubuntu-latest, ubuntu-24.04-arm]
-  #       distro: [bookworm, trixie]
-  #       pgver: [pg18]
-  #   name: '${{ matrix.pgver }}-${{ matrix.distro }}-oci-test'
-  #   runs-on: ${{ matrix.runs_on }}
-  #   steps:
-  #     - name: Checkout repository
-  #       uses: actions/checkout@v4
-  #     - name: test oci image
-  #       uses: ./.github/actions/build-oci-test
-  #       with:
-  #         distro: ${{ matrix.distro }}
-  #         ocipgversion: ${{ matrix.pgver }}
+  oci-image-test:
+    needs: oci-image-build
+    strategy:
+      matrix:
+        runs_on: [ubuntu-latest, ubuntu-24.04-arm]
+        distro: [bookworm, trixie]
+        pgver: [pg18]
+    name: '${{ matrix.pgver }}-${{ matrix.distro }}-oci-test'
+    runs-on: ${{ matrix.runs_on }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: test oci image
+        uses: ./.github/actions/build-oci-test
+        with:
+          distro: ${{ matrix.distro }}
+          ocipgversion: ${{ matrix.pgver }}
 
   # oci-image-push:
   #   needs: [oci-image-test, setup-matrix]
