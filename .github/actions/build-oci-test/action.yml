@@ -21,5 +21,5 @@ runs:
         export DISTRO="${{ inputs.distro || 'bookworm' }}"
         export OCIPGVERSION="${{ inputs.ocipgversion }}"
         export PG_VERSION_OCI="${OCIPGVERSION#pg}"
-        make oci_test
+        sudo make oci_test
       shell: bash
