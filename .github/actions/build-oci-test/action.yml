@@ -7,9 +7,15 @@ inputs:
   ocipgversion:
     description: 'PostgreSQL version (e.g., pg18)'
     required: false
+  github-token:
+    description: 'GitHub token for authentication'
+    required: true
 runs:
   using: 'composite'
   steps:
+    - name: Login to GitHub Container Registry
+      run: echo "${{ inputs.github_token }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+      shell: bash
     - name: Test OCI image
       run: |
         export DISTRO="${{ inputs.distro || 'bookworm' }}"
