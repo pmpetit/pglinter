@@ -46,26 +46,26 @@ jobs:
 
           echo "matrix_include=$MATRIX_JSON" >> $GITHUB_OUTPUT
 
-  oci-image-build:
-    needs: setup-matrix
-    strategy:
-      matrix:
-        include: ${{ fromJSON(needs.setup-matrix.outputs.matrix_include) }}
-      fail-fast: false
-    name: '${{ matrix.pgver }}-${{ matrix.distro }}-oci-build'
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-      - name: build oci image
-        uses: ./.github/actions/build-oci-make
-        with:
-          github_token: ${{ secrets.GH_TOKEN }}
-          distro: ${{ matrix.distro }}
-          ocipgversion: ${{ matrix.pgver }}
+  # oci-image-build:
+  #   needs: setup-matrix
+  #   strategy:
+  #     matrix:
+  #       include: ${{ fromJSON(needs.setup-matrix.outputs.matrix_include) }}
+  #     fail-fast: false
+  #   name: '${{ matrix.pgver }}-${{ matrix.distro }}-oci-build'
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - name: Checkout repository
+  #       uses: actions/checkout@v4
+  #     - name: build oci image
+  #       uses: ./.github/actions/build-oci-make
+  #       with:
+  #         github_token: ${{ secrets.GH_TOKEN }}
+  #         distro: ${{ matrix.distro }}
+  #         ocipgversion: ${{ matrix.pgver }}
 
   oci-image-test:
-    needs: oci-image-build
+   # needs: oci-image-build
     strategy:
       matrix:
         runs_on: [ubuntu-latest, ubuntu-24.04-arm]
