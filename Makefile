@@ -385,7 +385,7 @@ pgrx_clean:
 OCI_REGISTRY?=ghcr.io/pmpetit
 OCI_IMAGE_NAME?=pglinter
 OCI_BASE_TAG?=$(PGLINTER_MINOR_VERSION)
-DISTRO?=bookworm
+DISTRO?=trixie
 PG_VERSION_OCI?=18
 OCI_TAG?=$(OCI_BASE_TAG)-$(PG_VERSION_OCI)-$(DISTRO)
 
@@ -396,47 +396,31 @@ oci_setup:
 	docker buildx use pglinter-oci-builder 2>/dev/null || \
 	(echo "Creating new buildx instance..." && docker buildx create --name pglinter-oci-builder --use --bootstrap)
 
-# Build OCI extension image for PostgreSQL 18
-oci_image_arm64:
-	@echo "Building OCI image for ARM64: $(OCI_REGISTRY)/$(OCI_IMAGE_NAME):$(OCI_TAG)"
-	@echo "  PostgreSQL Version: $(PG_VERSION_OCI)"
-	@echo "  Extension Version: $(PGLINTER_MINOR_VERSION)"
-	@echo "  Distro: $(DISTRO)"
-	docker build \
-		--build-arg PG_VERSION=$(PG_VERSION_OCI) \
-		--build-arg DISTRO=$(DISTRO) \
-		--build-arg PGLINTER_VERSION=$(PGLINTER_MINOR_VERSION) \
-		--build-arg EXT_VERSION=$(PGLINTER_MINOR_VERSION) \
-		--tag $(OCI_REGISTRY)/$(OCI_IMAGE_NAME):$(OCI_TAG)-arm64 \
-		--file docker/oci/Dockerfile.pg-deb \
-		--load \
-		.
-	@echo "✅ OCI image built successfully"
 
 # Build OCI extension image for AMD64 platform only (can be loaded locally)
-oci_image_amd64: oci_setup
+oci_image: oci_setup
 	@echo "Building OCI image for AMD64: $(OCI_REGISTRY)/$(OCI_IMAGE_NAME):$(OCI_TAG)"
 	@echo "  PostgreSQL Version: $(PG_VERSION_OCI)"
 	@echo "  Extension Version: $(PGLINTER_MINOR_VERSION)"
 	@echo "  Distro: $(DISTRO)"
 	docker buildx build \
-		--platform linux/amd64 \
+		--platform linux/amd64,linux/arm64 \
 		--build-arg PG_VERSION=$(PG_VERSION_OCI) \
 		--build-arg DISTRO=$(DISTRO) \
 		--build-arg PGLINTER_VERSION=$(PGLINTER_MINOR_VERSION) \
 		--build-arg EXT_VERSION=$(PGLINTER_MINOR_VERSION) \
-		--tag $(OCI_REGISTRY)/$(OCI_IMAGE_NAME):$(OCI_TAG)-amd64 \
+		--tag $(OCI_REGISTRY)/$(OCI_IMAGE_NAME):$(OCI_TAG) \
 		--file docker/oci/Dockerfile.pg-deb \
-		--load \
+		--push \
 		.
-	@echo "✅ OCI image built successfully for AMD64"
+	@echo "✅ OCI image built successfully"
 
 # Build and push OCI extension image to GitHub Container Registry
-oci_push_amd64: oci_image_amd64
+oci_push:
 	@echo "Pushing OCI images to registry..."
-	docker push $(OCI_REGISTRY)/$(OCI_IMAGE_NAME):$(OCI_TAG)-amd64
+	docker push $(OCI_REGISTRY)/$(OCI_IMAGE_NAME):$(OCI_TAG)
 	@echo "✅ OCI images pushed successfully"
-	@echo "  Main tag: $(OCI_REGISTRY)/$(OCI_IMAGE_NAME):$(OCI_TAG)-amd64"
+	@echo "  Main tag: $(OCI_REGISTRY)/$(OCI_IMAGE_NAME):$(OCI_TAG)"
 
 # Build OCI image for local testing (AMD64 only)
 oci_build_local: oci_setup
