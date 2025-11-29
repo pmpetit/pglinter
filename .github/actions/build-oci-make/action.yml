@@ -13,6 +13,9 @@ inputs:
 runs:
   using: 'composite'
   steps:
+    - name: Login to GitHub Container Registry
+      run: echo "${{ inputs.github_token }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+      shell: bash
     - name: Build OCI image
       run: |
         export DISTRO="${{ inputs.distro || 'bookworm' }}"
