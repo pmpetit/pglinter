@@ -1,9 +1,6 @@
-name: 'Build OCI Image (Make)'
-description: 'Builds OCI image using make oci_image_amd64 or oci_image_arm64 depending on arch.'
+name: 'Push OCI Image (Make)'
+description: 'Pushes OCI image using make oci_push.'
 inputs:
-  arch:
-    description: 'Target architecture (amd64 or arm64)'
-    required: true
   distro:
     description: 'Target distribution (e.g., bookworm, trixie)'
     required: false
@@ -19,16 +16,11 @@ runs:
     - name: Login to GitHub Container Registry
       run: echo "${{ inputs.github_token }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
       shell: bash
-    - name: Push OCI image for ${{ inputs.arch }}
+    - name: Push OCI image
       run: |
         export DISTRO="${{ inputs.distro || 'bookworm' }}"
         export OCIPGVERSION="${{ inputs.ocipgversion }}"
         export PG_VERSION_OCI="${OCIPGVERSION#pg}"
-        if [ "${{ inputs.arch }}" = "amd64" ]; then
-          make oci_push_amd64
-        elif [ "${{ inputs.arch }}" = "arm64" ]; then
-          make oci_push_arm64
-        else
-          echo "Unsupported arch: ${{ inputs.arch }}" && exit 1
-        fi
+        make oci_push
+
       shell: bash
