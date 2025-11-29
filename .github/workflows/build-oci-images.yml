@@ -60,6 +60,7 @@ jobs:
       - name: build oci image
         uses: ./.github/actions/build-oci-make
         with:
+          github_token: ${{ secrets.GH_TOKEN }}
           distro: ${{ matrix.distro }}
           ocipgversion: ${{ matrix.pgver }}
 
