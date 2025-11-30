@@ -472,6 +472,7 @@ oci_test:
 	pod_name=$$(kubectl get pods -l cnpg.io/cluster=cluster-pglinter -o jsonpath='{.items[0].metadata.name}') && \
 	kubectl exec -it $$pod_name -- psql -U postgres -d postgres -c "CREATE EXTENSION IF NOT EXISTS pglinter; SELECT hello_pglinter();"
 
+
 # Cleanup kind cluster and resources
 oci_test_cleanup:
 	kubectl delete -f docker/oci/database.yaml || true
