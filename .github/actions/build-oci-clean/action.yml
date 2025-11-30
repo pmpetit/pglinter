@@ -26,4 +26,3 @@ runs:
 
         # Deletes versions older than a specified time (e.g., 30 days)
         cut-off: '3 days'
-      shell: bash
