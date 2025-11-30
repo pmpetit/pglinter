@@ -100,3 +100,4 @@ jobs:
           distro: ${{ matrix.distro }}
           ocipgversion: ${{ matrix.pgver }}
           github_token: ${{ secrets.PAT }}
+          pat: ${{ secrets.PAT }}

@@ -10,6 +10,9 @@ inputs:
   ocipgversion:
     description: 'PostgreSQL version (e.g., pg18)'
     required: false
+  pat:
+    description: 'pat token for authentication'
+    required: true
 runs:
   using: 'composite'
   steps:
@@ -35,6 +38,6 @@ runs:
     - uses: snok/container-retention-policy@v3.0.1
       with:
         account: pmpetit
-        token: ${{ secrets.PAT }}
+        token: ${{ inputs.pat }}
         image-names: pglinter
         skip-shas: ${{ steps.multi-arch-digests.outputs.multi-arch-digests }}
