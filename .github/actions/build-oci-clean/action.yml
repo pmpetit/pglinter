@@ -4,6 +4,12 @@ inputs:
   github-token:
     description: 'GitHub token for authentication'
     required: true
+  distro:
+    description: 'Target distribution (e.g., bookworm, trixie)'
+    required: false
+  ocipgversion:
+    description: 'PostgreSQL version (e.g., pg18)'
+    required: false
 runs:
   using: 'composite'
   steps:
@@ -17,9 +23,8 @@ runs:
   - name: Fetch multi-platform package version SHAs
     id: multi-arch-digests
     run: |
-      package1=$(docker manifest inspect ghcr.io/package1 | jq -r '.manifests.[] | .digest' | paste -s -d ' ' -)
-      package2=$(docker manifest inspect ghcr.io/package2 | jq -r '.manifests.[] | .digest' | paste -s -d ' ' -)
-      echo "multi-arch-digests=$package1,$package2" >> $GITHUB_OUTPUT
+      package1=$(docker manifest inspect ghcr.io/pmpetit/pglinter:1.0.1-${{ inputs.ocipgversion }}-${{ inputs.distro }} | jq -r '.manifests.[] | .digest' | paste -s -d ' ' -)
+      echo "multi-arch-digests=$package1" >> $GITHUB_OUTPUT
     shell: bash
 
   - uses: snok/container-retention-policy
