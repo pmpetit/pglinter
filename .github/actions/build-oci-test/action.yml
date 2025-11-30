@@ -23,3 +23,7 @@ runs:
         export PG_VERSION_OCI="${OCIPGVERSION#pg}"
         sudo make oci_test
       shell: bash
+    - name: Cleanup OCI image
+      run: |
+        sudo make oci_test_cleanup
+      shell: bash
