@@ -7,22 +7,21 @@ inputs:
 runs:
   using: 'composite'
   steps:
-    - name: Delete untagged and old images
-      uses: snok/container-retention-policy@v3
-      with:
-        # A Personal Access Token (PAT) with read:packages and delete:packages scopes
-        # is recommended over GITHUB_TOKEN for broader permissions, but the
-        # GITHUB_TOKEN with 'packages: write' sometimes suffices.
-        token: ${{ inputs.github_token }}
+  - name: Login to GitHub Container Registry
+    uses: docker/login-action@v3.0.0
+    with:
+      registry: ghcr.io
+      username: ${{ github.actor }}
+      password: ${{ inputs.github-token }}
 
-        # The package/image name (e.g., your-repo-name)
-        image-names: 'pmpetit/pglinter'
+  - name: Fetch multi-platform package version SHAs
+    id: multi-arch-digests
+    run: |
+      package1=$(docker manifest inspect ghcr.io/package1 | jq -r '.manifests.[] | .digest' | paste -s -d ' ' -)
+      package2=$(docker manifest inspect ghcr.io/package2 | jq -r '.manifests.[] | .digest' | paste -s -d ' ' -)
+      echo "multi-arch-digests=$package1,$package2" >> $GITHUB_OUTPUT
+    shell: bash
 
-        # This is the key setting to delete untagged images (the SHA ones)
-        tag-pattern: 'sha256:.*'
-
-        # Number of tagged images to keep (e.g., keep the 10 most recent versions)
-        keep-n-most-recent: 5
-
-        # Deletes versions older than a specified time (e.g., 30 days)
-        cut-off: '3 days'
+  - uses: snok/container-retention-policy
+    with:
+      skip-shas: ${{ steps.multi-arch-digests.outputs.multi-arch-digests }}
