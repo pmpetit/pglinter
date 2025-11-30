@@ -24,5 +24,6 @@ runs:
         export DISTRO="${{ inputs.distro || 'bookworm' }}"
         export OCIPGVERSION="${{ inputs.ocipgversion }}"
         export PG_VERSION_OCI="${OCIPGVERSION#pg}"
+        export GITHUB_TOKEN="${{ inputs.github_token }}"
         make oci_image
       shell: bash
