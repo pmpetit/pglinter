@@ -14,4 +14,4 @@ spec:
     extensions:
     - name: pglinter
       image:
-        reference: pglinter:local
+        reference: ghcr.io/pmpetit/pglinter:local
