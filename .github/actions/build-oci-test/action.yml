@@ -10,6 +10,9 @@ inputs:
   github-token:
     description: 'GitHub token for authentication'
     required: true
+  oci-tag:
+    description: 'image tag'
+    required: false
 runs:
   using: 'composite'
   steps:
@@ -21,6 +24,9 @@ runs:
         export DISTRO="${{ inputs.distro || 'bookworm' }}"
         export OCIPGVERSION="${{ inputs.ocipgversion }}"
         export PG_VERSION_OCI="${OCIPGVERSION#pg}"
+        if [ -n "${{ inputs.oci-tag }}" ]; then
+          export OCI_TAG="${{ inputs.oci-tag }}"
+        fi
         sudo make oci_test
       shell: bash
     - name: Cleanup OCI image
