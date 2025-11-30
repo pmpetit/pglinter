@@ -398,9 +398,9 @@ OCI_TAG?=$(OCI_BASE_TAG)-$(PG_VERSION_OCI)-$(DISTRO)
 # Ensure buildx is available for OCI builds
 oci_setup:
 	@echo "Setting up Docker buildx for multi-platform builds..."
-	@docker buildx create --name pglinter-oci-builder --use --bootstrap 2>/dev/null || \
-	docker buildx use pglinter-oci-builder 2>/dev/null || \
-	(echo "Creating new buildx instance..." && docker buildx create --name pglinter-oci-builder --use --bootstrap)
+	@sudo docker buildx create --name pglinter-oci-builder --use --bootstrap 2>/dev/null || \
+	sudo docker buildx use pglinter-oci-builder 2>/dev/null || \
+	(echo "Creating new buildx instance..." && sudo docker buildx create --name pglinter-oci-builder --use --bootstrap)
 
 
 # Build OCI extension image for AMD64 platform only (can be loaded locally)
