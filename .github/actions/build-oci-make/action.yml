@@ -13,12 +13,15 @@ inputs:
 runs:
   using: 'composite'
   steps:
-    - name: Login to GitHub Container Registry
-      uses: docker/login-action@v3.0.0
-      with:
-        registry: ghcr.io
-        username: pmpetit
-        password: ${{ inputs.github_token }}
+    # - name: Login to GitHub Container Registry
+    #   uses: docker/login-action@v3.0.0
+    #   with:
+    #     registry: ghcr.io
+    #     username: pmpetit
+    #     password: ${{ inputs.github_token }}
+    - name: Log in to GitHub Container Registry
+      run: echo "${{ inputs.github_token }}" | sudo docker login ghcr.io -u ${{ github.actor }} --password-stdin
+      shell: bash
     - name: Build OCI image
       run: |
         export DISTRO="${{ inputs.distro || 'bookworm' }}"
