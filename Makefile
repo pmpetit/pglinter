@@ -503,6 +503,7 @@ oci_test_cleanup:
 	kubectl delete -f docker/oci/cluster.yaml || true
 	kind delete cluster --name pglinter-test || true
 
+
 ##
 ## L I N T
 ##

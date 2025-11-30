@@ -36,4 +36,5 @@ runs:
       with:
         account: user
         token: ${{ inputs.github-token }}
+        image-name: pglinter
         skip-shas: ${{ steps.multi-arch-digests.outputs.multi-arch-digests }}
