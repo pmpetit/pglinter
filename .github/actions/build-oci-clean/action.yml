@@ -13,20 +13,17 @@ inputs:
 runs:
   using: 'composite'
   steps:
-  - name: Login to GitHub Container Registry
-    uses: docker/login-action@v3.0.0
-    with:
-      registry: ghcr.io
-      username: ${{ github.actor }}
-      password: ${{ inputs.github-token }}
+    - name: Login to GitHub Container Registry
+      run: echo "${{ inputs.github_token }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+      shell: bash
 
-  - name: Fetch multi-platform package version SHAs
-    id: multi-arch-digests
-    run: |
-      package1=$(docker manifest inspect ghcr.io/pmpetit/pglinter:1.0.1-${{ inputs.ocipgversion }}-${{ inputs.distro }} | jq -r '.manifests.[] | .digest' | paste -s -d ' ' -)
-      echo "multi-arch-digests=$package1" >> $GITHUB_OUTPUT
-    shell: bash
+    - name: Fetch multi-platform package version SHAs
+      id: multi-arch-digests
+      run: |
+        package1=$(docker manifest inspect ghcr.io/pmpetit/pglinter:1.0.1-${{ inputs.ocipgversion }}-${{ inputs.distro }} | jq -r '.manifests.[] | .digest' | paste -s -d ' ' -)
+        echo "multi-arch-digests=$package1" >> $GITHUB_OUTPUT
+      shell: bash
 
-  - uses: snok/container-retention-policy@v3.0.1
-    with:
-      skip-shas: ${{ steps.multi-arch-digests.outputs.multi-arch-digests }}
+    - uses: snok/container-retention-policy@v3.0.1
+      with:
+        skip-shas: ${{ steps.multi-arch-digests.outputs.multi-arch-digests }}
