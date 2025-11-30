@@ -31,8 +31,8 @@ runs:
         tag-pattern: 'sha256:.*'
 
         # Number of tagged images to keep (e.g., keep the 10 most recent versions)
-        keep-n-most-recent: 10
+        keep-n-most-recent: 5
 
         # Deletes versions older than a specified time (e.g., 30 days)
-        cut-off: '10 days'
+        cut-off: '3 days'
       shell: bash
