@@ -428,31 +428,6 @@ oci_push:
 	@echo "✅ OCI images pushed successfully"
 	@echo "  Main tag: $(OCI_REGISTRY)/$(OCI_IMAGE_NAME):$(OCI_TAG)"
 
-# Build OCI image for local testing (AMD64 only)
-oci_build_local: oci_setup
-	@echo "Building local OCI image for testing..."
-	@echo "Ensuring .deb package exists for PostgreSQL $(PG_VERSION_OCI)..."
-	@if [ ! -f target/release/pglinter-pg$(PG_VERSION_OCI)/postgresql_pglinter_$(PG_VERSION_OCI)_$(PGLINTER_MINOR_VERSION)_amd64.deb ]; then \
-		echo "❌ No .deb package found. Building package first..."; \
-		$(MAKE) deb PGVER=pg$(PG_VERSION_OCI) PG_MAJOR_VERSION=$(PG_VERSION_OCI); \
-	fi
-	@echo "Preparing .deb package for Docker build..."
-	@mkdir -p docker/oci/packages
-	@cp target/release/pglinter-pg$(PG_VERSION_OCI)/postgresql_pglinter_$(PG_VERSION_OCI)_$(PGLINTER_MINOR_VERSION)_amd64.deb docker/oci/packages/pglinter.deb
-	@echo "Using local .deb package for build..."
-	cd docker/oci && docker buildx build \
-		--platform linux/amd64 \
-		--build-arg PG_VERSION=$(PG_VERSION_OCI) \
-		--build-arg DISTRO=$(DISTRO) \
-		--build-arg PGLINTER_VERSION=$(PGLINTER_MINOR_VERSION) \
-		--build-arg EXT_VERSION=$(PGLINTER_MINOR_VERSION) \
-		--tag $(OCI_REGISTRY)/$(OCI_IMAGE_NAME):local \
-		--file Dockerfile.local \
-		--load \
-		.
-	@rm -rf docker/oci/packages
-	@echo "✅ Local OCI image built: $(OCI_REGISTRY)/$(OCI_IMAGE_NAME):local"
-
 oci_test:
 	@echo "Testing OCI image in kind Kubernetes cluster..."
 	kind create cluster --name pglinter-test --config docker/oci/kind.yaml
