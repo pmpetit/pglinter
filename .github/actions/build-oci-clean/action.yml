@@ -37,7 +37,7 @@ runs:
 
     - uses: snok/container-retention-policy@v3.0.1
       with:
-        account: pmpetit
+        account: user
         token: ${{ inputs.pat }}
         image-names: pglinter
         cut-off: 30m
