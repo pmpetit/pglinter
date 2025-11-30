@@ -20,7 +20,8 @@ runs:
     - name: Fetch multi-platform package version SHAs
       id: multi-arch-digests
       run: |
-        export PG_VERSION_OCI="${{ inputs.ocipgversion#pg }}"
+        export OCIPGVERSION="${{ inputs.ocipgversion }}"
+        export PG_VERSION_OCI="${OCIPGVERSION#pg}"
         package1=$(docker manifest inspect ghcr.io/pmpetit/pglinter:1.0.1-${PG_VERSION_OCI}-${{ inputs.distro }} | jq -r '.manifests.[] | .digest' | paste -s -d ' ' -)
         echo "multi-arch-digests=$package1" >> $GITHUB_OUTPUT
       shell: bash
