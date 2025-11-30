@@ -83,22 +83,20 @@ jobs:
           distro: ${{ matrix.distro }}
           ocipgversion: ${{ matrix.pgver }}
 
-  # oci-image-push:
-  #   needs: [oci-image-test, setup-matrix]
-  #   strategy:
-  #     matrix:
-  #       include: ${{ fromJSON(needs.setup-matrix.outputs.matrix_include) }}
-  #     fail-fast: false
-  #   name: '${{ matrix.pgver }}-${{ matrix.distro }}-oci-push'
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #     - name: Checkout repository
-  #       uses: actions/checkout@v4
-  #     - name: push oci image
-  #       uses: ./.github/actions/build-oci-push
-  #       with:
-  #         distro: ${{ matrix.distro }}
-  #         ocipgversion: ${{ matrix.pgver }}
-  #         github_token: ${{ secrets.GH_TOKEN }}
-  #     - name: clean oci image
-  #       uses: ./.github/actions/build-oci-clean
+  oci-image-clean:
+    needs: [oci-image-test]
+    strategy:
+      matrix:
+        distro: [bookworm, trixie]
+        pgver: [pg18]
+    name: '${{ matrix.pgver }}-${{ matrix.distro }}-oci-clean'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: clean oci image
+        uses: ./.github/actions/build-oci-clean
+        with:
+          distro: ${{ matrix.distro }}
+          ocipgversion: ${{ matrix.pgver }}
+          github_token: ${{ secrets.GH_TOKEN }}
