@@ -1,15 +1,6 @@
-name: 'Build OCI Image (Make)'
-description: 'Builds OCI image using make oci_image_amd64 or oci_image_arm64 depending on arch.'
+name: 'Build OCI Image (Clean)'
+description: 'CLean OCI image.'
 inputs:
-  arch:
-    description: 'Target architecture (amd64 or arm64)'
-    required: true
-  distro:
-    description: 'Target distribution (e.g., bookworm, trixie)'
-    required: false
-  ocipgversion:
-    description: 'PostgreSQL version (e.g., pg18)'
-    required: false
   github-token:
     description: 'GitHub token for authentication'
     required: true
@@ -22,7 +13,7 @@ runs:
         # A Personal Access Token (PAT) with read:packages and delete:packages scopes
         # is recommended over GITHUB_TOKEN for broader permissions, but the
         # GITHUB_TOKEN with 'packages: write' sometimes suffices.
-        token: ${{ secrets.GITHUB_TOKEN }}
+        token: ${{ inputs.github_token }}
 
         # The package/image name (e.g., your-repo-name)
         image-names: 'pmpetit/pglinter'
