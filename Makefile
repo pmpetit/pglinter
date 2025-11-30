@@ -409,7 +409,7 @@ oci_image: oci_setup
 	@echo "  PostgreSQL Version: $(PG_VERSION_OCI)"
 	@echo "  Extension Version: $(PGLINTER_MINOR_VERSION)"
 	@echo "  Distro: $(DISTRO)"
-	docker buildx build \
+	sudo docker buildx build \
 		--platform linux/amd64,linux/arm64 \
 		--build-arg PG_VERSION=$(PG_VERSION_OCI) \
 		--build-arg DISTRO=$(DISTRO) \
