@@ -63,7 +63,7 @@ jobs:
           github_token: ${{ secrets.GH_TOKEN }}
           distro: ${{ matrix.distro }}
           ocipgversion: ${{ matrix.pgver }}
-          oci-tag: test
+          oci-tag: test-${{ matrix.distro }}
 
   # oci-image-test:
   #   needs: oci-image-build
