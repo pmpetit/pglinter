@@ -16,7 +16,23 @@ inputs:
 runs:
   using: 'composite'
   steps:
-    - name: CLeanup OCI image for ${{ inputs.arch }}
-      run: |
-        make oci_test_cleanup
+    - name: Delete untagged and old images
+      uses: snok/container-retention-policy@v3
+      with:
+        # A Personal Access Token (PAT) with read:packages and delete:packages scopes
+        # is recommended over GITHUB_TOKEN for broader permissions, but the
+        # GITHUB_TOKEN with 'packages: write' sometimes suffices.
+        token: ${{ secrets.GITHUB_TOKEN }}
+
+        # The package/image name (e.g., your-repo-name)
+        image-names: 'pmpetit/pglinter'
+
+        # This is the key setting to delete untagged images (the SHA ones)
+        tag-pattern: 'sha256:.*'
+
+        # Number of tagged images to keep (e.g., keep the 10 most recent versions)
+        keep-n-most-recent: 10
+
+        # Deletes versions older than a specified time (e.g., 30 days)
+        cut-off: '10 days'
       shell: bash
