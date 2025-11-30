@@ -14,8 +14,14 @@ runs:
   using: 'composite'
   steps:
     - name: Login to GitHub Container Registry
-      run: echo "${{ inputs.github_token }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
-      shell: bash
+      uses: docker/login-action@v3.0.0
+      with:
+        registry: ghcr.io
+        username: pmpetit
+        password: ${{ inputs.github_token }}
+    # - name: Login to GitHub Container Registry
+    #   run: echo "${{ inputs.github_token }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+    #   shell: bash
 
     - name: Fetch multi-platform package version SHAs
       id: multi-arch-digests
@@ -28,6 +34,4 @@ runs:
 
     - uses: snok/container-retention-policy@v3.0.1
       with:
-        account: user
-        token: ${{ inputs.github-token }}
         skip-shas: ${{ steps.multi-arch-digests.outputs.multi-arch-digests }}
