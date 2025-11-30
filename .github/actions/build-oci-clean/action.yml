@@ -34,7 +34,7 @@ runs:
 
     - uses: snok/container-retention-policy@v3.0.1
       with:
-        account: user
+        account: pmpetit
         token: ${{ inputs.github-token }}
         image-name: pglinter
         skip-shas: ${{ steps.multi-arch-digests.outputs.multi-arch-digests }}
