@@ -10,6 +10,9 @@ inputs:
   github-token:
     description: 'GitHub token for authentication'
     required: true
+  oci-tag:
+    description: 'image tag'
+    required: false
 runs:
   using: 'composite'
   steps:
@@ -28,5 +31,8 @@ runs:
         export OCIPGVERSION="${{ inputs.ocipgversion }}"
         export PG_VERSION_OCI="${OCIPGVERSION#pg}"
         export GITHUB_TOKEN="${{ inputs.github_token }}"
+        if [ -n "${{ inputs.oci-tag }}" ]; then
+          export OCI_TAG="${{ inputs.oci-tag }}"
+        fi
         make oci_image
       shell: bash
