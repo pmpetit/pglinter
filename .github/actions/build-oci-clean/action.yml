@@ -40,4 +40,5 @@ runs:
         account: pmpetit
         token: ${{ inputs.pat }}
         image-names: pglinter
+        cut-off: 30m
         skip-shas: ${{ steps.multi-arch-digests.outputs.multi-arch-digests }}
