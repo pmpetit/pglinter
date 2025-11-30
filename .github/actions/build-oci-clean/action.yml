@@ -32,6 +32,6 @@ runs:
         echo "multi-arch-digests=$package1" >> $GITHUB_OUTPUT
       shell: bash
 
-    - uses: snok/container-retention-policy@v3.0.1
+    - uses: snok/container-retention-policy@v3.0.0
       with:
         skip-shas: ${{ steps.multi-arch-digests.outputs.multi-arch-digests }}
