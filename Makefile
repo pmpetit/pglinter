@@ -289,6 +289,7 @@ docker_image: docker/Dockerfile #: build the docker image
 			--platform linux/amd64,linux/arm64 \
 			--tag $(DOCKER_IMAGE):$(DOCKER_TAG) \
 			--file $^ \
+			--push \
 			$(DOCKER_BUILD_ARG) \
 			.
 

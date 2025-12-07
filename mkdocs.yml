@@ -18,6 +18,8 @@ nav:
   - 'Home': index.md
   - 'Configuration': configure.md
   - 'Security': SECURITY.md
+  - Install:
+      - 'Installation': install.md
   - How-To Guides:
     - 'Overview': how-to/README.md
   - Functions Reference:

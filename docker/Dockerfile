@@ -4,7 +4,7 @@
 # like this: `PG_MAJOR_VERSION=13 make docker_image`
 # An ARG declared before a FROM is outside of a build stage, so it can’t be
 # used in any instruction after a FROM. We need to declare it again.
-ARG DOCKER_PG_MAJOR_VERSION=13
+ARG DOCKER_PG_MAJOR_VERSION=18
 
 FROM postgres:$DOCKER_PG_MAJOR_VERSION
 
@@ -16,9 +16,12 @@ RUN apt-get update \
  && rm -rf /var/lib/apt/lists/*
 
 # Install extension
-ARG PGLINTER_VERSION=latest
-RUN wget https://ghcr.io/api/v4/projects/7709206/packages/generic/deb/$PGLINTER_VERSION/postgresql_pglinter_pg$DOCKER_PG_MAJOR_VERSION-$PGLINTER_VERSION.amd64.deb \
- && dpkg -i postgresql_pglinter_pg$DOCKER_PG_MAJOR_VERSION-$PGLINTER_VERSION.amd64.deb
+ARG PGLINTER_VERSION=1.0.1
+ARG DOCKER_PG_MAJOR_VERSION=18
+
+RUN ARCH=$(dpkg --print-architecture) \
+&& wget https://github.com/pmpetit/pglinter/releases/download/$PGLINTER_VERSION/postgresql_pglinter_${DOCKER_PG_MAJOR_VERSION}_${PGLINTER_VERSION}_${ARCH}.deb \
+&& dpkg -i postgresql_pglinter_${DOCKER_PG_MAJOR_VERSION}_${PGLINTER_VERSION}_${ARCH}.deb
 
 # init script
 RUN mkdir -p /docker-entrypoint-initdb.d
