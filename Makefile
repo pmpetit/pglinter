@@ -286,34 +286,36 @@ endif
 PGRX_IMAGE?=$(DOCKER_IMAGE):pgrx
 PGRX_BUILD_ARGS?=
 
-docker_image: docker/Dockerfile #: build the docker image
-	#: docker build --tag $(DOCKER_IMAGE):$(DOCKER_TAG) . --file $^  $(DOCKER_BUILD_ARG)
-	@echo "Setting up buildx for multi-platform builds..."
-	docker buildx create --name pglinter-builder --use --bootstrap 2>/dev/null || \
-	docker buildx use pglinter-builder 2>/dev/null || \
-	(echo "Creating new buildx instance..." && docker buildx create --name pglinter-builder --use --bootstrap)
-	@echo "Building multi-platform image..."
-	docker buildx build \
-			--platform linux/amd64,linux/arm64 \
-			--tag $(DOCKER_IMAGE):$(DOCKER_TAG) \
-			--file $^ \
-			--push \
-			$(DOCKER_BUILD_ARG) \
-			.
+# OCI image configuration - CloudNative-PG extension images
+DOCKER_REGISTRY?=ghcr.io/pmpetit
+DOCKER_IMAGE_NAME?=pglinter
+DOCKER_BASE_TAG?=$(PGLINTER_MINOR_VERSION)
+PG_VERSION?=18
+DOCKER_TAG?=$(DOCKER_BASE_TAG)-$(PG_VERSION)
+DOCKER_IMAGE?=$(DOCKER_REGISTRY)/$(DOCKER_IMAGE_NAME):$(DOCKER_TAG)
 
-docker_image_arm64: docker/Dockerfile #: build the docker image
-	#: docker build --tag $(DOCKER_IMAGE):$(DOCKER_TAG) . --file $^  $(DOCKER_BUILD_ARG)
-	@echo "Setting up buildx for multi-platform builds..."
-	docker buildx create --name pglinter-builder --use --bootstrap 2>/dev/null || \
-	docker buildx use pglinter-builder 2>/dev/null || \
-	(echo "Creating new buildx instance..." && docker buildx create --name pglinter-builder --use --bootstrap)
-	@echo "Building multi-platform image..."
+docker_image_test:
+	docker build --tag latest .
+
+docker_setup:
+	@echo "Setting up Docker buildx for multi-platform builds..."
+	@docker buildx create --name pglinter-docker-builder --use --bootstrap 2>/dev/null || \
+	docker buildx use pglinter-docker-builder 2>/dev/null || \
+	(echo "Creating new buildx instance..." && docker buildx create --name pglinter-docker-builder --use --bootstrap)
+
+docker_image: docker_setup
+	@echo "Building docker image : $(DOCKER_REGISTRY)/$(DOCKER_IMAGE_NAME):$(DOCKER_TAG)"
+	@echo "  PostgreSQL Version: $(PG_VERSION)"
+	@echo "  Extension Version: $(PGLINTER_MINOR_VERSION)"
 	docker buildx build \
-			--platform linux/arm64 \
-			--tag $(DOCKER_IMAGE):$(DOCKER_TAG) \
-			--file $^ \
-			$(DOCKER_BUILD_ARG) \
-			.
+		--platform linux/amd64,linux/arm64 \
+		--build-arg PG_MAJOR_VERSION=$(PG_VERSION) \
+		--build-arg PGLINTER_VERSION=$(PGLINTER_MINOR_VERSION) \
+		--tag $(DOCKER_REGISTRY)/$(DOCKER_IMAGE_NAME):$(DOCKER_TAG) \
+		--file docker/Dockerfile \
+		--push \
+		.
+	@echo "✅ image built successfully"
 
 # Build AMD64 pgrx image separately
 pgrx_image_amd64_only: docker/pgrx/Dockerfile
