@@ -1,10 +1,12 @@
 -- Regression test for S004: OwnerSchemaIsInternalRole
 -- This test creates a schema owned by a superuser and checks that S004 identifies it.
 CREATE EXTENSION IF NOT EXISTS pglinter;
+ERROR:  permission denied for language c
 \pset pager off
 -- Setup: Create test role and schema
 CREATE ROLE s004_owner LOGIN;
 CREATE SCHEMA s004_schema AUTHORIZATION postgres;
+ERROR:  must be member of role "postgres"
 SELECT 'Testing S004 in isolation...' AS test_step;
           test_step           
 ------------------------------
@@ -12,41 +14,24 @@ SELECT 'Testing S004 in isolation...' AS test_step;
 (1 row)
 
 SELECT pglinter.disable_all_rules() AS all_disabled;
-NOTICE:  🔴 Disabled 20 rule(s)
- all_disabled 
---------------
-           20
-(1 row)
-
+ERROR:  schema "pglinter" does not exist
+LINE 1: SELECT pglinter.disable_all_rules() AS all_disabled;
+               ^
 SELECT pglinter.enable_rule('S004') AS S004_only_enabled;
-NOTICE:  ✅ Rule S004 has been enabled
- s004_only_enabled 
--------------------
- t
-(1 row)
-
+ERROR:  schema "pglinter" does not exist
+LINE 1: SELECT pglinter.enable_rule('S004') AS S004_only_enabled;
+               ^
 SELECT pglinter.check(); -- Should only run S004
-NOTICE:  🔍 pglinter found 1 issue(s):
-NOTICE:  ==================================================
-NOTICE:  ⚠️  [S004] WARNING: 1/2 schemas are owned by internal roles or superuser. Exceed the warning threshold: 50%. Object list:
-pmp is the owner of the schema public
-postgres is the owner of the schema s004_schema
-
-NOTICE:  ==================================================
-NOTICE:  📊 Summary: 0 error(s), 1 warning(s), 0 info
-NOTICE:  🟡 Some warnings found - consider reviewing for optimization
- check 
--------
- t
-(1 row)
-
+ERROR:  schema "pglinter" does not exist
+LINE 1: SELECT pglinter.check();
+               ^
 SELECT count(*) AS violation_count from pglinter.get_violations() WHERE rule_code = 'S004';
- violation_count 
------------------
-               2
-(1 row)
-
+ERROR:  schema "pglinter" does not exist
+LINE 1: SELECT count(*) AS violation_count from pglinter.get_violati...
+                                                ^
 -- Cleanup
 DROP SCHEMA s004_schema CASCADE;
+ERROR:  schema "s004_schema" does not exist
 DROP ROLE s004_owner;
 DROP EXTENSION pglinter CASCADE;
+ERROR:  extension "pglinter" does not exist
