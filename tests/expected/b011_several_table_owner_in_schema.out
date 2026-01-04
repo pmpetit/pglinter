@@ -47,6 +47,12 @@ NOTICE:  🟡 Some warnings found - consider reviewing for optimization
  t
 (1 row)
 
+SELECT count(*) AS violation_count from pglinter.get_violations() WHERE rule_code = 'B011';
+ violation_count 
+-----------------
+               2
+(1 row)
+
 -- Cleanup
 DROP TABLE s005_schema.table1;
 DROP TABLE s005_schema.table2;

@@ -1,39 +1,219 @@
--- Regression test for S003: UnsecuredPublicSchema
--- This test creates a schema and grants CREATE privilege to PUBLIC, then checks that S003 identifies it.
-CREATE EXTENSION IF NOT EXISTS pglinter;
-NOTICE:  extension "pglinter" already exists, skipping
-\pset pager off
--- Setup: Create test role and schema
-CREATE ROLE s003_owner LOGIN;
-CREATE SCHEMA s003_schema AUTHORIZATION s003_owner;
--- Grant CREATE privilege to PUBLIC
-GRANT CREATE ON SCHEMA s003_schema TO PUBLIC;
-SELECT 'Testing S003 in isolation...' AS test_step;
-          test_step           
-------------------------------
- Testing S003 in isolation...
+-- Regression test for S003 rule: Schemas with public CREATE privileges
+-- Tests the percentage-based detection of schemas allowing CREATE for public role
+-- versus total schemas in the database
+CREATE EXTENSION pglinter;
+SELECT 'S003 Regression Test: Schemas with public CREATE privileges' AS test_header;
+                         test_header                         
+-------------------------------------------------------------
+ S003 Regression Test: Schemas with public CREATE privileges
 (1 row)
 
-SELECT pglinter.disable_all_rules() AS all_disabled;
-NOTICE:  🔴 Disabled 1 rule(s)
- all_disabled 
---------------
-            1
-(1 row)
-
-SELECT pglinter.enable_rule('S003') AS S003_only_enabled;
-NOTICE:  ✅ Rule S003 has been enabled
- s003_only_enabled 
+-- Setup S003 rule for testing
+SELECT pglinter.disable_all_rules();
+NOTICE:  🔴 Disabled 20 rule(s)
+ disable_all_rules 
 -------------------
+                20
+(1 row)
+
+SELECT pglinter.enable_rule('S003');
+NOTICE:  ✅ Rule S003 has been enabled
+ enable_rule 
+-------------
  t
 (1 row)
 
-SELECT pglinter.perform_schema_check(); -- Should only run S003
-ERROR:  function pglinter.perform_schema_check() does not exist
-LINE 1: SELECT pglinter.perform_schema_check();
-               ^
-HINT:  No function matches the given name and argument types. You might need to add explicit type casts.
--- Cleanup
-REVOKE CREATE ON SCHEMA s003_schema FROM PUBLIC;
-DROP SCHEMA s003_schema CASCADE;
-DROP ROLE s003_owner;
+-- PART 1: Test with LOW percentage of insecure schemas (should NOT trigger)
+SELECT 'PART 1: Testing with LOW percentage of insecure schemas (should NOT trigger)' AS test_part;
+                                  test_part                                   
+------------------------------------------------------------------------------
+ PART 1: Testing with LOW percentage of insecure schemas (should NOT trigger)
+(1 row)
+
+-- Create one secure schema (no public CREATE)
+CREATE SCHEMA test_secure_schema;
+REVOKE CREATE ON SCHEMA test_secure_schema FROM public;
+-- Create one secure schema
+CREATE SCHEMA test_secure_schema_1;
+REVOKE CREATE ON SCHEMA test_secure_schema_1 FROM public;
+-- Create one secure schema
+CREATE SCHEMA test_secure_schema_2;
+REVOKE CREATE ON SCHEMA test_secure_schema_2 FROM public;
+-- Create one secure schema
+CREATE SCHEMA test_secure_schema_3;
+REVOKE CREATE ON SCHEMA test_secure_schema_3 FROM public;
+-- Create one secure schema
+CREATE SCHEMA test_secure_schema_4;
+REVOKE CREATE ON SCHEMA test_secure_schema_4 FROM public;
+-- Create one secure schema
+CREATE SCHEMA test_secure_schema_5;
+REVOKE CREATE ON SCHEMA test_secure_schema_5 FROM public;
+-- Create one secure schema
+CREATE SCHEMA test_secure_schema_6;
+REVOKE CREATE ON SCHEMA test_secure_schema_6 FROM public;
+-- Create one secure schema
+CREATE SCHEMA test_secure_schema_7;
+REVOKE CREATE ON SCHEMA test_secure_schema_7 FROM public;
+-- Create one secure schema
+CREATE SCHEMA test_secure_schema_8;
+REVOKE CREATE ON SCHEMA test_secure_schema_8 FROM public;
+-- Create one insecure schema
+CREATE SCHEMA test_insecure_schema_1;
+GRANT CREATE ON SCHEMA test_insecure_schema_1 TO public;
+-- Test S003 with low percentage (should not trigger with default thresholds)
+SELECT 'Running S003 check with LOW percentage of insecure schemas (should not trigger with default thresholds):' AS test_1;
+                                                  test_1                                                  
+----------------------------------------------------------------------------------------------------------
+ Running S003 check with LOW percentage of insecure schemas (should not trigger with default thresholds):
+(1 row)
+
+SELECT pglinter.check();
+NOTICE:  🔍 pglinter found 1 issue(s):
+NOTICE:  ==================================================
+NOTICE:  ⚠️  [S003] WARNING: 2/11 schemas are unsecured, schemas where all users can create objects in, exceed the warning threshold: 18%. Object list:
+public
+test_insecure_schema_1
+
+NOTICE:  ==================================================
+NOTICE:  📊 Summary: 0 error(s), 1 warning(s), 0 info
+NOTICE:  🟡 Some warnings found - consider reviewing for optimization
+ check 
+-------
+ t
+(1 row)
+
+SELECT count(*) AS violation_count from pglinter.get_violations() WHERE rule_code = 'S003';
+ violation_count 
+-----------------
+               2
+(1 row)
+
+CREATE SCHEMA test_insecure_schema_2;
+GRANT CREATE ON SCHEMA test_insecure_schema_2 TO public;
+-- Test S003 with high percentage (should trigger)
+SELECT 'Running S003 check with HIGH percentage of insecure schemas (should trigger):' AS test_2;
+                                    test_2                                     
+-------------------------------------------------------------------------------
+ Running S003 check with HIGH percentage of insecure schemas (should trigger):
+(1 row)
+
+SELECT pglinter.check();
+NOTICE:  🔍 pglinter found 1 issue(s):
+NOTICE:  ==================================================
+NOTICE:  ⚠️  [S003] WARNING: 3/12 schemas are unsecured, schemas where all users can create objects in, exceed the warning threshold: 25%. Object list:
+public
+test_insecure_schema_1
+test_insecure_schema_2
+
+NOTICE:  ==================================================
+NOTICE:  📊 Summary: 0 error(s), 1 warning(s), 0 info
+NOTICE:  🟡 Some warnings found - consider reviewing for optimization
+ check 
+-------
+ t
+(1 row)
+
+SELECT count(*) AS violation_count from pglinter.get_violations() WHERE rule_code = 'S003';
+ violation_count 
+-----------------
+               3
+(1 row)
+
+-- Test with file output
+SELECT pglinter.check('/tmp/pglinter_s003_results.sarif');
+ check 
+-------
+ t
+(1 row)
+
+-- Test if file exists and show checksum
+\! md5sum /tmp/pglinter_s003_results.sarif
+08a2adceab19498eadf8b707623c140d  /tmp/pglinter_s003_results.sarif
+-- PART 3: Test threshold adjustment
+SELECT 'PART 3: Testing S003 threshold adjustments (should not trigger)' AS test_part;
+                            test_part                            
+-----------------------------------------------------------------
+ PART 3: Testing S003 threshold adjustments (should not trigger)
+(1 row)
+
+-- Lower the warning threshold to ensure detection
+SELECT pglinter.update_rule_levels('S003', 50, 80);
+NOTICE:  ✅ Updated rule S003 levels: warning=50, error=80
+ update_rule_levels 
+--------------------
+ t
+(1 row)
+
+SELECT 'S003 thresholds updated to warning=50%, error=80%' AS threshold_info;
+                  threshold_info                   
+---------------------------------------------------
+ S003 thresholds updated to warning=50%, error=80%
+(1 row)
+
+-- Test with adjusted thresholds
+SELECT 'Running S003 check with adjusted thresholds (warning=50%):' AS test_3;
+                           test_3                           
+------------------------------------------------------------
+ Running S003 check with adjusted thresholds (warning=50%):
+(1 row)
+
+SELECT pglinter.check();
+NOTICE:  ✅ No issues found - database schema looks good!
+ check 
+-------
+ t
+(1 row)
+
+SELECT count(*) AS violation_count from pglinter.get_violations() WHERE rule_code = 'S003';
+ violation_count 
+-----------------
+               3
+(1 row)
+
+-- PART 6: Verification of SQL queries used by S003
+SELECT 'PART 6: Direct verification of S003 SQL queries' AS sql_verification;
+                sql_verification                 
+-------------------------------------------------
+ PART 6: Direct verification of S003 SQL queries
+(1 row)
+
+-- Test rule explanation
+SELECT 'S003 rule explanation:' AS rule_explanation;
+    rule_explanation    
+------------------------
+ S003 rule explanation:
+(1 row)
+
+SELECT pglinter.explain_rule('S003');
+NOTICE:  📖 Rule Explanation for S003
+============================================================
+
+🎯 Rule Name: UnsecuredPublicSchema
+📋 Scope: SCHEMA
+
+📝 Description:
+Only authorized users should be allowed to create objects.
+
+⚠️  Message Template:
+{0}/{1} schemas are unsecured, schemas where all users can create objects in, exceed the {2} threshold: {3}%. Object list:\n{4}
+
+🔧 How to Fix:
+   1. REVOKE CREATE ON SCHEMA <schema_name> FROM PUBLIC
+============================================================
+ explain_rule 
+--------------
+ t
+(1 row)
+
+DROP SCHEMA test_secure_schema CASCADE;
+DROP SCHEMA test_secure_schema_1 CASCADE;
+DROP SCHEMA test_secure_schema_2 CASCADE;
+DROP SCHEMA test_secure_schema_3 CASCADE;
+DROP SCHEMA test_secure_schema_4 CASCADE;
+DROP SCHEMA test_secure_schema_5 CASCADE;
+DROP SCHEMA test_secure_schema_6 CASCADE;
+DROP SCHEMA test_secure_schema_7 CASCADE;
+DROP SCHEMA test_secure_schema_8 CASCADE;
+DROP SCHEMA test_insecure_schema_1 CASCADE;
+DROP SCHEMA test_insecure_schema_2 CASCADE;
+DROP EXTENSION pglinter CASCADE;

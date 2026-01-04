@@ -1,7 +1,6 @@
 -- Demo script for the new rule level management functions
 -- This script demonstrates how to get and update warning_level and error_level for rules
 CREATE EXTENSION pglinter;
-ERROR:  extension "pglinter" already exists
 \echo 'Testing rule level management functions...'
 Testing rule level management functions...
 -- First, let's see the current levels for T005
@@ -101,8 +100,8 @@ WHERE code IN ('B001', 'T001', 'T005', 'C002')
 ORDER BY code;
  code |                         name                         | warning_level | error_level | enable 
 ------+------------------------------------------------------+---------------+-------------+--------
- B001 | HowManyTableWithoutPrimaryKey                        |             5 |          80 | f
- C002 | PgHbaEntriesWithMethodTrustOrPasswordShouldNotExists |            20 |          80 | f
+ B001 | HowManyTableWithoutPrimaryKey                        |             5 |          80 | t
+ C002 | PgHbaEntriesWithMethodTrustOrPasswordShouldNotExists |            20 |          80 | t
 (2 rows)
 
 \echo 'Rule level management demo completed!'

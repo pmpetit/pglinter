@@ -223,6 +223,12 @@ NOTICE:  🟡 Some warnings found - consider reviewing for optimization
  t
 (1 row)
 
+SELECT count(*) AS violation_count from pglinter.get_violations() WHERE rule_code = 'B008';
+ violation_count 
+-----------------
+               5
+(1 row)
+
 -- Test disabling B008 temporarily
 SELECT 'Testing B008 disable/enable cycle:' AS test_info;
              test_info              
@@ -242,6 +248,12 @@ NOTICE:  ✅ No issues found - database schema looks good!
  check 
 -------
  t
+(1 row)
+
+SELECT count(*) AS violation_count from pglinter.get_violations() WHERE rule_code = 'B008';
+ violation_count 
+-----------------
+               0
 (1 row)
 
 -- Re-enable B008 and test again
@@ -268,6 +280,12 @@ NOTICE:  🟡 Some warnings found - consider reviewing for optimization
  check 
 -------
  t
+(1 row)
+
+SELECT count(*) AS violation_count from pglinter.get_violations() WHERE rule_code = 'B008';
+ violation_count 
+-----------------
+               5
 (1 row)
 
 DROP TABLE test_orders_int_to_bigint CASCADE;

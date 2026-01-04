@@ -156,10 +156,10 @@ SELECT 'Testing B004 rule - Unused indexes detection...' AS test_info;
 
 -- First, disable all rules to isolate B004 testing
 SELECT pglinter.disable_all_rules() AS all_rules_disabled;
-NOTICE:  🔴 Disabled 19 rule(s)
+NOTICE:  🔴 Disabled 20 rule(s)
  all_rules_disabled 
 --------------------
-                 19
+                 20
 (1 row)
 
 -- Enable only B004 for focused testing
@@ -185,18 +185,24 @@ SELECT 'Running base check to detect B004 violations...' AS status;
  Running base check to detect B004 violations...
 (1 row)
 
-SELECT pglinter.perform_base_check();
+SELECT pglinter.check();
 NOTICE:  🔍 pglinter found 1 issue(s):
 NOTICE:  ==================================================
 NOTICE:  ⚠️  [B004] WARNING: 3/5 unused index exceed the warning threshold: 60%. Object list:
-public.customer_analytics has 88 % of seq scan.
+public.customer_analyticshas88 % of seq scan.
 
 NOTICE:  ==================================================
 NOTICE:  📊 Summary: 0 error(s), 1 warning(s), 0 info
 NOTICE:  🟡 Some warnings found - consider reviewing for optimization
- perform_base_check 
---------------------
+ check 
+-------
  t
+(1 row)
+
+SELECT count(*) AS violation_count from pglinter.get_violations() WHERE rule_code = 'B004';
+ violation_count 
+-----------------
+               3
 (1 row)
 
 -- Test rule management for B004
@@ -245,30 +251,30 @@ SELECT 'Running B004 check after dropping some unused indexes (should show fewer
  Running B004 check after dropping some unused indexes (should show fewer violations):
 (1 row)
 
-SELECT pglinter.perform_base_check();
+SELECT pglinter.check();
 NOTICE:  🔍 pglinter found 1 issue(s):
 NOTICE:  ==================================================
 NOTICE:  ⚠️  [B004] WARNING: 2/4 unused index exceed the warning threshold: 50%. Object list:
-public.customer_analytics has 88 % of seq scan.
+public.customer_analyticshas88 % of seq scan.
 
 NOTICE:  ==================================================
 NOTICE:  📊 Summary: 0 error(s), 1 warning(s), 0 info
 NOTICE:  🟡 Some warnings found - consider reviewing for optimization
- perform_base_check 
---------------------
+ check 
+-------
  t
 (1 row)
 
 -- Test with file output
-SELECT pglinter.perform_base_check('/tmp/pglinter_b004_results.sarif');
- perform_base_check 
---------------------
+SELECT pglinter.check('/tmp/pglinter_b004_results.sarif');
+ check 
+-------
  t
 (1 row)
 
 -- Test if file exists and show checksum
 \! md5sum /tmp/pglinter_b004_results.sarif
-c5f6efe660026d79b5e321ad29caf933  /tmp/pglinter_b004_results.sarif
+adc835c632cf31640165344c3a9db133  /tmp/pglinter_b004_results.sarif
 -- Update B004 thresholds to demonstrate message formatting
 SELECT pglinter.update_rule_levels('B004', 60, 90);
 NOTICE:  ✅ Updated rule B004 levels: warning=60, error=90
@@ -284,11 +290,17 @@ SELECT 'Final B004 (base check) - Shows percentage-based unused index analysis:'
  Final B004 (base check) - Shows percentage-based unused index analysis:
 (1 row)
 
-SELECT pglinter.perform_base_check();
+SELECT pglinter.check();
 NOTICE:  ✅ No issues found - database schema looks good!
- perform_base_check 
---------------------
+ check 
+-------
  t
+(1 row)
+
+SELECT count(*) AS violation_count from pglinter.get_violations() WHERE rule_code = 'B004';
+ violation_count 
+-----------------
+               2
 (1 row)
 
 DROP TABLE customer_analytics;
