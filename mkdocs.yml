@@ -24,6 +24,7 @@ nav:
     - 'Overview': how-to/README.md
   - Functions Reference:
     - 'Functions': functions/README.md
+    - 'Get Violations': functions/get_violations.md
   - Rules Reference:
     - 'Rules': rules/README.md
   - Tutorial:
