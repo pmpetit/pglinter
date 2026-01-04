@@ -176,6 +176,7 @@ SELECT pglinter.is_rule_enabled('B001') AS b001_status_after_enable;
 -- Run base check again (should detect B001 violations)
 SELECT 'Running base check with B001 re-enabled...' AS status;
 SELECT pglinter.check();
+SELECT count(*) AS violation_count from pglinter.get_violations() WHERE rule_code = 'B001';
 
 -- Now let's fix some of the issues by adding primary keys to reduce the percentage
 SELECT 'Adding primary keys to some tables to improve the percentage...' AS improvement_info;
@@ -195,6 +196,8 @@ SELECT 'Running B001 check after adding primary keys (should show improved perce
 SELECT pglinter.check();
 SELECT pglinter.check('/tmp/pglinter_b001_results.sarif');
 \! md5sum /tmp/pglinter_b001_results.sarif
+
+SELECT count(*) AS violation_count from pglinter.get_violations() WHERE rule_code = 'B001';
 
 DROP TABLE orders_no_pk CASCADE;
 DROP TABLE customers_no_pk CASCADE;

@@ -141,6 +141,7 @@ SELECT pglinter.check('/tmp/pglinter_b003_results.sarif');
 -- Test if file exists and show checksum
 \! md5sum /tmp/pglinter_b003_results.sarif
 
+SELECT count(*) AS violation_count from pglinter.get_violations() WHERE rule_code = 'B003';
 
 -- Test rule management for B003
 SELECT 'Testing B003 rule management...' AS test_section;
@@ -161,6 +162,8 @@ SELECT pglinter.check();
 
 -- Update B003 thresholds to produce message
 SELECT pglinter.update_rule_levels('B003', 60, 90);
+
+SELECT count(*) AS violation_count from pglinter.get_violations() WHERE rule_code = 'B003';
 
 -- Temporarily remove one index to show the difference
 DROP INDEX idx_reviews_customer_id;
