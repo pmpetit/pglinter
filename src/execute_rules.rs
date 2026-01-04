@@ -600,8 +600,11 @@ pub fn execute_rules(ruleid: Option<&str>) -> Result<Vec<RuleResult>, String> {
 }
 
 
+type ViolationLocation = (i32, i32, i32);
+type RuleViolations = (String, Vec<ViolationLocation>);
+
 /// Collects violations for all enabled rules by calling get_violations_for_rule for each rule.
-pub fn get_violations() -> Result<Vec<(String, Vec<(i32, i32, i32)>)>, String> {
+pub fn get_violations() -> Result<Vec<RuleViolations>, String> {
     pgrx::debug1!("get_violations; Starting to collect violations for all enabled rules");
     let rules_query = "SELECT code FROM pglinter.rules WHERE enable = true ORDER BY code";
     let rule_codes: Result<Vec<String>, String> = Spi::connect(|client| {
@@ -613,13 +616,10 @@ pub fn get_violations() -> Result<Vec<(String, Vec<(i32, i32, i32)>)>, String> {
         Ok(codes)
     }).map_err(|e: spi::SpiError| format!("Database error fetching rule codes: {e}"));
 
-    let rule_codes = match rule_codes {
-        Ok(codes) => codes,
-        Err(e) => return Err(e),
-    };
+    let _rule_codes = rule_codes?;
 
     let mut all_violations = Vec::new();
-    for code in rule_codes {
+    for code in _rule_codes {
         match get_violations_for_rule(&code) {
             Ok(violations) => {
                 all_violations.push((code.clone(), violations));

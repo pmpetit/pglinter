@@ -73,6 +73,12 @@ SELECT pglinter.check('/tmp/pglinter_b002_results.sarif');
 -- Test if file exists and show checksum
 \! md5sum /tmp/pglinter_b002_results.sarif
 d33fa0746f8eacf2f90c32f1a9957845  /tmp/pglinter_b002_results.sarif
+SELECT count(*) AS violation_count from pglinter.get_violations() WHERE rule_code = 'B002';
+ violation_count 
+-----------------
+              10
+(1 row)
+
 -- Test with no output file (should output to prompt)
 SELECT pglinter.check();
 NOTICE:  🔍 pglinter found 1 issue(s):
@@ -139,6 +145,12 @@ NOTICE:  ✅ No issues found - database schema looks good!
  check 
 -------
  t
+(1 row)
+
+SELECT count(*) AS violation_count from pglinter.get_violations() WHERE rule_code = 'B002';
+ violation_count 
+-----------------
+               0
 (1 row)
 
 DROP TABLE orders_table CASCADE;

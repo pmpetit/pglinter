@@ -26,6 +26,12 @@ NOTICE:  ✅ No issues found - database schema looks good!
  t
 (1 row)
 
+SELECT count(*) AS violation_count from pglinter.get_violations() WHERE rule_code = 'B001';
+ violation_count 
+-----------------
+               0
+(1 row)
+
 -- Test rule management for B001
 SELECT pglinter.explain_rule('B001');
 NOTICE:  📖 Rule Explanation for B001
@@ -85,6 +91,12 @@ NOTICE:  🔴 Critical issues found - please review and fix errors
  check 
 -------
  t
+(1 row)
+
+SELECT count(*) AS violation_count from pglinter.get_violations() WHERE rule_code = 'B001';
+ violation_count 
+-----------------
+               1
 (1 row)
 
 -- Test with file output
