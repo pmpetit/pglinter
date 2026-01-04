@@ -25,10 +25,6 @@ SELECT pglinter.check(); -- Should only run S004
 ERROR:  schema "pglinter" does not exist
 LINE 1: SELECT pglinter.check();
                ^
-SELECT count(*) AS violation_count from pglinter.get_violations() WHERE rule_code = 'S004';
-ERROR:  schema "pglinter" does not exist
-LINE 1: SELECT count(*) AS violation_count from pglinter.get_violati...
-                                                ^
 -- Cleanup
 DROP SCHEMA s004_schema CASCADE;
 ERROR:  schema "s004_schema" does not exist

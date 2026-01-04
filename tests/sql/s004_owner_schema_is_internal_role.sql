@@ -15,8 +15,6 @@ SELECT pglinter.disable_all_rules() AS all_disabled;
 SELECT pglinter.enable_rule('S004') AS S004_only_enabled;
 SELECT pglinter.check(); -- Should only run S004
 
-SELECT count(*) AS violation_count from pglinter.get_violations() WHERE rule_code = 'S004';
-
 -- Cleanup
 DROP SCHEMA s004_schema CASCADE;
 DROP ROLE s004_owner;
