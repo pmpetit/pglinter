@@ -22,6 +22,8 @@ SELECT pglinter.disable_all_rules() AS all_disabled;
 SELECT pglinter.enable_rule('B011') AS B011_only_enabled;
 SELECT pglinter.check(); -- Should only run B011
 
+SELECT count(*) AS violation_count from pglinter.get_violations() WHERE rule_code = 'B011';
+
 -- Cleanup
 DROP TABLE s005_schema.table1;
 DROP TABLE s005_schema.table2;

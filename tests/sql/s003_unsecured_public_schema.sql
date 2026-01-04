@@ -15,9 +15,13 @@ GRANT CREATE ON SCHEMA s003_schema TO PUBLIC;
 SELECT 'Testing S003 in isolation...' AS test_step;
 SELECT pglinter.disable_all_rules() AS all_disabled;
 SELECT pglinter.enable_rule('S003') AS S003_only_enabled;
-SELECT pglinter.perform_schema_check(); -- Should only run S003
+SELECT pglinter.check(); -- Should only run S003
+
+SELECT count(*) AS violation_count from pglinter.get_violations() WHERE rule_code = 'S003';
 
 -- Cleanup
 REVOKE CREATE ON SCHEMA s003_schema FROM PUBLIC;
 DROP SCHEMA s003_schema CASCADE;
 DROP ROLE s003_owner;
+
+DROP EXTENSION pglinter CASCADE;

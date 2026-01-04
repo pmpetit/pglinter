@@ -255,6 +255,31 @@ mod pglinter {
             }
         }
     }
+
+    #[pg_extern(sql = "
+        CREATE FUNCTION pglinter.get_violations()
+        RETURNS TABLE(rule_code text, classid oid, objid oid, objsubid integer)
+        AS 'MODULE_PATHNAME', 'get_violations_wrapper'
+        LANGUAGE C
+        SECURITY DEFINER;
+    ")]
+    fn get_violations() -> TableIterator<'static, (name!(rule_code, String), name!(classid, i32), name!(objid, i32), name!(objsubid, i32))> {
+        use crate::execute_rules::get_violations;
+        let mut rows = Vec::new();
+        match get_violations() {
+            Ok(violations) => {
+                for (rule_code, violations_vec) in violations {
+                    for (classid, objid, objsubid) in violations_vec {
+                        rows.push((rule_code.clone(), classid, objid, objsubid));
+                    }
+                }
+            },
+            Err(e) => {
+                pgrx::warning!("pglinter get_violations failed: {}", e);
+            }
+        }
+        TableIterator::new(rows)
+    }
 }
 
 //----------------------------------------------------------------------------
@@ -1878,6 +1903,55 @@ mod tests {
         fixtures::cleanup_test_tables();
         let _ = Spi::run("UPDATE pglinter.rules SET enable = false WHERE code IN ('B001', 'B002', 'C002', 'S001')");
     }
+
+
+    use crate::execute_rules::get_violations;
+    #[pg_test]
+    fn test_get_violations() {
+        // Setup: create two enabled rules with q4 using fixtures
+        fixtures::setup_test_rule("TESTQ4A", 99992, "Test Rule Q4A", true, 20, 80);
+        fixtures::setup_test_rule("TESTQ4B", 99993, "Test Rule Q4B", true, 20, 80);
+        let _ = Spi::run("UPDATE pglinter.rules SET q4 = 'SELECT 10::oid, 20::oid, 30' WHERE code = 'TESTQ4A'");
+        let _ = Spi::run("UPDATE pglinter.rules SET q4 = 'SELECT 11::oid, 21::oid, 31' WHERE code = 'TESTQ4B'");
+
+        let result = get_violations();
+        assert!(result.is_ok());
+        let all = result.unwrap();
+        // Should contain both rules
+        let mut found_a = false;
+        let mut found_b = false;
+        for (code, violations) in all {
+            if code == "TESTQ4A" {
+                assert_eq!(violations, vec![(10, 20, 30)]);
+                found_a = true;
+            }
+            if code == "TESTQ4B" {
+                assert_eq!(violations, vec![(11, 21, 31)]);
+                found_b = true;
+            }
+        }
+        assert!(found_a && found_b);
+        // Cleanup
+        fixtures::cleanup_test_rule("TESTQ4A");
+        fixtures::cleanup_test_rule("TESTQ4B");
+    }
+
+    use crate::execute_rules::get_violations_for_rule;
+    #[pg_test]
+    fn test_get_violations_for_rule() {
+        // Setup: create a rule with q4 using fixtures
+        fixtures::setup_test_rule("TESTQ4C", 99994, "Test Rule Q4C", true, 20, 80);
+        let _ = Spi::run("UPDATE pglinter.rules SET q4 = 'SELECT 42::oid, 43::oid, 44' WHERE code = 'TESTQ4C'");
+
+        let result = get_violations_for_rule("TESTQ4C");
+        assert!(result.is_ok());
+        let violations = result.unwrap();
+        assert_eq!(violations, vec![(42, 43, 44)]);
+
+        // Cleanup
+        fixtures::cleanup_test_rule("TESTQ4C");
+    }
+
 }
 
 /// This module is required by `cargo pgrx test` invocations.

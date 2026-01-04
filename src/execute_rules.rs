@@ -1,4 +1,3 @@
-
 use pgrx::prelude::*;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
@@ -99,19 +98,6 @@ fn get_rule_config(rule_code: &str) -> Result<(i64, i64, String), String> {
     }
 }
 
-// #[derive(Debug, Clone, Serialize, Deserialize)]
-// pub enum RuleScope {
-//     Base,
-//     Cluster,
-//     Table,
-//     Schema,
-// }
-
-// #[derive(Debug, Clone, Serialize, Deserialize)]
-// pub struct RuleParam {
-//     pub key: String,
-//     pub value: String,
-// }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct RuleResult {
@@ -611,6 +597,104 @@ pub fn execute_rules(ruleid: Option<&str>) -> Result<Vec<RuleResult>, String> {
     );
 
     Ok(results)
+}
+
+
+/// Collects violations for all enabled rules by calling get_violations_for_rule for each rule.
+pub fn get_violations() -> Result<Vec<(String, Vec<(i32, i32, i32)>)>, String> {
+    pgrx::debug1!("get_violations; Starting to collect violations for all enabled rules");
+    let rules_query = "SELECT code FROM pglinter.rules WHERE enable = true ORDER BY code";
+    let rule_codes: Result<Vec<String>, String> = Spi::connect(|client| {
+        let mut codes = Vec::new();
+        for row in client.select(rules_query, None, &[])? {
+            let code: String = row.get(1)?.unwrap_or_default();
+            codes.push(code);
+        }
+        Ok(codes)
+    }).map_err(|e: spi::SpiError| format!("Database error fetching rule codes: {e}"));
+
+    let rule_codes = match rule_codes {
+        Ok(codes) => codes,
+        Err(e) => return Err(e),
+    };
+
+    let mut all_violations = Vec::new();
+    for code in rule_codes {
+        match get_violations_for_rule(&code) {
+            Ok(violations) => {
+                all_violations.push((code.clone(), violations));
+            },
+            Err(e) => {
+                pgrx::debug1!("get_violations; Error for rule {}: {}", code, e);
+                // Optionally, you could push an empty vector or skip on error
+                all_violations.push((code.clone(), vec![]));
+            }
+        }
+    }
+    pgrx::debug1!("get_violations; Completed collecting violations for all rules");
+    Ok(all_violations)
+}
+
+/// Executes the q4 query for the given rule_id and returns (classid, objid, objsubid) tuples.
+/// Returns an error if the rule or q4 is not found, or if the query fails.
+pub fn get_violations_for_rule(rule_id: &str) -> Result<Vec<(i32, i32, i32)>, String> {
+    pgrx::debug1!("get_violations_for_rule; Starting for rule_id: {}", rule_id);
+
+    // Fetch q4 SQL from the rules table
+    let q4_query = "SELECT q4 FROM pglinter.rules WHERE code = $1";
+
+    let q4_sql: Option<String> = match Spi::connect(|client| {
+        let mut rows = client.select(q4_query, None, &[rule_id.into()])?;
+        if let Some(row) = rows.next() {
+            match row.get::<String>(1)? {
+                Some(q) if !q.trim().is_empty() => Ok::<Option<String>, spi::SpiError>(Some(q)),
+                _ => Ok::<Option<String>, spi::SpiError>(None),
+            }
+        } else {
+            Ok(None)
+        }
+    }) {
+        Ok(Some(val)) => Some(val),
+        Ok(None) => None,
+        Err(e) => {
+            pgrx::debug1!("get_violations_for_rule; SPI error fetching q4: {}", e);
+            return Err(format!("SPI error fetching q4: {e}"));
+        }
+    };
+
+    if q4_sql.is_none() {
+        pgrx::debug1!("get_violations_for_rule; No q4 query found for rule_id '{}', returning info message", rule_id);
+        return Ok(vec![]);
+    }
+    let q4_sql = q4_sql.unwrap();
+
+    // Execute the q4 SQL and collect results
+    let result: Result<Vec<(i32, i32, i32)>, String> = Spi::connect(|client| {
+        use pgrx::pg_sys::Oid;
+        let mut results = Vec::new();
+        let query_result = client.select(&q4_sql, None, &[])?;
+        for row in query_result {
+            let classid_oid = row.get::<Oid>(1)?.unwrap_or(Oid::INVALID);
+            let objid_oid = row.get::<Oid>(2)?.unwrap_or(Oid::INVALID);
+            let classid = u32::from(classid_oid) as i32;
+            let objid = u32::from(objid_oid) as i32;
+            let objsubid = row.get::<i32>(3)?.unwrap_or_default();
+            results.push((classid, objid, objsubid));
+        }
+        Ok(results)
+    })
+    .map_err(|e: spi::SpiError| format!("SPI error executing q4: {e}"));
+
+    match result {
+        Ok(res) => {
+            pgrx::debug1!("get_violations_for_rule; Completed successfully for rule_id: {} ({} violations)", rule_id, res.len());
+            Ok(res)
+        },
+        Err(e) => {
+            pgrx::debug1!("get_violations_for_rule; Failed with error: {}", e);
+            Err(e)
+        }
+    }
 }
 
 // Output and SARIF functions

@@ -18,6 +18,8 @@ SELECT pglinter.disable_all_rules() AS all_rules_disabled;
 -- Run table check to detect tables without PK
 SELECT pglinter.check();
 
+SELECT count(*) AS violation_count from pglinter.get_violations() WHERE rule_code = 'B001';
+
 -- Test rule management for B001
 SELECT pglinter.explain_rule('B001');
 SELECT pglinter.is_rule_enabled('B001') AS is_b001_enabled;
@@ -33,6 +35,8 @@ SELECT pglinter.enable_rule('B001') AS enable_b001;
 
 -- Test again with B001 enabled
 SELECT pglinter.check();
+
+SELECT count(*) AS violation_count from pglinter.get_violations() WHERE rule_code = 'B001';
 
 -- Test with file output
 SELECT pglinter.check('/tmp/pglinter_base_results.sarif');
