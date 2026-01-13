@@ -8,7 +8,7 @@ on:
         required: true
         default: '17'
         type: choice
-        options: ['13', '14', '15', '16', '17', '18']
+        options: ['14', '15', '16', '17', '18']
       pglinter_version:
         description: 'pglinter version'
         required: true
