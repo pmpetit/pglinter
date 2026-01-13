@@ -1,5 +1,6 @@
 -- Regression test for S002: SchemaPrefixedOrSuffixedWithEnvt
 -- This test creates schemas with environment prefixes/suffixes and checks that S002 identifies them.
+CREATE EXTENSION IF NOT EXISTS pglinter;
 -- Setup: Create test role
 CREATE ROLE s002_owner LOGIN;
 -- Create schemas with environment prefixes/suffixes
@@ -13,10 +14,10 @@ SELECT 'Testing S002 in isolation...' AS test_step;
 (1 row)
 
 SELECT pglinter.disable_all_rules() AS all_disabled;
-NOTICE:  🔴 Disabled 1 rule(s)
+NOTICE:  🔴 Disabled 20 rule(s)
  all_disabled 
 --------------
-            1
+           20
 (1 row)
 
 SELECT pglinter.enable_rule('S002') AS S002_only_enabled;
@@ -26,13 +27,30 @@ NOTICE:  ✅ Rule S002 has been enabled
  t
 (1 row)
 
-SELECT pglinter.perform_schema_check(); -- Should only run S002
-ERROR:  function pglinter.perform_schema_check() does not exist
-LINE 1: SELECT pglinter.perform_schema_check();
-               ^
-HINT:  No function matches the given name and argument types. You might need to add explicit type casts.
+SELECT pglinter.check(); -- Should only run S002
+NOTICE:  🔍 pglinter found 1 issue(s):
+NOTICE:  ==================================================
+NOTICE:  ❌ [S002] ERROR: 2/4 schemas are prefixed or suffixed with environment names. It exceed the error threshold: 50%. Prefer prefix or suffix the database name instead. Object list:
+dev_schema
+prod_schema
+
+NOTICE:  ==================================================
+NOTICE:  📊 Summary: 1 error(s), 0 warning(s), 0 info
+NOTICE:  🔴 Critical issues found - please review and fix errors
+ check 
+-------
+ t
+(1 row)
+
+SELECT count(*) AS violation_count from pglinter.get_violations() WHERE rule_code = 'S002';
+ violation_count 
+-----------------
+               2
+(1 row)
+
 -- Cleanup
 DROP SCHEMA prod_schema CASCADE;
 DROP SCHEMA dev_schema CASCADE;
 DROP SCHEMA s002_schema CASCADE;
 DROP ROLE s002_owner;
+DROP EXTENSION pglinter CASCADE;

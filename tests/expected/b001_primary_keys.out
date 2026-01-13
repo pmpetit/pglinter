@@ -256,6 +256,12 @@ NOTICE:  🟡 Some warnings found - consider reviewing for optimization
  t
 (1 row)
 
+SELECT count(*) AS violation_count from pglinter.get_violations() WHERE rule_code = 'B001';
+ violation_count 
+-----------------
+               7
+(1 row)
+
 -- Now let's fix some of the issues by adding primary keys to reduce the percentage
 SELECT 'Adding primary keys to some tables to improve the percentage...' AS improvement_info;
                         improvement_info                         
@@ -301,6 +307,12 @@ SELECT pglinter.check('/tmp/pglinter_b001_results.sarif');
 
 \! md5sum /tmp/pglinter_b001_results.sarif
 95b1aa589beea8fdb13fd0a66ea90518  /tmp/pglinter_b001_results.sarif
+SELECT count(*) AS violation_count from pglinter.get_violations() WHERE rule_code = 'B001';
+ violation_count 
+-----------------
+               2
+(1 row)
+
 DROP TABLE orders_no_pk CASCADE;
 DROP TABLE customers_no_pk CASCADE;
 DROP TABLE products_no_pk CASCADE;

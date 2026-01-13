@@ -45,11 +45,22 @@ SELECT 'Testing schema rules S002...' as test_info;
 (1 row)
 
 -- Run schema check to detect environment-named schemas and default privilege issues
-SELECT pglinter.perform_schema_check();
-ERROR:  function pglinter.perform_schema_check() does not exist
-LINE 1: SELECT pglinter.perform_schema_check();
-               ^
-HINT:  No function matches the given name and argument types. You might need to add explicit type casts.
+SELECT pglinter.check();
+NOTICE:  🔍 pglinter found 1 issue(s):
+NOTICE:  ==================================================
+NOTICE:  ❌ [S002] ERROR: 3/6 schemas are prefixed or suffixed with environment names. It exceed the error threshold: 50%. Prefer prefix or suffix the database name instead. Object list:
+dev_analytics
+prod_sales
+reports_staging
+
+NOTICE:  ==================================================
+NOTICE:  📊 Summary: 1 error(s), 0 warning(s), 0 info
+NOTICE:  🔴 Critical issues found - please review and fix errors
+ check 
+-------
+ t
+(1 row)
+
 -- Test individual schema rules
 SELECT pglinter.explain_rule('S002');
 NOTICE:  📖 Rule Explanation for S002
@@ -87,11 +98,13 @@ NOTICE:  🔴 Rule S002 has been disabled
  t
 (1 row)
 
-SELECT pglinter.perform_schema_check(); -- Should skip S002
-ERROR:  function pglinter.perform_schema_check() does not exist
-LINE 1: SELECT pglinter.perform_schema_check();
-               ^
-HINT:  No function matches the given name and argument types. You might need to add explicit type casts.
+SELECT pglinter.check(); -- Should skip S002
+NOTICE:  ✅ No issues found - database schema looks good!
+ check 
+-------
+ t
+(1 row)
+
 -- Re-enable S002
 SELECT pglinter.enable_rule('S002') AS s002_reenabled;
 NOTICE:  ✅ Rule S002 has been enabled
@@ -100,13 +113,7 @@ NOTICE:  ✅ Rule S002 has been enabled
  t
 (1 row)
 
-SELECT pglinter.perform_schema_check(); -- Should include S002 again
-ERROR:  function pglinter.perform_schema_check() does not exist
-LINE 1: SELECT pglinter.perform_schema_check();
-               ^
-HINT:  No function matches the given name and argument types. You might need to add explicit type casts.
--- Test the comprehensive check including schemas
-SELECT pglinter.check();
+SELECT pglinter.check(); -- Should include S002 again
 NOTICE:  🔍 pglinter found 1 issue(s):
 NOTICE:  ==================================================
 NOTICE:  ❌ [S002] ERROR: 3/6 schemas are prefixed or suffixed with environment names. It exceed the error threshold: 50%. Prefer prefix or suffix the database name instead. Object list:
@@ -120,6 +127,12 @@ NOTICE:  🔴 Critical issues found - please review and fix errors
  check 
 -------
  t
+(1 row)
+
+SELECT count(*) AS violation_count from pglinter.get_violations() WHERE rule_code = 'S002';
+ violation_count 
+-----------------
+               3
 (1 row)
 
 DROP SCHEMA prod_sales CASCADE;

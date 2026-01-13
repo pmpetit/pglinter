@@ -56,7 +56,7 @@ jobs:
             PGVERSIONS="${{ inputs.pgversions }}"
             echo "Using workflow_dispatch pgversions: $PGVERSIONS"
           else
-            PGVERSIONS="pg13,pg14,pg15,pg16,pg17,pg18"
+            PGVERSIONS="pg14,pg15,pg16,pg17,pg18"
             echo "Using default pgversions: $PGVERSIONS"
           fi
 

@@ -215,15 +215,20 @@ SELECT pglinter.enable_rule('B008') AS B008_enabled;
 SELECT 'Running table check with all rules disabled (should show no B008 results):' AS test_info;
 SELECT pglinter.check();
 
+SELECT count(*) AS violation_count from pglinter.get_violations() WHERE rule_code = 'B008';
+
 -- Test disabling B008 temporarily
 SELECT 'Testing B008 disable/enable cycle:' AS test_info;
 SELECT pglinter.disable_rule('B008') AS B008_disabled;
 SELECT pglinter.check(); -- Should skip B008
 
+SELECT count(*) AS violation_count from pglinter.get_violations() WHERE rule_code = 'B008';
+
 -- Re-enable B008 and test again
 SELECT pglinter.enable_rule('B008') AS B008_re_enabled;
 SELECT pglinter.check(); -- Should include B008 again
 
+SELECT count(*) AS violation_count from pglinter.get_violations() WHERE rule_code = 'B008';
 
 DROP TABLE test_orders_int_to_bigint CASCADE;
 DROP TABLE test_reviews_bigint_to_int CASCADE;
