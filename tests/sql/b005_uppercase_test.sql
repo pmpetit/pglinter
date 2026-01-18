@@ -109,6 +109,8 @@ SELECT pglinter.check('/tmp/pglinter_B005_results.sarif');
 -- Test if file exists and show checksum
 \! md5sum /tmp/pglinter_B005_results.sarif
 
+SELECT count(*) AS violation_count from pglinter.get_violations() WHERE rule_code = 'B005';
+
 -- Test rule management for B005
 SELECT 'Testing B005 rule management...' AS test_section;
 SELECT pglinter.explain_rule('B005');

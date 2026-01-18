@@ -165,6 +165,12 @@ SELECT pglinter.check('/tmp/pglinter_b003_results.sarif');
 -- Test if file exists and show checksum
 \! md5sum /tmp/pglinter_b003_results.sarif
 e3206df1c1134e1bb392df2ee4e7b8af  /tmp/pglinter_b003_results.sarif
+SELECT count(*) AS violation_count from pglinter.get_violations() WHERE rule_code = 'B003';
+ violation_count 
+-----------------
+               4
+(1 row)
+
 -- Test rule management for B003
 SELECT 'Testing B003 rule management...' AS test_section;
           test_section           
@@ -225,6 +231,12 @@ NOTICE:  ✅ Updated rule B003 levels: warning=60, error=90
  update_rule_levels 
 --------------------
  t
+(1 row)
+
+SELECT count(*) AS violation_count from pglinter.get_violations() WHERE rule_code = 'B003';
+ violation_count 
+-----------------
+               0
 (1 row)
 
 -- Temporarily remove one index to show the difference

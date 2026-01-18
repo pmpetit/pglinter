@@ -220,14 +220,20 @@ SELECT pglinter.enable_rule('B010') AS B010_enabled;
 SELECT 'Running table check with only B010 enabled:' AS test_info;
 SELECT pglinter.check();
 
+SELECT count(*) AS violation_count from pglinter.get_violations() WHERE rule_code = 'B010';
+
 -- Test disabling B010 temporarily
 SELECT 'Testing B010 disable/enable cycle:' AS test_info;
 SELECT pglinter.disable_rule('B010') AS B010_disabled;
 SELECT pglinter.check(); -- Should skip B010
 
+SELECT count(*) AS violation_count from pglinter.get_violations() WHERE rule_code = 'B010';
+
 -- Re-enable B010 and test again
 SELECT pglinter.enable_rule('B010') AS B010_re_enabled;
 SELECT pglinter.check(); -- Should include B010 again
+
+SELECT count(*) AS violation_count from pglinter.get_violations() WHERE rule_code = 'B010';
 
 -- ROLLBACK;
 

@@ -139,22 +139,24 @@ select pg_sleep(2);
 -- Create the extension and test b006 rule
 
 
-SELECT 'Testing b006 rule - Tables never selected detection...' as test_info;
+SELECT 'Testing B006 rule - Tables never selected detection...' as test_info;
 
--- First, disable all rules to isolate b006 testing
+-- First, disable all rules to isolate B006 testing
 SELECT pglinter.disable_all_rules() AS all_rules_disabled;
 
--- Enable only b006 for focused testing
-SELECT pglinter.enable_rule('b006') AS b006_enabled;
+-- Enable only B006 for focused testing
+SELECT pglinter.enable_rule('B006') AS b006_enabled;
 
--- Verify b006 is enabled
-SELECT pglinter.is_rule_enabled('b006') AS b006_status;
+-- Verify B006 is enabled
+SELECT pglinter.is_rule_enabled('B006') AS b006_status;
 
 SELECT pglinter.check();
 
 -- Test with file output
 SELECT pglinter.check('/tmp/pglinter_b006_results.sarif');
 \! md5sum /tmp/pglinter_b006_results.sarif
+
+SELECT count(*) AS violation_count from pglinter.get_violations() WHERE rule_code = 'B006';
 
 -- Now simulate realistic usage patterns:
 
@@ -199,6 +201,7 @@ SELECT pg_sleep(5);
 SELECT 'Running base check to detect b006 violations (tables never selected)...' as status;
 SELECT pglinter.check();
 
+SELECT count(*) AS violation_count from pglinter.get_violations() WHERE rule_code = 'B006';
 
 SELECT 'b006 comprehensive test completed successfully!' as test_result;
 
@@ -208,6 +211,5 @@ DROP TABLE dormant_logs_table CASCADE;
 DROP TABLE unused_config_table CASCADE;
 DROP TABLE frequently_accessed_table CASCADE;
 DROP TABLE completely_unused_table CASCADE;
-
 
 DROP EXTENSION pglinter CASCADE;

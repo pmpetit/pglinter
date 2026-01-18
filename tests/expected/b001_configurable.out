@@ -29,6 +29,12 @@ NOTICE:  ✅ Rule B001 has been enabled
  t
 (1 row)
 
+SELECT count(*) AS violation_count from pglinter.get_violations() WHERE rule_code = 'B001';
+ violation_count 
+-----------------
+               1
+(1 row)
+
 -- Test B001 rule - should show it uses the configured thresholds
 SELECT pglinter.check();
 NOTICE:  🔍 pglinter found 1 issue(s):
@@ -85,6 +91,12 @@ NOTICE:  ✅ Updated rule B001 levels: warning=60, error=80
  update_rule_levels 
 --------------------
  t
+(1 row)
+
+SELECT count(*) AS violation_count from pglinter.get_violations() WHERE rule_code = 'B001';
+ violation_count 
+-----------------
+               1
 (1 row)
 
 DROP TABLE test_no_pk CASCADE;
