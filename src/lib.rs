@@ -7,7 +7,7 @@ mod manage_rules;
 #[cfg(any(test, feature = "pg_test"))]
 mod fixtures;
 
-extension_sql_file!("../sql/rules.sql", name = "pglinter",finalize);
+extension_sql_file!("../sql/rules.sql", name = "pglinter", finalize);
 
 ::pgrx::pg_module_magic!();
 
@@ -191,6 +191,17 @@ mod pglinter {
     }
 
     #[pg_extern(security_definer)]
+    fn export_rulemessages_to_yaml() -> Option<String> {
+        match manage_rules::export_rule_messages_to_yaml() {
+            Ok(result) => Some(result.to_string()),
+            Err(e) => {
+                pgrx::warning!("Failed to export: {}", e);
+                None
+            }
+        }
+    }
+
+    #[pg_extern(security_definer)]
     fn export_rules_to_file(file_path: &str) -> Option<String> {
         match manage_rules::export_rules_to_file(file_path) {
             Ok(result) => Some(result.to_string()),
@@ -218,6 +229,17 @@ mod pglinter {
             Ok(result) => Some(result.to_string()),
             Err(e) => {
                 pgrx::warning!("Failed to import: {}", e);
+                Some(e.to_string())
+            }
+        }
+    }
+
+    #[pg_extern(security_definer)]
+    fn import_rule_messages_from_yaml(yaml_content: &str) -> Option<String> {
+        match manage_rules::import_rule_messages_from_yaml(yaml_content) {
+            Ok(result) => Some(result.to_string()),
+            Err(e) => {
+                pgrx::warning!("Failed to import rule messages: {}", e);
                 Some(e.to_string())
             }
         }
@@ -258,22 +280,32 @@ mod pglinter {
 
     #[pg_extern(sql = "
         CREATE FUNCTION pglinter.get_violations()
-        RETURNS TABLE(rule_code text, classid oid, objid oid, objsubid integer)
+        RETURNS TABLE(rule_code TEXT, classid OID, objid OID, objsubid INTEGER, message TEXT)
         AS 'MODULE_PATHNAME', 'get_violations_wrapper'
         LANGUAGE C
         SECURITY DEFINER;
     ")]
-    fn get_violations() -> TableIterator<'static, (name!(rule_code, String), name!(classid, i32), name!(objid, i32), name!(objsubid, i32))> {
-        use crate::execute_rules::get_violations;
+    fn get_violations() -> TableIterator<
+        'static,
+        (
+            name!(rule_code, String),
+            name!(classid, i32),
+            name!(objid, i32),
+            name!(objsubid, i32),
+            name!(message, String),
+        ),
+    > {
+        use crate::execute_rules::{get_sanitized_message, get_violations};
         let mut rows = Vec::new();
         match get_violations() {
             Ok(violations) => {
                 for (rule_code, violations_vec) in violations {
                     for (classid, objid, objsubid) in violations_vec {
-                        rows.push((rule_code.clone(), classid, objid, objsubid));
+                        let message = get_sanitized_message(&rule_code, classid, objid, objsubid);
+                        rows.push((rule_code.clone(), classid, objid, objsubid, message));
                     }
                 }
-            },
+            }
             Err(e) => {
                 pgrx::warning!("pglinter get_violations failed: {}", e);
             }
@@ -756,7 +788,6 @@ mod tests {
         fixtures::cleanup_test_rule("TEST017");
     }
 
-
     #[pg_test]
     fn test_update_rule_levels() {
         // Setup: ensure test rule exists
@@ -1232,7 +1263,6 @@ mod tests {
         fixtures::cleanup_test_tables();
     }
 
-
     #[pg_test]
     fn test_perform_schema_check() {
         // First, disable all schema rules to avoid issues with problematic rules like S005
@@ -1263,15 +1293,18 @@ mod tests {
             assert!(retry_result.is_ok());
             let retry_check = retry_result.unwrap();
             assert!(retry_check.is_some());
-            assert_eq!(retry_check.unwrap(), true, "Schema check should succeed with just S001 enabled");
+            assert_eq!(
+                retry_check.unwrap(),
+                true,
+                "Schema check should succeed with just S001 enabled"
+            );
         } else {
             assert_eq!(success, true);
         }
 
         // Test with output file parameter via SQL - use the same safe rule configuration
-        let result_with_file = Spi::get_one::<bool>(
-            "SELECT pglinter.check('/tmp/test_schema_output.sarif')",
-        );
+        let result_with_file =
+            Spi::get_one::<bool>("SELECT pglinter.check('/tmp/test_schema_output.sarif')");
         assert!(result_with_file.is_ok());
         let check_result_with_file = result_with_file.unwrap();
         assert!(check_result_with_file.is_some());
@@ -1289,7 +1322,10 @@ mod tests {
             let _ = std::fs::remove_file("/tmp/test_schema_output.sarif");
         }
 
-        assert_eq!(file_success, true, "Schema check with file output should succeed");
+        assert_eq!(
+            file_success, true,
+            "Schema check with file output should succeed"
+        );
 
         // Reset schema rules to their default state
         let _ = Spi::run("UPDATE pglinter.rules SET enable = true WHERE code LIKE 'S%'");
@@ -1314,9 +1350,10 @@ mod tests {
         assert!(check_result.is_some());
         assert_eq!(check_result.unwrap(), true);
 
-
         // Test scenario where all rules are disabled (should still complete successfully)
-        let _ = Spi::run("UPDATE pglinter.rules SET enable = false WHERE code IN ('B001', 'C002', 'S001')");
+        let _ = Spi::run(
+            "UPDATE pglinter.rules SET enable = false WHERE code IN ('B001', 'C002', 'S001')",
+        );
 
         let result_disabled = Spi::get_one::<bool>("SELECT pglinter.check()");
         assert!(result_disabled.is_ok());
@@ -1325,7 +1362,9 @@ mod tests {
         assert_eq!(check_result_disabled.unwrap(), true);
 
         // Re-enable rules for cleanup
-        let _ = Spi::run("UPDATE pglinter.rules SET enable = true WHERE code IN ('B001', 'C002', 'S001')");
+        let _ = Spi::run(
+            "UPDATE pglinter.rules SET enable = true WHERE code IN ('B001', 'C002', 'S001')",
+        );
 
         // Cleanup test tables
         fixtures::cleanup_test_tables();
@@ -1544,11 +1583,8 @@ mod tests {
 
         // Test 1: Test SARIF output generation with file output
         let sarif_file_path = "/tmp/pglinter_test_sarif.json";
-        let result_with_file = Spi::get_one::<bool>(&format!(
-            "SELECT pglinter.check('{}')",
-            sarif_file_path
-        ))
-        .unwrap();
+        let result_with_file =
+            Spi::get_one::<bool>(&format!("SELECT pglinter.check('{}')", sarif_file_path)).unwrap();
         assert!(result_with_file.is_some());
         assert_eq!(result_with_file.unwrap(), true);
 
@@ -1582,11 +1618,9 @@ mod tests {
         // Test 3: Test with different rule scope
         let sarif_file_path_2 = "/tmp/pglinter_test_sarif_2.json";
         let _ = Spi::run("UPDATE pglinter.rules SET enable = true WHERE code = 'B002'");
-        let result_base = Spi::get_one::<bool>(&format!(
-            "SELECT pglinter.check('{}')",
-            sarif_file_path_2
-        ))
-        .unwrap();
+        let result_base =
+            Spi::get_one::<bool>(&format!("SELECT pglinter.check('{}')", sarif_file_path_2))
+                .unwrap();
         assert!(result_base.is_some());
         assert_eq!(result_base.unwrap(), true);
 
@@ -1626,11 +1660,8 @@ mod tests {
 
         // Test with SARIF output to verify the warning message format
         let test_sarif_file = "/tmp/test_q1_warning.json";
-        let result_sarif = Spi::get_one::<bool>(&format!(
-            "SELECT pglinter.check('{}')",
-            test_sarif_file
-        ))
-        .unwrap();
+        let result_sarif =
+            Spi::get_one::<bool>(&format!("SELECT pglinter.check('{}')", test_sarif_file)).unwrap();
         assert!(result_sarif.is_some());
         assert_eq!(result_sarif.unwrap(), true);
 
@@ -1665,9 +1696,9 @@ mod tests {
                             let message = result["message"]["text"].as_str().unwrap_or("");
                             // The format from execute_q1_rule_with_params should include the rule code
                             // Rule code appears in brackets like [B001] in the message
-                            assert!(
-                                message.contains("1/2 table(s) without primary key exceed the error threshold: 50%.")
-                            );
+                            assert!(message.contains(
+                                "1/2 table(s) without primary key exceed the error threshold: 50%."
+                            ));
 
                             // Check that we have a level (warning, error, or note)
                             assert!(result["level"].is_string(), "Result should have a level");
@@ -1718,11 +1749,8 @@ mod tests {
         // Execute table check which will trigger execute_q1_rule_with_params for B001
         // This should create a warning-level RuleResult using the format on lines 171-177
         let test_sarif_file = "/tmp/test_warning_format.json";
-        let result = Spi::get_one::<bool>(&format!(
-            "SELECT pglinter.check('{}')",
-            test_sarif_file
-        ))
-        .unwrap();
+        let result =
+            Spi::get_one::<bool>(&format!("SELECT pglinter.check('{}')", test_sarif_file)).unwrap();
         assert!(result.is_some());
         assert_eq!(result.unwrap(), true);
 
@@ -1808,7 +1836,8 @@ mod tests {
         let result_with_file = Spi::get_one::<bool>(&format!(
             "SELECT pglinter.check_rule('B001', '{}')",
             test_file_path
-        )).unwrap();
+        ))
+        .unwrap();
         assert!(result_with_file.is_some());
         assert_eq!(result_with_file.unwrap(), true);
 
@@ -1819,31 +1848,35 @@ mod tests {
         );
 
         // Read and verify SARIF file contains rule-specific results
-        let sarif_content = std::fs::read_to_string(test_file_path)
-            .expect("Failed to read SARIF file");
+        let sarif_content =
+            std::fs::read_to_string(test_file_path).expect("Failed to read SARIF file");
 
         // Basic SARIF structure validation
         assert!(!sarif_content.is_empty(), "SARIF file should not be empty");
-        assert!(sarif_content.contains("version"), "SARIF should contain version");
+        assert!(
+            sarif_content.contains("version"),
+            "SARIF should contain version"
+        );
         assert!(sarif_content.contains("runs"), "SARIF should contain runs");
 
         // Parse as JSON to ensure it's valid
-        let sarif_json: serde_json::Value = serde_json::from_str(&sarif_content)
-            .expect("SARIF output should be valid JSON");
+        let sarif_json: serde_json::Value =
+            serde_json::from_str(&sarif_content).expect("SARIF output should be valid JSON");
 
         // Check that results contain B001 rule violations
         if let Some(results) = sarif_json["runs"][0]["results"].as_array() {
             if !results.is_empty() {
                 // Should have results for B001 rule
-                let has_b001_results = results.iter().any(|result| {
-                    result["ruleId"].as_str() == Some("B001")
-                });
+                let has_b001_results = results
+                    .iter()
+                    .any(|result| result["ruleId"].as_str() == Some("B001"));
                 assert!(has_b001_results, "SARIF should contain B001 rule results");
             }
         }
 
         // Test 4: Test check_rule with non-existent rule ID
-        let result_nonexistent = Spi::get_one::<bool>("SELECT pglinter.check_rule('NONEXISTENT')").unwrap();
+        let result_nonexistent =
+            Spi::get_one::<bool>("SELECT pglinter.check_rule('NONEXISTENT')").unwrap();
         assert!(result_nonexistent.is_some());
         assert_eq!(result_nonexistent.unwrap(), true); // Should still complete without error
 
@@ -1891,7 +1924,8 @@ mod tests {
         let result_file_2 = Spi::get_one::<bool>(&format!(
             "SELECT pglinter.check_rule('B001', '{}')",
             test_file_path_2
-        )).unwrap();
+        ))
+        .unwrap();
         assert!(result_file_2.is_some());
         assert_eq!(result_file_2.unwrap(), true);
 
@@ -1904,15 +1938,18 @@ mod tests {
         let _ = Spi::run("UPDATE pglinter.rules SET enable = false WHERE code IN ('B001', 'B002', 'C002', 'S001')");
     }
 
-
     use crate::execute_rules::get_violations;
     #[pg_test]
     fn test_get_violations() {
         // Setup: create two enabled rules with q4 using fixtures
         fixtures::setup_test_rule("TESTQ4A", 99992, "Test Rule Q4A", true, 20, 80);
         fixtures::setup_test_rule("TESTQ4B", 99993, "Test Rule Q4B", true, 20, 80);
-        let _ = Spi::run("UPDATE pglinter.rules SET q4 = 'SELECT 10::oid, 20::oid, 30' WHERE code = 'TESTQ4A'");
-        let _ = Spi::run("UPDATE pglinter.rules SET q4 = 'SELECT 11::oid, 21::oid, 31' WHERE code = 'TESTQ4B'");
+        let _ = Spi::run(
+            "UPDATE pglinter.rules SET q4 = 'SELECT 10::oid, 20::oid, 30' WHERE code = 'TESTQ4A'",
+        );
+        let _ = Spi::run(
+            "UPDATE pglinter.rules SET q4 = 'SELECT 11::oid, 21::oid, 31' WHERE code = 'TESTQ4B'",
+        );
 
         let result = get_violations();
         assert!(result.is_ok());
@@ -1941,7 +1978,9 @@ mod tests {
     fn test_get_violations_for_rule() {
         // Setup: create a rule with q4 using fixtures
         fixtures::setup_test_rule("TESTQ4C", 99994, "Test Rule Q4C", true, 20, 80);
-        let _ = Spi::run("UPDATE pglinter.rules SET q4 = 'SELECT 42::oid, 43::oid, 44' WHERE code = 'TESTQ4C'");
+        let _ = Spi::run(
+            "UPDATE pglinter.rules SET q4 = 'SELECT 42::oid, 43::oid, 44' WHERE code = 'TESTQ4C'",
+        );
 
         let result = get_violations_for_rule("TESTQ4C");
         assert!(result.is_ok());
@@ -1951,7 +1990,6 @@ mod tests {
         // Cleanup
         fixtures::cleanup_test_rule("TESTQ4C");
     }
-
 }
 
 /// This module is required by `cargo pgrx test` invocations.
@@ -1968,4 +2006,3 @@ pub mod pg_test {
         vec![]
     }
 }
-

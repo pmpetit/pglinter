@@ -41,9 +41,9 @@ CREATE TABLE IF NOT EXISTS pglinter.rules (
     q4 TEXT DEFAULT NULL
 );
 
+
 -- Clear existing data and insert comprehensive rules
 DELETE FROM pglinter.rules;
-
 
 INSERT INTO pglinter.rules (
     name,
@@ -2117,3 +2117,35 @@ pg_catalog.pg_settings
 WHERE name='password_encryption' AND setting='md5'
 $$
 WHERE code = 'C003';
+
+-- =============================================================================
+-- Rule Messages Table Creation
+-- =============================================================================
+CREATE TABLE IF NOT EXISTS pglinter.rule_messages (
+    id SERIAL PRIMARY KEY,
+    code TEXT,
+    rule_msg jsonb
+);
+
+DELETE FROM pglinter.rule_messages;
+
+INSERT INTO pglinter.rule_messages (code, rule_msg) VALUES
+('S001', '{"severity": "WARNING", "message": "Schema {object} has no default role.", "advices": "Add a default privilege to the schema so future tables are granted to a role automatically.", "infos": ["How to fix: ALTER DEFAULT PRIVILEGES IN SCHEMA {object} FOR USER <owner> GRANT ...;"]}'),
+('S002', '{"severity": "WARNING", "message": "Schema {object} is prefixed or suffixed with an environment name.", "advices": "Keep the same schema name across environments. Prefer prefixing or suffixing the database name instead.", "infos": ["How to fix: Rename schema {object} to a neutral name."]}'),
+('S003', '{"severity": "WARNING", "message": "Schema {object} is unsecured: PUBLIC can create objects.", "advices": "REVOKE CREATE ON SCHEMA from PUBLIC to restrict object creation.", "infos": ["How to fix: REVOKE CREATE ON SCHEMA {object} FROM PUBLIC;"]}'),
+('S004', '{"severity": "WARNING", "message": "Schema {object} is owned by an internal role or superuser.", "advices": "Change schema owner to a functional role for better security and maintainability.", "infos": ["How to fix: ALTER SCHEMA {object} OWNER TO <role>;"]}'),
+('S005', '{"severity": "WARNING", "message": "Schema {object} and its tables have different owners.", "advices": "For easier maintenance, schema and tables should have the same owner.", "infos": ["How to fix: ALTER TABLE {object} OWNER TO <role>;"]}');
+
+INSERT INTO pglinter.rule_messages (code, rule_msg) VALUES
+('B001', '{"severity": "WARNING", "message": "{object} does not have a primary key.", "advices": "Add a primary key to this table to ensure data integrity and better performance.", "infos": ["How to fix: ALTER TABLE {object} ADD PRIMARY KEY (...);"]}'),
+('B002', '{"severity": "WARNING", "message": "{object} is a redundant index.", "advices": "Remove redundant or duplicate indexes to optimize performance and storage.", "infos": ["How to fix: DROP INDEX {object}; or review constraints that may create duplicate indexes."]}'),
+('B003', '{"severity": "WARNING", "message": "{object} does not have an index on its foreign key.", "advices": "Create an index on the foreign key column to improve join and lookup performance.", "infos": ["How to fix: CREATE INDEX ON {object} (...);"]}'),
+('B004', '{"severity": "WARNING", "message": "{object} is an unused index.", "advices": "Remove unused indexes to reduce storage and maintenance overhead.", "infos": ["How to fix: DROP INDEX {object}; or review index usage statistics."]}'),
+('B005', '{"severity": "WARNING", "message": "{object} uses uppercase characters.", "advices": "Using uppercase in identifiers requires quoting and can cause case-sensitivity issues.", "infos": ["How to fix: Rename the database object to use only lowercase characters."]}'),
+('B006', '{"severity": "WARNING", "message": "{object} has never been selected.", "advices": "Review the necessity of this table. If it is not needed, consider removing it or archiving its data.", "infos": ["How to fix: DROP TABLE {object}; or investigate application usage."]}'),
+('B007', '{"severity": "WARNING", "message": "{object} has foreign keys outside its schema.", "advices": "Consider restructuring schema design to keep related tables in the same schema.", "infos": ["How to fix: Move related tables into the same schema or review schema design."]}'),
+('B008', '{"severity": "WARNING", "message": "{object} has a foreign key type mismatch.", "advices": "Adjust column types to ensure foreign key matches referenced key type.", "infos": ["How to fix: ALTER TABLE {object} ALTER COLUMN ... TYPE ...;"]}'),
+('B009', '{"severity": "WARNING", "message": "{object} shares a trigger function with other tables.", "advices": "Use one trigger function per table for clarity and maintainability.", "infos": ["How to fix: CREATE a dedicated trigger function for {object} and update the trigger."]}'),
+('B010', '{"severity": "WARNING", "message": "{object} uses a reserved SQL keyword as its name.", "advices": "Rename database objects to avoid using reserved keywords.", "infos": ["How to fix: ALTER TABLE/INDEX/VIEW/FUNCTION/TYPE {object} RENAME TO ...;"]}'),
+('B011', '{"severity": "WARNING", "message": "{object} schema has tables with different owners.", "advices": "Change table owners to the same functional role for easier maintenance.", "infos": ["How to fix: ALTER TABLE {object} OWNER TO ...;"]}'),
+('B012', '{"severity": "WARNING", "message": "{object} has a composite primary key with more than 4 columns.", "advices": "Consider redesigning the table to avoid composite primary keys with more than 4 columns. Use surrogate keys if possible.", "infos": ["How to fix: Redesign {object} to use a surrogate key and unique constraints."]}');
