@@ -167,9 +167,9 @@ NOTICE:  ⚠️  [B001] WARNING: 7/10 table(s) without primary key exceed the wa
 public.orders_no_pk
 public.customers_no_pk
 public.products_no_pk
-public.shipments_no_pk
 public.reviews_no_pk
 public.inventory_no_pk
+public.shipments_no_pk
 public.payments_no_pk
 
 NOTICE:  ==================================================
@@ -243,9 +243,9 @@ NOTICE:  ⚠️  [B001] WARNING: 7/10 table(s) without primary key exceed the wa
 public.orders_no_pk
 public.customers_no_pk
 public.products_no_pk
-public.shipments_no_pk
 public.reviews_no_pk
 public.inventory_no_pk
+public.shipments_no_pk
 public.payments_no_pk
 
 NOTICE:  ==================================================

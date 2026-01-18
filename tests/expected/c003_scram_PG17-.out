@@ -17,9 +17,9 @@ WHERE name = 'password_encryption';
 SELECT 'Original password_encryption setting: ' || setting AS original_setting
 FROM pg_settings
 WHERE name = 'password_encryption';
-             original_setting              
--------------------------------------------
- Original password_encryption setting: md5
+                  original_setting                   
+-----------------------------------------------------
+ Original password_encryption setting: scram-sha-256
 (1 row)
 
 -- Change password_encryption to scram-sha-256 (secure setting)
@@ -262,7 +262,7 @@ BEGIN
     END IF;
 END
 $$;
-NOTICE:  Restored password_encryption to original value: md5
+NOTICE:  Restored password_encryption to original value: scram-sha-256
 DROP TABLE original_settings;
 DROP TABLE setting_change_status;
 DROP EXTENSION pglinter CASCADE;
