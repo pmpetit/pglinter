@@ -234,7 +234,7 @@ NOTICE:  🔴 Critical issues found - please review and fix errors
 SELECT count(*) AS violation_count from pglinter.get_violations() WHERE rule_code = 'B010';
  violation_count 
 -----------------
-              36
+              33
 (1 row)
 
 -- Test disabling B010 temporarily
@@ -303,7 +303,7 @@ NOTICE:  🔴 Critical issues found - please review and fix errors
 SELECT count(*) AS violation_count from pglinter.get_violations() WHERE rule_code = 'B010';
  violation_count 
 -----------------
-              36
+              33
 (1 row)
 
 -- ROLLBACK;

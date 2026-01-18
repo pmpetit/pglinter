@@ -773,7 +773,7 @@ pub fn get_sanitized_message(rule_id: &str, classid: i32, objid: i32, objsubid: 
                 format!("{type_} in schema: {schema} named: {name}")
             }
             _ => {
-                pgrx::warning!(
+                pgrx::debug1!(
                     "Could not resolve object name for classid={}, objid={}, objsubid={}",
                     classid,
                     objid,
