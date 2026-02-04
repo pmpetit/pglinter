@@ -38,7 +38,7 @@ SELECT pglinter.enable_rule('S002');
 SELECT 'Testing schema rules S002...' as test_info;
 
 -- Run schema check to detect environment-named schemas and default privilege issues
-SELECT pglinter.perform_schema_check();
+SELECT pglinter.check();
 
 -- Test individual schema rules
 SELECT pglinter.explain_rule('S002');
@@ -48,14 +48,13 @@ SELECT pglinter.is_rule_enabled('S002') AS s002_enabled;
 
 -- Test disabling S002 (environment prefixes)
 SELECT pglinter.disable_rule('S002') AS s002_disabled;
-SELECT pglinter.perform_schema_check(); -- Should skip S002
+SELECT pglinter.check(); -- Should skip S002
 
 -- Re-enable S002
 SELECT pglinter.enable_rule('S002') AS s002_reenabled;
-SELECT pglinter.perform_schema_check(); -- Should include S002 again
+SELECT pglinter.check(); -- Should include S002 again
 
--- Test the comprehensive check including schemas
-SELECT pglinter.check();
+SELECT count(*) AS violation_count from pglinter.get_violations() WHERE rule_code = 'S002';
 
 DROP SCHEMA prod_sales CASCADE;
 DROP SCHEMA dev_analytics CASCADE;

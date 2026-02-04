@@ -40,5 +40,11 @@ NOTICE:  🔴 Critical issues found - please review and fix errors
  t
 (1 row)
 
+SELECT count(*) AS violation_count from pglinter.get_violations() WHERE rule_code = 'B012';
+ violation_count 
+-----------------
+               1
+(1 row)
+
 DROP TABLE test_composite_pk CASCADE;
 DROP EXTENSION pglinter CASCADE;

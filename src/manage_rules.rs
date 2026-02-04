@@ -1,3 +1,4 @@
+
 use pgrx::prelude::*;
 use serde::{Deserialize, Serialize};
 
@@ -475,6 +476,40 @@ pub fn export_rules_to_yaml() -> Result<String, String> {
     }
 }
 
+/// Export all rule messages to YAML format
+pub fn export_rule_messages_to_yaml() -> Result<String, String> {
+    use serde_json::Value;
+    use std::collections::BTreeMap;
+
+    let query = "
+        SELECT code, rule_msg::TEXT
+        FROM pglinter.rule_messages
+        ORDER BY code";
+
+    let result: Result<BTreeMap<String, Value>, spi::SpiError> = Spi::connect(|client| {
+        let rows = client.select(query, None, &[])?;
+        let mut messages = BTreeMap::new();
+        for row in rows {
+            let code: String = row.get(1)?.unwrap_or_default();
+            let rule_msg: Option<String> = row.get(2)?;
+            let json_val = match rule_msg {
+                Some(s) => serde_json::from_str(&s).unwrap_or(Value::Null),
+                None => Value::Null,
+            };
+            messages.insert(code, json_val);
+        }
+        Ok(messages)
+    });
+
+    match result {
+        Ok(messages) => match serde_yaml::to_string(&messages) {
+            Ok(yaml) => Ok(yaml),
+            Err(e) => Err(format!("YAML serialization error: {}", e)),
+        },
+        Err(e) => Err(format!("Database error: {}", e)),
+    }
+}
+
 /// Export rules to YAML file
 pub fn export_rules_to_file(file_path: &str) -> Result<String, String> {
     let yaml_content = export_rules_to_yaml()?;
@@ -594,4 +629,54 @@ pub fn import_rules_from_file(file_path: &str) -> Result<String, String> {
 
     pgrx::notice!("📂 Reading rules from: {}", file_path);
     import_rules_from_yaml(&yaml_content)
+}
+
+/// Import rule messages from YAML format and replace all entries in pglinter.rule_messages
+pub fn import_rule_messages_from_yaml(yaml_content: &str) -> Result<String, String> {
+    use serde_json::Value;
+    use std::collections::BTreeMap;
+
+    // Parse YAML into BTreeMap<String, Value>
+    let messages: BTreeMap<String, Value> = match serde_yaml::from_str(yaml_content) {
+        Ok(data) => data,
+        Err(e) => return Err(format!("YAML parsing error: {}", e)),
+    };
+
+    let mut errors = Vec::new();
+    let mut inserted = 0;
+
+    let result: Result<(), spi::SpiError> = Spi::connect_mut(|client| {
+        // Remove all existing entries
+        client.update("DELETE FROM pglinter.rule_messages", None, &[])?;
+
+        // Insert each rule message
+        for (code, rule_msg) in &messages {
+            let insert_query =
+                "INSERT INTO pglinter.rule_messages (code, rule_msg) VALUES ($1, $2)";
+            let rule_msg_json =
+                serde_json::to_string(rule_msg).unwrap_or_else(|_| "null".to_string());
+            match client.update(insert_query, None, &[code.into(), rule_msg_json.into()]) {
+                Ok(_) => inserted += 1,
+                Err(e) => errors.push(format!("{}: {}", code, e)),
+            }
+        }
+        Ok(())
+    });
+
+    match result {
+        Ok(_) => {
+            let mut msg = format!("✅ Imported {} rule messages", inserted);
+            if !errors.is_empty() {
+                msg.push_str(&format!("\n⚠️  {} errors:", errors.len()));
+                for error in errors.iter().take(5) {
+                    msg.push_str(&format!("\n  - {}", error));
+                }
+                if errors.len() > 5 {
+                    msg.push_str(&format!("\n  ... and {} more errors", errors.len() - 5));
+                }
+            }
+            Ok(msg)
+        }
+        Err(e) => Err(format!("Database error: {}", e)),
+    }
 }

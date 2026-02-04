@@ -22,6 +22,8 @@ SELECT pglinter.disable_all_rules() AS all_rules_disabled;
 -- Enable only B001 for focused testing
 SELECT pglinter.enable_rule('B001') AS b001_enabled;
 
+SELECT count(*) AS violation_count from pglinter.get_violations() WHERE rule_code = 'B001';
+
 -- Test B001 rule - should show it uses the configured thresholds
 SELECT pglinter.check();
 SELECT pglinter.check('/tmp/pglinter_b001_results.sarif');
@@ -43,6 +45,7 @@ SELECT pglinter.check();
 -- Update B001 thresholds to very low values (1%, 2%) not to trigger on any table without PK
 SELECT pglinter.update_rule_levels('B001', 60, 80);
 
+SELECT count(*) AS violation_count from pglinter.get_violations() WHERE rule_code = 'B001';
 
 DROP TABLE test_no_pk CASCADE;
 DROP TABLE test_with_pk CASCADE;

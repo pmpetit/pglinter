@@ -9,7 +9,7 @@ on:
         required: true
         default: '17'
         type: choice
-        options: ['13', '14', '15', '16', '17', '18']
+        options: ['14', '15', '16', '17', '18']
       platform:
         description: 'Target platform'
         required: false

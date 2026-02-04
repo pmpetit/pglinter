@@ -1,8 +1,7 @@
 -- Regression test for S005: SeveralTableOwnerInSchema
 -- This test creates two tables in the same schema with different owners
 -- and checks that the rule S005 correctly identifies the schema as problematic.
-CREATE EXTENSION IF NOT EXISTS pglinter;
-NOTICE:  extension "pglinter" already exists, skipping
+CREATE EXTENSION pglinter;
 \pset pager off
 -- Setup: Create test roles and schema
 CREATE ROLE s005_owner1 LOGIN;
@@ -20,10 +19,10 @@ SELECT 'Testing S005 in isolation...' AS test_step;
 (1 row)
 
 SELECT pglinter.disable_all_rules() AS all_disabled;
-NOTICE:  🔴 Disabled 1 rule(s)
+NOTICE:  🔴 Disabled 20 rule(s)
  all_disabled 
 --------------
-            1
+           20
 (1 row)
 
 SELECT pglinter.enable_rule('S005') AS S005_only_enabled;
@@ -33,14 +32,30 @@ NOTICE:  ✅ Rule S005 has been enabled
  t
 (1 row)
 
-SELECT pglinter.perform_schema_check(); -- Should only run S005
-ERROR:  function pglinter.perform_schema_check() does not exist
-LINE 1: SELECT pglinter.perform_schema_check();
-               ^
-HINT:  No function matches the given name and argument types. You might need to add explicit type casts.
+SELECT pglinter.check(); -- Should only run S005
+NOTICE:  🔍 pglinter found 1 issue(s):
+NOTICE:  ==================================================
+NOTICE:  ⚠️  [S005] WARNING: 1/2 in the same schema, tables have different owners. They should be the same. Exceed the warning threshold: 50%. Object list:
+Owner of schema s005_schema is s005_owner1 but owner of table s005_schema.table2 is s005_owner2
+
+NOTICE:  ==================================================
+NOTICE:  📊 Summary: 0 error(s), 1 warning(s), 0 info
+NOTICE:  🟡 Some warnings found - consider reviewing for optimization
+ check 
+-------
+ t
+(1 row)
+
+SELECT count(*) AS violation_count from pglinter.get_violations() WHERE rule_code = 'S005';
+ violation_count 
+-----------------
+               1
+(1 row)
+
 -- Cleanup
 DROP TABLE s005_schema.table1;
 DROP TABLE s005_schema.table2;
 DROP SCHEMA s005_schema;
 DROP ROLE s005_owner1;
 DROP ROLE s005_owner2;
+DROP EXTENSION pglinter CASCADE;

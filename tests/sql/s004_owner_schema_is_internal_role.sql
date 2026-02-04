@@ -13,8 +13,10 @@ CREATE SCHEMA s004_schema AUTHORIZATION postgres;
 SELECT 'Testing S004 in isolation...' AS test_step;
 SELECT pglinter.disable_all_rules() AS all_disabled;
 SELECT pglinter.enable_rule('S004') AS S004_only_enabled;
-SELECT pglinter.perform_schema_check(); -- Should only run S004
+SELECT pglinter.check(); -- Should only run S004
 
 -- Cleanup
 DROP SCHEMA s004_schema CASCADE;
 DROP ROLE s004_owner;
+
+DROP EXTENSION pglinter CASCADE;

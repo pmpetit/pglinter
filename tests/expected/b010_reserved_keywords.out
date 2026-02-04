@@ -231,6 +231,12 @@ NOTICE:  🔴 Critical issues found - please review and fix errors
  t
 (1 row)
 
+SELECT count(*) AS violation_count from pglinter.get_violations() WHERE rule_code = 'B010';
+ violation_count 
+-----------------
+              33
+(1 row)
+
 -- Test disabling B010 temporarily
 SELECT 'Testing B010 disable/enable cycle:' AS test_info;
              test_info              
@@ -250,6 +256,12 @@ NOTICE:  ✅ No issues found - database schema looks good!
  check 
 -------
  t
+(1 row)
+
+SELECT count(*) AS violation_count from pglinter.get_violations() WHERE rule_code = 'B010';
+ violation_count 
+-----------------
+               0
 (1 row)
 
 -- Re-enable B010 and test again
@@ -286,6 +298,12 @@ NOTICE:  🔴 Critical issues found - please review and fix errors
  check 
 -------
  t
+(1 row)
+
+SELECT count(*) AS violation_count from pglinter.get_violations() WHERE rule_code = 'B010';
+ violation_count 
+-----------------
+              33
 (1 row)
 
 -- ROLLBACK;

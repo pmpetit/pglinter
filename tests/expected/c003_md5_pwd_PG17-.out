@@ -42,9 +42,9 @@ SELECT '=== Test 1: Current password_encryption setting ===' AS test_section;
 SELECT name, setting, context
 FROM pg_settings
 WHERE name = 'password_encryption';
-        name         | setting | context 
----------------------+---------+---------
- password_encryption | md5     | user
+        name         |    setting    | context 
+---------------------+---------------+---------
+ password_encryption | scram-sha-256 | user
 (1 row)
 
 -- Test 2: Run C003 check with current settings
@@ -133,7 +133,7 @@ FROM pg_catalog.pg_settings
 WHERE name='password_encryption' AND setting='md5';
  md5_password_count 
 --------------------
-                  1
+                  0
 (1 row)
 
 -- Test 7: Export results to SARIF format
@@ -151,5 +151,5 @@ SELECT pglinter.check('/tmp/pglinter_c003_results.sarif');
 
 -- Show checksum of generated file if it exists
 \! test -f /tmp/pglinter_c003_results.sarif && md5sum /tmp/pglinter_c003_results.sarif || echo "SARIF file not generated"
-ce101be1aa670e94c0ca1d56343c394f  /tmp/pglinter_c003_results.sarif
+7cd6073b52ee9a1173c05c016e2458f4  /tmp/pglinter_c003_results.sarif
 DROP EXTENSION pglinter CASCADE;

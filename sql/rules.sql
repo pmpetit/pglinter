@@ -37,12 +37,13 @@ CREATE TABLE IF NOT EXISTS pglinter.rules (
     fixes TEXT [],
     q1 TEXT,
     q2 TEXT,
-    q3 TEXT
+    q3 TEXT,
+    q4 TEXT DEFAULT NULL
 );
+
 
 -- Clear existing data and insert comprehensive rules
 DELETE FROM pglinter.rules;
-
 
 INSERT INTO pglinter.rules (
     name,
@@ -268,6 +269,28 @@ WHERE
             AND pc.contype = 'p'
     )
 ORDER BY 1
+$$,
+  q4 = $$
+-- Returns classid, objid, objsubid for tables without a primary key
+SELECT
+    'pg_class'::regclass::oid AS classid,
+    c.oid AS objid,
+    0 AS objsubid
+FROM pg_tables AS pt
+JOIN pg_class c
+    ON c.relname = pt.tablename
+    AND c.relnamespace = (SELECT oid FROM pg_namespace WHERE nspname = pt.schemaname)
+WHERE
+    pt.schemaname NOT IN (
+        'pg_toast', 'pg_catalog', 'information_schema', 'pglinter', '_timescaledb', 'timescaledb'
+    )
+    AND NOT EXISTS (
+        SELECT 1
+        FROM pg_constraint AS pc
+        WHERE
+            pc.conrelid = c.oid
+            AND pc.contype = 'p'
+    )
 $$
 WHERE code = 'B001';
 
@@ -356,6 +379,49 @@ WHERE
     AND i2.indexed_columns_string LIKE i1.indexed_columns_string || '%'
 
 ORDER BY 1, 2
+$$,
+  q4 = $$
+WITH index_info AS (
+    SELECT
+        ind.indrelid AS table_oid,
+        ind.indexrelid AS index_oid,
+        att.attname AS column_name,
+        array_position(ind.indkey, att.attnum) AS column_order,
+        ind.indisprimary
+    FROM pg_index ind
+    JOIN pg_attribute att ON att.attrelid = ind.indrelid AND att.attnum = ANY(ind.indkey)
+    WHERE NOT ind.indisexclusion
+),
+indexed_columns AS (
+    SELECT
+        table_oid,
+        index_oid,
+        string_agg(column_name, ',' ORDER BY column_order) AS indexed_columns_string,
+        MAX(indisprimary::int)::bool AS is_primary_key
+    FROM index_info
+    GROUP BY table_oid, index_oid
+),
+table_info AS (
+    SELECT
+        oid AS table_oid,
+        relname AS tablename,
+        relnamespace
+    FROM pg_class
+)
+SELECT
+    'pg_class'::regclass::oid AS classid,
+    i1.index_oid AS objid,
+    0 AS objsubid
+FROM indexed_columns AS i1
+JOIN indexed_columns AS i2 ON i1.table_oid = i2.table_oid
+JOIN pg_class redundant_index ON i1.index_oid = redundant_index.oid
+JOIN pg_class superset_index ON i2.index_oid = superset_index.oid
+JOIN table_info ON i1.table_oid = table_info.table_oid
+JOIN pg_namespace ON table_info.relnamespace = pg_namespace.oid
+WHERE
+    pg_namespace.nspname NOT IN ('pg_toast', 'pg_catalog', 'information_schema', 'pglinter', '_timescaledb', 'timescaledb')
+    AND i1.index_oid <> i2.index_oid
+    AND i2.indexed_columns_string LIKE i1.indexed_columns_string || '%'
 $$
 WHERE code = 'B002';
 
@@ -411,6 +477,22 @@ WHERE
             AND pi.indexdef LIKE '%' || kcu.column_name || '%'
     )
 ORDER BY 1
+$$,
+    q4 = $$
+-- Returns classid, objid, objsubid for foreign key constraints lacking an index
+SELECT
+    'pg_constraint'::regclass::oid AS classid,
+    con.oid AS objid,
+    0 AS objsubid
+FROM pg_constraint con
+JOIN pg_class c ON c.oid = con.conrelid
+JOIN pg_namespace n ON n.oid = c.relnamespace
+LEFT JOIN pg_index i ON i.indrelid = c.oid AND con.conkey::smallint [] <@ i.indkey::smallint []
+WHERE
+    con.contype = 'f'
+    AND c.relkind = 'r'
+    AND i.indexrelid IS NULL
+    AND n.nspname NOT IN ('pg_catalog', 'pg_toast', 'information_schema', 'pglinter','_timescaledb', 'timescaledb')
 $$
 WHERE code = 'B003';
 
@@ -463,6 +545,22 @@ WHERE
         'pg_toast', 'pg_catalog', 'information_schema', 'pglinter','_timescaledb', 'timescaledb'
     )
 ORDER BY 1, 2
+$$,
+    q4 = $$
+-- Returns classid, objid, objsubid for unused manual indexes
+SELECT
+    'pg_class'::regclass::oid AS classid,
+    psu.indexrelid AS objid,
+    0 AS objsubid
+FROM pg_stat_user_indexes AS psu
+JOIN pg_index AS pgi ON psu.indexrelid = pgi.indexrelid
+WHERE
+    psu.idx_scan = 0
+    AND pgi.indisprimary = FALSE -- Excludes indexes created for a PRIMARY KEY
+    AND pgi.indisunique = FALSE -- Excludes indexes created for a UNIQUE constraint
+    AND psu.schemaname NOT IN (
+        'pg_toast', 'pg_catalog', 'information_schema', 'pglinter','_timescaledb', 'timescaledb'
+    )
 $$
 WHERE code = 'B004';
 
@@ -814,6 +912,63 @@ ORDER BY
     object_type,
     schema_name,
     object_name
+$$,
+  q4 = $$
+-- Returns classid, objid, objsubid for objects with uppercase in their name
+SELECT 'pg_class'::regclass::oid AS classid, c.oid AS objid, 0 AS objsubid
+FROM pg_class c
+JOIN pg_namespace n ON n.oid = c.relnamespace
+WHERE n.nspname NOT IN ('pg_toast', 'pg_catalog', 'information_schema', 'pglinter','_timescaledb', 'timescaledb')
+  AND (
+    c.relname != LOWER(c.relname)
+  )
+UNION ALL
+SELECT 'pg_attribute'::regclass::oid AS classid, a.attrelid AS objid, a.attnum AS objsubid
+FROM pg_attribute a
+JOIN pg_class c ON c.oid = a.attrelid
+JOIN pg_namespace n ON n.oid = c.relnamespace
+WHERE n.nspname NOT IN ('pg_toast', 'pg_catalog', 'information_schema', 'pglinter','_timescaledb', 'timescaledb')
+  AND a.attnum > 0
+  AND a.attname != LOWER(a.attname)
+UNION ALL
+SELECT 'pg_class'::regclass::oid AS classid, c.oid AS objid, 0 AS objsubid
+FROM pg_class c
+JOIN pg_namespace n ON n.oid = c.relnamespace
+WHERE n.nspname NOT IN ('pg_toast', 'pg_catalog', 'information_schema', 'pglinter','_timescaledb', 'timescaledb')
+  AND c.relkind = 'i'
+  AND c.relname != LOWER(c.relname)
+UNION ALL
+SELECT 'pg_class'::regclass::oid AS classid, c.oid AS objid, 0 AS objsubid
+FROM pg_class c
+JOIN pg_namespace n ON n.oid = c.relnamespace
+WHERE n.nspname NOT IN ('pg_toast', 'pg_catalog', 'information_schema', 'pglinter','_timescaledb', 'timescaledb')
+  AND c.relkind = 'S'
+  AND c.relname != LOWER(c.relname)
+UNION ALL
+SELECT 'pg_class'::regclass::oid AS classid, c.oid AS objid, 0 AS objsubid
+FROM pg_class c
+JOIN pg_namespace n ON n.oid = c.relnamespace
+WHERE n.nspname NOT IN ('pg_toast', 'pg_catalog', 'information_schema', 'pglinter','_timescaledb', 'timescaledb')
+  AND c.relkind = 'v'
+  AND c.relname != LOWER(c.relname)
+UNION ALL
+SELECT 'pg_proc'::regclass::oid AS classid, p.oid AS objid, 0 AS objsubid
+FROM pg_proc p
+JOIN pg_namespace n ON n.oid = p.pronamespace
+WHERE n.nspname NOT IN ('pg_toast', 'pg_catalog', 'information_schema', 'pglinter','_timescaledb', 'timescaledb')
+  AND p.proname != LOWER(p.proname)
+UNION ALL
+SELECT 'pg_trigger'::regclass::oid AS classid, t.oid AS objid, 0 AS objsubid
+FROM pg_trigger t
+JOIN pg_class c ON c.oid = t.tgrelid
+JOIN pg_namespace n ON n.oid = c.relnamespace
+WHERE n.nspname NOT IN ('pg_toast', 'pg_catalog', 'information_schema', 'pglinter','_timescaledb', 'timescaledb')
+  AND t.tgname != LOWER(t.tgname)
+UNION ALL
+SELECT 'pg_namespace'::regclass::oid AS classid, n.oid AS objid, 0 AS objsubid
+FROM pg_namespace n
+WHERE n.nspname NOT IN ('pg_toast', 'pg_catalog', 'information_schema', 'pglinter','_timescaledb', 'timescaledb')
+  AND n.nspname != LOWER(n.nspname)
 $$
 WHERE code = 'B005';
 
@@ -852,6 +1007,25 @@ WHERE
     AND n_tup_ins > 0
     AND (n_tup_upd = 0 OR n_tup_upd IS NULL)
     AND (n_tup_del = 0 OR n_tup_del IS NULL)
+    AND psu.schemaname NOT IN (
+        'pg_toast', 'pg_catalog', 'information_schema', 'pglinter', '_timescaledb', 'timescaledb'
+    )
+$$,
+  q4 = $$
+SELECT
+    'pg_class'::regclass::oid AS classid,
+    c.oid AS objid,
+    0 AS objsubid
+FROM pg_stat_user_tables AS psu
+JOIN pg_class c
+    ON c.relname = psu.relname
+    AND c.relnamespace = (SELECT oid FROM pg_namespace WHERE nspname = psu.schemaname)
+WHERE
+    (psu.idx_scan = 0 OR psu.idx_scan IS NULL)
+    AND (psu.seq_scan = 0 OR psu.seq_scan IS NULL)
+    AND psu.n_tup_ins > 0
+    AND (psu.n_tup_upd = 0 OR psu.n_tup_upd IS NULL)
+    AND (psu.n_tup_del = 0 OR psu.n_tup_del IS NULL)
     AND psu.schemaname NOT IN (
         'pg_toast', 'pg_catalog', 'information_schema', 'pglinter', '_timescaledb', 'timescaledb'
     )
@@ -902,6 +1076,27 @@ SELECT
 FROM information_schema.table_constraints AS tc
 INNER JOIN information_schema.constraint_column_usage AS ccu
     ON tc.constraint_name = ccu.constraint_name
+WHERE
+    tc.constraint_type = 'FOREIGN KEY'
+    AND tc.table_schema != ccu.table_schema
+    AND tc.table_schema NOT IN (
+        'pg_toast', 'pg_catalog', 'information_schema', 'pglinter', '_timescaledb', 'timescaledb'
+    )
+$$,
+  q4 = $$
+SELECT
+    'pg_constraint'::regclass::oid AS classid,
+    c.oid AS objid,
+    0 AS objsubid
+FROM information_schema.table_constraints AS tc
+INNER JOIN information_schema.constraint_column_usage AS ccu
+    ON tc.constraint_name = ccu.constraint_name
+INNER JOIN pg_constraint c
+    ON c.conname = tc.constraint_name
+    AND c.conrelid = (
+        SELECT oid FROM pg_class WHERE relname = tc.table_name
+            AND relnamespace = (SELECT oid FROM pg_namespace WHERE nspname = tc.table_schema)
+    )
 WHERE
     tc.constraint_type = 'FOREIGN KEY'
     AND tc.table_schema != ccu.table_schema
@@ -991,6 +1186,38 @@ WHERE
         'pg_toast', 'pg_catalog', 'information_schema', 'pglinter', '_timescaledb', 'timescaledb'
     )
     AND col1.data_type != col2.data_type
+$$,
+  q4 = $$
+SELECT
+    'pg_attribute'::regclass::oid AS classid,
+    c.oid AS objid,
+    a.attnum AS objsubid
+FROM information_schema.table_constraints AS tc
+INNER JOIN information_schema.key_column_usage AS kcu
+    ON tc.constraint_name = kcu.constraint_name
+    AND tc.table_schema = kcu.table_schema
+INNER JOIN information_schema.constraint_column_usage AS ccu
+    ON tc.constraint_name = ccu.constraint_name
+INNER JOIN information_schema.columns AS col1
+    ON kcu.table_schema = col1.table_schema
+    AND kcu.table_name = col1.table_name
+    AND kcu.column_name = col1.column_name
+INNER JOIN information_schema.columns AS col2
+    ON ccu.table_schema = col2.table_schema
+    AND ccu.table_name = col2.table_name
+    AND ccu.column_name = col2.column_name
+JOIN pg_class c
+    ON c.relname = kcu.table_name
+    AND c.relnamespace = (SELECT oid FROM pg_namespace WHERE nspname = kcu.table_schema)
+JOIN pg_attribute a
+    ON a.attrelid = c.oid
+    AND a.attname = kcu.column_name
+WHERE
+    tc.constraint_type = 'FOREIGN KEY'
+    AND tc.table_schema NOT IN (
+        'pg_toast', 'pg_catalog', 'information_schema', 'pglinter', '_timescaledb', 'timescaledb'
+    )
+    AND col1.data_type != col2.data_type
 $$
 WHERE code = 'B008';
 
@@ -1065,6 +1292,40 @@ ORDER BY
     s.trigger_function_name,
     t.trigger_schema,
     t.event_object_table
+$$,
+  q4 = $$
+-- Returns classid, objid, objsubid for tables using the same trigger function (B009)
+WITH SharedFunctions AS (
+    SELECT
+        SUBSTRING(t.action_statement FROM 'EXECUTE FUNCTION ([^()]+)') AS trigger_function_name
+    FROM
+        information_schema.triggers t
+    WHERE
+        t.trigger_schema NOT IN (
+            'pg_toast', 'pg_catalog', 'information_schema', 'pglinter', '_timescaledb', 'timescaledb'
+        )
+    GROUP BY
+        1
+    HAVING
+        COUNT(DISTINCT t.event_object_table) > 1
+)
+SELECT
+    'pg_trigger'::regclass::oid AS classid,
+    tg.oid AS objid,
+    0 AS objsubid
+FROM
+    pg_trigger tg
+JOIN pg_class c ON c.oid = tg.tgrelid
+JOIN pg_namespace n ON n.oid = c.relnamespace
+JOIN information_schema.triggers t
+    ON t.trigger_name = tg.tgname
+    AND t.event_object_table = c.relname
+    AND t.trigger_schema = n.nspname
+JOIN SharedFunctions s ON s.trigger_function_name = SUBSTRING(t.action_statement FROM 'EXECUTE FUNCTION ([^()]+)')
+WHERE
+    n.nspname NOT IN (
+        'pg_toast', 'pg_catalog', 'information_schema', 'pglinter', '_timescaledb', 'timescaledb'
+    )
 $$
 WHERE code = 'B009';
 
@@ -1226,6 +1487,103 @@ ORDER BY
     object_type,
     schema_name,
     object_name
+$$,
+  q4 = $$
+WITH reserved_keywords AS (
+    SELECT unnest(ARRAY[
+        'SELECT','FROM','WHERE','ORDER','GROUP','HAVING','UNION','JOIN','LIMIT','OFFSET',
+        'PRIMARY','UNIQUE','FOREIGN','AND','OR','CASE','WHEN','THEN','ELSE','END','DISTINCT',
+        'NULL','TRUE','FALSE','AS','IN','ON','BY','IS','NOT','EXISTS','ALL','ANY','BETWEEN'
+    ]) AS keyword
+),
+
+-- Tables, Views, Sequences
+obj_class AS (
+    SELECT
+        'pg_class'::regclass::oid AS classid,
+        c.oid AS objid,
+        0 AS objsubid
+    FROM pg_class c
+    JOIN pg_namespace n ON n.oid = c.relnamespace
+    JOIN reserved_keywords rk ON c.relname = rk.keyword
+    WHERE n.nspname NOT IN ('pg_toast', 'pg_catalog', 'information_schema', 'pglinter', '_timescaledb', 'timescaledb')
+),
+
+-- Columns
+obj_column AS (
+    SELECT
+        'pg_attribute'::regclass::oid AS classid,
+        a.attrelid AS objid,
+        a.attnum AS objsubid
+    FROM pg_attribute a
+    JOIN pg_class c ON c.oid = a.attrelid
+    JOIN pg_namespace n ON n.oid = c.relnamespace
+    JOIN reserved_keywords rk ON a.attname = rk.keyword
+    WHERE n.nspname NOT IN ('pg_toast', 'pg_catalog', 'information_schema', 'pglinter', '_timescaledb', 'timescaledb')
+      AND a.attnum > 0 AND NOT a.attisdropped
+),
+
+-- Indexes
+obj_index AS (
+    SELECT
+        'pg_class'::regclass::oid AS classid,
+        i.oid AS objid,
+        0 AS objsubid
+    FROM pg_class i
+    JOIN pg_namespace n ON n.oid = i.relnamespace
+    JOIN reserved_keywords rk ON i.relname = rk.keyword
+    WHERE i.relkind = 'i'
+      AND n.nspname NOT IN ('pg_toast', 'pg_catalog', 'information_schema', 'pglinter', '_timescaledb', 'timescaledb')
+),
+
+-- Functions
+obj_func AS (
+    SELECT
+        'pg_proc'::regclass::oid AS classid,
+        p.oid AS objid,
+        0 AS objsubid
+    FROM pg_proc p
+    JOIN pg_namespace n ON n.oid = p.pronamespace
+    JOIN reserved_keywords rk ON p.proname = rk.keyword
+    WHERE n.nspname NOT IN ('pg_toast', 'pg_catalog', 'information_schema', 'pglinter', '_timescaledb', 'timescaledb')
+),
+
+-- Types
+obj_type AS (
+    SELECT
+        'pg_type'::regclass::oid AS classid,
+        t.oid AS objid,
+        0 AS objsubid
+    FROM pg_type t
+    JOIN pg_namespace n ON n.oid = t.typnamespace
+    JOIN reserved_keywords rk ON t.typname = rk.keyword
+    WHERE n.nspname NOT IN ('pg_toast', 'pg_catalog', 'information_schema', 'pglinter', '_timescaledb', 'timescaledb')
+),
+
+-- Triggers
+obj_trigger AS (
+    SELECT
+        'pg_trigger'::regclass::oid AS classid,
+        tg.oid AS objid,
+        0 AS objsubid
+    FROM pg_trigger tg
+    JOIN pg_class c ON c.oid = tg.tgrelid
+    JOIN pg_namespace n ON n.oid = c.relnamespace
+    JOIN reserved_keywords rk ON tg.tgname = rk.keyword
+    WHERE n.nspname NOT IN ('pg_toast', 'pg_catalog', 'information_schema', 'pglinter', '_timescaledb', 'timescaledb')
+      AND NOT tg.tgisinternal
+)
+SELECT * FROM obj_class
+UNION ALL
+SELECT * FROM obj_column
+UNION ALL
+SELECT * FROM obj_index
+UNION ALL
+SELECT * FROM obj_func
+UNION ALL
+SELECT * FROM obj_type
+UNION ALL
+SELECT * FROM obj_trigger
 $$
 WHERE code = 'B010';
 
@@ -1290,6 +1648,46 @@ WHERE
     )
 ORDER BY
     1, 2
+$$,
+    q4 = $$
+-- Returns classid, objid, objsubid for tables in schemas with multiple owners (B011)
+WITH SchemaOwnerTable AS (
+    SELECT DISTINCT
+        schemaname,
+        tableowner
+    FROM
+        pg_tables
+    WHERE
+        schemaname NOT IN (
+            'pg_toast', 'pg_catalog', 'information_schema', 'pglinter', '_timescaledb', 'timescaledb'
+        )
+),
+OwnerCounts AS (
+    SELECT
+        schemaname,
+        COUNT(tableowner) AS distinct_owner_count
+    FROM
+        SchemaOwnerTable
+    GROUP BY
+        schemaname
+    HAVING
+        COUNT(tableowner) > 1
+)
+SELECT
+    'pg_class'::regclass::oid AS classid,
+    c.oid AS objid,
+    0 AS objsubid
+FROM
+    pg_tables t
+JOIN
+    OwnerCounts oc ON t.schemaname = oc.schemaname
+JOIN
+    pg_class c ON c.relname = t.tablename
+    AND c.relnamespace = (SELECT oid FROM pg_namespace WHERE nspname = t.schemaname)
+WHERE
+    t.schemaname NOT IN (
+        'pg_toast', 'pg_catalog', 'information_schema', 'pglinter', '_timescaledb', 'timescaledb'
+    )
 $$
 WHERE code = 'B011';
 
@@ -1346,6 +1744,31 @@ FROM (
 ) sub
 GROUP BY sub.table_schema, sub.table_name
 HAVING COUNT(sub.column_name) > 4
+$$,
+    q4 = $$
+-- Returns classid, objid, objsubid for tables with composite primary keys involving more than 4 columns (B012)
+SELECT
+    'pg_class'::regclass::oid AS classid,
+    c.oid AS objid,
+    0 AS objsubid
+FROM (
+    SELECT
+        tc.table_schema,
+        tc.table_name,
+        COUNT(kcu.column_name) AS pk_col_count
+    FROM information_schema.table_constraints tc
+    JOIN information_schema.key_column_usage kcu
+      ON tc.constraint_name = kcu.constraint_name
+     AND tc.table_schema = kcu.table_schema
+     AND tc.table_name = kcu.table_name
+    WHERE tc.constraint_type = 'PRIMARY KEY'
+      AND tc.table_schema NOT IN ('pg_toast', 'pg_catalog', 'information_schema', 'pglinter', '_timescaledb', 'timescaledb')
+    GROUP BY tc.table_schema, tc.table_name, tc.constraint_name
+    HAVING COUNT(kcu.column_name) > 4
+) sub
+JOIN pg_class c
+  ON c.relname = sub.table_name
+  AND c.relnamespace = (SELECT oid FROM pg_namespace WHERE nspname = sub.table_schema)
 $$
 WHERE code = 'B012';
 
@@ -1392,6 +1815,24 @@ WHERE
             AND da.defaclrole != n.nspowner
     )
 ORDER BY 1
+$$,
+  q4 = $$
+-- Returns classid, objid, objsubid for schemas with no default role (S001)
+SELECT
+    'pg_namespace'::regclass::oid AS classid,
+    n.oid AS objid,
+    0 AS objsubid
+FROM pg_namespace n
+WHERE
+    n.nspname NOT IN ('pg_toast', 'pg_catalog', 'information_schema', 'pglinter', '_timescaledb', 'timescaledb')
+    AND n.nspname NOT LIKE 'pg_%'
+    AND NOT EXISTS (
+        SELECT 1
+        FROM pg_default_acl da
+        WHERE
+            da.defaclnamespace = n.oid
+            AND da.defaclrole != n.nspowner
+    )
 $$
 WHERE code = 'S001';
 
@@ -1446,6 +1887,20 @@ WHERE
         OR n.nspname ILIKE 'sbox_%' OR n.nspname ILIKE '%_sbox'
     )
 ORDER BY 1
+$$,
+    q4 = $$
+-- Returns classid, objid, objsubid for schemas with environment prefixes/suffixes (S002)
+SELECT
+    'pg_namespace'::regclass::oid AS classid,
+    n.oid AS objid,
+    0 AS objsubid
+FROM pg_namespace n
+WHERE
+    n.nspname NOT IN ('pg_toast', 'pg_catalog', 'information_schema', 'pglinter', '_timescaledb', 'timescaledb')
+    AND (
+        n.nspname ~* '^(dev|prod|test|stage|staging|qa|uat|preprod|sandbox)_'
+        OR n.nspname ~* '_(dev|prod|test|stage|staging|qa|uat|preprod|sandbox)$'
+    )
 $$
 WHERE code = 'S002';
 
@@ -1477,6 +1932,17 @@ WHERE
     n.nspname NOT IN ('pg_toast', 'pg_catalog', 'information_schema', 'pglinter', '_timescaledb', 'timescaledb')
     AND HAS_SCHEMA_PRIVILEGE('public', n.nspname, 'CREATE')
 ORDER BY 1
+$$,
+    q4 = $$
+-- Returns classid, objid, objsubid for schemas where PUBLIC has CREATE privilege (S003)
+SELECT
+    'pg_namespace'::regclass::oid AS classid,
+    n.oid AS objid,
+    0 AS objsubid
+FROM pg_namespace n
+WHERE
+    n.nspname NOT IN ('pg_toast', 'pg_catalog', 'information_schema', 'pglinter', '_timescaledb', 'timescaledb')
+    AND HAS_SCHEMA_PRIVILEGE('public', n.nspname, 'CREATE')
 $$
 WHERE code = 'S003';
 
@@ -1517,6 +1983,26 @@ WHERE
     )
 ORDER BY
     1
+$$,
+    q4 = $$
+-- Returns classid, objid, objsubid for schemas owned by internal roles or superuser (S004)
+SELECT
+    'pg_namespace'::regclass::oid AS classid,
+    n.oid AS objid,
+    0 AS objsubid
+FROM
+    pg_namespace n
+JOIN
+    pg_roles r ON n.nspowner = r.oid
+WHERE
+    n.nspname NOT IN (
+        'pg_toast', 'pg_catalog', 'information_schema', 'pglinter', '_timescaledb', 'timescaledb'
+    )
+    AND (
+        r.rolsuper IS TRUE -- Owned by a Superuser (e.g., 'postgres')
+        OR r.rolname LIKE 'pg_%' -- Owned by a reserved PostgreSQL system role
+        OR r.rolname = 'postgres' -- Explicitly include the default administrative account
+    )
 $$
 WHERE code = 'S004';
 
@@ -1568,6 +2054,24 @@ WHERE
     AND c.relkind = 'r'               -- Only count regular tables
     AND n.nspowner <> c.relowner      -- The core condition: Owners are different
 ORDER BY 1
+$$,
+  q4 = $$
+-- Returns classid, objid, objsubid for tables where the schema owner and table owner differ (S005)
+SELECT
+    'pg_class'::regclass::oid AS classid,
+    c.oid AS objid,
+    0 AS objsubid
+FROM
+    pg_namespace n
+JOIN
+    pg_class c ON c.relnamespace = n.oid
+WHERE
+    n.nspname NOT IN (
+        'pg_toast', 'pg_catalog', 'information_schema', 'pglinter', '_timescaledb', 'timescaledb'
+    )
+    AND n.nspname NOT LIKE 'pg_temp%'
+    AND c.relkind = 'r'               -- Only regular tables
+    AND n.nspowner <> c.relowner      -- Schema owner does NOT equal Table owner
 $$
 WHERE code = 'S005';
 
@@ -1613,3 +2117,35 @@ pg_catalog.pg_settings
 WHERE name='password_encryption' AND setting='md5'
 $$
 WHERE code = 'C003';
+
+-- =============================================================================
+-- Rule Messages Table Creation
+-- =============================================================================
+CREATE TABLE IF NOT EXISTS pglinter.rule_messages (
+    id SERIAL PRIMARY KEY,
+    code TEXT,
+    rule_msg jsonb
+);
+
+DELETE FROM pglinter.rule_messages;
+
+INSERT INTO pglinter.rule_messages (code, rule_msg) VALUES
+('S001', '{"severity": "WARNING", "message": "Schema {object} has no default role.", "advices": "Add a default privilege to the schema so future tables are granted to a role automatically.", "infos": ["How to fix: ALTER DEFAULT PRIVILEGES IN SCHEMA {object} FOR USER <owner> GRANT ...;"]}'),
+('S002', '{"severity": "WARNING", "message": "Schema {object} is prefixed or suffixed with an environment name.", "advices": "Keep the same schema name across environments. Prefer prefixing or suffixing the database name instead.", "infos": ["How to fix: Rename schema {object} to a neutral name."]}'),
+('S003', '{"severity": "WARNING", "message": "Schema {object} is unsecured: PUBLIC can create objects.", "advices": "REVOKE CREATE ON SCHEMA from PUBLIC to restrict object creation.", "infos": ["How to fix: REVOKE CREATE ON SCHEMA {object} FROM PUBLIC;"]}'),
+('S004', '{"severity": "WARNING", "message": "Schema {object} is owned by an internal role or superuser.", "advices": "Change schema owner to a functional role for better security and maintainability.", "infos": ["How to fix: ALTER SCHEMA {object} OWNER TO <role>;"]}'),
+('S005', '{"severity": "WARNING", "message": "Schema {object} and its tables have different owners.", "advices": "For easier maintenance, schema and tables should have the same owner.", "infos": ["How to fix: ALTER TABLE {object} OWNER TO <role>;"]}');
+
+INSERT INTO pglinter.rule_messages (code, rule_msg) VALUES
+('B001', '{"severity": "WARNING", "message": "{object} does not have a primary key.", "advices": "Add a primary key to this table to ensure data integrity and better performance.", "infos": ["How to fix: ALTER TABLE {object} ADD PRIMARY KEY (...);"]}'),
+('B002', '{"severity": "WARNING", "message": "{object} is a redundant index.", "advices": "Remove redundant or duplicate indexes to optimize performance and storage.", "infos": ["How to fix: DROP INDEX {object}; or review constraints that may create duplicate indexes."]}'),
+('B003', '{"severity": "WARNING", "message": "{object} does not have an index on its foreign key.", "advices": "Create an index on the foreign key column to improve join and lookup performance.", "infos": ["How to fix: CREATE INDEX ON {object} (...);"]}'),
+('B004', '{"severity": "WARNING", "message": "{object} is an unused index.", "advices": "Remove unused indexes to reduce storage and maintenance overhead.", "infos": ["How to fix: DROP INDEX {object}; or review index usage statistics."]}'),
+('B005', '{"severity": "WARNING", "message": "{object} uses uppercase characters.", "advices": "Using uppercase in identifiers requires quoting and can cause case-sensitivity issues.", "infos": ["How to fix: Rename the database object to use only lowercase characters."]}'),
+('B006', '{"severity": "WARNING", "message": "{object} has never been selected.", "advices": "Review the necessity of this table. If it is not needed, consider removing it or archiving its data.", "infos": ["How to fix: DROP TABLE {object}; or investigate application usage."]}'),
+('B007', '{"severity": "WARNING", "message": "{object} has foreign keys outside its schema.", "advices": "Consider restructuring schema design to keep related tables in the same schema.", "infos": ["How to fix: Move related tables into the same schema or review schema design."]}'),
+('B008', '{"severity": "WARNING", "message": "{object} has a foreign key type mismatch.", "advices": "Adjust column types to ensure foreign key matches referenced key type.", "infos": ["How to fix: ALTER TABLE {object} ALTER COLUMN ... TYPE ...;"]}'),
+('B009', '{"severity": "WARNING", "message": "{object} shares a trigger function with other tables.", "advices": "Use one trigger function per table for clarity and maintainability.", "infos": ["How to fix: CREATE a dedicated trigger function for {object} and update the trigger."]}'),
+('B010', '{"severity": "WARNING", "message": "{object} uses a reserved SQL keyword as its name.", "advices": "Rename database objects to avoid using reserved keywords.", "infos": ["How to fix: ALTER TABLE/INDEX/VIEW/FUNCTION/TYPE {object} RENAME TO ...;"]}'),
+('B011', '{"severity": "WARNING", "message": "{object} schema has tables with different owners.", "advices": "Change table owners to the same functional role for easier maintenance.", "infos": ["How to fix: ALTER TABLE {object} OWNER TO ...;"]}'),
+('B012', '{"severity": "WARNING", "message": "{object} has a composite primary key with more than 4 columns.", "advices": "Consider redesigning the table to avoid composite primary keys with more than 4 columns. Use surrogate keys if possible.", "infos": ["How to fix: Redesign {object} to use a surrogate key and unique constraints."]}');

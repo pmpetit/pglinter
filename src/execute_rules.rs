@@ -1,4 +1,3 @@
-
 use pgrx::prelude::*;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
@@ -11,10 +10,7 @@ use crate::manage_rules::is_rule_enabled;
 /// Executes the q3 SQL query for a given ruleId, formats the result dataset into a string with each row separated by a newline, and returns it.
 pub fn execute_and_format_dataset(ruleid: &str) -> Result<String, String> {
     // Fetch q3 from pglinter.rules
-    pgrx::debug1!(
-        "execute_and_format_dataset; Retrieved q3 for {}",
-        ruleid
-    );
+    pgrx::debug1!("execute_and_format_dataset; Retrieved q3 for {}", ruleid);
     let q3_query = "SELECT q3 FROM pglinter.rules WHERE code = $1";
     let q3: String = match Spi::connect(|client| {
         let mut rows = client.select(q3_query, None, &[ruleid.into()])?;
@@ -43,11 +39,7 @@ pub fn execute_and_format_dataset(ruleid: &str) -> Result<String, String> {
                 //pgrx::debug1!("column {}", col);
                 let val: Option<String> = row.get::<String>(col)?;
                 let val_str = val.unwrap_or_default();
-                pgrx::debug1!(
-                    "column {}, value: {:?}",
-                    col,
-                    val_str
-                );
+                pgrx::debug1!("column {}, value: {:?}", col, val_str);
                 row_str.push(val_str.clone());
             }
             output.push_str(&row_str.join("."));
@@ -98,20 +90,6 @@ fn get_rule_config(rule_code: &str) -> Result<(i64, i64, String), String> {
         )),
     }
 }
-
-// #[derive(Debug, Clone, Serialize, Deserialize)]
-// pub enum RuleScope {
-//     Base,
-//     Cluster,
-//     Table,
-//     Schema,
-// }
-
-// #[derive(Debug, Clone, Serialize, Deserialize)]
-// pub struct RuleParam {
-//     pub key: String,
-//     pub value: String,
-// }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct RuleResult {
@@ -179,7 +157,8 @@ fn execute_q1_rule_dynamic(
 
         for row in client.select(q1, None, &[])? {
             // Try to get the first column as message, fallback to empty string if not available
-            let message: String = row.get::<&str>(1)
+            let message: String = row
+                .get::<&str>(1)
                 .unwrap_or(None)
                 .map(|s| s.to_string())
                 .unwrap_or_else(|| format!("Row {}", count + 1));
@@ -248,7 +227,8 @@ fn execute_q1_rule_with_params(
 
         for row in rows {
             // Try to get the first column as message, fallback to empty string if not available
-            let message: String = row.get::<&str>(0)
+            let message: String = row
+                .get::<&str>(0)
                 .unwrap_or(None)
                 .map(|s| s.to_string())
                 .unwrap_or_else(|| format!("Row {}", count + 1));
@@ -306,7 +286,7 @@ fn get_rule_parameters(
 fn execute_q1_q2_rule_dynamic(
     ruleid: &str,
     q1: &str,
-    q2: &str
+    q2: &str,
 ) -> Result<Option<RuleResult>, String> {
     // Debug: Log function entry
     pgrx::debug1!(
@@ -497,9 +477,7 @@ pub fn execute_rules(ruleid: Option<&str>) -> Result<Vec<RuleResult>, String> {
         let mut rules = Vec::new();
 
         // Fetch all enabled rules for the specified scope
-        pgrx::debug1!(
-            "execute_rule; Fetching all enabled rules from database",
-        );
+        pgrx::debug1!("execute_rule; Fetching all enabled rules from database",);
 
         for row in client.select(rules_query, None, &[filter.into()])? {
             let code: String = row.get(1)?.unwrap_or_default();
@@ -520,10 +498,7 @@ pub fn execute_rules(ruleid: Option<&str>) -> Result<Vec<RuleResult>, String> {
 
     match rule_result {
         Ok(rules) => {
-            pgrx::debug1!(
-                "execute_rule; Found {} rules to execute",
-                rules.len()
-            );
+            pgrx::debug1!("execute_rule; Found {} rules to execute", rules.len());
 
             for rule in rules {
                 // Check if rule is enabled before executing
@@ -611,6 +586,262 @@ pub fn execute_rules(ruleid: Option<&str>) -> Result<Vec<RuleResult>, String> {
     );
 
     Ok(results)
+}
+
+type ViolationLocation = (i32, i32, i32);
+type RuleViolations = (String, Vec<ViolationLocation>);
+
+/// Collects violations for all enabled rules by calling get_violations_for_rule for each rule.
+pub fn get_violations() -> Result<Vec<RuleViolations>, String> {
+    pgrx::debug1!("get_violations; Starting to collect violations for all enabled rules");
+    let rules_query = "SELECT code FROM pglinter.rules WHERE enable = true ORDER BY code";
+    let rule_codes: Result<Vec<String>, String> = Spi::connect(|client| {
+        let mut codes = Vec::new();
+        for row in client.select(rules_query, None, &[])? {
+            let code: String = row.get(1)?.unwrap_or_default();
+            codes.push(code);
+        }
+        Ok(codes)
+    })
+    .map_err(|e: spi::SpiError| format!("Database error fetching rule codes: {e}"));
+
+    let _rule_codes = rule_codes?;
+
+    let mut all_violations = Vec::new();
+    for code in _rule_codes {
+        match get_violations_for_rule(&code) {
+            Ok(violations) => {
+                all_violations.push((code.clone(), violations));
+            }
+            Err(e) => {
+                pgrx::debug1!("get_violations; Error for rule {}: {}", code, e);
+                // Optionally, you could push an empty vector or skip on error
+                all_violations.push((code.clone(), vec![]));
+            }
+        }
+    }
+    pgrx::debug1!("get_violations; Completed collecting violations for all rules");
+    Ok(all_violations)
+}
+
+/// Executes the q4 query for the given rule_id and returns (classid, objid, objsubid) tuples.
+/// Returns an error if the rule or q4 is not found, or if the query fails.
+pub fn get_violations_for_rule(rule_id: &str) -> Result<Vec<(i32, i32, i32)>, String> {
+    pgrx::debug1!("get_violations_for_rule; Starting for rule_id: {}", rule_id);
+
+    // Fetch q4 SQL from the rules table
+    let q4_query = "SELECT q4 FROM pglinter.rules WHERE code = $1";
+
+    let q4_sql: Option<String> = match Spi::connect(|client| {
+        let mut rows = client.select(q4_query, None, &[rule_id.into()])?;
+        if let Some(row) = rows.next() {
+            match row.get::<String>(1)? {
+                Some(q) if !q.trim().is_empty() => Ok::<Option<String>, spi::SpiError>(Some(q)),
+                _ => Ok::<Option<String>, spi::SpiError>(None),
+            }
+        } else {
+            Ok(None)
+        }
+    }) {
+        Ok(Some(val)) => Some(val),
+        Ok(None) => None,
+        Err(e) => {
+            pgrx::debug1!("get_violations_for_rule; SPI error fetching q4: {}", e);
+            return Err(format!("SPI error fetching q4: {e}"));
+        }
+    };
+
+    if q4_sql.is_none() {
+        pgrx::debug1!(
+            "get_violations_for_rule; No q4 query found for rule_id '{}', returning info message",
+            rule_id
+        );
+        return Ok(vec![]);
+    }
+    let q4_sql = q4_sql.unwrap();
+
+    // Execute the q4 SQL and collect results
+    let result: Result<Vec<(i32, i32, i32)>, String> = Spi::connect(|client| {
+        use pgrx::pg_sys::Oid;
+        let mut results = Vec::new();
+        let query_result = client.select(&q4_sql, None, &[])?;
+        for row in query_result {
+            let classid_oid = row.get::<Oid>(1)?.unwrap_or(Oid::INVALID);
+            let objid_oid = row.get::<Oid>(2)?.unwrap_or(Oid::INVALID);
+            let classid = u32::from(classid_oid) as i32;
+            let objid = u32::from(objid_oid) as i32;
+            let objsubid = row.get::<i32>(3)?.unwrap_or_default();
+            results.push((classid, objid, objsubid));
+        }
+        Ok(results)
+    })
+    .map_err(|e: spi::SpiError| format!("SPI error executing q4: {e}"));
+
+    match result {
+        Ok(res) => {
+            pgrx::debug1!(
+                "get_violations_for_rule; Completed successfully for rule_id: {} ({} violations)",
+                rule_id,
+                res.len()
+            );
+            Ok(res)
+        }
+        Err(e) => {
+            pgrx::debug1!("get_violations_for_rule; Failed with error: {}", e);
+            Err(e)
+        }
+    }
+}
+
+pub fn get_sanitized_message(rule_id: &str, classid: i32, objid: i32, objsubid: i32) -> String {
+    // Fetch the rule_msg (jsonb) from the rules table as serde_json::Value
+    let query = "SELECT rule_msg::TEXT FROM pglinter.rule_messages WHERE code = $1";
+    let rule_msg_json: Option<serde_json::Value> = match Spi::connect(|client| {
+        let mut rows = client.select(query, None, &[rule_id.into()])?;
+        if let Some(row) = rows.next() {
+            // Use Option<serde_json::Value> for jsonb
+            let val: Option<String> = row.get(1)?;
+            let json_val = match val {
+                Some(s) => serde_json::from_str(&s).ok(),
+                None => None,
+            };
+            Ok::<Option<serde_json::Value>, spi::SpiError>(json_val)
+        } else {
+            Ok(None)
+        }
+    }) {
+        Ok(val) => val,
+        Err(e) => {
+            pgrx::debug1!(
+                "get_sanitized_message; Failed to get rule_msg for {}: {}",
+                rule_id,
+                e
+            );
+            return format!("[pglinter: error fetching rule message for {}]", rule_id);
+        }
+    };
+
+    // Optionally, you can fetch a message template from another table if needed
+    let message_template = String::new();
+
+    // Helper to resolve object name from classid, objid, objsubid
+    fn resolve_object_name(classid: i32, objid: i32, objsubid: i32) -> String {
+        // If classid is 1249 (pg_type) and objsubid != 0, treat as 1259 (pg_class) for columns of views/tables
+        let (mut classid, objid, objsubid) = (classid, objid, objsubid);
+        if classid == 1249 && objsubid != 0 {
+            classid = 1259;
+        }
+
+        let sql = "SELECT type, schema, name, identity FROM pg_catalog.pg_identify_object($1::oid, $2::oid, $3)";
+        let result: Result<Option<(String, String, String, String)>, spi::SpiError> =
+            Spi::connect(|client| {
+                let try_result = std::panic::catch_unwind(|| {
+                    let mut rows = client.select(
+                        sql,
+                        None,
+                        &[classid.into(), objid.into(), objsubid.into()],
+                    )?;
+                    if let Some(row) = rows.next() {
+                        let type_: Option<String> = row.get(1)?;
+                        let schema: Option<String> = row.get(2)?;
+                        let name: Option<String> = row.get(3)?;
+                        let identity: Option<String> = row.get(4)?;
+                        Ok(type_
+                            .zip(schema)
+                            .zip(name)
+                            .zip(identity)
+                            .map(|(((t, s), n), i)| (t, s, n, i)))
+                    } else {
+                        Ok(None)
+                    }
+                });
+                match try_result {
+                    Ok(inner) => inner,
+                    Err(_) => {
+                        pgrx::warning!(
+                            "pg_identify_object failed for classid={}, objid={}, objsubid={}",
+                            classid,
+                            objid,
+                            objsubid
+                        );
+                        Ok(None)
+                    }
+                }
+            });
+        match result {
+            Ok(Some((type_, schema, name, _identity))) => {
+                format!("{type_} in schema: {schema} named: {name}")
+            }
+            _ => {
+                pgrx::debug1!(
+                    "Could not resolve object name for classid={}, objid={}, objsubid={}",
+                    classid,
+                    objid,
+                    objsubid
+                );
+                format!(
+                    "classid={}, objid={}, objsubid={}",
+                    classid, objid, objsubid
+                )
+            }
+        }
+    }
+
+    let object_name = resolve_object_name(classid, objid, objsubid);
+
+    // Replace placeholders in the message template
+    let msg = message_template
+        .replace("{object}", &object_name)
+        .replace("{0}", &object_name)
+        .replace("{classid}", &classid.to_string())
+        .replace("{objid}", &objid.to_string())
+        .replace("{objsubid}", &objsubid.to_string());
+
+    // Replace placeholders in the rule_msg JSON if present
+    let rule_msg_json_replaced = rule_msg_json.map(|mut json_val| {
+        // Recursively replace placeholders in all string values
+        fn replace_in_json(
+            val: &mut serde_json::Value,
+            object_name: &str,
+            classid: i32,
+            objid: i32,
+            objsubid: i32,
+        ) {
+            match val {
+                serde_json::Value::String(s) => {
+                    let replaced = s
+                        .replace("{object}", object_name)
+                        .replace("{0}", object_name)
+                        .replace("{classid}", &classid.to_string())
+                        .replace("{objid}", &objid.to_string())
+                        .replace("{objsubid}", &objsubid.to_string());
+                    *s = replaced;
+                }
+                serde_json::Value::Array(arr) => {
+                    for v in arr.iter_mut() {
+                        replace_in_json(v, object_name, classid, objid, objsubid);
+                    }
+                }
+                serde_json::Value::Object(map) => {
+                    for v in map.values_mut() {
+                        replace_in_json(v, object_name, classid, objid, objsubid);
+                    }
+                }
+                _ => {}
+            }
+        }
+        replace_in_json(&mut json_val, &object_name, classid, objid, objsubid);
+        json_val
+    });
+
+    // Return both as a JSON string for now (could be a struct if needed)
+    match rule_msg_json_replaced {
+        Some(json_val) => serde_json::json!({
+            "rule_msg": json_val
+        })
+        .to_string(),
+        None => msg,
+    }
 }
 
 // Output and SARIF functions

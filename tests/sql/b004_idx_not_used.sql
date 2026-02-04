@@ -107,6 +107,8 @@ SELECT pglinter.is_rule_enabled('B004') AS b004_status;
 SELECT 'Running base check to detect B004 violations...' AS status;
 SELECT pglinter.check();
 
+SELECT count(*) AS violation_count from pglinter.get_violations() WHERE rule_code = 'B004';
+
 -- Test rule management for B004
 SELECT 'Testing B004 rule management...' AS test_section;
 SELECT pglinter.explain_rule('B004');
@@ -135,6 +137,8 @@ SELECT pglinter.update_rule_levels('B004', 60, 90);
 -- Final demonstration with current state
 SELECT 'Final B004 (base check) - Shows percentage-based unused index analysis:' AS b004_demo;
 SELECT pglinter.check();
+
+SELECT count(*) AS violation_count from pglinter.get_violations() WHERE rule_code = 'B004';
 
 DROP TABLE customer_analytics;
 

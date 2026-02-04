@@ -225,6 +225,12 @@ NOTICE:  🟡 Some warnings found - consider reviewing for optimization
  t
 (1 row)
 
+SELECT count(*) AS violation_count from pglinter.get_violations() WHERE rule_code = 'B009';
+ violation_count 
+-----------------
+               3
+(1 row)
+
 -- Test with output
 SELECT pglinter.check('/tmp/pglinter_B009_results.sarif');
  check 

@@ -157,7 +157,7 @@ SELECT 'Running base check to test B007 rule:' AS test_step;
 (1 row)
 
 SELECT pglinter.check();
-NOTICE:  🔍 pglinter found 7 issue(s):
+NOTICE:  🔍 pglinter found 6 issue(s):
 NOTICE:  ==================================================
 NOTICE:  ❌ [B003] ERROR: 6/6 table(s) without index on foreign key exceed the error threshold: 100%. Object list:
 audit_schema.user_actions.user_actions_user_id_fkey
@@ -178,9 +178,6 @@ NOTICE:  ⚠️  [C001] WARNING: CLUSTER {0} entries in pg_hba.conf with trust a
 Row 1 
 
 NOTICE:  ❌ [C002] ERROR: 6 entries in pg_hba.conf with trust or password authentication method exceed the warning threshold: 6.
-NOTICE:  ⚠️  [C003] WARNING: CLUSTER Encrypted passwords with MD5. 1 : 
-password_encryption is md5 
-
 NOTICE:  ❌ [S001] ERROR: No default role grantee on schema 6.6. It means that each time a table is created, you must grant it to roles. Object list:
 audit_schema
 clean_schema
@@ -193,11 +190,17 @@ NOTICE:  ⚠️  [S003] WARNING: 1/6 schemas are unsecured, schemas where all us
 public
 
 NOTICE:  ==================================================
-NOTICE:  📊 Summary: 3 error(s), 4 warning(s), 0 info
+NOTICE:  📊 Summary: 3 error(s), 3 warning(s), 0 info
 NOTICE:  🔴 Critical issues found - please review and fix errors
  check 
 -------
  t
+(1 row)
+
+SELECT count(*) AS violation_count from pglinter.get_violations() WHERE rule_code = 'B007';
+ violation_count 
+-----------------
+               4
 (1 row)
 
 -- Test rule management for B007
@@ -250,7 +253,7 @@ NOTICE:  🔴 Rule B007 has been disabled
 (1 row)
 
 SELECT pglinter.check(); -- Should skip B007
-NOTICE:  🔍 pglinter found 6 issue(s):
+NOTICE:  🔍 pglinter found 5 issue(s):
 NOTICE:  ==================================================
 NOTICE:  ❌ [B003] ERROR: 6/6 table(s) without index on foreign key exceed the error threshold: 100%. Object list:
 audit_schema.user_actions.user_actions_user_id_fkey
@@ -265,9 +268,6 @@ NOTICE:  ⚠️  [C001] WARNING: CLUSTER {0} entries in pg_hba.conf with trust a
 Row 1 
 
 NOTICE:  ❌ [C002] ERROR: 6 entries in pg_hba.conf with trust or password authentication method exceed the warning threshold: 6.
-NOTICE:  ⚠️  [C003] WARNING: CLUSTER Encrypted passwords with MD5. 1 : 
-password_encryption is md5 
-
 NOTICE:  ❌ [S001] ERROR: No default role grantee on schema 6.6. It means that each time a table is created, you must grant it to roles. Object list:
 audit_schema
 clean_schema
@@ -280,11 +280,17 @@ NOTICE:  ⚠️  [S003] WARNING: 1/6 schemas are unsecured, schemas where all us
 public
 
 NOTICE:  ==================================================
-NOTICE:  📊 Summary: 3 error(s), 3 warning(s), 0 info
+NOTICE:  📊 Summary: 3 error(s), 2 warning(s), 0 info
 NOTICE:  🔴 Critical issues found - please review and fix errors
  check 
 -------
  t
+(1 row)
+
+SELECT count(*) AS violation_count from pglinter.get_violations() WHERE rule_code = 'B007';
+ violation_count 
+-----------------
+               0
 (1 row)
 
 -- Re-enable B007
@@ -302,7 +308,7 @@ NOTICE:  ✅ Rule B007 has been enabled
 (1 row)
 
 SELECT pglinter.check(); -- Should include B007 again
-NOTICE:  🔍 pglinter found 7 issue(s):
+NOTICE:  🔍 pglinter found 6 issue(s):
 NOTICE:  ==================================================
 NOTICE:  ❌ [B003] ERROR: 6/6 table(s) without index on foreign key exceed the error threshold: 100%. Object list:
 audit_schema.user_actions.user_actions_user_id_fkey
@@ -323,9 +329,6 @@ NOTICE:  ⚠️  [C001] WARNING: CLUSTER {0} entries in pg_hba.conf with trust a
 Row 1 
 
 NOTICE:  ❌ [C002] ERROR: 6 entries in pg_hba.conf with trust or password authentication method exceed the warning threshold: 6.
-NOTICE:  ⚠️  [C003] WARNING: CLUSTER Encrypted passwords with MD5. 1 : 
-password_encryption is md5 
-
 NOTICE:  ❌ [S001] ERROR: No default role grantee on schema 6.6. It means that each time a table is created, you must grant it to roles. Object list:
 audit_schema
 clean_schema
@@ -338,11 +341,17 @@ NOTICE:  ⚠️  [S003] WARNING: 1/6 schemas are unsecured, schemas where all us
 public
 
 NOTICE:  ==================================================
-NOTICE:  📊 Summary: 3 error(s), 4 warning(s), 0 info
+NOTICE:  📊 Summary: 3 error(s), 3 warning(s), 0 info
 NOTICE:  🔴 Critical issues found - please review and fix errors
  check 
 -------
  t
+(1 row)
+
+SELECT count(*) AS violation_count from pglinter.get_violations() WHERE rule_code = 'B007';
+ violation_count 
+-----------------
+               4
 (1 row)
 
 -- Test with only B007 enabled
@@ -391,23 +400,29 @@ SELECT 'Current B007 rule status:' AS status_info;
 (1 row)
 
 SELECT * FROM pglinter.rules WHERE code = 'B007';
- id |               name               | code | enable | warning_level | error_level | scope |                          description                           |                                               message                                               |                                           fixes                                            |                                                q1                                                 |                                                q2                                                 |                                                q3                                                 
-----+----------------------------------+------+--------+---------------+-------------+-------+----------------------------------------------------------------+-----------------------------------------------------------------------------------------------------+--------------------------------------------------------------------------------------------+---------------------------------------------------------------------------------------------------+---------------------------------------------------------------------------------------------------+---------------------------------------------------------------------------------------------------
-  7 | HowManyTablesWithFkOutsideSchema | B007 | t      |            20 |          80 | BASE  | Count number of tables with foreign keys outside their schema. | {0}/{1} table(s) with foreign keys outside schema exceed the {2} threshold: {3}%. Object list:\n{4} | {"Consider restructuring schema design to keep related tables in same schema","ask a dba"} |                                                                                                  +|                                                                                                  +|                                                                                                  +
-    |                                  |      |        |               |             |       |                                                                |                                                                                                     |                                                                                            | SELECT                                                                                           +| SELECT                                                                                           +| SELECT                                                                                           +
-    |                                  |      |        |               |             |       |                                                                |                                                                                                     |                                                                                            |     COUNT(DISTINCT conrelid::regclass) AS tables_with_foreign_keys                               +|     COUNT(                                                                                       +|     tc.table_schema::TEXT,tc.table_name::TEXT,                                                   +
-    |                                  |      |        |               |             |       |                                                                |                                                                                                     |                                                                                            | FROM                                                                                             +|         DISTINCT tc.table_schema || '.' || tc.table_name                                         +|     'has foreign key '||tc.constraint_name::TEXT||' referencing '||                              +
-    |                                  |      |        |               |             |       |                                                                |                                                                                                     |                                                                                            |     pg_constraint c                                                                              +|     ) AS tables_with_fk_outside_schema                                                           +|     ccu.table_schema::TEXT||'.'||ccu.table_name::TEXT AS problematic_object                      +
-    |                                  |      |        |               |             |       |                                                                |                                                                                                     |                                                                                            | JOIN                                                                                             +| FROM information_schema.table_constraints AS tc                                                  +| FROM information_schema.table_constraints AS tc                                                  +
-    |                                  |      |        |               |             |       |                                                                |                                                                                                     |                                                                                            |     pg_class r ON r.oid = c.conrelid                                                             +| INNER JOIN information_schema.constraint_column_usage AS ccu                                     +| INNER JOIN information_schema.constraint_column_usage AS ccu                                     +
-    |                                  |      |        |               |             |       |                                                                |                                                                                                     |                                                                                            | JOIN                                                                                             +|     ON tc.constraint_name = ccu.constraint_name                                                  +|     ON tc.constraint_name = ccu.constraint_name                                                  +
-    |                                  |      |        |               |             |       |                                                                |                                                                                                     |                                                                                            |     pg_namespace n ON n.oid = r.relnamespace                                                     +| WHERE                                                                                            +| WHERE                                                                                            +
-    |                                  |      |        |               |             |       |                                                                |                                                                                                     |                                                                                            | WHERE                                                                                            +|     tc.constraint_type = 'FOREIGN KEY'                                                           +|     tc.constraint_type = 'FOREIGN KEY'                                                           +
-    |                                  |      |        |               |             |       |                                                                |                                                                                                     |                                                                                            |     c.contype = 'f' -- Filter for Foreign Key constraints                                        +|     AND tc.table_schema != ccu.table_schema                                                      +|     AND tc.table_schema != ccu.table_schema                                                      +
-    |                                  |      |        |               |             |       |                                                                |                                                                                                     |                                                                                            |     AND n.nspname NOT IN (                                                                       +|     AND tc.table_schema NOT IN (                                                                 +|     AND tc.table_schema NOT IN (                                                                 +
-    |                                  |      |        |               |             |       |                                                                |                                                                                                     |                                                                                            |         'pg_toast', 'pg_catalog', 'information_schema', 'pglinter', '_timescaledb', 'timescaledb'+|         'pg_toast', 'pg_catalog', 'information_schema', 'pglinter', '_timescaledb', 'timescaledb'+|         'pg_toast', 'pg_catalog', 'information_schema', 'pglinter', '_timescaledb', 'timescaledb'+
-    |                                  |      |        |               |             |       |                                                                |                                                                                                     |                                                                                            |     )                                                                                            +|     )                                                                                            +|     )                                                                                            +
-    |                                  |      |        |               |             |       |                                                                |                                                                                                     |                                                                                            |                                                                                                   |                                                                                                   | 
+ id |               name               | code | enable | warning_level | error_level | scope |                          description                           |                                               message                                               |                                           fixes                                            |                                                q1                                                 |                                                q2                                                 |                                                q3                                                 |                                                q4                                                 
+----+----------------------------------+------+--------+---------------+-------------+-------+----------------------------------------------------------------+-----------------------------------------------------------------------------------------------------+--------------------------------------------------------------------------------------------+---------------------------------------------------------------------------------------------------+---------------------------------------------------------------------------------------------------+---------------------------------------------------------------------------------------------------+---------------------------------------------------------------------------------------------------
+  7 | HowManyTablesWithFkOutsideSchema | B007 | t      |            20 |          80 | BASE  | Count number of tables with foreign keys outside their schema. | {0}/{1} table(s) with foreign keys outside schema exceed the {2} threshold: {3}%. Object list:\n{4} | {"Consider restructuring schema design to keep related tables in same schema","ask a dba"} |                                                                                                  +|                                                                                                  +|                                                                                                  +|                                                                                                  +
+    |                                  |      |        |               |             |       |                                                                |                                                                                                     |                                                                                            | SELECT                                                                                           +| SELECT                                                                                           +| SELECT                                                                                           +| SELECT                                                                                           +
+    |                                  |      |        |               |             |       |                                                                |                                                                                                     |                                                                                            |     COUNT(DISTINCT conrelid::regclass) AS tables_with_foreign_keys                               +|     COUNT(                                                                                       +|     tc.table_schema::TEXT,tc.table_name::TEXT,                                                   +|     'pg_constraint'::regclass::oid AS classid,                                                   +
+    |                                  |      |        |               |             |       |                                                                |                                                                                                     |                                                                                            | FROM                                                                                             +|         DISTINCT tc.table_schema || '.' || tc.table_name                                         +|     'has foreign key '||tc.constraint_name::TEXT||' referencing '||                              +|     c.oid AS objid,                                                                              +
+    |                                  |      |        |               |             |       |                                                                |                                                                                                     |                                                                                            |     pg_constraint c                                                                              +|     ) AS tables_with_fk_outside_schema                                                           +|     ccu.table_schema::TEXT||'.'||ccu.table_name::TEXT AS problematic_object                      +|     0 AS objsubid                                                                                +
+    |                                  |      |        |               |             |       |                                                                |                                                                                                     |                                                                                            | JOIN                                                                                             +| FROM information_schema.table_constraints AS tc                                                  +| FROM information_schema.table_constraints AS tc                                                  +| FROM information_schema.table_constraints AS tc                                                  +
+    |                                  |      |        |               |             |       |                                                                |                                                                                                     |                                                                                            |     pg_class r ON r.oid = c.conrelid                                                             +| INNER JOIN information_schema.constraint_column_usage AS ccu                                     +| INNER JOIN information_schema.constraint_column_usage AS ccu                                     +| INNER JOIN information_schema.constraint_column_usage AS ccu                                     +
+    |                                  |      |        |               |             |       |                                                                |                                                                                                     |                                                                                            | JOIN                                                                                             +|     ON tc.constraint_name = ccu.constraint_name                                                  +|     ON tc.constraint_name = ccu.constraint_name                                                  +|     ON tc.constraint_name = ccu.constraint_name                                                  +
+    |                                  |      |        |               |             |       |                                                                |                                                                                                     |                                                                                            |     pg_namespace n ON n.oid = r.relnamespace                                                     +| WHERE                                                                                            +| WHERE                                                                                            +| INNER JOIN pg_constraint c                                                                       +
+    |                                  |      |        |               |             |       |                                                                |                                                                                                     |                                                                                            | WHERE                                                                                            +|     tc.constraint_type = 'FOREIGN KEY'                                                           +|     tc.constraint_type = 'FOREIGN KEY'                                                           +|     ON c.conname = tc.constraint_name                                                            +
+    |                                  |      |        |               |             |       |                                                                |                                                                                                     |                                                                                            |     c.contype = 'f' -- Filter for Foreign Key constraints                                        +|     AND tc.table_schema != ccu.table_schema                                                      +|     AND tc.table_schema != ccu.table_schema                                                      +|     AND c.conrelid = (                                                                           +
+    |                                  |      |        |               |             |       |                                                                |                                                                                                     |                                                                                            |     AND n.nspname NOT IN (                                                                       +|     AND tc.table_schema NOT IN (                                                                 +|     AND tc.table_schema NOT IN (                                                                 +|         SELECT oid FROM pg_class WHERE relname = tc.table_name                                   +
+    |                                  |      |        |               |             |       |                                                                |                                                                                                     |                                                                                            |         'pg_toast', 'pg_catalog', 'information_schema', 'pglinter', '_timescaledb', 'timescaledb'+|         'pg_toast', 'pg_catalog', 'information_schema', 'pglinter', '_timescaledb', 'timescaledb'+|         'pg_toast', 'pg_catalog', 'information_schema', 'pglinter', '_timescaledb', 'timescaledb'+|             AND relnamespace = (SELECT oid FROM pg_namespace WHERE nspname = tc.table_schema)    +
+    |                                  |      |        |               |             |       |                                                                |                                                                                                     |                                                                                            |     )                                                                                            +|     )                                                                                            +|     )                                                                                            +|     )                                                                                            +
+    |                                  |      |        |               |             |       |                                                                |                                                                                                     |                                                                                            |                                                                                                   |                                                                                                   |                                                                                                   | WHERE                                                                                            +
+    |                                  |      |        |               |             |       |                                                                |                                                                                                     |                                                                                            |                                                                                                   |                                                                                                   |                                                                                                   |     tc.constraint_type = 'FOREIGN KEY'                                                           +
+    |                                  |      |        |               |             |       |                                                                |                                                                                                     |                                                                                            |                                                                                                   |                                                                                                   |                                                                                                   |     AND tc.table_schema != ccu.table_schema                                                      +
+    |                                  |      |        |               |             |       |                                                                |                                                                                                     |                                                                                            |                                                                                                   |                                                                                                   |                                                                                                   |     AND tc.table_schema NOT IN (                                                                 +
+    |                                  |      |        |               |             |       |                                                                |                                                                                                     |                                                                                            |                                                                                                   |                                                                                                   |                                                                                                   |         'pg_toast', 'pg_catalog', 'information_schema', 'pglinter', '_timescaledb', 'timescaledb'+
+    |                                  |      |        |               |             |       |                                                                |                                                                                                     |                                                                                            |                                                                                                   |                                                                                                   |                                                                                                   |     )                                                                                            +
+    |                                  |      |        |               |             |       |                                                                |                                                                                                     |                                                                                            |                                                                                                   |                                                                                                   |                                                                                                   | 
 (1 row)
 
 -- Test threshold configuration
@@ -454,6 +469,12 @@ NOTICE:  🔴 Critical issues found - please review and fix errors
  t
 (1 row)
 
+SELECT count(*) AS violation_count from pglinter.get_violations() WHERE rule_code = 'B007';
+ violation_count 
+-----------------
+               4
+(1 row)
+
 -- Test if file exists and show checksum
 SELECT pglinter.check('/tmp/pglinter_B007_results.sarif');
  check 
@@ -469,6 +490,12 @@ NOTICE:  ✅ Updated rule B007 levels: warning=20, error=80
  b007_reset_levels 
 -------------------
  t
+(1 row)
+
+SELECT 'B007 comprehensive test completed successfully!' as test_result;
+                   test_result                   
+-------------------------------------------------
+ B007 comprehensive test completed successfully!
 (1 row)
 
 DROP SCHEMA public_schema CASCADE;
