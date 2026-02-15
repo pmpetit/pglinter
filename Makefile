@@ -133,7 +133,7 @@ extension:
 ## INSTALL
 ##
 
-install:
+install: extension
 	$(eval PG_CONFIG := $(shell $(PGRX) info pg-config $(PGVER) 2> /dev/null || echo pg_config))
 	$(eval PG_SHAREDIR := $(shell $(PG_CONFIG) --sharedir))
 	$(eval PG_PKGLIBDIR := $(shell $(PG_CONFIG) --pkglibdir))
