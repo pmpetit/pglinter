@@ -52,7 +52,7 @@ jobs:
       matrix:
         runs_on: [ubuntu-latest, ubuntu-24.04-arm]
         distro: [bookworm, trixie]
-        pgver: [pg18]
+        pgver: [pg18, pg17, pg16, pg15, pg14]
     name: '${{ matrix.pgver }}-${{ matrix.distro }}-oci-test-on-${{ matrix.runs_on }}'
     runs-on: ${{ matrix.runs_on }}
     steps:
