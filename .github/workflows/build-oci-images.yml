@@ -64,14 +64,6 @@ jobs:
           github_token: ${{ secrets.GH_TOKEN }}
           distro: ${{ matrix.distro }}
           ocipgversion: ${{ matrix.pgver }}
-      - name: clean oci image
-        uses: ./.github/actions/build-oci-clean
-        with:
-          distro: ${{ matrix.distro }}
-          ocipgversion: ${{ matrix.pgver }}
-          github_token: ${{ secrets.PAT }}
-          keep-n-most-recent: 1
-          pat: ${{ secrets.PAT }}
 
   oci-image-build:
     needs: [setup-matrix, oci-image-test]
