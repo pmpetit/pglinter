@@ -1,3 +1,4 @@
+
 ##
 ## pglinter Makefile
 ##
@@ -13,11 +14,7 @@ PGLINTER_MINOR_VERSION = $(shell grep '^version *= *' Cargo.toml | sed 's/^versi
 # use `TARGET=debug make run` for more detailed errors
 TARGET?=release
 TARGET_DIR?=target/$(TARGET)/pglinter-$(PGVER)/
-PG_CONFIG?=`$(PGRX) info pg-config $(PGVER) 2> /dev/null || echo pg_config`
-PG_SHAREDIR?=$(shell $(PG_CONFIG) --sharedir)
-PG_LIBDIR?=$(shell $(PG_CONFIG) --libdir)
-PG_PKGLIBDIR?=$(shell $(PG_CONFIG) --pkglibdir)
-PG_BINDIR?=$(shell $(PG_CONFIG) --bindir)
+
 
 # pgrx always creates .so files, even on macOS
 LIB_SUFFIX?=so
@@ -125,6 +122,11 @@ EXTRA_CLEAN?=target
 all: extension
 
 extension:
+	PG_CONFIG?=`$(PGRX) info pg-config $(PGVER) 2> /dev/null || echo pg_config`
+	PG_SHAREDIR?=$(shell $(PG_CONFIG) --sharedir)
+	PG_LIBDIR?=$(shell $(PG_CONFIG) --libdir)
+	PG_PKGLIBDIR?=$(shell $(PG_CONFIG) --pkglibdir)
+	PG_BINDIR?=$(shell $(PG_CONFIG) --bindir)
 	$(PGRX) package --pg-config $(PG_CONFIG)
 
 ##
@@ -263,6 +265,11 @@ deb: package
 # https://github.com/pgcentralfoundation/pgrx/issues/288
 
 package:
+	PG_CONFIG?=`$(PGRX) info pg-config $(PGVER) 2> /dev/null || echo pg_config`
+	PG_SHAREDIR?=$(shell $(PG_CONFIG) --sharedir)
+	PG_LIBDIR?=$(shell $(PG_CONFIG) --libdir)
+	PG_PKGLIBDIR?=$(shell $(PG_CONFIG) --pkglibdir)
+	PG_BINDIR?=$(shell $(PG_CONFIG) --bindir)
 	$(PGRX) package --pg-config $(PG_CONFIG)
 
 ##
@@ -279,34 +286,36 @@ endif
 PGRX_IMAGE?=$(DOCKER_IMAGE):pgrx
 PGRX_BUILD_ARGS?=
 
-docker_image: docker/Dockerfile #: build the docker image
-	#: docker build --tag $(DOCKER_IMAGE):$(DOCKER_TAG) . --file $^  $(DOCKER_BUILD_ARG)
-	@echo "Setting up buildx for multi-platform builds..."
-	docker buildx create --name pglinter-builder --use --bootstrap 2>/dev/null || \
-	docker buildx use pglinter-builder 2>/dev/null || \
-	(echo "Creating new buildx instance..." && docker buildx create --name pglinter-builder --use --bootstrap)
-	@echo "Building multi-platform image..."
-	docker buildx build \
-			--platform linux/amd64,linux/arm64 \
-			--tag $(DOCKER_IMAGE):$(DOCKER_TAG) \
-			--file $^ \
-			--push \
-			$(DOCKER_BUILD_ARG) \
-			.
+# OCI image configuration - CloudNative-PG extension images
+DOCKER_REGISTRY?=ghcr.io/pmpetit
+DOCKER_IMAGE_NAME?=pglinter
+DOCKER_BASE_TAG?=$(PGLINTER_MINOR_VERSION)
+PG_VERSION?=18
+DOCKER_TAG?=$(DOCKER_BASE_TAG)-$(PG_VERSION)
+DOCKER_IMAGE?=$(DOCKER_REGISTRY)/$(DOCKER_IMAGE_NAME):$(DOCKER_TAG)
 
-docker_image_arm64: docker/Dockerfile #: build the docker image
-	#: docker build --tag $(DOCKER_IMAGE):$(DOCKER_TAG) . --file $^  $(DOCKER_BUILD_ARG)
-	@echo "Setting up buildx for multi-platform builds..."
-	docker buildx create --name pglinter-builder --use --bootstrap 2>/dev/null || \
-	docker buildx use pglinter-builder 2>/dev/null || \
-	(echo "Creating new buildx instance..." && docker buildx create --name pglinter-builder --use --bootstrap)
-	@echo "Building multi-platform image..."
+docker_image_test:
+	docker build --tag latest .
+
+docker_setup:
+	@echo "Setting up Docker buildx for multi-platform builds..."
+	@docker buildx create --name pglinter-docker-builder --use --bootstrap 2>/dev/null || \
+	docker buildx use pglinter-docker-builder 2>/dev/null || \
+	(echo "Creating new buildx instance..." && docker buildx create --name pglinter-docker-builder --use --bootstrap)
+
+docker_image: docker_setup
+	@echo "Building docker image : $(DOCKER_REGISTRY)/$(DOCKER_IMAGE_NAME):$(DOCKER_TAG)"
+	@echo "  PostgreSQL Version: $(PG_VERSION)"
+	@echo "  Extension Version: $(PGLINTER_MINOR_VERSION)"
 	docker buildx build \
-			--platform linux/arm64 \
-			--tag $(DOCKER_IMAGE):$(DOCKER_TAG) \
-			--file $^ \
-			$(DOCKER_BUILD_ARG) \
-			.
+		--platform linux/amd64,linux/arm64 \
+		--build-arg PG_MAJOR_VERSION=$(PG_VERSION) \
+		--build-arg PGLINTER_VERSION=$(PGLINTER_MINOR_VERSION) \
+		--tag $(DOCKER_REGISTRY)/$(DOCKER_IMAGE_NAME):$(DOCKER_TAG) \
+		--file docker/Dockerfile \
+		--push \
+		.
+	@echo "✅ image built successfully"
 
 # Build AMD64 pgrx image separately
 pgrx_image_amd64_only: docker/pgrx/Dockerfile
@@ -391,27 +400,38 @@ OCI_TAG?=$(OCI_BASE_TAG)-$(PG_VERSION_OCI)-$(DISTRO)
 # Ensure buildx is available for OCI builds
 oci_setup:
 	@echo "Setting up Docker buildx for multi-platform builds..."
-	@docker buildx create --name pglinter-oci-builder --use --bootstrap 2>/dev/null || \
-	docker buildx use pglinter-oci-builder 2>/dev/null || \
-	(echo "Creating new buildx instance..." && docker buildx create --name pglinter-oci-builder --use --bootstrap)
+	@sudo docker buildx create --name pglinter-oci-builder --use --bootstrap 2>/dev/null || \
+	sudo docker buildx use pglinter-oci-builder 2>/dev/null || \
+	(echo "Creating new buildx instance..." && sudo docker buildx create --name pglinter-oci-builder --use --bootstrap)
 
-# Build OCI extension image for PostgreSQL 18
-oci_image: oci_setup deb
-	@echo "Building OCI image: $(OCI_REGISTRY)/$(OCI_IMAGE_NAME):$(OCI_TAG)"
+
+# Build OCI extension image for AMD64 platform only (can be loaded locally)
+oci_image: oci_setup
+	@echo "Building OCI image for AMD64/ARM64: $(OCI_REGISTRY)/$(OCI_IMAGE_NAME):$(OCI_TAG)"
 	@echo "  PostgreSQL Version: $(PG_VERSION_OCI)"
 	@echo "  Extension Version: $(PGLINTER_MINOR_VERSION)"
 	@echo "  Distro: $(DISTRO)"
-	@echo "Checking if .deb package exists locally..."
-	@if [ -f $(TARGET_DIR)/*.deb ]; then \
-		echo "✅ Local .deb package found, will use for build"; \
-		DEB_PATH=$$(find $(TARGET_DIR) -name "*.deb" | head -1); \
-		echo "Using package: $$DEB_PATH"; \
-	else \
-		echo "❌ No local .deb package found in $(TARGET_DIR)"; \
-		echo "Will attempt to download from GitHub releases"; \
-	fi
-	docker buildx build \
+	sudo docker buildx build \
 		--platform linux/amd64,linux/arm64 \
+		--build-arg PG_VERSION=$(PG_VERSION_OCI) \
+		--build-arg DISTRO=$(DISTRO) \
+		--build-arg PGLINTER_VERSION=$(PGLINTER_MINOR_VERSION) \
+		--build-arg EXT_VERSION=$(PGLINTER_MINOR_VERSION) \
+		--tag $(OCI_REGISTRY)/$(OCI_IMAGE_NAME):$(OCI_TAG) \
+		--file docker/oci/Dockerfile.pg-deb \
+		--push \
+		.
+	@echo "✅ OCI image built successfully"
+
+# Generic OCI load image target - internal use
+# Parameter: $(1) = architecture (amd64 or arm64)
+define oci_load_image_common
+	@echo "Building OCI image for $(shell echo $(1) | tr a-z A-Z): $(OCI_REGISTRY)/$(OCI_IMAGE_NAME):$(OCI_TAG)"
+	@echo "  PostgreSQL Version: $(PG_VERSION_OCI)"
+	@echo "  Extension Version: $(PGLINTER_MINOR_VERSION)"
+	@echo "  Distro: $(DISTRO)"
+	sudo docker buildx build \
+		--platform linux/$(1) \
 		--build-arg PG_VERSION=$(PG_VERSION_OCI) \
 		--build-arg DISTRO=$(DISTRO) \
 		--build-arg PGLINTER_VERSION=$(PGLINTER_MINOR_VERSION) \
@@ -421,101 +441,79 @@ oci_image: oci_setup deb
 		--load \
 		.
 	@echo "✅ OCI image built successfully"
+endef
 
-# Build OCI extension image for AMD64 platform only (can be loaded locally)
-oci_image_amd64: oci_setup deb
-	@echo "Building OCI image for AMD64 only: $(OCI_REGISTRY)/$(OCI_IMAGE_NAME):$(OCI_TAG)"
-	@echo "  PostgreSQL Version: $(PG_VERSION_OCI)"
-	@echo "  Extension Version: $(PGLINTER_MINOR_VERSION)"
-	@echo "  Distro: $(DISTRO)"
-	@echo "Checking if .deb package exists locally..."
-	@if [ -f $(TARGET_DIR)/*.deb ]; then \
-		echo "✅ Local .deb package found, will use for build"; \
-		DEB_PATH=$$(find $(TARGET_DIR) -name "*.deb" | head -1); \
-		echo "Using package: $$DEB_PATH"; \
-	else \
-		echo "❌ No local .deb package found in $(TARGET_DIR)"; \
-		echo "Will attempt to download from GitHub releases"; \
-	fi
-	docker buildx build \
-		--platform linux/amd64 \
-		--build-arg PG_VERSION=$(PG_VERSION_OCI) \
-		--build-arg DISTRO=$(DISTRO) \
-		--build-arg PGLINTER_VERSION=$(PGLINTER_MINOR_VERSION) \
-		--build-arg EXT_VERSION=$(PGLINTER_MINOR_VERSION) \
-		--tag $(OCI_REGISTRY)/$(OCI_IMAGE_NAME):$(OCI_TAG) \
-		--file docker/oci/Dockerfile.pg-deb \
-		--load \
-		.
-	@echo "✅ OCI image built successfully for AMD64"
+oci_load_image_amd64: oci_setup
+	$(call oci_load_image_common,amd64)
+
+oci_load_image_arm64: oci_setup
+	$(call oci_load_image_common,arm64)
 
 # Build and push OCI extension image to GitHub Container Registry
-oci_push_amd64: oci_image_amd64
+oci_push:
 	@echo "Pushing OCI images to registry..."
 	docker push $(OCI_REGISTRY)/$(OCI_IMAGE_NAME):$(OCI_TAG)
 	@echo "✅ OCI images pushed successfully"
 	@echo "  Main tag: $(OCI_REGISTRY)/$(OCI_IMAGE_NAME):$(OCI_TAG)"
 
-# Build OCI image for local testing (AMD64 only)
-oci_build_local: oci_setup
-	@echo "Building local OCI image for testing..."
-	@echo "Ensuring .deb package exists for PostgreSQL $(PG_VERSION_OCI)..."
-	@if [ ! -f target/release/pglinter-pg$(PG_VERSION_OCI)/postgresql_pglinter_$(PG_VERSION_OCI)_$(PGLINTER_MINOR_VERSION)_amd64.deb ]; then \
-		echo "❌ No .deb package found. Building package first..."; \
-		$(MAKE) deb PGVER=pg$(PG_VERSION_OCI) PG_MAJOR_VERSION=$(PG_VERSION_OCI); \
-	fi
-	@echo "Preparing .deb package for Docker build..."
-	@mkdir -p docker/oci/packages
-	@cp target/release/pglinter-pg$(PG_VERSION_OCI)/postgresql_pglinter_$(PG_VERSION_OCI)_$(PGLINTER_MINOR_VERSION)_amd64.deb docker/oci/packages/pglinter.deb
-	@echo "Using local .deb package for build..."
-	cd docker/oci && docker buildx build \
-		--platform linux/amd64 \
-		--build-arg PG_VERSION=$(PG_VERSION_OCI) \
-		--build-arg DISTRO=$(DISTRO) \
-		--build-arg PGLINTER_VERSION=$(PGLINTER_MINOR_VERSION) \
-		--build-arg EXT_VERSION=$(PGLINTER_MINOR_VERSION) \
-		--tag $(OCI_REGISTRY)/$(OCI_IMAGE_NAME):local \
-		--file Dockerfile.local \
-		--load \
-		.
-	@rm -rf docker/oci/packages
-	@echo "✅ Local OCI image built: $(OCI_REGISTRY)/$(OCI_IMAGE_NAME):local"
+# Generic OCI test target - internal use
+# ARCH parameter should be set to amd64 or arm64
+define oci_test_common
+	@echo "Testing OCI image in kind Kubernetes cluster ($(1))..."
+	kind create cluster --name pglinter-test --config docker/oci/kind.yaml
+	sudo docker tag $(OCI_REGISTRY)/$(OCI_IMAGE_NAME):$(OCI_TAG) pglinter:local
+	kind load docker-image pglinter:local --name pglinter-test
+	kubectl apply --server-side -f https://raw.githubusercontent.com/cloudnative-pg/cloudnative-pg/release-1.27/releases/cnpg-1.27.1.yaml
+	# Wait for CloudNativePG operator pod to be ready
+	echo "Waiting for CloudNativePG operator pod to be ready..."
+	for i in $$(seq 1 120); do \
+		webhook_ip=$$(kubectl get svc -n cnpg-system cnpg-webhook-service -o jsonpath='{.spec.clusterIP}'); \
+		if [ -n "$$webhook_ip" ] && \
+			kubectl run --rm -i --restart=Never --image=appropriate/curl test-curl --namespace=cnpg-system -- \
+			curl -k --connect-timeout 2 https://$$webhook_ip:443/mutate-postgresql-cnpg-io-v1-cluster || true; then \
+			echo "Webhook endpoint is reachable."; \
+			sleep 10; \
+			break; \
+		fi; \
+		echo "Waiting for webhook endpoint at $$webhook_ip:443 ..."; \
+		sleep 5; \
+	done
+	sleep 30;
+	kubectl apply -f docker/oci/cluster.yaml
+	kubectl apply -f docker/oci/database.yaml
+	# Wait for cluster-pglinter pod to be ready
+	echo "Waiting for cluster-pglinter pod to be ready..."
+	for i in $$(seq 1 60); do \
+		pod_name=$$(kubectl get pods -l cnpg.io/cluster=cluster-pglinter -o jsonpath='{.items[0].metadata.name}'); \
+		pod_status=$$(kubectl get pods -l cnpg.io/cluster=cluster-pglinter -o jsonpath='{.items[0].status.phase}'); \
+		if [ "$$pod_status" = "Running" ]; then \
+			if kubectl exec $$pod_name -- psql -U postgres -d postgres -c "select 1;"; then \
+				echo "PostgreSQL is up and accepting connections."; \
+				break; \
+			else \
+				echo "Pod is running but PostgreSQL not ready yet (waiting)"; \
+			fi; \
+		else \
+			echo "Pod status: $$pod_status (waiting)"; \
+		fi; \
+		sleep 5; \
+	done
+	pod_name=$$(kubectl get pods -l cnpg.io/cluster=cluster-pglinter -o jsonpath='{.items[0].metadata.name}') && \
+	kubectl exec -it $$pod_name -- psql -U postgres -d postgres -c "CREATE EXTENSION IF NOT EXISTS pglinter; SELECT hello_pglinter();"
+endef
 
-# Test the OCI image locally
-oci_test: oci_build_local
-	@echo "Testing OCI image locally..."
-	@echo "Verifying image was built successfully..."
-	docker image inspect $(OCI_REGISTRY)/$(OCI_IMAGE_NAME):local --format '{{.Size}}' | \
-		awk '{if($$1 > 0) print "✅ Image size: " $$1 " bytes"; else print "❌ Image appears empty"}'
-	@echo "Checking image labels..."
-	docker image inspect $(OCI_REGISTRY)/$(OCI_IMAGE_NAME):local --format '{{range $$k, $$v := .Config.Labels}}{{$$k}}: {{$$v}}{{"\n"}}{{end}}' | \
-		grep -E "(extension\.|org\.opencontainers\.image\.)" || echo "❌ Missing expected labels"
-	@echo "Extracting and examining image contents..."
-	@mkdir -p /tmp/pglinter-test
-	@if docker save $(OCI_REGISTRY)/$(OCI_IMAGE_NAME):local -o /tmp/pglinter-test/image.tar 2>/dev/null; then \
-		cd /tmp/pglinter-test && tar -tf image.tar | head -10 && \
-		echo "✅ Image successfully saved and contains layers"; \
-	else \
-		echo "❌ Failed to save image"; \
-	fi
-	@rm -rf /tmp/pglinter-test
-	@echo "✅ OCI image validation completed"
+oci_test_amd64: oci_load_image_amd64
+	$(call oci_test_common,amd64)
 
-# Detailed test using crane or direct layer inspection
-oci_test_detailed: oci_build_local
-	@echo "Running detailed OCI image test..."
-	@echo "Using dive to inspect image layers (if available)..."
-	@if command -v dive >/dev/null 2>&1; then \
-		dive $(OCI_REGISTRY)/$(OCI_IMAGE_NAME):local --ci; \
-	else \
-		echo "Dive not available, using basic inspection..."; \
-		echo "Checking image history:"; \
-		docker history $(OCI_REGISTRY)/$(OCI_IMAGE_NAME):local; \
-		echo ""; \
-		echo "Image configuration:"; \
-		docker image inspect $(OCI_REGISTRY)/$(OCI_IMAGE_NAME):local --format '{{json .RootFS}}' | jq '.' 2>/dev/null || docker image inspect $(OCI_REGISTRY)/$(OCI_IMAGE_NAME):local --format '{{.RootFS}}'; \
-	fi
-	@echo "✅ Detailed OCI image test completed"
+oci_test_arm64: oci_load_image_arm64
+	$(call oci_test_common,arm64)
+
+
+# Cleanup kind cluster and resources
+oci_test_cleanup:
+	kubectl delete -f docker/oci/database.yaml || true
+	kubectl delete -f docker/oci/cluster.yaml || true
+	kind delete cluster --name pglinter-test || true
 
 
 ##

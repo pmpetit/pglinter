@@ -1,0 +1,38 @@
+name: 'Build OCI Image (Make)'
+description: 'Builds OCI image using make oci_image.'
+inputs:
+  distro:
+    description: 'Target distribution (e.g., bookworm, trixie)'
+    required: false
+  ocipgversion:
+    description: 'PostgreSQL version (e.g., pg18)'
+    required: false
+  github-token:
+    description: 'GitHub token for authentication'
+    required: true
+  oci-tag:
+    description: 'image tag'
+    required: false
+runs:
+  using: 'composite'
+  steps:
+    # - name: Login to GitHub Container Registry
+    #   uses: docker/login-action@v3.0.0
+    #   with:
+    #     registry: ghcr.io
+    #     username: pmpetit
+    #     password: ${{ inputs.github_token }}
+    - name: Log in to GitHub Container Registry
+      run: echo "${{ inputs.github_token }}" | sudo docker login ghcr.io -u ${{ github.actor }} --password-stdin
+      shell: bash
+    - name: Build OCI image
+      run: |
+        export DISTRO="${{ inputs.distro || 'bookworm' }}"
+        export OCIPGVERSION="${{ inputs.ocipgversion }}"
+        export PG_VERSION_OCI="${OCIPGVERSION#pg}"
+        export GITHUB_TOKEN="${{ inputs.github_token }}"
+        if [ -n "${{ inputs.oci-tag }}" ]; then
+          export OCI_TAG="${{ inputs.oci-tag }}"
+        fi
+        make oci_image
+      shell: bash

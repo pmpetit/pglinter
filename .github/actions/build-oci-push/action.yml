@@ -1,0 +1,26 @@
+name: 'Push OCI Image (Make)'
+description: 'Pushes OCI image using make oci_push.'
+inputs:
+  distro:
+    description: 'Target distribution (e.g., bookworm, trixie)'
+    required: false
+  ocipgversion:
+    description: 'PostgreSQL version (e.g., pg18)'
+    required: false
+  github_token:
+    description: 'GitHub token for authentication'
+    required: true
+runs:
+  using: 'composite'
+  steps:
+    - name: Login to GitHub Container Registry
+      run: echo "${{ inputs.github_token }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+      shell: bash
+    - name: Push OCI image
+      run: |
+        export DISTRO="${{ inputs.distro || 'bookworm' }}"
+        export OCIPGVERSION="${{ inputs.ocipgversion }}"
+        export PG_VERSION_OCI="${OCIPGVERSION#pg}"
+        make oci_push
+
+      shell: bash
