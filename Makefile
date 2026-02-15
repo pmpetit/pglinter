@@ -423,13 +423,15 @@ oci_image: oci_setup
 		.
 	@echo "✅ OCI image built successfully"
 
-oci_load_image_amd64: oci_setup
-	@echo "Building OCI image for AMD64: $(OCI_REGISTRY)/$(OCI_IMAGE_NAME):$(OCI_TAG)"
+# Generic OCI load image target - internal use
+# Parameter: $(1) = architecture (amd64 or arm64)
+define oci_load_image_common
+	@echo "Building OCI image for $(shell echo $(1) | tr a-z A-Z): $(OCI_REGISTRY)/$(OCI_IMAGE_NAME):$(OCI_TAG)"
 	@echo "  PostgreSQL Version: $(PG_VERSION_OCI)"
 	@echo "  Extension Version: $(PGLINTER_MINOR_VERSION)"
 	@echo "  Distro: $(DISTRO)"
 	sudo docker buildx build \
-		--platform linux/amd64 \
+		--platform linux/$(1) \
 		--build-arg PG_VERSION=$(PG_VERSION_OCI) \
 		--build-arg DISTRO=$(DISTRO) \
 		--build-arg PGLINTER_VERSION=$(PGLINTER_MINOR_VERSION) \
@@ -439,7 +441,13 @@ oci_load_image_amd64: oci_setup
 		--load \
 		.
 	@echo "✅ OCI image built successfully"
+endef
 
+oci_load_image_amd64: oci_setup
+	$(call oci_load_image_common,amd64)
+
+oci_load_image_arm64: oci_setup
+	$(call oci_load_image_common,arm64)
 
 # Build and push OCI extension image to GitHub Container Registry
 oci_push:
@@ -448,10 +456,11 @@ oci_push:
 	@echo "✅ OCI images pushed successfully"
 	@echo "  Main tag: $(OCI_REGISTRY)/$(OCI_IMAGE_NAME):$(OCI_TAG)"
 
-oci_test_amd64: oci_load_image_amd64
-	@echo "Testing OCI image in kind Kubernetes cluster..."
+# Generic OCI test target - internal use
+# ARCH parameter should be set to amd64 or arm64
+define oci_test_common
+	@echo "Testing OCI image in kind Kubernetes cluster ($(1))..."
 	kind create cluster --name pglinter-test --config docker/oci/kind.yaml
-	#sudo docker pull $(OCI_REGISTRY)/$(OCI_IMAGE_NAME):$(OCI_TAG)
 	sudo docker tag $(OCI_REGISTRY)/$(OCI_IMAGE_NAME):$(OCI_TAG) pglinter:local
 	kind load docker-image pglinter:local --name pglinter-test
 	kubectl apply --server-side -f https://raw.githubusercontent.com/cloudnative-pg/cloudnative-pg/release-1.27/releases/cnpg-1.27.1.yaml
@@ -491,6 +500,13 @@ oci_test_amd64: oci_load_image_amd64
 	done
 	pod_name=$$(kubectl get pods -l cnpg.io/cluster=cluster-pglinter -o jsonpath='{.items[0].metadata.name}') && \
 	kubectl exec -it $$pod_name -- psql -U postgres -d postgres -c "CREATE EXTENSION IF NOT EXISTS pglinter; SELECT hello_pglinter();"
+endef
+
+oci_test_amd64: oci_load_image_amd64
+	$(call oci_test_common,amd64)
+
+oci_test_arm64: oci_load_image_arm64
+	$(call oci_test_common,arm64)
 
 
 # Cleanup kind cluster and resources
