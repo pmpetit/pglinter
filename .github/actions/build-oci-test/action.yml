@@ -27,7 +27,7 @@ runs:
         if [ -n "${{ inputs.oci-tag }}" ]; then
           export OCI_TAG="${{ inputs.oci-tag }}"
         fi
-        sudo make oci_test
+        sudo make oci_test_amd64
       shell: bash
     - name: Cleanup OCI image
       run: |
