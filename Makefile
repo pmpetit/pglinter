@@ -122,11 +122,11 @@ EXTRA_CLEAN?=target
 all: extension
 
 extension:
-	PG_CONFIG?=`$(PGRX) info pg-config $(PGVER) 2> /dev/null || echo pg_config`
-	PG_SHAREDIR?=$(shell $(PG_CONFIG) --sharedir)
-	PG_LIBDIR?=$(shell $(PG_CONFIG) --libdir)
-	PG_PKGLIBDIR?=$(shell $(PG_CONFIG) --pkglibdir)
-	PG_BINDIR?=$(shell $(PG_CONFIG) --bindir)
+	$(eval PG_CONFIG := $(shell $(PGRX) info pg-config $(PGVER) 2> /dev/null || echo pg_config))
+	$(eval PG_SHAREDIR := $(shell $(PG_CONFIG) --sharedir))
+	$(eval PG_LIBDIR := $(shell $(PG_CONFIG) --libdir))
+	$(eval PG_PKGLIBDIR := $(shell $(PG_CONFIG) --pkglibdir))
+	$(eval PG_BINDIR := $(shell $(PG_CONFIG) --bindir))
 	$(PGRX) package --pg-config $(PG_CONFIG)
 
 ##
@@ -265,11 +265,11 @@ deb: package
 # https://github.com/pgcentralfoundation/pgrx/issues/288
 
 package:
-	PG_CONFIG?=`$(PGRX) info pg-config $(PGVER) 2> /dev/null || echo pg_config`
-	PG_SHAREDIR?=$(shell $(PG_CONFIG) --sharedir)
-	PG_LIBDIR?=$(shell $(PG_CONFIG) --libdir)
-	PG_PKGLIBDIR?=$(shell $(PG_CONFIG) --pkglibdir)
-	PG_BINDIR?=$(shell $(PG_CONFIG) --bindir)
+	$(eval PG_CONFIG := $(shell $(PGRX) info pg-config $(PGVER) 2> /dev/null || echo pg_config))
+	$(eval PG_SHAREDIR := $(shell $(PG_CONFIG) --sharedir))
+	$(eval PG_LIBDIR := $(shell $(PG_CONFIG) --libdir))
+	$(eval PG_PKGLIBDIR := $(shell $(PG_CONFIG) --pkglibdir))
+	$(eval PG_BINDIR := $(shell $(PG_CONFIG) --bindir))
 	$(PGRX) package --pg-config $(PG_CONFIG)
 
 ##
