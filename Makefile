@@ -451,7 +451,9 @@ oci_test:
 		sleep 5; \
 	done
 	sleep 10;
-	kind load docker-image pglinter:local --name pglinter-test
+	sudo docker save pglinter:local -o pglinter_local.tar
+	kind load image-archive --name pglinter-test pglinter_local.tar
+	# kind load docker-image pglinter:local --name pglinter-test
 	kubectl apply -f docker/oci/cluster.yaml
 	kubectl apply -f docker/oci/database.yaml
 	# Wait for cluster-pglinter pod to be ready
