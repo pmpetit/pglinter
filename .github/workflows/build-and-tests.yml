@@ -2,14 +2,14 @@
 name: 'Build and Test pglinter'
 
 on:
-  # pull_request:
-  #   branches:
-  #     - main  # Optional: specify branches for the pull request to merge into
-  #   paths-ignore:
-  #     - 'docs/**'
-  #     - '*.md'
-  #     - 'README.md'
-  #     - 'mkdocs.yml'
+  pull_request:
+    branches:
+      - main  # Optional: specify branches for the pull request to merge into
+    paths-ignore:
+      - 'docs/**'
+      - '*.md'
+      - 'README.md'
+      - 'mkdocs.yml'
   workflow_dispatch:
     inputs:
       pgversions:
@@ -17,7 +17,7 @@ on:
         required: false
         default: 'pg18'
         type: string
-        
+
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
@@ -30,8 +30,8 @@ jobs:
   build:
     strategy:
       matrix:
-        #pgver: [pg14,pg15,pg16,pg17,pg18]
-        pgver: [pg14]
+        pgver: [pg14,pg15,pg16,pg17,pg18]
+        #pgver: [pg14]
       fail-fast: false
     name: 'build-and-tests-pglinter-for-${{ matrix.pgver }}'
     runs-on: ubuntu-latest

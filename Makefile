@@ -122,20 +122,25 @@ EXTRA_CLEAN?=target
 all: extension
 
 extension:
-	PG_CONFIG?=`$(PGRX) info pg-config $(PGVER) 2> /dev/null || echo pg_config`
-	PG_SHAREDIR?=$(shell $(PG_CONFIG) --sharedir)
-	PG_LIBDIR?=$(shell $(PG_CONFIG) --libdir)
-	PG_PKGLIBDIR?=$(shell $(PG_CONFIG) --pkglibdir)
-	PG_BINDIR?=$(shell $(PG_CONFIG) --bindir)
+	$(eval PG_CONFIG := $(shell $(PGRX) info pg-config $(PGVER) 2> /dev/null || echo pg_config))
+	$(eval PG_SHAREDIR := $(shell $(PG_CONFIG) --sharedir))
+	$(eval PG_LIBDIR := $(shell $(PG_CONFIG) --libdir))
+	$(eval PG_PKGLIBDIR := $(shell $(PG_CONFIG) --pkglibdir))
+	$(eval PG_BINDIR := $(shell $(PG_CONFIG) --bindir))
 	$(PGRX) package --pg-config $(PG_CONFIG)
 
 ##
 ## INSTALL
 ##
 
-install:
-		cp -r $(TARGET_DIR)$(PG_SHAREDIR)/extension/* $(PG_SHAREDIR)/extension/; \
-		install $(TARGET_DIR)$(PG_PKGLIBDIR)/$(LIB) $(PG_PKGLIBDIR); \
+install: extension
+	$(eval PG_CONFIG := $(shell $(PGRX) info pg-config $(PGVER) 2> /dev/null || echo pg_config))
+	$(eval PG_SHAREDIR := $(shell $(PG_CONFIG) --sharedir))
+	$(eval PG_PKGLIBDIR := $(shell $(PG_CONFIG) --pkglibdir))
+	$(eval ACTUAL_TARGET_SHAREDIR := $(TARGET_DIR)$(PG_SHAREDIR))
+	$(eval ACTUAL_TARGET_PKGLIBDIR := $(TARGET_DIR)$(PG_PKGLIBDIR))
+	cp -r $(ACTUAL_TARGET_SHAREDIR)/extension/* $(PG_SHAREDIR)/extension/
+	install $(ACTUAL_TARGET_PKGLIBDIR)/$(LIB) $(PG_PKGLIBDIR)
 
 ##
 ## INSTALLCHECK
@@ -149,9 +154,14 @@ install:
 
 # PGXS-style installcheck using pg_regress
 installcheck: stop start
-	dropdb $(PSQL_OPT) --if-exists $(PGDATABASE) || echo 'Database did not exist'
-	createdb $(PSQL_OPT) $(PGDATABASE)
-	$(PG_REGRESS) \
+	$(eval PG_CONFIG := $(shell $(PGRX) info pg-config $(PGVER) 2> /dev/null || echo pg_config))
+	$(eval PG_BINDIR := $(shell $(PG_CONFIG) --bindir))
+	$(eval PG_PKGLIBDIR := $(shell $(PG_CONFIG) --pkglibdir))
+	$(eval PG_REGRESS := $(PG_PKGLIBDIR)/pgxs/src/test/regress/pg_regress)
+	$(eval PATH := $(PG_BINDIR):$(PATH))
+	PATH=$(PG_BINDIR):$$PATH dropdb $(PSQL_OPT) --if-exists $(PGDATABASE) || echo 'Database did not exist'
+	PATH=$(PG_BINDIR):$$PATH createdb $(PSQL_OPT) $(PGDATABASE)
+	PATH=$(PG_BINDIR):$$PATH $(PG_REGRESS) \
 		$(PSQL_OPT) \
 		--use-existing \
 		--inputdir=./tests/ \
@@ -265,11 +275,11 @@ deb: package
 # https://github.com/pgcentralfoundation/pgrx/issues/288
 
 package:
-	PG_CONFIG?=`$(PGRX) info pg-config $(PGVER) 2> /dev/null || echo pg_config`
-	PG_SHAREDIR?=$(shell $(PG_CONFIG) --sharedir)
-	PG_LIBDIR?=$(shell $(PG_CONFIG) --libdir)
-	PG_PKGLIBDIR?=$(shell $(PG_CONFIG) --pkglibdir)
-	PG_BINDIR?=$(shell $(PG_CONFIG) --bindir)
+	$(eval PG_CONFIG := $(shell $(PGRX) info pg-config $(PGVER) 2> /dev/null || echo pg_config))
+	$(eval PG_SHAREDIR := $(shell $(PG_CONFIG) --sharedir))
+	$(eval PG_LIBDIR := $(shell $(PG_CONFIG) --libdir))
+	$(eval PG_PKGLIBDIR := $(shell $(PG_CONFIG) --pkglibdir))
+	$(eval PG_BINDIR := $(shell $(PG_CONFIG) --bindir))
 	$(PGRX) package --pg-config $(PG_CONFIG)
 
 ##
