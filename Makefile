@@ -435,7 +435,7 @@ oci_test:
 	kind create cluster --name pglinter-test --config docker/oci/kind.yaml
 	sudo docker pull $(OCI_REGISTRY)/$(OCI_IMAGE_NAME):$(OCI_TAG)
 	sudo docker tag $(OCI_REGISTRY)/$(OCI_IMAGE_NAME):$(OCI_TAG) pglinter:local
-	# kind load docker-image pglinter:local --name pglinter-test
+	kind load docker-image pglinter:local --name pglinter-test
 	kubectl apply --server-side -f https://raw.githubusercontent.com/cloudnative-pg/cloudnative-pg/release-1.27/releases/cnpg-1.27.1.yaml
 	# Wait for CloudNativePG operator pod to be ready
 	echo "Waiting for CloudNativePG operator pod to be ready..."
