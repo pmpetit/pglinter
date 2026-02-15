@@ -46,23 +46,23 @@ jobs:
 
           echo "matrix_include=$MATRIX_JSON" >> $GITHUB_OUTPUT
 
-  # oci-image-build:
-  #   needs: setup-matrix
-  #   strategy:
-  #     matrix:
-  #       include: ${{ fromJSON(needs.setup-matrix.outputs.matrix_include) }}
-  #     fail-fast: false
-  #   name: '${{ matrix.pgver }}-${{ matrix.distro }}-oci-build'
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #     - name: Checkout repository
-  #       uses: actions/checkout@v4
-  #     - name: build oci image
-  #       uses: ./.github/actions/build-oci-make
-  #       with:
-  #         github_token: ${{ secrets.GH_TOKEN }}
-  #         distro: ${{ matrix.distro }}
-  #         ocipgversion: ${{ matrix.pgver }}
+  oci-image-build:
+    needs: setup-matrix
+    strategy:
+      matrix:
+        include: ${{ fromJSON(needs.setup-matrix.outputs.matrix_include) }}
+      fail-fast: false
+    name: '${{ matrix.pgver }}-${{ matrix.distro }}-oci-build'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: build oci image
+        uses: ./.github/actions/build-oci-make
+        with:
+          github_token: ${{ secrets.GH_TOKEN }}
+          distro: ${{ matrix.distro }}
+          ocipgversion: ${{ matrix.pgver }}
 
   oci-image-test:
     # needs: oci-image-build
@@ -83,22 +83,22 @@ jobs:
           distro: ${{ matrix.distro }}
           ocipgversion: ${{ matrix.pgver }}
 
-  # oci-image-clean:
-  #   # needs: [oci-image-test]
-  #   strategy:
-  #     matrix:
-  #       distro: [bookworm, trixie]
-  #       pgver: [pg18]
-  #   name: '${{ matrix.pgver }}-${{ matrix.distro }}-oci-clean'
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #     - name: Checkout repository
-  #       uses: actions/checkout@v4
-  #     - name: clean oci image
-  #       uses: ./.github/actions/build-oci-clean
-  #       with:
-  #         distro: ${{ matrix.distro }}
-  #         ocipgversion: ${{ matrix.pgver }}
-  #         github_token: ${{ secrets.PAT }}
-  #         keep-n-most-recent: 1
-  #         pat: ${{ secrets.PAT }}
+  oci-image-clean:
+    # needs: [oci-image-test]
+    strategy:
+      matrix:
+        distro: [bookworm, trixie]
+        pgver: [pg18]
+    name: '${{ matrix.pgver }}-${{ matrix.distro }}-oci-clean'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: clean oci image
+        uses: ./.github/actions/build-oci-clean
+        with:
+          distro: ${{ matrix.distro }}
+          ocipgversion: ${{ matrix.pgver }}
+          github_token: ${{ secrets.PAT }}
+          keep-n-most-recent: 1
+          pat: ${{ secrets.PAT }}
