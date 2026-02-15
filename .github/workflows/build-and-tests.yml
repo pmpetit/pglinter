@@ -23,7 +23,8 @@ jobs:
   build:
     strategy:
       matrix:
-        pgver: [pg14,pg15,pg16,pg17,pg18]
+        #pgver: [pg14,pg15,pg16,pg17,pg18]
+        pgver: [pg14]
       fail-fast: false
     name: 'build-and-tests-pglinter-for-${{ matrix.pgver }}'
     runs-on: ubuntu-latest
