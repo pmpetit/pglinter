@@ -46,42 +46,42 @@ jobs:
 
           echo "matrix_include=$MATRIX_JSON" >> $GITHUB_OUTPUT
 
-  oci-image-build:
-    needs: setup-matrix
-    strategy:
-      matrix:
-        include: ${{ fromJSON(needs.setup-matrix.outputs.matrix_include) }}
-      fail-fast: false
-    name: '${{ matrix.pgver }}-${{ matrix.distro }}-oci-build'
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-      - name: build oci image
-        uses: ./.github/actions/build-oci-make
-        with:
-          github_token: ${{ secrets.GH_TOKEN }}
-          distro: ${{ matrix.distro }}
-          ocipgversion: ${{ matrix.pgver }}
-
-  # oci-image-test:
-  #   # needs: oci-image-build
+  # oci-image-build:
+  #   needs: setup-matrix
   #   strategy:
   #     matrix:
-  #       runs_on: [ubuntu-latest, ubuntu-24.04-arm]
-  #       distro: [bookworm, trixie]
-  #       pgver: [pg18]
-  #   name: '${{ matrix.pgver }}-${{ matrix.distro }}-oci-test-on-${{ matrix.runs_on }}'
-  #   runs-on: ${{ matrix.runs_on }}
+  #       include: ${{ fromJSON(needs.setup-matrix.outputs.matrix_include) }}
+  #     fail-fast: false
+  #   name: '${{ matrix.pgver }}-${{ matrix.distro }}-oci-build'
+  #   runs-on: ubuntu-latest
   #   steps:
   #     - name: Checkout repository
   #       uses: actions/checkout@v4
-  #     - name: test oci image
-  #       uses: ./.github/actions/build-oci-test
+  #     - name: build oci image
+  #       uses: ./.github/actions/build-oci-make
   #       with:
   #         github_token: ${{ secrets.GH_TOKEN }}
   #         distro: ${{ matrix.distro }}
   #         ocipgversion: ${{ matrix.pgver }}
+
+  oci-image-test:
+    # needs: oci-image-build
+    strategy:
+      matrix:
+        runs_on: [ubuntu-latest, ubuntu-24.04-arm]
+        distro: [bookworm, trixie]
+        pgver: [pg18]
+    name: '${{ matrix.pgver }}-${{ matrix.distro }}-oci-test-on-${{ matrix.runs_on }}'
+    runs-on: ${{ matrix.runs_on }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: test oci image
+        uses: ./.github/actions/build-oci-test
+        with:
+          github_token: ${{ secrets.GH_TOKEN }}
+          distro: ${{ matrix.distro }}
+          ocipgversion: ${{ matrix.pgver }}
 
   # oci-image-clean:
   #   # needs: [oci-image-test]
