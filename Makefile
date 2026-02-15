@@ -407,7 +407,7 @@ oci_setup:
 
 # Build OCI extension image for AMD64 platform only (can be loaded locally)
 oci_image: oci_setup
-	@echo "Building OCI image for AMD64: $(OCI_REGISTRY)/$(OCI_IMAGE_NAME):$(OCI_TAG)"
+	@echo "Building OCI image for AMD64/ARM64: $(OCI_REGISTRY)/$(OCI_IMAGE_NAME):$(OCI_TAG)"
 	@echo "  PostgreSQL Version: $(PG_VERSION_OCI)"
 	@echo "  Extension Version: $(PGLINTER_MINOR_VERSION)"
 	@echo "  Distro: $(DISTRO)"
@@ -419,9 +419,27 @@ oci_image: oci_setup
 		--build-arg EXT_VERSION=$(PGLINTER_MINOR_VERSION) \
 		--tag $(OCI_REGISTRY)/$(OCI_IMAGE_NAME):$(OCI_TAG) \
 		--file docker/oci/Dockerfile.pg-deb \
+		--push \
+		.
+	@echo "✅ OCI image built successfully"
+
+oci_load_image_amd64: oci_setup
+	@echo "Building OCI image for AMD64: $(OCI_REGISTRY)/$(OCI_IMAGE_NAME):$(OCI_TAG)"
+	@echo "  PostgreSQL Version: $(PG_VERSION_OCI)"
+	@echo "  Extension Version: $(PGLINTER_MINOR_VERSION)"
+	@echo "  Distro: $(DISTRO)"
+	sudo docker buildx build \
+		--platform linux/amd64 \
+		--build-arg PG_VERSION=$(PG_VERSION_OCI) \
+		--build-arg DISTRO=$(DISTRO) \
+		--build-arg PGLINTER_VERSION=$(PGLINTER_MINOR_VERSION) \
+		--build-arg EXT_VERSION=$(PGLINTER_MINOR_VERSION) \
+		--tag $(OCI_REGISTRY)/$(OCI_IMAGE_NAME):$(OCI_TAG) \
+		--file docker/oci/Dockerfile.pg-deb \
 		--load \
 		.
 	@echo "✅ OCI image built successfully"
+
 
 # Build and push OCI extension image to GitHub Container Registry
 oci_push:
@@ -430,11 +448,12 @@ oci_push:
 	@echo "✅ OCI images pushed successfully"
 	@echo "  Main tag: $(OCI_REGISTRY)/$(OCI_IMAGE_NAME):$(OCI_TAG)"
 
-oci_test: oci_image
+oci_test_amd64: oci_load_image_amd64
 	@echo "Testing OCI image in kind Kubernetes cluster..."
 	kind create cluster --name pglinter-test --config docker/oci/kind.yaml
 	#sudo docker pull $(OCI_REGISTRY)/$(OCI_IMAGE_NAME):$(OCI_TAG)
 	sudo docker tag $(OCI_REGISTRY)/$(OCI_IMAGE_NAME):$(OCI_TAG) pglinter:local
+	kind load docker-image pglinter:local --name pglinter-test
 	kubectl apply --server-side -f https://raw.githubusercontent.com/cloudnative-pg/cloudnative-pg/release-1.27/releases/cnpg-1.27.1.yaml
 	# Wait for CloudNativePG operator pod to be ready
 	echo "Waiting for CloudNativePG operator pod to be ready..."
@@ -450,11 +469,7 @@ oci_test: oci_image
 		echo "Waiting for webhook endpoint at $$webhook_ip:443 ..."; \
 		sleep 5; \
 	done
-	sleep 10;
-	#sudo docker save pglinter:local -o pglinter_local.tar
-	#sudo chmod 644 pglinter_local.tar
-	kind load image-archive --name pglinter-test
-	# kind load docker-image pglinter:local --name pglinter-test
+	sleep 30;
 	kubectl apply -f docker/oci/cluster.yaml
 	kubectl apply -f docker/oci/database.yaml
 	# Wait for cluster-pglinter pod to be ready
