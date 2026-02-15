@@ -154,9 +154,14 @@ install: extension
 
 # PGXS-style installcheck using pg_regress
 installcheck: stop start
-	dropdb $(PSQL_OPT) --if-exists $(PGDATABASE) || echo 'Database did not exist'
-	createdb $(PSQL_OPT) $(PGDATABASE)
-	$(PG_REGRESS) \
+	$(eval PG_CONFIG := $(shell $(PGRX) info pg-config $(PGVER) 2> /dev/null || echo pg_config))
+	$(eval PG_BINDIR := $(shell $(PG_CONFIG) --bindir))
+	$(eval PG_PKGLIBDIR := $(shell $(PG_CONFIG) --pkglibdir))
+	$(eval PG_REGRESS := $(PG_PKGLIBDIR)/pgxs/src/test/regress/pg_regress)
+	$(eval PATH := $(PG_BINDIR):$(PATH))
+	PATH=$(PG_BINDIR):$$PATH dropdb $(PSQL_OPT) --if-exists $(PGDATABASE) || echo 'Database did not exist'
+	PATH=$(PG_BINDIR):$$PATH createdb $(PSQL_OPT) $(PGDATABASE)
+	PATH=$(PG_BINDIR):$$PATH $(PG_REGRESS) \
 		$(PSQL_OPT) \
 		--use-existing \
 		--inputdir=./tests/ \
