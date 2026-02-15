@@ -134,8 +134,11 @@ extension:
 ##
 
 install:
-		cp -r $(TARGET_DIR)$(PG_SHAREDIR)/extension/* $(PG_SHAREDIR)/extension/; \
-		install $(TARGET_DIR)$(PG_PKGLIBDIR)/$(LIB) $(PG_PKGLIBDIR); \
+	$(eval PG_CONFIG := $(shell $(PGRX) info pg-config $(PGVER) 2> /dev/null || echo pg_config))
+	$(eval PG_SHAREDIR := $(shell $(PG_CONFIG) --sharedir))
+	$(eval PG_PKGLIBDIR := $(shell $(PG_CONFIG) --pkglibdir))
+	cp -r $(TARGET_SHAREDIR)/extension/* $(PG_SHAREDIR)/extension/
+	install $(TARGET_PKGLIBDIR)/$(LIB) $(PG_PKGLIBDIR)
 
 ##
 ## INSTALLCHECK
