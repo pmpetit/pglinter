@@ -452,6 +452,7 @@ oci_test:
 	done
 	sleep 10;
 	sudo docker save pglinter:local -o pglinter_local.tar
+	sudo chmod 644 pglinter_local.tar
 	kind load image-archive --name pglinter-test pglinter_local.tar
 	# kind load docker-image pglinter:local --name pglinter-test
 	kubectl apply -f docker/oci/cluster.yaml
