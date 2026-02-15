@@ -450,9 +450,8 @@ oci_test:
 		echo "Waiting for webhook endpoint at $$webhook_ip:443 ..."; \
 		sleep 5; \
 	done
-	sudo docker save pglinter:local -o pglinter_local.tar
-	kind load image-archive --name pglinter-test pglinter_local.tar
 	sleep 10;
+	kind load docker-image pglinter:local --name pglinter-test
 	kubectl apply -f docker/oci/cluster.yaml
 	kubectl apply -f docker/oci/database.yaml
 	# Wait for cluster-pglinter pod to be ready
