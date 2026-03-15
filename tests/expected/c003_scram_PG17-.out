@@ -86,10 +86,10 @@ WHERE name = 'password_encryption';
 
 -- First, disable all rules to isolate C003 testing
 SELECT pglinter.disable_all_rules() AS all_rules_disabled;
-NOTICE:  🔴 Disabled 20 rule(s)
+NOTICE:  🔴 Disabled 21 rule(s)
  all_rules_disabled 
 --------------------
-                 20
+                 21
 (1 row)
 
 -- Enable only C003 for focused testing
@@ -114,11 +114,13 @@ SELECT '=== Test 1: C003 Rule Execution with Current Setting ===' AS test_sectio
  === Test 1: C003 Rule Execution with Current Setting ===
 (1 row)
 
-SELECT pglinter.perform_cluster_check();
-ERROR:  function pglinter.perform_cluster_check() does not exist
-LINE 1: SELECT pglinter.perform_cluster_check();
-               ^
-HINT:  No function matches the given name and argument types. You might need to add explicit type casts.
+SELECT pglinter.check();
+NOTICE:  ✅ No issues found - database schema looks good!
+ check 
+-------
+ t
+(1 row)
+
 -- Test 2: Manual execution of C003 query
 SELECT '=== Test 2: Manual C003 Query Execution ===' AS test_section;
                 test_section                 

@@ -465,6 +465,61 @@ HAVING COUNT(kcu.column_name) > 4;
 
 ---
 
+### B013: Trigger Functions With Unbounded Cursor (No WHERE Clause)
+
+**Rule Code**: B013
+**Name**: HowManyTablesWithRowByRowTriggerWithoutWhereClause
+**Severity**: Warning at 20%, Error at 80%
+**Scope**: BASE
+
+**Description**: Count number of tables using a row by row processing without any WHERE clause vs nb table with their own triggers.
+
+**Message Template**: `{0}/{1} table(s) using row by row processing without any WHERE clause exceed the {2} threshold: {3}%. Object list:\n{4}`
+
+**Why This Matters**:
+
+- A trigger function that opens a cursor (or uses a `FOR rec IN SELECT ... LOOP`) without a `WHERE` clause will scan the entire table on every triggered row
+- This turns a single DML statement into a potentially massive, unbounded table scan
+- Can cause severe performance degradation on large tables, turning fast operations into multi-second or multi-minute waits
+- Leads to lock contention and timeout cascades in concurrent workloads
+
+**How to Fix**:
+
+- Prefer set-based operations over row-by-row cursor processing in trigger functions
+- If a cursor is necessary, add a `WHERE` clause to limit the rows returned to only those relevant to the triggering row (e.g. filter on the primary key or a foreign key matching `NEW.id`)
+
+**SQL Example**:
+
+```sql
+-- Bad: trigger function with unbounded cursor
+CREATE OR REPLACE FUNCTION audit_all_rows()
+RETURNS TRIGGER LANGUAGE plpgsql AS $$
+DECLARE
+    rec RECORD;
+BEGIN
+    FOR rec IN SELECT * FROM orders LOOP  -- no WHERE clause: full table scan on every trigger fire
+        -- process rec
+    END LOOP;
+    RETURN NEW;
+END;
+$$;
+
+-- Good: cursor limited to the affected row only
+CREATE OR REPLACE FUNCTION audit_related_rows()
+RETURNS TRIGGER LANGUAGE plpgsql AS $$
+DECLARE
+    rec RECORD;
+BEGIN
+    FOR rec IN SELECT * FROM orders WHERE customer_id = NEW.customer_id LOOP
+        -- process only relevant rows
+    END LOOP;
+    RETURN NEW;
+END;
+$$;
+```
+
+---
+
 ## Schema Rules (S-series)
 
 Schema-level checks for functional namespace.
@@ -510,7 +565,7 @@ GRANT SELECT ON TABLES TO myschema_ro;
 **Severity**: Warning at 1, Error at 1
 **Scope**: SCHEMA
 
-**Description**: The schema is prefixed with one of staging,stg,preprod,prod,sandbox,sbox string. Means that when you refresh your preprod, staging environments from production, you have to rename the target schema from prod_ to stg_ or something like. It is possible, but it is never easy.
+**Description**: The schema is prefixed with one of staging,stg,preprod,prod,sandbox,sbox string. Means that when you refresh your preprod, staging environments from production, you have to rename the target schema from prod_to stg_ or something like. It is possible, but it is never easy.
 
 **Message Template**: `You should not prefix or suffix the schema name with {0}. You may have difficulties when refreshing environments. Prefer prefix or suffix the database name.`
 
