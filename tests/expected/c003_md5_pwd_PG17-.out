@@ -11,10 +11,10 @@ SELECT 'Testing C003 rule - MD5 password encryption checks...' AS test_info;
 
 -- First, disable all rules to isolate C003 testing
 SELECT pglinter.disable_all_rules() AS all_rules_disabled;
-NOTICE:  🔴 Disabled 20 rule(s)
+NOTICE:  🔴 Disabled 21 rule(s)
  all_rules_disabled 
 --------------------
-                 20
+                 21
 (1 row)
 
 -- Enable only C003 for focused testing

@@ -1,0 +1,81 @@
+CREATE EXTENSION IF NOT EXISTS pglinter;
+
+\pset pager off
+
+
+CREATE SCHEMA trigger_test;
+
+-- =============================================================================
+-- Create test tables
+-- =============================================================================
+
+-- Tables 1-5: Each will have its own unique trigger function
+CREATE TABLE pos_tnd_ssn_hst
+(
+    id_tnd_ssn_hst integer NOT NULL,
+    id_ssn varchar(32) NOT NULL,
+    id_bsn_un varchar(32) NOT NULL,
+    id_ws varchar(32),
+    id_opr varchar(64),
+    id_safe integer,
+    id_till integer,
+    ts_ssn timestamp,
+    ssn_status varchar(32) NOT NULL,
+    ty_ssn varchar(32),
+    tnd_ssn_data text,
+    ssn_performed_by varchar(64) NOT NULL,
+    tnd_ssn_data_byte bytea,
+    PRIMARY KEY (id_tnd_ssn_hst, id_ssn, id_bsn_un)
+);
+
+-- =============================================================================
+-- Create unique trigger functions for tables 1-5
+-- =============================================================================
+
+CREATE FUNCTION f_pos_tnd_ssn_hst() RETURNS trigger
+LANGUAGE plpgsql
+AS
+$$
+DECLARE pos_tnd_ssn_hst_rec RECORD;
+curr CURSOR  FOR SELECT id_tnd_ssn_hst, id_ssn, ssn_status FROM pos_tnd_ssn_hst;
+BEGIN
+	OPEN curr;
+	LOOP
+		FETCH curr INTO pos_tnd_ssn_hst_rec;
+			IF NEW.id_ssn = pos_tnd_ssn_hst_rec.id_ssn AND NEW.ssn_status = pos_tnd_ssn_hst_rec.ssn_status AND NEW.ssn_status <> 'Redeclared' THEN
+			RAISE EXCEPTION 'Invalid Status';
+		END IF;
+    EXIT WHEN NOT FOUND;
+	END LOOP;
+  RETURN NEW;
+END;
+$$;
+
+
+CREATE TRIGGER t_pos_tnd_ssn_hst
+BEFORE INSERT OR UPDATE
+ON pos_tnd_ssn_hst
+FOR EACH ROW
+EXECUTE PROCEDURE f_pos_tnd_ssn_hst();
+
+
+-- Test with only B009 enabled
+SELECT 'Testing B013 in isolation...' AS test_step;
+SELECT pglinter.disable_all_rules() AS all_disabled;
+SELECT pglinter.enable_rule('B013') AS b013_only_enabled;
+SELECT pglinter.check(); -- Should only run B013
+
+SELECT count(*) AS violation_count
+FROM pglinter.get_violations()
+WHERE rule_code = 'B013';
+
+-- Test with output
+SELECT pglinter.check('/tmp/pglinter_B013_results.sarif');
+-- Test if file exists and show checksum
+\! md5sum /tmp/pglinter_B013_results.sarif
+
+-- Cleanup
+\echo 'Cleaning up test schema...'
+DROP SCHEMA trigger_test CASCADE;
+
+DROP EXTENSION pglinter;

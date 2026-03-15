@@ -143,8 +143,17 @@ INSERT INTO pglinter.rules (
     'Detect tables with composite primary keys involving more than 4 columns',
     '{0} table(s) have composite primary keys with more than 4 columns. Object list:\n{4}',
     ARRAY[
-      'Consider redesigning the table to avoid composite primary keys with more than 4 columns',
-      'Use surrogate keys (e.g., serial, UUID) instead of composite primary keys, and establish unique constraints on necessary column combinations, to enforce uniqueness.'
+        'Consider redesigning the table to avoid composite primary keys with more than 4 columns',
+        'Use surrogate keys (e.g., serial, UUID) instead of composite primary keys, and establish unique constraints on necessary column combinations, to enforce uniqueness.'
+    ]
+),
+(
+    'HowManyTablesWithRowByRowTriggerWithoutWhereClause', 'B013', 20, 80, 'BASE',
+    'Count number of tables using a row by row processing without any where clause vs nb table with their own triggers.',
+    '{0}/{1} table(s) using row by row processing without any where clause exceed the {2} threshold: {3}%. Object list:\n{4}',
+    ARRAY[
+        'Prefer using set-based operations instead of row by row processing for better performance.',
+        'If not possible, consider adding a WHERE clause to limit the rows processed.'
     ]
 ),
 (
@@ -1772,6 +1781,101 @@ JOIN pg_class c
 $$
 WHERE code = 'B012';
 
+
+-- =============================================================================
+-- B013 - Tables With row by row processing without any where clause
+-- =============================================================================
+UPDATE pglinter.rules
+SET q1 = $$
+SELECT
+    COALESCE(COUNT(DISTINCT event_object_table), 0)::BIGINT as table_using_trigger
+FROM
+    information_schema.triggers t
+WHERE
+    t.trigger_schema NOT IN (
+    'pg_toast', 'pg_catalog', 'information_schema', 'pglinter'
+)
+$$,
+  q2 = $$
+SELECT
+    COUNT(DISTINCT c.oid)::BIGINT AS tables_with_unbounded_cursor_trigger
+FROM pg_trigger tg
+JOIN pg_class     c  ON c.oid = tg.tgrelid
+JOIN pg_namespace n  ON n.oid = c.relnamespace
+JOIN pg_proc      p  ON p.oid = tg.tgfoid
+WHERE
+    NOT tg.tgisinternal
+    AND p.prolang = (SELECT oid FROM pg_language WHERE lanname = 'plpgsql')
+    AND n.nspname NOT IN (
+        'pg_toast', 'pg_catalog', 'information_schema', 'pglinter', '_timescaledb', 'timescaledb'
+    )
+    -- function body has a cursor/FOR-loop SELECT ...
+    AND p.prosrc ~* '(?:CURSOR\s+FOR|OPEN\s+\w[\w$]*\s+FOR|FOR\s+\w[\w$]*\s+IN)\s+SELECT'
+    -- but none of those SELECT blocks contain a WHERE keyword
+    AND NOT (
+        (regexp_matches(
+            p.prosrc,
+            '(?:CURSOR\s+FOR|OPEN\s+\w[\w$]*\s+FOR|FOR\s+\w[\w$]*\s+IN)\s+(SELECT\s[^;]+?)(?:;|\mLOOP\M)',
+            'gix'
+        ))[1] ~* '\mWHERE\M'
+    )
+$$,
+  q3 = $$
+SELECT
+    n.nspname::TEXT                          AS schema_name,
+    c.relname::TEXT                          AS table_name,
+    tg.tgname::TEXT || ' -> ' ||
+    pn.nspname::TEXT || '.' ||
+    p.proname::TEXT                          AS trigger_and_function
+FROM pg_trigger    tg
+JOIN pg_class      c   ON c.oid  = tg.tgrelid
+JOIN pg_namespace  n   ON n.oid  = c.relnamespace
+JOIN pg_proc       p   ON p.oid  = tg.tgfoid
+JOIN pg_namespace  pn  ON pn.oid = p.pronamespace
+WHERE
+    NOT tg.tgisinternal
+    AND p.prolang = (SELECT oid FROM pg_language WHERE lanname = 'plpgsql')
+    AND n.nspname NOT IN (
+        'pg_toast', 'pg_catalog', 'information_schema', 'pglinter', '_timescaledb', 'timescaledb'
+    )
+    AND p.prosrc ~* '(?:CURSOR\s+FOR|OPEN\s+\w[\w$]*\s+FOR|FOR\s+\w[\w$]*\s+IN)\s+SELECT'
+    AND NOT (
+        (regexp_matches(
+            p.prosrc,
+            '(?:CURSOR\s+FOR|OPEN\s+\w[\w$]*\s+FOR|FOR\s+\w[\w$]*\s+IN)\s+(SELECT\s[^;]+?)(?:;|\mLOOP\M)',
+            'gix'
+        ))[1] ~* '\mWHERE\M'
+    )
+ORDER BY n.nspname, c.relname, tg.tgname
+$$,
+  q4 = $$
+SELECT
+    'pg_trigger'::regclass::oid AS classid,
+    tg.oid                      AS objid,
+    0                           AS objsubid
+FROM pg_trigger    tg
+JOIN pg_class      c  ON c.oid = tg.tgrelid
+JOIN pg_namespace  n  ON n.oid = c.relnamespace
+JOIN pg_proc       p  ON p.oid = tg.tgfoid
+WHERE
+    NOT tg.tgisinternal
+    AND p.prolang = (SELECT oid FROM pg_language WHERE lanname = 'plpgsql')
+    AND n.nspname NOT IN (
+        'pg_toast', 'pg_catalog', 'information_schema', 'pglinter', '_timescaledb', 'timescaledb'
+    )
+    AND p.prosrc ~* '(?:CURSOR\s+FOR|OPEN\s+\w[\w$]*\s+FOR|FOR\s+\w[\w$]*\s+IN)\s+SELECT'
+    AND NOT (
+        (regexp_matches(
+            p.prosrc,
+            '(?:CURSOR\s+FOR|OPEN\s+\w[\w$]*\s+FOR|FOR\s+\w[\w$]*\s+IN)\s+(SELECT\s[^;]+?)(?:;|\mLOOP\M)',
+            'gix'
+        ))[1] ~* '\mWHERE\M'
+    )
+$$
+WHERE code = 'B013';
+
+
+
 -- =============================================================================
 -- S001 - Schema Permission Analysis
 -- =============================================================================
@@ -2148,4 +2252,5 @@ INSERT INTO pglinter.rule_messages (code, rule_msg) VALUES
 ('B009', '{"severity": "WARNING", "message": "{object} shares a trigger function with other tables.", "advices": "Use one trigger function per table for clarity and maintainability.", "infos": ["How to fix: CREATE a dedicated trigger function for {object} and update the trigger."]}'),
 ('B010', '{"severity": "WARNING", "message": "{object} uses a reserved SQL keyword as its name.", "advices": "Rename database objects to avoid using reserved keywords.", "infos": ["How to fix: ALTER TABLE/INDEX/VIEW/FUNCTION/TYPE {object} RENAME TO ...;"]}'),
 ('B011', '{"severity": "WARNING", "message": "{object} schema has tables with different owners.", "advices": "Change table owners to the same functional role for easier maintenance.", "infos": ["How to fix: ALTER TABLE {object} OWNER TO ...;"]}'),
-('B012', '{"severity": "WARNING", "message": "{object} has a composite primary key with more than 4 columns.", "advices": "Consider redesigning the table to avoid composite primary keys with more than 4 columns. Use surrogate keys if possible.", "infos": ["How to fix: Redesign {object} to use a surrogate key and unique constraints."]}');
+('B012', '{"severity": "WARNING", "message": "{object} has a composite primary key with more than 4 columns.", "advices": "Consider redesigning the table to avoid composite primary keys with more than 4 columns. Use surrogate keys if possible.", "infos": ["How to fix: Redesign {object} to use a surrogate key and unique constraints."]}'),
+('B013', '{"severity": "WARNING", "message": "{object} uses a trigger function, that uses a cursor and a row by row processing, without any WHERE clause. Fired trigger can cause performance issues.", "advices": "If possible avoid row by row processing. Use base processing instead. If not possible, then add a where clause to limit the number of returned rows.", "infos": ["How to fix: remove the cursor or add a where clause to the cursor. {object}."]}');
