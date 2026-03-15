@@ -148,7 +148,11 @@ INSERT INTO pglinter.rules (
     ]
 ),
 (
-    'HowManyTablesWithRowByRowTriggerWithoutWhereClause', 'B013', 20, 80, 'BASE',
+    'HowManyTablesWithRowByRowTriggerWithoutWhereClause',
+    'B013',
+    20,
+    80,
+    'BASE',
     'Count number of tables using a row by row processing without any where clause vs nb table with their own triggers.',
     '{0}/{1} table(s) using row by row processing without any where clause exceed the {2} threshold: {3}%. Object list:\n{4}',
     ARRAY[
@@ -189,7 +193,9 @@ INSERT INTO pglinter.rules (
     'SchemaOwnerDoNotMatchTableOwner', 'S005', 20, 80, 'SCHEMA',
     'The schema owner and tables in the schema do not match.',
     '{0}/{1} in the same schema, tables have different owners. They should be the same. Exceed the {2} threshold: {3}%. Object list:\n{4}',
-    ARRAY['For maintenance facilities, schema and tables owners should be the same.']
+    ARRAY[
+        'For maintenance facilities, schema and tables owners should be the same.'
+    ]
 ),
 (
     'PgHbaEntriesWithMethodTrustShouldNotExists',
@@ -219,7 +225,9 @@ INSERT INTO pglinter.rules (
     'CLUSTER',
     'This configuration is not secure anymore and will prevent an upgrade to Postgres 18. Warning, you will need to reset all passwords after this is changed to scram-sha-256.',
     'Encrypted passwords with MD5.',
-    ARRAY['change password_encryption parameter to scram-sha-256 (ALTER SYSTEM SET password_encryption = ''scram-sha-256'' ). Warning, you will need to reset all passwords after this parameter is updated.']
+    ARRAY[
+        'change password_encryption parameter to scram-sha-256 (ALTER SYSTEM SET password_encryption = ''scram-sha-256'' ). Warning, you will need to reset all passwords after this parameter is updated.'
+    ]
 );
 
 
@@ -279,7 +287,7 @@ WHERE
     )
 ORDER BY 1
 $$,
-  q4 = $$
+    q4 = $$
 -- Returns classid, objid, objsubid for tables without a primary key
 SELECT
     'pg_class'::regclass::oid AS classid,
@@ -389,7 +397,7 @@ WHERE
 
 ORDER BY 1, 2
 $$,
-  q4 = $$
+    q4 = $$
 WITH index_info AS (
     SELECT
         ind.indrelid AS table_oid,
@@ -922,7 +930,7 @@ ORDER BY
     schema_name,
     object_name
 $$,
-  q4 = $$
+    q4 = $$
 -- Returns classid, objid, objsubid for objects with uppercase in their name
 SELECT 'pg_class'::regclass::oid AS classid, c.oid AS objid, 0 AS objsubid
 FROM pg_class c
@@ -986,7 +994,7 @@ WHERE code = 'B005';
 -- =============================================================================
 UPDATE pglinter.rules
 SET
-  q1 = $$
+    q1 = $$
 SELECT count(*)::BIGINT
 FROM pg_catalog.pg_tables pt
 WHERE
@@ -994,7 +1002,7 @@ WHERE
         'pg_toast', 'pg_catalog', 'information_schema', 'pglinter', '_timescaledb', 'timescaledb'
     )
 $$,
-  q2 = $$
+    q2 = $$
 SELECT COUNT(*) AS unselected_tables
 FROM pg_stat_user_tables AS psu
 WHERE
@@ -1007,7 +1015,7 @@ WHERE
         'pg_toast', 'pg_catalog', 'information_schema', 'pglinter', '_timescaledb', 'timescaledb'
     )
 $$,
-  q3 = $$
+    q3 = $$
 SELECT psu.schemaname::text, psu.relname::text
 FROM pg_stat_user_tables AS psu
 WHERE
@@ -1020,7 +1028,7 @@ WHERE
         'pg_toast', 'pg_catalog', 'information_schema', 'pglinter', '_timescaledb', 'timescaledb'
     )
 $$,
-  q4 = $$
+    q4 = $$
 SELECT
     'pg_class'::regclass::oid AS classid,
     c.oid AS objid,
@@ -1092,7 +1100,7 @@ WHERE
         'pg_toast', 'pg_catalog', 'information_schema', 'pglinter', '_timescaledb', 'timescaledb'
     )
 $$,
-  q4 = $$
+    q4 = $$
 SELECT
     'pg_constraint'::regclass::oid AS classid,
     c.oid AS objid,
@@ -1196,7 +1204,7 @@ WHERE
     )
     AND col1.data_type != col2.data_type
 $$,
-  q4 = $$
+    q4 = $$
 SELECT
     'pg_attribute'::regclass::oid AS classid,
     c.oid AS objid,
@@ -1234,7 +1242,8 @@ WHERE code = 'B008';
 -- B009 - Tables With same trigger
 -- =============================================================================
 UPDATE pglinter.rules
-SET q1 = $$
+SET
+    q1 = $$
 SELECT
     COALESCE(COUNT(DISTINCT event_object_table), 0)::BIGINT as table_using_trigger
 FROM
@@ -1244,7 +1253,7 @@ WHERE
     'pg_toast', 'pg_catalog', 'information_schema', 'pglinter'
 )
 $$,
-  q2 = $$
+    q2 = $$
 SELECT
     COALESCE(SUM(shared_table_count), 0)::BIGINT AS table_using_same_trigger
 FROM (
@@ -1268,7 +1277,7 @@ FROM (
         COUNT(DISTINCT t.event_object_table) > 1
 ) shared_triggers
 $$,
-  q3 = $$
+    q3 = $$
 WITH SharedFunctions AS (
     -- 1. Identify all trigger functions that are used by more than one table
     SELECT
@@ -1302,7 +1311,7 @@ ORDER BY
     t.trigger_schema,
     t.event_object_table
 $$,
-  q4 = $$
+    q4 = $$
 -- Returns classid, objid, objsubid for tables using the same trigger function (B009)
 WITH SharedFunctions AS (
     SELECT
@@ -1343,7 +1352,8 @@ WHERE code = 'B009';
 -- B010 - Tables With Reserved Keywords
 -- =============================================================================
 UPDATE pglinter.rules
-  SET q1 = $$
+SET
+    q1 = $$
 SELECT count(*)::BIGINT AS total_tables
 FROM pg_catalog.pg_tables
 WHERE
@@ -1351,7 +1361,7 @@ WHERE
         'pg_toast', 'pg_catalog', 'information_schema', 'pglinter','_timescaledb', 'timescaledb'
     )
 $$,
-  q2 = $$
+    q2 = $$
 WITH reserved_keywords AS (
     SELECT UNNEST(ARRAY[
         'ALL', 'ANALYSE', 'ANALYZE', 'AND', 'ANY', 'ARRAY', 'AS', 'ASC',
@@ -1419,7 +1429,7 @@ FROM (
         AND UPPER(indexname) = keyword
 ) reserved_objects
 $$,
-  q3 = $$
+    q3 = $$
 WITH reserved_keywords AS (
     SELECT UNNEST(ARRAY[
         'ALL', 'ANALYSE', 'ANALYZE', 'AND', 'ANY', 'ARRAY', 'AS', 'ASC',
@@ -1497,7 +1507,7 @@ ORDER BY
     schema_name,
     object_name
 $$,
-  q4 = $$
+    q4 = $$
 WITH reserved_keywords AS (
     SELECT unnest(ARRAY[
         'SELECT','FROM','WHERE','ORDER','GROUP','HAVING','UNION','JOIN','LIMIT','OFFSET',
@@ -1786,7 +1796,8 @@ WHERE code = 'B012';
 -- B013 - Tables With row by row processing without any where clause
 -- =============================================================================
 UPDATE pglinter.rules
-SET q1 = $$
+SET
+    q1 = $$
 SELECT
     COALESCE(COUNT(DISTINCT event_object_table), 0)::BIGINT as table_using_trigger
 FROM
@@ -1796,7 +1807,7 @@ WHERE
     'pg_toast', 'pg_catalog', 'information_schema', 'pglinter'
 )
 $$,
-  q2 = $$
+    q2 = $$
 SELECT
     COUNT(DISTINCT c.oid)::BIGINT AS tables_with_unbounded_cursor_trigger
 FROM pg_trigger tg
@@ -1811,16 +1822,18 @@ WHERE
     )
     -- function body has a cursor/FOR-loop SELECT ...
     AND p.prosrc ~* '(?:CURSOR\s+FOR|OPEN\s+\w[\w$]*\s+FOR|FOR\s+\w[\w$]*\s+IN)\s+SELECT'
-    -- but none of those SELECT blocks contain a WHERE keyword
-    AND NOT (
-        (regexp_matches(
+    -- at least one of those SELECT blocks has no WHERE clause
+    AND EXISTS (
+        SELECT 1
+        FROM regexp_matches(
             p.prosrc,
             '(?:CURSOR\s+FOR|OPEN\s+\w[\w$]*\s+FOR|FOR\s+\w[\w$]*\s+IN)\s+(SELECT\s[^;]+?)(?:;|\mLOOP\M)',
             'gix'
-        ))[1] ~* '\mWHERE\M'
+        ) AS m(cursor_select)
+        WHERE m.cursor_select[1] !~* '\mWHERE\M'
     )
 $$,
-  q3 = $$
+    q3 = $$
 SELECT
     n.nspname::TEXT                          AS schema_name,
     c.relname::TEXT                          AS table_name,
@@ -1839,16 +1852,18 @@ WHERE
         'pg_toast', 'pg_catalog', 'information_schema', 'pglinter', '_timescaledb', 'timescaledb'
     )
     AND p.prosrc ~* '(?:CURSOR\s+FOR|OPEN\s+\w[\w$]*\s+FOR|FOR\s+\w[\w$]*\s+IN)\s+SELECT'
-    AND NOT (
-        (regexp_matches(
+    AND EXISTS (
+        SELECT 1
+        FROM regexp_matches(
             p.prosrc,
             '(?:CURSOR\s+FOR|OPEN\s+\w[\w$]*\s+FOR|FOR\s+\w[\w$]*\s+IN)\s+(SELECT\s[^;]+?)(?:;|\mLOOP\M)',
             'gix'
-        ))[1] ~* '\mWHERE\M'
+        ) AS m(cursor_select)
+        WHERE m.cursor_select[1] !~* '\mWHERE\M'
     )
 ORDER BY n.nspname, c.relname, tg.tgname
 $$,
-  q4 = $$
+    q4 = $$
 SELECT
     'pg_trigger'::regclass::oid AS classid,
     tg.oid                      AS objid,
@@ -1864,16 +1879,17 @@ WHERE
         'pg_toast', 'pg_catalog', 'information_schema', 'pglinter', '_timescaledb', 'timescaledb'
     )
     AND p.prosrc ~* '(?:CURSOR\s+FOR|OPEN\s+\w[\w$]*\s+FOR|FOR\s+\w[\w$]*\s+IN)\s+SELECT'
-    AND NOT (
-        (regexp_matches(
+    AND EXISTS (
+        SELECT 1
+        FROM regexp_matches(
             p.prosrc,
             '(?:CURSOR\s+FOR|OPEN\s+\w[\w$]*\s+FOR|FOR\s+\w[\w$]*\s+IN)\s+(SELECT\s[^;]+?)(?:;|\mLOOP\M)',
             'gix'
-        ))[1] ~* '\mWHERE\M'
+        ) AS m(cursor_select)
+        WHERE m.cursor_select[1] !~* '\mWHERE\M'
     )
 $$
 WHERE code = 'B013';
-
 
 
 -- =============================================================================
@@ -1920,7 +1936,7 @@ WHERE
     )
 ORDER BY 1
 $$,
-  q4 = $$
+    q4 = $$
 -- Returns classid, objid, objsubid for schemas with no default role (S001)
 SELECT
     'pg_namespace'::regclass::oid AS classid,
@@ -2159,7 +2175,7 @@ WHERE
     AND n.nspowner <> c.relowner      -- The core condition: Owners are different
 ORDER BY 1
 $$,
-  q4 = $$
+    q4 = $$
 -- Returns classid, objid, objsubid for tables where the schema owner and table owner differ (S005)
 SELECT
     'pg_class'::regclass::oid AS classid,
@@ -2228,29 +2244,83 @@ WHERE code = 'C003';
 CREATE TABLE IF NOT EXISTS pglinter.rule_messages (
     id SERIAL PRIMARY KEY,
     code TEXT,
-    rule_msg jsonb
+    rule_msg JSONB
 );
 
 DELETE FROM pglinter.rule_messages;
 
 INSERT INTO pglinter.rule_messages (code, rule_msg) VALUES
-('S001', '{"severity": "WARNING", "message": "Schema {object} has no default role.", "advices": "Add a default privilege to the schema so future tables are granted to a role automatically.", "infos": ["How to fix: ALTER DEFAULT PRIVILEGES IN SCHEMA {object} FOR USER <owner> GRANT ...;"]}'),
-('S002', '{"severity": "WARNING", "message": "Schema {object} is prefixed or suffixed with an environment name.", "advices": "Keep the same schema name across environments. Prefer prefixing or suffixing the database name instead.", "infos": ["How to fix: Rename schema {object} to a neutral name."]}'),
-('S003', '{"severity": "WARNING", "message": "Schema {object} is unsecured: PUBLIC can create objects.", "advices": "REVOKE CREATE ON SCHEMA from PUBLIC to restrict object creation.", "infos": ["How to fix: REVOKE CREATE ON SCHEMA {object} FROM PUBLIC;"]}'),
-('S004', '{"severity": "WARNING", "message": "Schema {object} is owned by an internal role or superuser.", "advices": "Change schema owner to a functional role for better security and maintainability.", "infos": ["How to fix: ALTER SCHEMA {object} OWNER TO <role>;"]}'),
-('S005', '{"severity": "WARNING", "message": "Schema {object} and its tables have different owners.", "advices": "For easier maintenance, schema and tables should have the same owner.", "infos": ["How to fix: ALTER TABLE {object} OWNER TO <role>;"]}');
+(
+    'S001',
+    '{"severity": "WARNING", "message": "Schema {object} has no default role.", "advices": "Add a default privilege to the schema so future tables are granted to a role automatically.", "infos": ["How to fix: ALTER DEFAULT PRIVILEGES IN SCHEMA {object} FOR USER <owner> GRANT ...;"]}'
+),
+(
+    'S002',
+    '{"severity": "WARNING", "message": "Schema {object} is prefixed or suffixed with an environment name.", "advices": "Keep the same schema name across environments. Prefer prefixing or suffixing the database name instead.", "infos": ["How to fix: Rename schema {object} to a neutral name."]}'
+),
+(
+    'S003',
+    '{"severity": "WARNING", "message": "Schema {object} is unsecured: PUBLIC can create objects.", "advices": "REVOKE CREATE ON SCHEMA from PUBLIC to restrict object creation.", "infos": ["How to fix: REVOKE CREATE ON SCHEMA {object} FROM PUBLIC;"]}'
+),
+(
+    'S004',
+    '{"severity": "WARNING", "message": "Schema {object} is owned by an internal role or superuser.", "advices": "Change schema owner to a functional role for better security and maintainability.", "infos": ["How to fix: ALTER SCHEMA {object} OWNER TO <role>;"]}'
+),
+(
+    'S005',
+    '{"severity": "WARNING", "message": "Schema {object} and its tables have different owners.", "advices": "For easier maintenance, schema and tables should have the same owner.", "infos": ["How to fix: ALTER TABLE {object} OWNER TO <role>;"]}'
+);
 
 INSERT INTO pglinter.rule_messages (code, rule_msg) VALUES
-('B001', '{"severity": "WARNING", "message": "{object} does not have a primary key.", "advices": "Add a primary key to this table to ensure data integrity and better performance.", "infos": ["How to fix: ALTER TABLE {object} ADD PRIMARY KEY (...);"]}'),
-('B002', '{"severity": "WARNING", "message": "{object} is a redundant index.", "advices": "Remove redundant or duplicate indexes to optimize performance and storage.", "infos": ["How to fix: DROP INDEX {object}; or review constraints that may create duplicate indexes."]}'),
-('B003', '{"severity": "WARNING", "message": "{object} does not have an index on its foreign key.", "advices": "Create an index on the foreign key column to improve join and lookup performance.", "infos": ["How to fix: CREATE INDEX ON {object} (...);"]}'),
-('B004', '{"severity": "WARNING", "message": "{object} is an unused index.", "advices": "Remove unused indexes to reduce storage and maintenance overhead.", "infos": ["How to fix: DROP INDEX {object}; or review index usage statistics."]}'),
-('B005', '{"severity": "WARNING", "message": "{object} uses uppercase characters.", "advices": "Using uppercase in identifiers requires quoting and can cause case-sensitivity issues.", "infos": ["How to fix: Rename the database object to use only lowercase characters."]}'),
-('B006', '{"severity": "WARNING", "message": "{object} has never been selected.", "advices": "Review the necessity of this table. If it is not needed, consider removing it or archiving its data.", "infos": ["How to fix: DROP TABLE {object}; or investigate application usage."]}'),
-('B007', '{"severity": "WARNING", "message": "{object} has foreign keys outside its schema.", "advices": "Consider restructuring schema design to keep related tables in the same schema.", "infos": ["How to fix: Move related tables into the same schema or review schema design."]}'),
-('B008', '{"severity": "WARNING", "message": "{object} has a foreign key type mismatch.", "advices": "Adjust column types to ensure foreign key matches referenced key type.", "infos": ["How to fix: ALTER TABLE {object} ALTER COLUMN ... TYPE ...;"]}'),
-('B009', '{"severity": "WARNING", "message": "{object} shares a trigger function with other tables.", "advices": "Use one trigger function per table for clarity and maintainability.", "infos": ["How to fix: CREATE a dedicated trigger function for {object} and update the trigger."]}'),
-('B010', '{"severity": "WARNING", "message": "{object} uses a reserved SQL keyword as its name.", "advices": "Rename database objects to avoid using reserved keywords.", "infos": ["How to fix: ALTER TABLE/INDEX/VIEW/FUNCTION/TYPE {object} RENAME TO ...;"]}'),
-('B011', '{"severity": "WARNING", "message": "{object} schema has tables with different owners.", "advices": "Change table owners to the same functional role for easier maintenance.", "infos": ["How to fix: ALTER TABLE {object} OWNER TO ...;"]}'),
-('B012', '{"severity": "WARNING", "message": "{object} has a composite primary key with more than 4 columns.", "advices": "Consider redesigning the table to avoid composite primary keys with more than 4 columns. Use surrogate keys if possible.", "infos": ["How to fix: Redesign {object} to use a surrogate key and unique constraints."]}'),
-('B013', '{"severity": "WARNING", "message": "{object} uses a trigger function, that uses a cursor and a row by row processing, without any WHERE clause. Fired trigger can cause performance issues.", "advices": "If possible avoid row by row processing. Use base processing instead. If not possible, then add a where clause to limit the number of returned rows.", "infos": ["How to fix: remove the cursor or add a where clause to the cursor. {object}."]}');
+(
+    'B001',
+    '{"severity": "WARNING", "message": "{object} does not have a primary key.", "advices": "Add a primary key to this table to ensure data integrity and better performance.", "infos": ["How to fix: ALTER TABLE {object} ADD PRIMARY KEY (...);"]}'
+),
+(
+    'B002',
+    '{"severity": "WARNING", "message": "{object} is a redundant index.", "advices": "Remove redundant or duplicate indexes to optimize performance and storage.", "infos": ["How to fix: DROP INDEX {object}; or review constraints that may create duplicate indexes."]}'
+),
+(
+    'B003',
+    '{"severity": "WARNING", "message": "{object} does not have an index on its foreign key.", "advices": "Create an index on the foreign key column to improve join and lookup performance.", "infos": ["How to fix: CREATE INDEX ON {object} (...);"]}'
+),
+(
+    'B004',
+    '{"severity": "WARNING", "message": "{object} is an unused index.", "advices": "Remove unused indexes to reduce storage and maintenance overhead.", "infos": ["How to fix: DROP INDEX {object}; or review index usage statistics."]}'
+),
+(
+    'B005',
+    '{"severity": "WARNING", "message": "{object} uses uppercase characters.", "advices": "Using uppercase in identifiers requires quoting and can cause case-sensitivity issues.", "infos": ["How to fix: Rename the database object to use only lowercase characters."]}'
+),
+(
+    'B006',
+    '{"severity": "WARNING", "message": "{object} has never been selected.", "advices": "Review the necessity of this table. If it is not needed, consider removing it or archiving its data.", "infos": ["How to fix: DROP TABLE {object}; or investigate application usage."]}'
+),
+(
+    'B007',
+    '{"severity": "WARNING", "message": "{object} has foreign keys outside its schema.", "advices": "Consider restructuring schema design to keep related tables in the same schema.", "infos": ["How to fix: Move related tables into the same schema or review schema design."]}'
+),
+(
+    'B008',
+    '{"severity": "WARNING", "message": "{object} has a foreign key type mismatch.", "advices": "Adjust column types to ensure foreign key matches referenced key type.", "infos": ["How to fix: ALTER TABLE {object} ALTER COLUMN ... TYPE ...;"]}'
+),
+(
+    'B009',
+    '{"severity": "WARNING", "message": "{object} shares a trigger function with other tables.", "advices": "Use one trigger function per table for clarity and maintainability.", "infos": ["How to fix: CREATE a dedicated trigger function for {object} and update the trigger."]}'
+),
+(
+    'B010',
+    '{"severity": "WARNING", "message": "{object} uses a reserved SQL keyword as its name.", "advices": "Rename database objects to avoid using reserved keywords.", "infos": ["How to fix: ALTER TABLE/INDEX/VIEW/FUNCTION/TYPE {object} RENAME TO ...;"]}'
+),
+(
+    'B011',
+    '{"severity": "WARNING", "message": "{object} schema has tables with different owners.", "advices": "Change table owners to the same functional role for easier maintenance.", "infos": ["How to fix: ALTER TABLE {object} OWNER TO ...;"]}'
+),
+(
+    'B012',
+    '{"severity": "WARNING", "message": "{object} has a composite primary key with more than 4 columns.", "advices": "Consider redesigning the table to avoid composite primary keys with more than 4 columns. Use surrogate keys if possible.", "infos": ["How to fix: Redesign {object} to use a surrogate key and unique constraints."]}'
+),
+(
+    'B013',
+    '{"severity": "WARNING", "message": "{object} uses a trigger function, that uses a cursor and a row by row processing, without any WHERE clause. Fired trigger can cause performance issues.", "advices": "If possible avoid row by row processing. Use base processing instead. If not possible, then add a where clause to limit the number of returned rows.", "infos": ["How to fix: remove the cursor or add a where clause to the cursor. {object}."]}'
+);

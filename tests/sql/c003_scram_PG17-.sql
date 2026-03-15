@@ -78,7 +78,7 @@ SELECT pglinter.is_rule_enabled('C003') AS c003_status;
 
 -- Test 1: Check if C003 detects any issues with current setting
 SELECT '=== Test 1: C003 Rule Execution with Current Setting ===' AS test_section;
-SELECT pglinter.perform_cluster_check();
+SELECT pglinter.check();
 
 -- Test 2: Manual execution of C003 query
 SELECT '=== Test 2: Manual C003 Query Execution ===' AS test_section;

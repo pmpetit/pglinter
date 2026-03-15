@@ -157,60 +157,51 @@ SELECT 'Running base check to test B007 rule:' AS test_step;
 (1 row)
 
 SELECT pglinter.check();
-ERROR:  set-returning functions are not allowed in WHERE
-LINE 18:         (regexp_matches(
-                  ^
-QUERY:  
-SELECT
-    COUNT(DISTINCT c.oid)::BIGINT AS tables_with_unbounded_cursor_trigger
-FROM pg_trigger tg
-JOIN pg_class     c  ON c.oid = tg.tgrelid
-JOIN pg_namespace n  ON n.oid = c.relnamespace
-JOIN pg_proc      p  ON p.oid = tg.tgfoid
-WHERE
-    NOT tg.tgisinternal
-    AND p.prolang = (SELECT oid FROM pg_language WHERE lanname = 'plpgsql')
-    AND n.nspname NOT IN (
-        'pg_toast', 'pg_catalog', 'information_schema', 'pglinter', '_timescaledb', 'timescaledb'
-    )
-    -- function body has a cursor/FOR-loop SELECT ...
-    AND p.prosrc ~* '(?:CURSOR\s+FOR|OPEN\s+\w[\w$]*\s+FOR|FOR\s+\w[\w$]*\s+IN)\s+SELECT'
-    -- but none of those SELECT blocks contain a WHERE keyword
-    AND NOT (
-        (regexp_matches(
-            p.prosrc,
-            '(?:CURSOR\s+FOR|OPEN\s+\w[\w$]*\s+FOR|FOR\s+\w[\w$]*\s+IN)\s+(SELECT\s[^;]+?)(?:;|\mLOOP\M)',
-            'gix'
-        ))[1] ~* '\mWHERE\M'
-    )
+NOTICE:  🔍 pglinter found 6 issue(s):
+NOTICE:  ==================================================
+NOTICE:  ❌ [B003] ERROR: 6/6 table(s) without index on foreign key exceed the error threshold: 100%. Object list:
+audit_schema.user_actions.user_actions_user_id_fkey
+clean_schema.employees.employees_department_id_fkey
+inventory_schema.stock_movements.stock_movements_product_id_fkey
+public_schema.customer_addresses.customer_addresses_customer_id_fkey
+sales_schema.order_items.order_items_order_id_fkey
+sales_schema.order_items.order_items_product_id_fkey
+sales_schema.orders.orders_customer_id_fkey
+
+NOTICE:  ⚠️  [B007] WARNING: 4/6 table(s) with foreign keys outside schema exceed the warning threshold: 66%. Object list:
+sales_schema.orders.has foreign key orders_customer_id_fkey referencing public_schema.customers
+sales_schema.order_items.has foreign key order_items_product_id_fkey referencing public_schema.products
+inventory_schema.stock_movements.has foreign key stock_movements_product_id_fkey referencing public_schema.products
+audit_schema.user_actions.has foreign key user_actions_user_id_fkey referencing public_schema.users
+
+NOTICE:  ⚠️  [C001] WARNING: CLUSTER {0} entries in pg_hba.conf with trust authentication method exceed the warning threshold: {1}. 1 : 
+Row 1 
+
+NOTICE:  ❌ [C002] ERROR: 6 entries in pg_hba.conf with trust or password authentication method exceed the warning threshold: 6.
+NOTICE:  ❌ [S001] ERROR: No default role grantee on schema 6.6. It means that each time a table is created, you must grant it to roles. Object list:
+audit_schema
+clean_schema
+inventory_schema
+public
+public_schema
+sales_schema
+
+NOTICE:  ⚠️  [S003] WARNING: 1/6 schemas are unsecured, schemas where all users can create objects in, exceed the warning threshold: 16%. Object list:
+public
+
+NOTICE:  ==================================================
+NOTICE:  📊 Summary: 3 error(s), 3 warning(s), 0 info
+NOTICE:  🔴 Critical issues found - please review and fix errors
+ check 
+-------
+ t
+(1 row)
 
 SELECT count(*) AS violation_count from pglinter.get_violations() WHERE rule_code = 'B007';
-ERROR:  set-returning functions are not allowed in WHERE
-LINE 18:         (regexp_matches(
-                  ^
-QUERY:  
-SELECT
-    'pg_trigger'::regclass::oid AS classid,
-    tg.oid                      AS objid,
-    0                           AS objsubid
-FROM pg_trigger    tg
-JOIN pg_class      c  ON c.oid = tg.tgrelid
-JOIN pg_namespace  n  ON n.oid = c.relnamespace
-JOIN pg_proc       p  ON p.oid = tg.tgfoid
-WHERE
-    NOT tg.tgisinternal
-    AND p.prolang = (SELECT oid FROM pg_language WHERE lanname = 'plpgsql')
-    AND n.nspname NOT IN (
-        'pg_toast', 'pg_catalog', 'information_schema', 'pglinter', '_timescaledb', 'timescaledb'
-    )
-    AND p.prosrc ~* '(?:CURSOR\s+FOR|OPEN\s+\w[\w$]*\s+FOR|FOR\s+\w[\w$]*\s+IN)\s+SELECT'
-    AND NOT (
-        (regexp_matches(
-            p.prosrc,
-            '(?:CURSOR\s+FOR|OPEN\s+\w[\w$]*\s+FOR|FOR\s+\w[\w$]*\s+IN)\s+(SELECT\s[^;]+?)(?:;|\mLOOP\M)',
-            'gix'
-        ))[1] ~* '\mWHERE\M'
-    )
+ violation_count 
+-----------------
+               4
+(1 row)
 
 -- Test rule management for B007
 SELECT 'Testing B007 rule management...' AS test_step;
@@ -262,60 +253,45 @@ NOTICE:  🔴 Rule B007 has been disabled
 (1 row)
 
 SELECT pglinter.check(); -- Should skip B007
-ERROR:  set-returning functions are not allowed in WHERE
-LINE 18:         (regexp_matches(
-                  ^
-QUERY:  
-SELECT
-    COUNT(DISTINCT c.oid)::BIGINT AS tables_with_unbounded_cursor_trigger
-FROM pg_trigger tg
-JOIN pg_class     c  ON c.oid = tg.tgrelid
-JOIN pg_namespace n  ON n.oid = c.relnamespace
-JOIN pg_proc      p  ON p.oid = tg.tgfoid
-WHERE
-    NOT tg.tgisinternal
-    AND p.prolang = (SELECT oid FROM pg_language WHERE lanname = 'plpgsql')
-    AND n.nspname NOT IN (
-        'pg_toast', 'pg_catalog', 'information_schema', 'pglinter', '_timescaledb', 'timescaledb'
-    )
-    -- function body has a cursor/FOR-loop SELECT ...
-    AND p.prosrc ~* '(?:CURSOR\s+FOR|OPEN\s+\w[\w$]*\s+FOR|FOR\s+\w[\w$]*\s+IN)\s+SELECT'
-    -- but none of those SELECT blocks contain a WHERE keyword
-    AND NOT (
-        (regexp_matches(
-            p.prosrc,
-            '(?:CURSOR\s+FOR|OPEN\s+\w[\w$]*\s+FOR|FOR\s+\w[\w$]*\s+IN)\s+(SELECT\s[^;]+?)(?:;|\mLOOP\M)',
-            'gix'
-        ))[1] ~* '\mWHERE\M'
-    )
+NOTICE:  🔍 pglinter found 5 issue(s):
+NOTICE:  ==================================================
+NOTICE:  ❌ [B003] ERROR: 6/6 table(s) without index on foreign key exceed the error threshold: 100%. Object list:
+audit_schema.user_actions.user_actions_user_id_fkey
+clean_schema.employees.employees_department_id_fkey
+inventory_schema.stock_movements.stock_movements_product_id_fkey
+public_schema.customer_addresses.customer_addresses_customer_id_fkey
+sales_schema.order_items.order_items_order_id_fkey
+sales_schema.order_items.order_items_product_id_fkey
+sales_schema.orders.orders_customer_id_fkey
+
+NOTICE:  ⚠️  [C001] WARNING: CLUSTER {0} entries in pg_hba.conf with trust authentication method exceed the warning threshold: {1}. 1 : 
+Row 1 
+
+NOTICE:  ❌ [C002] ERROR: 6 entries in pg_hba.conf with trust or password authentication method exceed the warning threshold: 6.
+NOTICE:  ❌ [S001] ERROR: No default role grantee on schema 6.6. It means that each time a table is created, you must grant it to roles. Object list:
+audit_schema
+clean_schema
+inventory_schema
+public
+public_schema
+sales_schema
+
+NOTICE:  ⚠️  [S003] WARNING: 1/6 schemas are unsecured, schemas where all users can create objects in, exceed the warning threshold: 16%. Object list:
+public
+
+NOTICE:  ==================================================
+NOTICE:  📊 Summary: 3 error(s), 2 warning(s), 0 info
+NOTICE:  🔴 Critical issues found - please review and fix errors
+ check 
+-------
+ t
+(1 row)
 
 SELECT count(*) AS violation_count from pglinter.get_violations() WHERE rule_code = 'B007';
-ERROR:  set-returning functions are not allowed in WHERE
-LINE 18:         (regexp_matches(
-                  ^
-QUERY:  
-SELECT
-    'pg_trigger'::regclass::oid AS classid,
-    tg.oid                      AS objid,
-    0                           AS objsubid
-FROM pg_trigger    tg
-JOIN pg_class      c  ON c.oid = tg.tgrelid
-JOIN pg_namespace  n  ON n.oid = c.relnamespace
-JOIN pg_proc       p  ON p.oid = tg.tgfoid
-WHERE
-    NOT tg.tgisinternal
-    AND p.prolang = (SELECT oid FROM pg_language WHERE lanname = 'plpgsql')
-    AND n.nspname NOT IN (
-        'pg_toast', 'pg_catalog', 'information_schema', 'pglinter', '_timescaledb', 'timescaledb'
-    )
-    AND p.prosrc ~* '(?:CURSOR\s+FOR|OPEN\s+\w[\w$]*\s+FOR|FOR\s+\w[\w$]*\s+IN)\s+SELECT'
-    AND NOT (
-        (regexp_matches(
-            p.prosrc,
-            '(?:CURSOR\s+FOR|OPEN\s+\w[\w$]*\s+FOR|FOR\s+\w[\w$]*\s+IN)\s+(SELECT\s[^;]+?)(?:;|\mLOOP\M)',
-            'gix'
-        ))[1] ~* '\mWHERE\M'
-    )
+ violation_count 
+-----------------
+               0
+(1 row)
 
 -- Re-enable B007
 SELECT 'Testing B007 re-enable...' AS test_step;
@@ -332,60 +308,51 @@ NOTICE:  ✅ Rule B007 has been enabled
 (1 row)
 
 SELECT pglinter.check(); -- Should include B007 again
-ERROR:  set-returning functions are not allowed in WHERE
-LINE 18:         (regexp_matches(
-                  ^
-QUERY:  
-SELECT
-    COUNT(DISTINCT c.oid)::BIGINT AS tables_with_unbounded_cursor_trigger
-FROM pg_trigger tg
-JOIN pg_class     c  ON c.oid = tg.tgrelid
-JOIN pg_namespace n  ON n.oid = c.relnamespace
-JOIN pg_proc      p  ON p.oid = tg.tgfoid
-WHERE
-    NOT tg.tgisinternal
-    AND p.prolang = (SELECT oid FROM pg_language WHERE lanname = 'plpgsql')
-    AND n.nspname NOT IN (
-        'pg_toast', 'pg_catalog', 'information_schema', 'pglinter', '_timescaledb', 'timescaledb'
-    )
-    -- function body has a cursor/FOR-loop SELECT ...
-    AND p.prosrc ~* '(?:CURSOR\s+FOR|OPEN\s+\w[\w$]*\s+FOR|FOR\s+\w[\w$]*\s+IN)\s+SELECT'
-    -- but none of those SELECT blocks contain a WHERE keyword
-    AND NOT (
-        (regexp_matches(
-            p.prosrc,
-            '(?:CURSOR\s+FOR|OPEN\s+\w[\w$]*\s+FOR|FOR\s+\w[\w$]*\s+IN)\s+(SELECT\s[^;]+?)(?:;|\mLOOP\M)',
-            'gix'
-        ))[1] ~* '\mWHERE\M'
-    )
+NOTICE:  🔍 pglinter found 6 issue(s):
+NOTICE:  ==================================================
+NOTICE:  ❌ [B003] ERROR: 6/6 table(s) without index on foreign key exceed the error threshold: 100%. Object list:
+audit_schema.user_actions.user_actions_user_id_fkey
+clean_schema.employees.employees_department_id_fkey
+inventory_schema.stock_movements.stock_movements_product_id_fkey
+public_schema.customer_addresses.customer_addresses_customer_id_fkey
+sales_schema.order_items.order_items_order_id_fkey
+sales_schema.order_items.order_items_product_id_fkey
+sales_schema.orders.orders_customer_id_fkey
+
+NOTICE:  ⚠️  [B007] WARNING: 4/6 table(s) with foreign keys outside schema exceed the warning threshold: 66%. Object list:
+sales_schema.orders.has foreign key orders_customer_id_fkey referencing public_schema.customers
+sales_schema.order_items.has foreign key order_items_product_id_fkey referencing public_schema.products
+inventory_schema.stock_movements.has foreign key stock_movements_product_id_fkey referencing public_schema.products
+audit_schema.user_actions.has foreign key user_actions_user_id_fkey referencing public_schema.users
+
+NOTICE:  ⚠️  [C001] WARNING: CLUSTER {0} entries in pg_hba.conf with trust authentication method exceed the warning threshold: {1}. 1 : 
+Row 1 
+
+NOTICE:  ❌ [C002] ERROR: 6 entries in pg_hba.conf with trust or password authentication method exceed the warning threshold: 6.
+NOTICE:  ❌ [S001] ERROR: No default role grantee on schema 6.6. It means that each time a table is created, you must grant it to roles. Object list:
+audit_schema
+clean_schema
+inventory_schema
+public
+public_schema
+sales_schema
+
+NOTICE:  ⚠️  [S003] WARNING: 1/6 schemas are unsecured, schemas where all users can create objects in, exceed the warning threshold: 16%. Object list:
+public
+
+NOTICE:  ==================================================
+NOTICE:  📊 Summary: 3 error(s), 3 warning(s), 0 info
+NOTICE:  🔴 Critical issues found - please review and fix errors
+ check 
+-------
+ t
+(1 row)
 
 SELECT count(*) AS violation_count from pglinter.get_violations() WHERE rule_code = 'B007';
-ERROR:  set-returning functions are not allowed in WHERE
-LINE 18:         (regexp_matches(
-                  ^
-QUERY:  
-SELECT
-    'pg_trigger'::regclass::oid AS classid,
-    tg.oid                      AS objid,
-    0                           AS objsubid
-FROM pg_trigger    tg
-JOIN pg_class      c  ON c.oid = tg.tgrelid
-JOIN pg_namespace  n  ON n.oid = c.relnamespace
-JOIN pg_proc       p  ON p.oid = tg.tgfoid
-WHERE
-    NOT tg.tgisinternal
-    AND p.prolang = (SELECT oid FROM pg_language WHERE lanname = 'plpgsql')
-    AND n.nspname NOT IN (
-        'pg_toast', 'pg_catalog', 'information_schema', 'pglinter', '_timescaledb', 'timescaledb'
-    )
-    AND p.prosrc ~* '(?:CURSOR\s+FOR|OPEN\s+\w[\w$]*\s+FOR|FOR\s+\w[\w$]*\s+IN)\s+SELECT'
-    AND NOT (
-        (regexp_matches(
-            p.prosrc,
-            '(?:CURSOR\s+FOR|OPEN\s+\w[\w$]*\s+FOR|FOR\s+\w[\w$]*\s+IN)\s+(SELECT\s[^;]+?)(?:;|\mLOOP\M)',
-            'gix'
-        ))[1] ~* '\mWHERE\M'
-    )
+ violation_count 
+-----------------
+               4
+(1 row)
 
 -- Test with only B007 enabled
 SELECT 'Testing B007 in isolation...' AS test_step;

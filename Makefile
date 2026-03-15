@@ -58,6 +58,7 @@ REGRESS_TESTS+= b010_reserved_keywords
 REGRESS_TESTS+= b011_several_table_owner_in_schema
 REGRESS_TESTS+= b012_composite_pk
 REGRESS_TESTS+= b013_trigger_row_by_row
+REGRESS_TESTS+= b013_trigger_row_by_row_with_clause
 REGRESS_TESTS+= s001_schema_with_default_role_not_granted
 REGRESS_TESTS+= s002_schema_prefixed_or_suffixed_with_envt
 REGRESS_TESTS+= s003_public_schema

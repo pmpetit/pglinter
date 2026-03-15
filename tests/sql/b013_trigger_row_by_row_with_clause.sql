@@ -1,9 +1,14 @@
 CREATE EXTENSION IF NOT EXISTS pglinter;
+
 \pset pager off
+
+
 CREATE SCHEMA trigger_test;
+
 -- =============================================================================
 -- Create test tables
 -- =============================================================================
+
 -- Tables 1-5: Each will have its own unique trigger function
 CREATE TABLE pos_tnd_ssn_hst
 (
@@ -22,15 +27,17 @@ CREATE TABLE pos_tnd_ssn_hst
     tnd_ssn_data_byte bytea,
     PRIMARY KEY (id_tnd_ssn_hst, id_ssn, id_bsn_un)
 );
+
 -- =============================================================================
 -- Create unique trigger functions for tables 1-5
 -- =============================================================================
+
 CREATE FUNCTION f_pos_tnd_ssn_hst() RETURNS trigger
 LANGUAGE plpgsql
 AS
 $$
 DECLARE pos_tnd_ssn_hst_rec RECORD;
-curr CURSOR  FOR SELECT id_tnd_ssn_hst, id_ssn, ssn_status FROM pos_tnd_ssn_hst;
+curr CURSOR  FOR SELECT id_tnd_ssn_hst, id_ssn, ssn_status FROM pos_tnd_ssn_hst WHERE id_ssn = NEW.id_ssn;
 BEGIN
 	OPEN curr;
 	LOOP
@@ -43,66 +50,32 @@ BEGIN
   RETURN NEW;
 END;
 $$;
+
+
 CREATE TRIGGER t_pos_tnd_ssn_hst
 BEFORE INSERT OR UPDATE
 ON pos_tnd_ssn_hst
 FOR EACH ROW
 EXECUTE PROCEDURE f_pos_tnd_ssn_hst();
+
+
 -- Test with only B009 enabled
 SELECT 'Testing B013 in isolation...' AS test_step;
-          test_step           
-------------------------------
- Testing B013 in isolation...
-(1 row)
-
 SELECT pglinter.disable_all_rules() AS all_disabled;
-NOTICE:  🔴 Disabled 21 rule(s)
- all_disabled 
---------------
-           21
-(1 row)
-
 SELECT pglinter.enable_rule('B013') AS b013_only_enabled;
-NOTICE:  ✅ Rule B013 has been enabled
- b013_only_enabled 
--------------------
- t
-(1 row)
-
 SELECT pglinter.check(); -- Should only run B013
-NOTICE:  🔍 pglinter found 1 issue(s):
-NOTICE:  ==================================================
-NOTICE:  ❌ [B013] ERROR: 1/1 table(s) using row by row processing without any where clause exceed the error threshold: 100%. Object list:
-public.pos_tnd_ssn_hst.t_pos_tnd_ssn_hst -> public.f_pos_tnd_ssn_hst
-
-NOTICE:  ==================================================
-NOTICE:  📊 Summary: 1 error(s), 0 warning(s), 0 info
-NOTICE:  🔴 Critical issues found - please review and fix errors
- check 
--------
- t
-(1 row)
 
 SELECT count(*) AS violation_count
 FROM pglinter.get_violations()
 WHERE rule_code = 'B013';
- violation_count 
------------------
-               1
-(1 row)
 
 -- Test with output
 SELECT pglinter.check('/tmp/pglinter_B013_results.sarif');
- check 
--------
- t
-(1 row)
-
 -- Test if file exists and show checksum
 \! md5sum /tmp/pglinter_B013_results.sarif
-ed1b2a0d0091a61d7d6f87dedd4c3877  /tmp/pglinter_B013_results.sarif
+
 -- Cleanup
 \echo 'Cleaning up test schema...'
-Cleaning up test schema...
 DROP SCHEMA trigger_test CASCADE;
+
 DROP EXTENSION pglinter;

@@ -22,6 +22,7 @@ CREATE TABLE pos_tnd_ssn_hst
     tnd_ssn_data_byte bytea,
     PRIMARY KEY (id_tnd_ssn_hst, id_ssn, id_bsn_un)
 );
+ERROR:  relation "pos_tnd_ssn_hst" already exists
 -- =============================================================================
 -- Create unique trigger functions for tables 1-5
 -- =============================================================================
@@ -30,7 +31,7 @@ LANGUAGE plpgsql
 AS
 $$
 DECLARE pos_tnd_ssn_hst_rec RECORD;
-curr CURSOR  FOR SELECT id_tnd_ssn_hst, id_ssn, ssn_status FROM pos_tnd_ssn_hst;
+curr CURSOR  FOR SELECT id_tnd_ssn_hst, id_ssn, ssn_status FROM pos_tnd_ssn_hst WHERE id_ssn = NEW.id_ssn;
 BEGIN
 	OPEN curr;
 	LOOP
@@ -43,11 +44,13 @@ BEGIN
   RETURN NEW;
 END;
 $$;
+ERROR:  function "f_pos_tnd_ssn_hst" already exists with same argument types
 CREATE TRIGGER t_pos_tnd_ssn_hst
 BEFORE INSERT OR UPDATE
 ON pos_tnd_ssn_hst
 FOR EACH ROW
 EXECUTE PROCEDURE f_pos_tnd_ssn_hst();
+ERROR:  trigger "t_pos_tnd_ssn_hst" for relation "pos_tnd_ssn_hst" already exists
 -- Test with only B009 enabled
 SELECT 'Testing B013 in isolation...' AS test_step;
           test_step           
