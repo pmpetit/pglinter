@@ -11,11 +11,11 @@ on:
   workflow_dispatch:
     inputs:
       image_tag:
-        description: 'Docker image tag'
+        description: "Docker image tag"
         required: false
-        default: 'latest'
+        default: "latest"
       push_image:
-        description: 'Push image to registry'
+        description: "Push image to registry"
         type: boolean
         required: false
         default: true

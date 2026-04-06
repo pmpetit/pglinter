@@ -6,28 +6,28 @@
 # Note: PGXN publishing is handled by a separate workflow (pgxn-publish.yml)
 # which automatically triggers when a release is published.
 
-name: 'Package and deploy pglinter.'
+name: "Package and deploy pglinter."
 
 on:
   push:
     tags:
       - "[0-9]+.[0-9]+.[0-9]+"
     paths-ignore:
-      - 'docs/**'
-      - '*.md'
-      - 'README.md'
-      - 'mkdocs.yml'
+      - "docs/**"
+      - "*.md"
+      - "README.md"
+      - "mkdocs.yml"
 
   workflow_dispatch:
     inputs:
       version:
-        description: 'Version to release (e.g., 0.0.17)'
+        description: "Version to release (e.g., 0.0.17)"
         required: true
         type: string
       pgversions:
-        description: 'PostgreSQL versions to build (comma-separated: pg13,pg14,pg15,pg16,pg17,pg18)'
+        description: "PostgreSQL versions to build (comma-separated: pg13,pg14,pg15,pg16,pg17,pg18)"
         required: false
-        default: 'pg17'
+        default: "pg17"
         type: string
 
 concurrency:
@@ -38,7 +38,6 @@ env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
-
   ##
   ## D Y N A M I C   M A T R I X   G E N E R A T I O N
   ##
@@ -85,7 +84,7 @@ jobs:
       matrix:
         include: ${{ fromJSON(needs.setup-matrix.outputs.matrix_include) }}
       fail-fast: false
-    name: '${{ matrix.pgver }}-${{ matrix.arch }}-${{ matrix.pkgtype }}-package-build'
+    name: "${{ matrix.pgver }}-${{ matrix.arch }}-${{ matrix.pkgtype }}-package-build"
     runs-on: ${{ matrix.runs_on }}
     container:
       image: ghcr.io/pmpetit/postgresql_pglinter:pgrx-${{ matrix.arch }}
@@ -120,7 +119,7 @@ jobs:
       matrix:
         include: ${{ fromJSON(needs.setup-matrix.outputs.matrix_include) }}
       fail-fast: false
-    name: '${{ matrix.pgver }}-${{ matrix.arch }}-${{ matrix.pkgtype }}-package-test'
+    name: "${{ matrix.pgver }}-${{ matrix.arch }}-${{ matrix.pkgtype }}-package-test"
     runs-on: ${{ matrix.runs_on }}
     steps:
       - name: Checkout repository
@@ -132,7 +131,7 @@ jobs:
           pg_version: ${{ matrix.version }}
           pglinter_version: ${{ github.event_name == 'workflow_dispatch' && inputs.version || github.ref_name }}
           platform: ${{ matrix.arch == 'amd64' && 'linux/amd64' || 'linux/arm64' }}
-          timeout: '180'
+          timeout: "180"
       - name: Test rpm package
         if: ${{ matrix.pkgtype == 'rpm' }}
         uses: ./.github/actions/reusable-test-nodeb-package
@@ -140,7 +139,7 @@ jobs:
           pg_version: ${{ matrix.version }}
           pglinter_version: ${{ github.event_name == 'workflow_dispatch' && inputs.version || github.ref_name }}
           platform: ${{ matrix.arch == 'amd64' && 'linux/amd64' || 'linux/arm64' }}
-          timeout: '180'
+          timeout: "180"
 
   create-release:
     needs: test-package

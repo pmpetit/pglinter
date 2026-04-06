@@ -4,23 +4,23 @@ on:
   workflow_dispatch:
     inputs:
       pg_version:
-        description: 'PostgreSQL version to test'
+        description: "PostgreSQL version to test"
         required: true
-        default: '17'
+        default: "17"
         type: choice
-        options: ['14', '15', '16', '17', '18']
+        options: ["14", "15", "16", "17", "18"]
       pglinter_version:
-        description: 'pglinter version'
+        description: "pglinter version"
         required: true
-        default: '0.0.19'
+        default: "0.0.19"
       platform:
-        description: 'Target platform'
+        description: "Target platform"
         required: false
-        default: 'linux/amd64'
+        default: "linux/amd64"
       timeout:
-        description: 'Container timeout (seconds)'
+        description: "Container timeout (seconds)"
         required: false
-        default: '120'
+        default: "120"
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true

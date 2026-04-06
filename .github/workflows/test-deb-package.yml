@@ -5,23 +5,22 @@ on:
   workflow_dispatch:
     inputs:
       pg_version:
-        description: 'PostgreSQL version to test'
+        description: "PostgreSQL version to test"
         required: true
-        default: '17'
+        default: "17"
         type: choice
-        options: ['14', '15', '16', '17', '18']
+        options: ["14", "15", "16", "17", "18"]
       platform:
-        description: 'Target platform'
+        description: "Target platform"
         required: false
-        default: 'linux/amd64'
+        default: "linux/amd64"
         type: choice
-        options: ['linux/amd64', 'linux/arm64']
+        options: ["linux/amd64", "linux/arm64"]
       pglinter_version:
-        description: 'pglinter version to test'
+        description: "pglinter version to test"
         required: false
-        default: '0.0.19'
+        default: "0.0.19"
         type: string
-
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
@@ -38,7 +37,7 @@ jobs:
           pg_version: ${{ inputs.pg_version }}
           pglinter_version: ${{ inputs.pglinter_version }}
           platform: ${{ inputs.platform }}
-          timeout: '180'
+          timeout: "180"
   test-deb-arm64-pglinter:
     runs-on: ubuntu-24.04-arm
     steps:
@@ -50,5 +49,4 @@ jobs:
           pg_version: ${{ inputs.pg_version }}
           pglinter_version: ${{ inputs.pglinter_version }}
           platform: ${{ inputs.platform }}
-          timeout: '180'
-
+          timeout: "180"
