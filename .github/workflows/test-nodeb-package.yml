@@ -22,6 +22,9 @@ on:
         required: false
         default: '120'
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
 jobs:
   test-nodeb-image:
     runs-on: ubuntu-24.04-arm
