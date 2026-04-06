@@ -91,3 +91,22 @@ jobs:
           github_token: ${{ secrets.GH_TOKEN }}
           distro: ${{ matrix.distro }}
           ocipgversion: ${{ matrix.pgver }}
+
+  oci-image-push:
+    needs: [setup-matrix, oci-image-build]
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')
+    strategy:
+      matrix:
+        include: ${{ fromJSON(needs.setup-matrix.outputs.matrix_include) }}
+      fail-fast: false
+    name: "${{ matrix.pgver }}-${{ matrix.distro }}-oci-push"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: push oci image
+        uses: ./.github/actions/build-oci-push
+        with:
+          github_token: ${{ secrets.GH_TOKEN }}
+          distro: ${{ matrix.distro }}
+          ocipgversion: ${{ matrix.pgver }}
