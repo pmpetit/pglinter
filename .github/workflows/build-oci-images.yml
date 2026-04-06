@@ -29,6 +29,7 @@ jobs:
       arch: ${{ steps.matrix.outputs.arch }}
       pkgtype: ${{ steps.matrix.outputs.pkgtype }}
       matrix_include: ${{ steps.matrix.outputs.matrix_include }}
+      test_matrix_include: ${{ steps.matrix.outputs.test_matrix_include }}
       version: ${{ steps.matrix.outputs.version }}
     steps:
       - name: Generate matrix
@@ -57,13 +58,25 @@ jobs:
 
           echo "matrix_include=$MATRIX_JSON" >> $GITHUB_OUTPUT
 
+          # Create JSON array for test matrix (pgver x distro x runs_on)
+          TEST_MATRIX_JSON="["
+          for ARCH in "ubuntu-latest" "ubuntu-24.04-arm"; do
+            for PG in $(echo $PGVERSIONS | tr ',' ' '); do
+              VERSION=${PG#pg}
+              TEST_MATRIX_JSON+="{\"pgver\": \"$PG\", \"VERSION\": \"$VERSION\", \"distro\": \"bookworm\", \"runs_on\": \"$ARCH\"},"
+              TEST_MATRIX_JSON+="{\"pgver\": \"$PG\", \"VERSION\": \"$VERSION\", \"distro\": \"trixie\", \"runs_on\": \"$ARCH\"},"
+            done
+          done
+          TEST_MATRIX_JSON=${TEST_MATRIX_JSON%,}
+          TEST_MATRIX_JSON+="]"
+          echo "test_matrix_include=$TEST_MATRIX_JSON" >> $GITHUB_OUTPUT
+
   oci-image-test:
-    # needs: oci-image-build
+    needs: setup-matrix
     strategy:
       matrix:
-        runs_on: [ubuntu-latest, ubuntu-24.04-arm]
-        distro: [bookworm, trixie]
-        pgver: [pg18, pg17, pg16, pg15, pg14]
+        include: ${{ fromJSON(needs.setup-matrix.outputs.test_matrix_include) }}
+      fail-fast: false
     name: "${{ matrix.pgver }}-${{ matrix.distro }}-oci-test-on-${{ matrix.runs_on }}"
     runs-on: ${{ matrix.runs_on }}
     steps:
