@@ -78,7 +78,7 @@ jobs:
 
   oci-image-build:
     needs: [setup-matrix, oci-image-test]
-    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')
+    if: (github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')) || github.event_name == 'workflow_dispatch'
     strategy:
       matrix:
         include: ${{ fromJSON(needs.setup-matrix.outputs.matrix_include) }}
@@ -97,7 +97,7 @@ jobs:
 
   oci-image-push:
     needs: [setup-matrix, oci-image-build]
-    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')
+    if: (github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')) || github.event_name == 'workflow_dispatch'
     strategy:
       matrix:
         include: ${{ fromJSON(needs.setup-matrix.outputs.matrix_include) }}
