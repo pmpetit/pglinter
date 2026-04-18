@@ -49,7 +49,13 @@ CREATE TABLE my_table_without_pk (
 );
 
 -- Check for tables without primary keys
-SELECT * FROM pglinter.get_violations() WHERE rule_code = 'B001';
+SELECT
+  rule_code,
+  (pg_identify_object(classid, objid, objsubid)).type,
+  (pg_identify_object(classid, objid, objsubid)).schema,
+  (pg_identify_object(classid, objid, objsubid)).name,
+  (pg_identify_object(classid, objid, objsubid)).identity
+  from pglinter.get_violations() WHERE rule_code = 'B001';
 
 -- Get detailed explanation
 SELECT pglinter.explain_rule('B001');
@@ -89,7 +95,13 @@ CREATE TABLE orders_table_with_constraint (
 CREATE INDEX my_idx_customer ON orders_table_with_constraint (customer_id);
 
 -- Check for redundant indexes
-SELECT * FROM pglinter.get_violations() WHERE rule_code = 'B002';
+SELECT
+  rule_code,
+  (pg_identify_object(classid, objid, objsubid)).type,
+  (pg_identify_object(classid, objid, objsubid)).schema,
+  (pg_identify_object(classid, objid, objsubid)).name,
+  (pg_identify_object(classid, objid, objsubid)).identity
+  FROM pglinter.get_violations() WHERE rule_code = 'B002';
 ```
 
 **Fix**: Drop the redundant indexes:
@@ -119,7 +131,13 @@ CREATE TABLE orders (
 -- Note: customer_id doesn't have an index, which can cause performance issues
 
 -- Check for unindexed foreign keys
-SELECT * FROM pglinter.get_violations() WHERE rule_code = 'B003';
+SELECT
+  rule_code,
+  (pg_identify_object(classid, objid, objsubid)).type,
+  (pg_identify_object(classid, objid, objsubid)).schema,
+  (pg_identify_object(classid, objid, objsubid)).name,
+  (pg_identify_object(classid, objid, objsubid)).identity
+  FROM pglinter.get_violations() WHERE rule_code = 'B003';
 ```
 
 **Fix**: Add indexes to foreign key columns:
@@ -144,7 +162,13 @@ CREATE INDEX idx_unused_status ON test_unused_index(status);
 -- This index might be unused if no queries actually use it
 
 -- Check for unused indexes
-SELECT * FROM pglinter.get_violations() WHERE rule_code = 'B004';
+SELECT
+  rule_code,
+  (pg_identify_object(classid, objid, objsubid)).type,
+  (pg_identify_object(classid, objid, objsubid)).schema,
+  (pg_identify_object(classid, objid, objsubid)).name,
+  (pg_identify_object(classid, objid, objsubid)).identity
+  FROM pglinter.get_violations() WHERE rule_code = 'B004';
 ```
 
 ### B005: Uppercase Table/Column Names
@@ -159,7 +183,13 @@ CREATE TABLE "UPPERCASE_TABLE" (
 );
 
 -- Check for uppercase identifiers
-SELECT * FROM pglinter.get_violations() WHERE rule_code = 'B005';
+SELECT
+  rule_code,
+  (pg_identify_object(classid, objid, objsubid)).type,
+  (pg_identify_object(classid, objid, objsubid)).schema,
+  (pg_identify_object(classid, objid, objsubid)).name,
+  (pg_identify_object(classid, objid, objsubid)).identity
+  FROM pglinter.get_violations() WHERE rule_code = 'B005';
 ```
 
 **Fix**: Use lowercase identifiers:
@@ -184,7 +214,13 @@ CREATE SCHEMA s001_schema AUTHORIZATION s001_owner;
 -- No default privileges granted
 
 -- Check schema security
-SELECT * FROM pglinter.get_violations() WHERE rule_code = 'S001';
+SELECT
+  rule_code,
+  (pg_identify_object(classid, objid, objsubid)).type,
+  (pg_identify_object(classid, objid, objsubid)).schema,
+  (pg_identify_object(classid, objid, objsubid)).name,
+  (pg_identify_object(classid, objid, objsubid)).identity
+  FROM pglinter.get_violations() WHERE rule_code = 'S001';
 
 -- Cleanup
 DROP SCHEMA s001_schema CASCADE;
@@ -202,7 +238,13 @@ CREATE SCHEMA test_schema;
 CREATE SCHEMA prod_data;
 
 -- Check schema naming conventions
-SELECT * FROM pglinter.get_violations() WHERE rule_code = 'S002';
+SELECT
+  rule_code,
+  (pg_identify_object(classid, objid, objsubid)).type,
+  (pg_identify_object(classid, objid, objsubid)).schema,
+  (pg_identify_object(classid, objid, objsubid)).name,
+  (pg_identify_object(classid, objid, objsubid)).identity
+  FROM pglinter.get_violations() WHERE rule_code = 'S002';
 ```
 
 ### S003: Unsecured Public Schema
@@ -211,7 +253,13 @@ SELECT * FROM pglinter.get_violations() WHERE rule_code = 'S002';
 
 ```sql
 -- Check public schema security
-SELECT * FROM pglinter.get_violations() WHERE rule_code = 'S003';
+SELECT
+  rule_code,
+  (pg_identify_object(classid, objid, objsubid)).type,
+  (pg_identify_object(classid, objid, objsubid)).schema,
+  (pg_identify_object(classid, objid, objsubid)).name,
+  (pg_identify_object(classid, objid, objsubid)).identity
+  FROM pglinter.get_violations() WHERE rule_code = 'S003';
 
 -- View current public schema permissions
 SELECT * FROM information_schema.usage_privileges WHERE object_name = 'public';
@@ -249,14 +297,6 @@ SELECT pglinter.disable_all_rules();
 
 -- Enable all rules
 SELECT pglinter.enable_all_rules();
-```
-
-### Rule Level Management
-
-```sql
-
-
-
 ```
 
 ### Rule Configuration Import/Export
@@ -317,13 +357,14 @@ CREATE TABLE orders (
 );
 
 -- Run comprehensive check
-SELECT * FROM pglinter.get_violations();
+SELECT
+  rule_code,
+  (pg_identify_object(classid, objid, objsubid)).type,
+  (pg_identify_object(classid, objid, objsubid)).schema,
+  (pg_identify_object(classid, objid, objsubid)).name,
+  (pg_identify_object(classid, objid, objsubid)).identity
+  FROM pglinter.get_violations();
 
--- Filter violations for specific rule categories
-SELECT * FROM pglinter.get_violations() WHERE rule_code = 'B001'; -- Tables without PKs
-SELECT * FROM pglinter.get_violations() WHERE rule_code = 'B002'; -- Redundant indexes
-SELECT * FROM pglinter.get_violations() WHERE rule_code = 'B003'; -- Unindexed foreign keys
-```
 
 ## Output Options
 
