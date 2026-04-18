@@ -142,8 +142,8 @@ GRANT SELECT, INSERT, UPDATE ON TABLE user_table TO app_write;
 2. **Restricted File Access**
 
    ```sql
-   -- Only write to designated log directory
-   SELECT pglinter.perform_base_check('/var/log/pglinter/scan_results.sarif');
+   -- Only query violations for enabled rules
+   SELECT * FROM pglinter.get_violations();
    ```
 
 3. **Network Security**

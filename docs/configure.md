@@ -215,7 +215,7 @@ psql -d mydb -t -c "SELECT pglinter.export_rules_to_yaml();" > backup_$(date +%Y
 psql -d dev_db -c "SELECT pglinter.import_rules_from_file('modified_rules.yaml');"
 
 # 4. Validate configuration works
-psql -d dev_db -c "SELECT pglinter.check_all();"
+psql -d dev_db -c "SELECT * FROM pglinter.get_violations();"
 
 # 5. Apply to production
 psql -d prod_db -c "SELECT pglinter.import_rules_from_file('modified_rules.yaml');"
@@ -270,34 +270,35 @@ WHERE code IN ('B001', 'B002', 'B003')
 ORDER BY code;
 
 -- Test rule execution
-SELECT pglinter.perform_base_check();
+SELECT * FROM pglinter.get_violations();
 
 -- Check for any import errors in PostgreSQL logs
 ```
 
 ## Output Configuration
 
-### File Output
+### Violations Table
 
 ```sql
--- Save results to a specific file
-SELECT pglinter.perform_base_check('/var/log/pglinter/results.sarif');
+-- Get all violations for enabled rules
+SELECT * FROM pglinter.get_violations();
 
--- Use timestamp in filename
-SELECT pglinter.perform_base_check(
-    '/var/log/pglinter/results_' || to_char(now(), 'YYYY-MM-DD_HH24-MI-SS') || '.sarif'
-);
+-- Count violations by rule
+SELECT rule_code, count(*) AS violation_count
+FROM pglinter.get_violations()
+GROUP BY rule_code
+ORDER BY rule_code;
 ```
 
 ### Console Output
 
 ```sql
--- Output results to console (no file parameter)
-SELECT pglinter.perform_base_check();
+-- Output violations
+SELECT * FROM pglinter.get_violations();
 
 -- Format output for better readability
 \x on
-SELECT pglinter.perform_base_check();
+SELECT * FROM pglinter.get_violations();
 \x off
 ```
 
@@ -384,7 +385,7 @@ FROM pglinter.show_rules()
 ORDER BY rule_code;
 
 -- Test a specific rule
-SELECT pglinter.perform_base_check() WHERE rule_code = 'B001';
+SELECT * FROM pglinter.get_violations() WHERE rule_code = 'B001';
 ```
 
 ### Reset to Defaults
