@@ -204,6 +204,7 @@ SELECT 'Running table check with all rules disabled (should show no B008 results
 ----------------------------------------------------------------------------
  Running table check with all rules disabled (should show no B008 results):
 (1 row)
+
 SELECT count(*) AS violation_count from pglinter.get_violations() WHERE rule_code = 'B008';
  violation_count 
 -----------------
@@ -237,6 +238,7 @@ NOTICE:  ✅ Rule B008 has been enabled
 -----------------
  t
 (1 row)
+
 SELECT count(*) AS violation_count from pglinter.get_violations() WHERE rule_code = 'B008';
  violation_count 
 -----------------

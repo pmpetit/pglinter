@@ -159,6 +159,7 @@ SELECT 'Running base check to detect B001 violations...' AS status;
 -------------------------------------------------
  Running base check to detect B001 violations...
 (1 row)
+
 -- Test rule management for B001
 SELECT 'Testing B001 rule management...' AS test_section;
           test_section           
@@ -207,6 +208,7 @@ SELECT 'Running base check with B001 re-enabled...' AS status;
 --------------------------------------------
  Running base check with B001 re-enabled...
 (1 row)
+
 SELECT count(*) AS violation_count from pglinter.get_violations() WHERE rule_code = 'B001';
  violation_count 
 -----------------
@@ -234,6 +236,7 @@ SELECT 'Running B001 check after adding primary keys (should show improved perce
 ---------------------------------------------------------------------------------
  Running B001 check after adding primary keys (should show improved percentage):
 (1 row)
+
 SELECT count(*) AS violation_count from pglinter.get_violations() WHERE rule_code = 'B001';
  violation_count 
 -----------------

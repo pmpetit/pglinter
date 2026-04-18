@@ -208,6 +208,7 @@ NOTICE:  ✅ Rule B009 has been enabled
 -------------------
  t
 (1 row)
+
 SELECT count(*) AS violation_count from pglinter.get_violations() WHERE rule_code = 'B009';
  violation_count 
 -----------------

@@ -137,6 +137,7 @@ SELECT 'Running base check to detect B003 violations...' AS status;
 -------------------------------------------------
  Running base check to detect B003 violations...
 (1 row)
+
 -- Test with file output
 -- Test if file exists and show checksum
 SELECT count(*) AS violation_count from pglinter.get_violations() WHERE rule_code = 'B003';
@@ -207,6 +208,7 @@ SELECT 'B003 (base check) - Shows percentage-based foreign key index analysis:' 
 ------------------------------------------------------------------------
  B003 (base check) - Shows percentage-based foreign key index analysis:
 (1 row)
+
 -- Test with file output
 -- Test if file exists and show checksum
 DROP TABLE orders_with_index CASCADE;

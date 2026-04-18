@@ -68,6 +68,7 @@ NOTICE:  ✅ Rule B013 has been enabled
 -------------------
  t
 (1 row)
+
 SELECT count(*) AS violation_count
 FROM pglinter.get_violations()
 WHERE rule_code = 'B013';

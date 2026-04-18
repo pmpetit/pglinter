@@ -106,6 +106,7 @@ SELECT 'Running B005 check to detect comprehensive uppercase violations...' AS s
 --------------------------------------------------------------------
  Running B005 check to detect comprehensive uppercase violations...
 (1 row)
+
 -- Test with file output
 -- Test if file exists and show checksum
 SELECT count(*) AS violation_count from pglinter.get_violations() WHERE rule_code = 'B005';

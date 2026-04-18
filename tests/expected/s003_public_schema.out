@@ -66,6 +66,7 @@ SELECT 'Running S003 check with LOW percentage of insecure schemas (should not t
 ----------------------------------------------------------------------------------------------------------
  Running S003 check with LOW percentage of insecure schemas (should not trigger with default thresholds):
 (1 row)
+
 SELECT count(*) AS violation_count from pglinter.get_violations() WHERE rule_code = 'S003';
  violation_count 
 -----------------
@@ -80,6 +81,7 @@ SELECT 'Running S003 check with HIGH percentage of insecure schemas (should trig
 -------------------------------------------------------------------------------
  Running S003 check with HIGH percentage of insecure schemas (should trigger):
 (1 row)
+
 SELECT count(*) AS violation_count from pglinter.get_violations() WHERE rule_code = 'S003';
  violation_count 
 -----------------
@@ -90,8 +92,8 @@ SELECT count(*) AS violation_count from pglinter.get_violations() WHERE rule_cod
 -- Test if file exists and show checksum
 -- PART 3: Test S003 violations
 SELECT 'Running S003 check:' AS test_3;
-       test_3       
---------------------
+       test_3        
+---------------------
  Running S003 check:
 (1 row)
 

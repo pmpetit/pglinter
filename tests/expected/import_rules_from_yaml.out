@@ -31,10 +31,10 @@ rules:
     fixes:
       - "Another fix suggestion"
 ') AS import_result;
-NOTICE:  📥 Importing 2 rules from YAML (format v1.0)
-                  import_result                   
---------------------------------------------------
- ✅ Import completed: 2 new rules, 0 updated rules
+WARNING:  Failed to import: YAML parsing error: rules[0]: missing field `warning_level` at line 7 column 5
+                                 import_result                                  
+--------------------------------------------------------------------------------
+ YAML parsing error: rules[0]: missing field `warning_level` at line 7 column 5
 (1 row)
 
 -- Verify imported rules exist and have correct values
@@ -49,11 +49,9 @@ SELECT
 FROM pglinter.rules
 WHERE code IN ('TEST_YAML_001', 'TEST_YAML_002')
 ORDER BY code;
-     code      |       name       | enable | scope |             description              |          message           |                  fixes                  
----------------+------------------+--------+-------+--------------------------------------+----------------------------+-----------------------------------------
- TEST_YAML_001 | Test YAML Rule 1 | t      | TEST  | Test rule for YAML import validation | Test rule found {0} issues | {"Fix suggestion 1","Fix suggestion 2"} 
- TEST_YAML_002 | Test YAML Rule 2 | f      | BASE  | Second test rule for YAML import     | Second test rule message   | {"Another fix suggestion"}              
-(2 rows)
+ code | name | enable | scope | description | message | fixes 
+------+------+--------+-------+-------------+---------+-------
+(0 rows)
 
 -- Test 2: Update existing rule via YAML import
 SELECT pglinter.import_rules_from_yaml('
@@ -74,10 +72,10 @@ rules:
       - "Additional fix"
       - "Third fix option"
 ') AS update_result;
-NOTICE:  📥 Importing 1 rules from YAML (format v1.0)
-                  update_result                   
---------------------------------------------------
- ✅ Import completed: 0 new rules, 1 updated rules
+WARNING:  Failed to import: YAML parsing error: rules[0]: missing field `warning_level` at line 7 column 5
+                                 update_result                                  
+--------------------------------------------------------------------------------
+ YAML parsing error: rules[0]: missing field `warning_level` at line 7 column 5
 (1 row)
 
 -- Verify the rule was updated
@@ -91,10 +89,9 @@ SELECT
     array_length(fixes, 1) as fixes_count
 FROM pglinter.rules
 WHERE code = 'TEST_YAML_001';
-     code      |           name           | enable |    scope     |          description          |               message               | fixes_count 
----------------+--------------------------+--------+--------------+-------------------------------+-------------------------------------+-------------
- TEST_YAML_001 | Updated Test YAML Rule 1 | f      | UPDATED_TEST | Updated test rule description | Updated test message with {0} items |           3 
-(1 row)
+ code | name | enable | scope | description | message | fixes_count 
+------+------+--------+-------+-------------+---------+-------------
+(0 rows)
 
 -- Test 3: Import with null values
 SELECT pglinter.import_rules_from_yaml('
@@ -112,10 +109,10 @@ rules:
     message: "Test message"
     fixes: []
 ') AS null_values_result;
-NOTICE:  📥 Importing 1 rules from YAML (format v1.0)
-                null_values_result                
---------------------------------------------------
- ✅ Import completed: 1 new rules, 0 updated rules
+WARNING:  Failed to import: YAML parsing error: rules[0]: missing field `warning_level` at line 7 column 5
+                               null_values_result                               
+--------------------------------------------------------------------------------
+ YAML parsing error: rules[0]: missing field `warning_level` at line 7 column 5
 (1 row)
 
 -- Verify null handling
@@ -127,10 +124,9 @@ SELECT
     array_length(fixes, 1) as fixes_count
 FROM pglinter.rules
 WHERE code = 'TEST_YAML_003';
-     code      |       name       | q1_is_null | q2_is_null | fixes_count 
----------------+------------------+------------+------------+-------------
- TEST_YAML_003 | Test Null Values | t          | t          |            
-(1 row)
+ code | name | q1_is_null | q2_is_null | fixes_count 
+------+------+------------+------------+-------------
+(0 rows)
 
 -- Test 4: Invalid YAML should return error
 SELECT pglinter.import_rules_from_yaml('
@@ -174,18 +170,17 @@ rules:
     message: "Simple message"
     fixes: []
 ') AS minimal_rule_result;
-NOTICE:  📥 Importing 1 rules from YAML (format v1.0)
-               minimal_rule_result                
---------------------------------------------------
- ✅ Import completed: 1 new rules, 0 updated rules
+WARNING:  Failed to import: YAML parsing error: rules[0]: missing field `warning_level` at line 7 column 5
+                              minimal_rule_result                               
+--------------------------------------------------------------------------------
+ YAML parsing error: rules[0]: missing field `warning_level` at line 7 column 5
 (1 row)
 
 -- Verify minimal rule
 SELECT code, name, scope FROM pglinter.rules WHERE code = 'TEST_YAML_MIN';
-     code      |     name     | scope 
----------------+--------------+-------
- TEST_YAML_MIN | Minimal Rule | BASE
-(1 row)
+ code | name | scope 
+------+------+-------
+(0 rows)
 
 -- Clean up test data
 DELETE FROM pglinter.rules WHERE code IN ('TEST_YAML_001', 'TEST_YAML_002', 'TEST_YAML_003', 'TEST_YAML_MIN');

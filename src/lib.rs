@@ -425,13 +425,12 @@ mod tests {
 
         // Insert rule with multiple fixes including Some and None values to test the filtering
         let _ = Spi::run("
-            INSERT INTO pglinter.rules (id, code, name, enable, description, scope, message, fixes)
+            INSERT INTO pglinter.rules (id, code, name, enable, scope, message, fixes)
             VALUES (
                 9999,
                 'TEST_FIXES',
                 'Test Rule With Fixes',
                 true,
-                'This rule tests the fix list formatting',
                 'TABLE',
                 'Test message for fixes',
                 ARRAY['Add a primary key to the table', 'Create an index on frequently queried columns', 'Consider partitioning large tables']
@@ -485,13 +484,12 @@ mod tests {
 
         let _ = Spi::run(
             "
-            INSERT INTO pglinter.rules (id, code, name, enable, description, scope, message, fixes)
+            INSERT INTO pglinter.rules (id, code, name, enable, scope, message, fixes)
             VALUES (
                 9998,
                 'TEST_NO_FIXES',
                 'Test Rule Without Fixes',
                 true,
-                'This rule has no fixes',
                 'BASE',
                 'Test message without fixes',
                 ARRAY[]::text[]
@@ -524,13 +522,12 @@ mod tests {
         // Insert rule and then update with mixed NULL and non-NULL fixes
         let _ = Spi::run(
             "
-            INSERT INTO pglinter.rules (id, code, name, enable, description, scope, message)
+            INSERT INTO pglinter.rules (id, code, name, enable, scope, message)
             VALUES (
                 9997,
                 'TEST_MIXED_FIXES',
                 'Test Rule With Mixed Fixes',
                 true,
-                'This rule tests NULL filtering in fixes',
                 'TABLE',
                 'Test message for mixed fixes'
             )

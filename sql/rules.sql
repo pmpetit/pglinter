@@ -28,7 +28,6 @@ CREATE TABLE IF NOT EXISTS pglinter.rules (
     code TEXT,
     enable BOOL DEFAULT TRUE,
     scope TEXT,
-    description TEXT,
     message TEXT,
     fixes TEXT [],
     q4 TEXT
@@ -42,7 +41,6 @@ INSERT INTO pglinter.rules (
     name,
     code,
     scope,
-    description,
     message,
     fixes,
     q4
@@ -50,8 +48,7 @@ INSERT INTO pglinter.rules (
 -- Base Database Rules (B series)
 (
     'HowManyTableWithoutPrimaryKey', 'B001', 'BASE',
-    'Count number of tables without primary key.',
-    '{0}/{1} table(s) without primary key. Object list:\n{4}',
+    'table without primary key',
     ARRAY['create a primary key'],
     $q$-- Returns classid, objid, objsubid for tables without a primary key
 SELECT
@@ -76,12 +73,12 @@ WHERE
 ),
 (
     'HowManyRedudantIndex', 'B002', 'BASE',
-    'Count number of redundant index vs nb index.',
-    '{0}/{1} redundant(s) index. Object list:\n{4}',
+    'redundant index',
     ARRAY[
         'remove duplicated index or check if a constraint does not create a redundant index'
     ],
-    $q$WITH index_info AS (
+    $q$
+    WITH index_info AS (
     SELECT
         ind.indrelid AS table_oid,
         ind.indexrelid AS index_oid,
@@ -125,8 +122,7 @@ WHERE
 ),
 (
     'HowManyTableWithoutIndexOnFk', 'B003', 'BASE',
-    'Count number of tables without index on foreign key.',
-    '{0}/{1} table(s) without index on foreign key. Object list:\n{4}',
+    'table without index on foreign key',
     ARRAY['create an index on foreign key columns'],
     $q$-- Returns classid, objid, objsubid for foreign key constraints lacking an index
 SELECT
@@ -145,8 +141,7 @@ WHERE
 ),
 (
     'HowManyUnusedIndex', 'B004', 'BASE',
-    'Count number of unused index vs nb index (base on pg_stat_user_indexes, indexes associated to unique constraints are discard.)',
-    '{0}/{1} unused index. Object list:\n{4}',
+    'unused index (index associated to constraints are ignored)',
     ARRAY['remove unused index'],
     $q$-- Returns classid, objid, objsubid for unused manual indexes
 SELECT
@@ -165,8 +160,7 @@ WHERE
 ),
 (
     'HowManyObjectsWithUppercase', 'B005', 'BASE',
-    'Count number of objects with uppercase in name or in columns.',
-    '{0}/{1} object(s) using uppercase for name or columns. Object list:\n{4}',
+    'objects with uppercase in name or in columns',
     ARRAY['Do not use uppercase for any database objects'],
     $q$-- Returns classid, objid, objsubid for objects with uppercase in their name
 SELECT 'pg_class'::regclass::oid AS classid, c.oid AS objid, 0 AS objsubid
@@ -226,8 +220,7 @@ WHERE n.nspname NOT IN ('pg_toast', 'pg_catalog', 'information_schema', 'pglinte
 ),
 (
     'HowManyTablesNeverSelected', 'B006', 'BASE',
-    'Count number of table(s) that has never been selected.',
-    '{0}/{1} table(s) are never selected. Object list:\n{4}',
+    'table never selected',
     ARRAY[
         'Is it necessary to update/delete/insert rows in table(s) that are never selected ?'
     ],
@@ -251,8 +244,7 @@ WHERE
 ),
 (
     'HowManyTablesWithFkOutsideSchema', 'B007', 'BASE',
-    'Count number of tables with foreign keys outside their schema.',
-    '{0}/{1} table(s) with foreign keys outside schema. Object list:\n{4}',
+    'table with foreign keys outside their schema',
     ARRAY[
         'Consider restructuring schema design to keep related tables in same schema',
         'ask a dba'
@@ -279,8 +271,7 @@ WHERE
 ),
 (
     'HowManyTablesWithFkMismatch', 'B008', 'BASE',
-    'Count number of tables with foreign keys that do not match the key reference type.',
-    '{0}/{1} table(s) with foreign key mismatch. Object list:\n{4}',
+    'table with foreign keys that does not match the key reference type',
     ARRAY[
         'Consider column type adjustments to ensure foreign key matches referenced key type',
         'ask a dba'
@@ -318,8 +309,7 @@ WHERE
 ),
 (
     'HowManyTablesWithSameTrigger', 'B009', 'BASE',
-    'Count number of tables using the same trigger vs nb table with their own triggers.',
-    '{0}/{1} table(s) using the same trigger function. Object list:\n{4}',
+    'table uses the same trigger function',
     ARRAY[
         'For more readability and other considerations use one trigger function per table.',
         'Sharing the same trigger function add more complexity.'
@@ -359,8 +349,7 @@ WHERE
 ),
 (
     'HowManyTablesWithReservedKeywords', 'B010', 'BASE',
-    'Count number of database objects using reserved keywords in their names.',
-    '{0}/{1} object(s) using reserved keywords. Object list:\n{4}',
+    'database objects using reserved keywords in their names',
     ARRAY[
         'Rename database objects to avoid using reserved keywords.',
         'Using reserved keywords can lead to SQL syntax errors and maintenance difficulties.'
@@ -463,8 +452,7 @@ SELECT * FROM obj_trigger$q$
 ),
 (
     'SeveralTableOwnerInSchema', 'B011', 'BASE',
-    'In a schema there are several tables owned by different owners.',
-    '{0}/{1} schemas have tables owned by different owners. Object list:\n{4}',
+    'in a schema tables are owned by different owners',
     ARRAY['change table owners to the same functional role'],
     $q$-- Returns classid, objid, objsubid for tables in schemas with multiple owners (B011)
 WITH SchemaOwnerTable AS (
@@ -507,8 +495,7 @@ WHERE
 ),
 (
     'CompositePrimaryKeyTooManyColumns', 'B012', 'BASE',
-    'Detect tables with composite primary keys involving more than 4 columns',
-    '{0} table(s) have composite primary keys with more than 4 columns. Object list:\n{4}',
+    'table with composite primary keys involving more than 4 columns',
     ARRAY[
         'Consider redesigning the table to avoid composite primary keys with more than 4 columns',
         'Use surrogate keys (e.g., serial, UUID) instead of composite primary keys, and establish unique constraints on necessary column combinations, to enforce uniqueness.'
@@ -541,8 +528,7 @@ JOIN pg_class c
     'HowManyTablesWithRowByRowTriggerWithoutWhereClause',
     'B013',
     'BASE',
-    'Count number of tables using a row by row processing without any where clause vs nb table with their own triggers.',
-    '{0}/{1} table(s) using row by row processing without any where clause. Object list:\n{4}',
+    'table uses a row by row processing without any where clause vs nb table with their own trigger',
     ARRAY[
         'Prefer using set-based operations instead of row by row processing for better performance.',
         'If not possible, consider adding a WHERE clause to limit the rows processed.'
@@ -574,8 +560,7 @@ WHERE
 ),
 (
     'SchemaWithDefaultRoleNotGranted', 'S001', 'SCHEMA',
-    'The schema has no default role. Means that futur table will not be granted through a role. So you will have to re-execute grants on it.',
-    'No default role grantee on schema {0}.{1}. It means that each time a table is created, you must grant it to roles. Object list:\n{4}',
+    'The schema has no default role. Means that futur table will not be granted through a role. So you will have to re-execute grants on it',
     ARRAY[
         'add a default privilege=> ALTER DEFAULT PRIVILEGES IN SCHEMA <schema> for user <schema''s owner>'
     ],
@@ -599,8 +584,7 @@ WHERE
 
 (
     'SchemaPrefixedOrSuffixedWithEnvt', 'S002', 'SCHEMA',
-    'The schema is prefixed with one of staging,stg,preprod,prod,sandbox,sbox string. Means that when you refresh your preprod, staging environments from production, you have to rename the target schema from prod_ to stg_ or something like. It is possible, but it is never easy.',
-    '{0}/{1} schemas are prefixed or suffixed with environment names. Prefer prefix or suffix the database name instead. Object list:\n{4}',
+    'schema is prefixed with one of staging,stg,preprod,prod,sandbox,sbox string. Means that when you refresh your preprod, staging environments from production, you have to rename the target schema from prod_ to stg_ or something like. It is possible, but it is never easy.',
     ARRAY[
         'Keep the same schema name across environments. Prefer prefix or suffix the database name'
     ],
@@ -619,8 +603,7 @@ WHERE
 ),
 (
     'UnsecuredPublicSchema', 'S003', 'SCHEMA',
-    'Only authorized users should be allowed to create objects.',
-    '{0}/{1} schemas are unsecured, schemas where all users can create objects in. Object list:\n{4}',
+    'only authorized users should be allowed to create objects.',
     ARRAY['REVOKE CREATE ON SCHEMA <schema_name> FROM PUBLIC'],
     $q$-- Returns classid, objid, objsubid for schemas where PUBLIC has CREATE privilege (S003)
 SELECT
@@ -634,8 +617,7 @@ WHERE
 ),
 (
     'OwnerSchemaIsInternalRole', 'S004', 'SCHEMA',
-    'Owner of schema should not be any internal pg roles, or owner is a superuser (not sure it is necesary).',
-    '{0}/{1} schemas are owned by internal roles or superuser. Object list:\n{4}',
+    'schema owner should not be any internal pg roles, or owner is a superuser (not sure it is necesary).',
     ARRAY['change schema owner to a functional role'],
     $q$-- Returns classid, objid, objsubid for schemas owned by internal roles or superuser (S004)
 SELECT
@@ -658,8 +640,7 @@ WHERE
 ),
 (
     'SchemaOwnerDoNotMatchTableOwner', 'S005', 'SCHEMA',
-    'The schema owner and tables in the schema do not match.',
-    '{0}/{1} in the same schema, tables have different owners. They should be the same. Object list:\n{4}',
+    'schema owner and table owner do not match',
     ARRAY[
         'For maintenance facilities, schema and tables owners should be the same.'
     ],
@@ -685,7 +666,6 @@ WHERE
     'C001',
     'CLUSTER',
     'This configuration is extremely insecure and should only be used in a controlled, non-production environment for testing purposes. In a production environment, you should use more secure authentication methods such as md5, scram-sha-256, or cert, and restrict access to trusted IP addresses only.',
-    '{0} entries in pg_hba.conf with trust authentication method.',
     ARRAY['change trust method in pg_hba.conf'],
     NULL
 ),
@@ -694,7 +674,6 @@ WHERE
     'C002',
     'CLUSTER',
     'This configuration is extremely insecure and should only be used in a controlled, non-production environment for testing purposes. In a production environment, you should use more secure authentication methods such as md5, scram-sha-256, or cert, and restrict access to trusted IP addresses only.',
-    '{0} entries in pg_hba.conf with trust or password authentication method.',
     ARRAY['change trust or password method in pg_hba.conf'],
     NULL
 ),
@@ -703,7 +682,6 @@ WHERE
     'C003',
     'CLUSTER',
     'This configuration is not secure anymore and will prevent an upgrade to Postgres 18. Warning, you will need to reset all passwords after this is changed to scram-sha-256.',
-    'Encrypted passwords with MD5.',
     ARRAY[
         'change password_encryption parameter to scram-sha-256 (ALTER SYSTEM SET password_encryption = ''scram-sha-256'' ). Warning, you will need to reset all passwords after this parameter is updated.'
     ],

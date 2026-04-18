@@ -202,6 +202,7 @@ SELECT 'Running table check with only B010 enabled:' AS test_info;
 ---------------------------------------------
  Running table check with only B010 enabled:
 (1 row)
+
 SELECT count(*) AS violation_count from pglinter.get_violations() WHERE rule_code = 'B010';
  violation_count 
 -----------------
@@ -235,6 +236,7 @@ NOTICE:  ✅ Rule B010 has been enabled
 -----------------
  t
 (1 row)
+
 SELECT count(*) AS violation_count from pglinter.get_violations() WHERE rule_code = 'B010';
  violation_count 
 -----------------

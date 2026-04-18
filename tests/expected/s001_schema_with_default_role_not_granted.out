@@ -24,6 +24,7 @@ NOTICE:  ✅ Rule S001 has been enabled
 -------------------
  t
 (1 row)
+
 SELECT count(*) AS violation_count from pglinter.get_violations() WHERE rule_code = 'S001';
  violation_count 
 -----------------
