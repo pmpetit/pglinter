@@ -3,7 +3,6 @@ use pgrx::prelude::*;
 
 mod execute_rules;
 mod manage_rules;
-mod rule_queries;
 
 #[cfg(any(test, feature = "pg_test"))]
 mod fixtures;
@@ -725,8 +724,8 @@ mod tests {
 
     #[pg_test]
     fn test_show_rule_queries() {
-        // show_rule_queries now uses hardcoded q4 queries from rule_queries module
-        // Test with an existing real rule (B001 has a hardcoded q4)
+        // show_rule_queries reads the q4 query from the pglinter.rules table
+        // Test with an existing real rule (B001 has a q4 query stored in the DB)
         let result = manage_rules::show_rule_queries("B001");
         assert!(result.is_ok());
         assert!(result.unwrap());
@@ -1090,7 +1089,7 @@ mod tests {
     use crate::execute_rules::get_violations;
     #[pg_test]
     fn test_get_violations() {
-        // get_violations now uses hardcoded q4 queries from rule_queries module.
+        // get_violations reads q4 queries from the pglinter.rules table.
         // Test that it returns a result (may or may not have violations depending on DB state).
         let result = get_violations();
         assert!(result.is_ok());

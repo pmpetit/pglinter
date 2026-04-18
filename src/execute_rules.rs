@@ -1,7 +1,5 @@
 use pgrx::prelude::*;
 
-use crate::rule_queries::get_rule_queries;
-
 type ViolationLocation = (i32, i32, i32);
 type RuleViolations = (String, Vec<ViolationLocation>);
 
@@ -42,9 +40,26 @@ pub fn get_violations() -> Result<Vec<RuleViolations>, String> {
 pub fn get_violations_for_rule(rule_id: &str) -> Result<Vec<(i32, i32, i32)>, String> {
     pgrx::debug1!("get_violations_for_rule; Starting for rule_id: {}", rule_id);
 
-    let q4_sql = match get_rule_queries(rule_id).q4 {
-        Some(q) => q,
-        None => {
+    // Read q4 SQL from the database
+    let q4_sql: Option<String> = Spi::connect(|client| {
+        let mut rows = client.select(
+            "SELECT q4 FROM pglinter.rules WHERE code = $1",
+            None,
+            &[rule_id.into()],
+        )?;
+        if let Some(row) = rows.next() {
+            Ok(row.get::<String>(1)?)
+        } else {
+            Ok(None)
+        }
+    })
+    .map_err(|e: spi::SpiError| {
+        format!("Database error fetching q4 for rule '{}': {e}", rule_id)
+    })?;
+
+    let q4_sql = match q4_sql {
+        Some(q) if !q.is_empty() => q,
+        _ => {
             pgrx::debug1!(
                 "get_violations_for_rule; No q4 query for rule_id '{}', returning empty",
                 rule_id

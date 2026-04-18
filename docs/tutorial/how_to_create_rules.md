@@ -146,61 +146,15 @@ This base checking will be use later to create a global indicator of the databas
 
 #### find the queries
 
-Each rule requires a **q4 query** that returns the violation locations consumed by `get_violations()`. The query must return three columns: `classid` (OID of the system catalog class), `objid` (OID of the violating object), and `objsubid` (sub-object identifier, 0 for table-level violations).
+Each rule requires a **q4 query** stored in the `q4` column of the `pglinter.rules` table. It is executed at runtime by `get_violations_for_rule()`. The query must return three columns: `classid` (OID of the system catalog class), `objid` (OID of the violating object), and `objsubid` (sub-object identifier, 0 for table-level violations).
 
-For B009 we want to identify every table that shares a trigger function with at least one other table:
+For B009 we want to identify every trigger that shares its trigger function with triggers on other tables:
 
 q4 should be
 
 ```sql
+-- Returns classid, objid, objsubid for tables using the same trigger function (B009)
 WITH SharedFunctions AS (
-    SELECT
-        SUBSTRING(t.action_statement FROM 'EXECUTE FUNCTION ([^()]+)') AS trigger_function_name
-    FROM
-        information_schema.triggers t
-    WHERE
-        t.trigger_schema NOT IN (
-            'pg_toast', 'pg_catalog', 'information_schema', 'pglinter', '_timescaledb', 'timescaledb'
-        )
-    GROUP BY 1
-    HAVING COUNT(DISTINCT t.event_object_table) > 1
-)
-SELECT
-    'pg_class'::regclass::oid AS classid,
-    c.oid AS objid,
-    0 AS objsubid
-FROM information_schema.triggers t
-JOIN SharedFunctions s
-    ON s.trigger_function_name = SUBSTRING(t.action_statement FROM 'EXECUTE FUNCTION ([^()]+)')
-JOIN pg_class c ON c.relname = t.event_object_table
-JOIN pg_namespace n ON n.oid = c.relnamespace AND n.nspname = t.trigger_schema
-WHERE
-    t.trigger_schema NOT IN (
-        'pg_toast', 'pg_catalog', 'information_schema', 'pglinter', '_timescaledb', 'timescaledb'
-    )
-```
-
-#### update rules.sql for B009
-
-Add the rule metadata to the INSERT block in `sql/rules.sql`:
-
-```sql
-(
-    'HowManyTableSharingSameTrigger', 'B009', 'BASE',
-    'Count number of table that use the same trigger vs nb table with their own triggers.',
-    '{0}/{1} table(s) using the same trigger function. Object list:\n{4}',
-    ARRAY[
-        'For more readability and other considerations use one trigger function per table.',
-        'Sharing the same trigger function add more complexity.'
-    ]
-),
-```
-
-Then add the rule queries to `src/rule_queries.rs` in the `get_rule_queries` match block:
-
-```rust
-"B009" => RuleQueries {
-    q4: Some(r##"WITH SharedFunctions AS (
     SELECT
         SUBSTRING(t.action_statement FROM 'EXECUTE FUNCTION ([^()]+)') AS trigger_function_name
     FROM information_schema.triggers t
@@ -211,19 +165,65 @@ Then add the rule queries to `src/rule_queries.rs` in the `get_rule_queries` mat
     HAVING COUNT(DISTINCT t.event_object_table) > 1
 )
 SELECT
-    'pg_class'::regclass::oid AS classid,
-    c.oid AS objid,
+    'pg_trigger'::regclass::oid AS classid,
+    tg.oid AS objid,
     0 AS objsubid
-FROM information_schema.triggers t
-JOIN SharedFunctions s
-    ON s.trigger_function_name = SUBSTRING(t.action_statement FROM 'EXECUTE FUNCTION ([^()]+)')
-JOIN pg_class c ON c.relname = t.event_object_table
-JOIN pg_namespace n ON n.oid = c.relnamespace AND n.nspname = t.trigger_schema
-WHERE t.trigger_schema NOT IN (
+FROM pg_trigger tg
+JOIN pg_class c ON c.oid = tg.tgrelid
+JOIN pg_namespace n ON n.oid = c.relnamespace
+JOIN information_schema.triggers t
+    ON t.trigger_name = tg.tgname
+    AND t.event_object_table = c.relname
+    AND t.trigger_schema = n.nspname
+JOIN SharedFunctions s ON s.trigger_function_name = SUBSTRING(t.action_statement FROM 'EXECUTE FUNCTION ([^()]+)')
+WHERE n.nspname NOT IN (
     'pg_toast', 'pg_catalog', 'information_schema', 'pglinter', '_timescaledb', 'timescaledb'
-)"##),
-},
+)
 ```
+
+#### update rules.sql for B009
+
+Add the rule metadata **and** the q4 query together as a new row in the INSERT block in `sql/rules.sql`:
+
+```sql
+(
+    'HowManyTableSharingSameTrigger', 'B009', 'BASE',
+    'Count number of table that use the same trigger vs nb table with their own triggers.',
+    '{0}/{1} table(s) using the same trigger function. Object list:\n{4}',
+    ARRAY[
+        'For more readability and other considerations use one trigger function per table.',
+        'Sharing the same trigger function add more complexity.'
+    ],
+    $q$-- Returns classid, objid, objsubid for tables using the same trigger function (B009)
+WITH SharedFunctions AS (
+    SELECT
+        SUBSTRING(t.action_statement FROM 'EXECUTE FUNCTION ([^()]+)') AS trigger_function_name
+    FROM information_schema.triggers t
+    WHERE t.trigger_schema NOT IN (
+        'pg_toast', 'pg_catalog', 'information_schema', 'pglinter', '_timescaledb', 'timescaledb'
+    )
+    GROUP BY 1
+    HAVING COUNT(DISTINCT t.event_object_table) > 1
+)
+SELECT
+    'pg_trigger'::regclass::oid AS classid,
+    tg.oid AS objid,
+    0 AS objsubid
+FROM pg_trigger tg
+JOIN pg_class c ON c.oid = tg.tgrelid
+JOIN pg_namespace n ON n.oid = c.relnamespace
+JOIN information_schema.triggers t
+    ON t.trigger_name = tg.tgname
+    AND t.event_object_table = c.relname
+    AND t.trigger_schema = n.nspname
+JOIN SharedFunctions s ON s.trigger_function_name = SUBSTRING(t.action_statement FROM 'EXECUTE FUNCTION ([^()]+)')
+WHERE n.nspname NOT IN (
+    'pg_toast', 'pg_catalog', 'information_schema', 'pglinter', '_timescaledb', 'timescaledb'
+)$q$
+),
+```
+
+> **Note:** The q4 query is stored directly in the `q4` column of the `pglinter.rules` table (using a dollar-quoted string literal). There is no longer a separate `src/rule_queries.rs` file — the database is the single source of truth for all rule queries.
 
 ### regression test
 

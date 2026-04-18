@@ -11,6 +11,7 @@ pub struct Rule {
     pub description: String,
     pub message: String,
     pub fixes: Vec<String>,
+    pub q4: Option<String>,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -290,26 +291,24 @@ pub fn disable_all_rules() -> Result<usize, String> {
 
 /// Show current q4 rule query for debugging
 pub fn show_rule_queries(rule_code: &str) -> Result<bool, String> {
-    use crate::rule_queries::get_rule_queries;
-
-    let query = "SELECT code, name FROM pglinter.rules WHERE code = $1";
+    let query = "SELECT code, name, q4 FROM pglinter.rules WHERE code = $1";
 
     let result: Result<bool, spi::SpiError> = Spi::connect(|client| {
         let mut rows = client.select(query, None, &[rule_code.into()])?;
         if let Some(row) = rows.next() {
             let code: String = row.get(1)?.unwrap_or_default();
             let name: String = row.get(2)?.unwrap_or_default();
-            let queries = get_rule_queries(&code);
+            let q4: Option<String> = row.get(3)?;
 
             pgrx::notice!("🔍 Rule {} Queries ('{}'):", code, name);
             pgrx::notice!("{}", "=".repeat(60));
 
-            match queries.q4 {
-                Some(q) => {
+            match q4 {
+                Some(q) if !q.is_empty() => {
                     pgrx::notice!("🎯 q4 Query:");
                     pgrx::notice!("{}", q);
                 }
-                None => pgrx::notice!("🎯 q4 Query: <NOT SET>"),
+                _ => pgrx::notice!("🎯 q4 Query: <NOT SET>"),
             }
 
             pgrx::notice!("{}", "=".repeat(60));
@@ -330,7 +329,7 @@ pub fn show_rule_queries(rule_code: &str) -> Result<bool, String> {
 pub fn export_rules_to_yaml() -> Result<String, String> {
     let query = "
         SELECT id, name, code, enable,
-               scope, description, message, fixes
+               scope, description, message, fixes, q4
         FROM pglinter.rules
         ORDER BY code";
 
@@ -351,6 +350,7 @@ pub fn export_rules_to_yaml() -> Result<String, String> {
                 description: row.get(6)?.unwrap_or_default(),
                 message: row.get(7)?.unwrap_or_default(),
                 fixes,
+                q4: row.get(9)?,
             };
             rules.push(rule);
         }
@@ -445,8 +445,8 @@ pub fn import_rules_from_yaml(yaml_content: &str) -> Result<String, String> {
 
         let upsert_query = "
             INSERT INTO pglinter.rules (id, name, code, enable,
-                                       scope, description, message, fixes)
-            VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+                                       scope, description, message, fixes, q4)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
             ON CONFLICT (id)
             DO UPDATE SET
                 name = EXCLUDED.name,
@@ -455,7 +455,8 @@ pub fn import_rules_from_yaml(yaml_content: &str) -> Result<String, String> {
                 scope = EXCLUDED.scope,
                 description = EXCLUDED.description,
                 message = EXCLUDED.message,
-                fixes = EXCLUDED.fixes
+                fixes = EXCLUDED.fixes,
+                q4 = EXCLUDED.q4
             RETURNING (xmax = 0) as is_new";
 
         let result: Result<bool, spi::SpiError> = Spi::connect_mut(|client| {
@@ -471,6 +472,7 @@ pub fn import_rules_from_yaml(yaml_content: &str) -> Result<String, String> {
                     rule.description.into(),
                     rule.message.into(),
                     fixes_array.into(),
+                    rule.q4.into(),
                 ],
             )?;
 
