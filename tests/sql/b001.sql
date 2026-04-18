@@ -16,7 +16,6 @@ CREATE TABLE my_table_without_pk (
 SELECT pglinter.disable_all_rules() AS all_rules_disabled;
 
 -- Run table check to detect tables without PK
-SELECT pglinter.check();
 
 SELECT count(*) AS violation_count from pglinter.get_violations() WHERE rule_code = 'B001';
 
@@ -25,24 +24,19 @@ SELECT pglinter.explain_rule('B001');
 SELECT pglinter.is_rule_enabled('B001') AS is_b001_enabled;
 
 -- Test with file output
-SELECT pglinter.check('/tmp/pglinter_base_results.sarif');
 
 -- Test if file exists
-\! md5sum /tmp/pglinter_base_results.sarif
 
 -- Re-enable B001 rule
 SELECT pglinter.enable_rule('B001') AS enable_b001;
 
 -- Test again with B001 enabled
-SELECT pglinter.check();
 
 SELECT count(*) AS violation_count from pglinter.get_violations() WHERE rule_code = 'B001';
 
 -- Test with file output
-SELECT pglinter.check('/tmp/pglinter_base_results.sarif');
 
 -- Test if file exists
-\! md5sum /tmp/pglinter_base_results.sarif
 
 DROP TABLE my_table_without_pk CASCADE;
 

@@ -26,20 +26,6 @@ CREATE TABLE test_composite_pk (
     PRIMARY KEY (a, b, c, d, e, f)
 );
 -- Run pglinter check
-SELECT pglinter.check();
-NOTICE:  🔍 pglinter found 1 issue(s):
-NOTICE:  ==================================================
-NOTICE:  ❌ [B012] ERROR: 1 table(s) have composite primary keys with more than 4 columns. Object list:
-public.test_composite_pk(a, b, c, d, e, f)
-
-NOTICE:  ==================================================
-NOTICE:  📊 Summary: 1 error(s), 0 warning(s), 0 info
-NOTICE:  🔴 Critical issues found - please review and fix errors
- check 
--------
- t
-(1 row)
-
 SELECT count(*) AS violation_count from pglinter.get_violations() WHERE rule_code = 'B012';
  violation_count 
 -----------------

@@ -25,9 +25,6 @@ SELECT pglinter.enable_rule('B001') AS b001_enabled;
 SELECT count(*) AS violation_count from pglinter.get_violations() WHERE rule_code = 'B001';
 
 -- Test B001 rule - should show it uses the configured thresholds
-SELECT pglinter.check();
-SELECT pglinter.check('/tmp/pglinter_b001_results.sarif');
-\! md5sum /tmp/pglinter_b001_results.sarif
 
 -- Update B001 thresholds to very large values (60%, 80%) not to trigger on any table without PK
 SELECT pglinter.update_rule_levels('B001', 60, 80);
@@ -40,7 +37,6 @@ FROM pglinter.rules
 WHERE code = 'B001';
 
 -- Test B001 rule again - should now trigger with new thresholds
-SELECT pglinter.check();
 
 -- Update B001 thresholds to very low values (1%, 2%) not to trigger on any table without PK
 SELECT pglinter.update_rule_levels('B001', 60, 80);

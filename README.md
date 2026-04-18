@@ -146,7 +146,7 @@ After the cluster is running, connect and enable the extension:
 CREATE EXTENSION pglinter;
 
 -- Verify installation
-SELECT pglinter.check();
+SELECT * FROM pglinter.get_violations();
 ```
 
 #### Declarative Extension Management
@@ -210,16 +210,11 @@ pglinter extension is installed.
 The extension provides comprehensive database analysis functions:
 
 ```sql
--- Run all enabled rules (output to client)
-SELECT pglinter.check();
+-- Run all enabled rules and get violations as a table
+SELECT * FROM pglinter.get_violations();
 
--- Run a specific rule only
-SELECT pglinter.check_rule('B001');              -- Check tables without primary keys
-SELECT pglinter.check_rule('b002');              -- Case-insensitive rule codes
-
--- Generate SARIF reports to file
-SELECT pglinter.check('/path/to/results.sarif');
-SELECT pglinter.check_rule('B001', '/path/to/b001_results.sarif');
+-- Filter violations for a specific rule
+SELECT * FROM pglinter.get_violations() WHERE rule_code = 'B001';
 
 -- Rule management
 SELECT pglinter.show_rules();                    -- Show all rules and status

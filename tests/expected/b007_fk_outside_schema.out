@@ -155,48 +155,6 @@ SELECT 'Running base check to test B007 rule:' AS test_step;
 ---------------------------------------
  Running base check to test B007 rule:
 (1 row)
-
-SELECT pglinter.check();
-NOTICE:  🔍 pglinter found 6 issue(s):
-NOTICE:  ==================================================
-NOTICE:  ❌ [B003] ERROR: 6/6 table(s) without index on foreign key exceed the error threshold: 100%. Object list:
-audit_schema.user_actions.user_actions_user_id_fkey
-clean_schema.employees.employees_department_id_fkey
-inventory_schema.stock_movements.stock_movements_product_id_fkey
-public_schema.customer_addresses.customer_addresses_customer_id_fkey
-sales_schema.order_items.order_items_order_id_fkey
-sales_schema.order_items.order_items_product_id_fkey
-sales_schema.orders.orders_customer_id_fkey
-
-NOTICE:  ⚠️  [B007] WARNING: 4/6 table(s) with foreign keys outside schema exceed the warning threshold: 66%. Object list:
-sales_schema.orders.has foreign key orders_customer_id_fkey referencing public_schema.customers
-sales_schema.order_items.has foreign key order_items_product_id_fkey referencing public_schema.products
-inventory_schema.stock_movements.has foreign key stock_movements_product_id_fkey referencing public_schema.products
-audit_schema.user_actions.has foreign key user_actions_user_id_fkey referencing public_schema.users
-
-NOTICE:  ⚠️  [C001] WARNING: CLUSTER {0} entries in pg_hba.conf with trust authentication method exceed the warning threshold: {1}. 1 : 
-Row 1 
-
-NOTICE:  ❌ [C002] ERROR: 6 entries in pg_hba.conf with trust or password authentication method exceed the warning threshold: 6.
-NOTICE:  ❌ [S001] ERROR: No default role grantee on schema 6.6. It means that each time a table is created, you must grant it to roles. Object list:
-audit_schema
-clean_schema
-inventory_schema
-public
-public_schema
-sales_schema
-
-NOTICE:  ⚠️  [S003] WARNING: 1/6 schemas are unsecured, schemas where all users can create objects in, exceed the warning threshold: 16%. Object list:
-public
-
-NOTICE:  ==================================================
-NOTICE:  📊 Summary: 3 error(s), 3 warning(s), 0 info
-NOTICE:  🔴 Critical issues found - please review and fix errors
- check 
--------
- t
-(1 row)
-
 SELECT count(*) AS violation_count from pglinter.get_violations() WHERE rule_code = 'B007';
  violation_count 
 -----------------
@@ -251,42 +209,6 @@ NOTICE:  🔴 Rule B007 has been disabled
 ---------------
  t
 (1 row)
-
-SELECT pglinter.check(); -- Should skip B007
-NOTICE:  🔍 pglinter found 5 issue(s):
-NOTICE:  ==================================================
-NOTICE:  ❌ [B003] ERROR: 6/6 table(s) without index on foreign key exceed the error threshold: 100%. Object list:
-audit_schema.user_actions.user_actions_user_id_fkey
-clean_schema.employees.employees_department_id_fkey
-inventory_schema.stock_movements.stock_movements_product_id_fkey
-public_schema.customer_addresses.customer_addresses_customer_id_fkey
-sales_schema.order_items.order_items_order_id_fkey
-sales_schema.order_items.order_items_product_id_fkey
-sales_schema.orders.orders_customer_id_fkey
-
-NOTICE:  ⚠️  [C001] WARNING: CLUSTER {0} entries in pg_hba.conf with trust authentication method exceed the warning threshold: {1}. 1 : 
-Row 1 
-
-NOTICE:  ❌ [C002] ERROR: 6 entries in pg_hba.conf with trust or password authentication method exceed the warning threshold: 6.
-NOTICE:  ❌ [S001] ERROR: No default role grantee on schema 6.6. It means that each time a table is created, you must grant it to roles. Object list:
-audit_schema
-clean_schema
-inventory_schema
-public
-public_schema
-sales_schema
-
-NOTICE:  ⚠️  [S003] WARNING: 1/6 schemas are unsecured, schemas where all users can create objects in, exceed the warning threshold: 16%. Object list:
-public
-
-NOTICE:  ==================================================
-NOTICE:  📊 Summary: 3 error(s), 2 warning(s), 0 info
-NOTICE:  🔴 Critical issues found - please review and fix errors
- check 
--------
- t
-(1 row)
-
 SELECT count(*) AS violation_count from pglinter.get_violations() WHERE rule_code = 'B007';
  violation_count 
 -----------------
@@ -306,48 +228,6 @@ NOTICE:  ✅ Rule B007 has been enabled
 ----------------
  t
 (1 row)
-
-SELECT pglinter.check(); -- Should include B007 again
-NOTICE:  🔍 pglinter found 6 issue(s):
-NOTICE:  ==================================================
-NOTICE:  ❌ [B003] ERROR: 6/6 table(s) without index on foreign key exceed the error threshold: 100%. Object list:
-audit_schema.user_actions.user_actions_user_id_fkey
-clean_schema.employees.employees_department_id_fkey
-inventory_schema.stock_movements.stock_movements_product_id_fkey
-public_schema.customer_addresses.customer_addresses_customer_id_fkey
-sales_schema.order_items.order_items_order_id_fkey
-sales_schema.order_items.order_items_product_id_fkey
-sales_schema.orders.orders_customer_id_fkey
-
-NOTICE:  ⚠️  [B007] WARNING: 4/6 table(s) with foreign keys outside schema exceed the warning threshold: 66%. Object list:
-sales_schema.orders.has foreign key orders_customer_id_fkey referencing public_schema.customers
-sales_schema.order_items.has foreign key order_items_product_id_fkey referencing public_schema.products
-inventory_schema.stock_movements.has foreign key stock_movements_product_id_fkey referencing public_schema.products
-audit_schema.user_actions.has foreign key user_actions_user_id_fkey referencing public_schema.users
-
-NOTICE:  ⚠️  [C001] WARNING: CLUSTER {0} entries in pg_hba.conf with trust authentication method exceed the warning threshold: {1}. 1 : 
-Row 1 
-
-NOTICE:  ❌ [C002] ERROR: 6 entries in pg_hba.conf with trust or password authentication method exceed the warning threshold: 6.
-NOTICE:  ❌ [S001] ERROR: No default role grantee on schema 6.6. It means that each time a table is created, you must grant it to roles. Object list:
-audit_schema
-clean_schema
-inventory_schema
-public
-public_schema
-sales_schema
-
-NOTICE:  ⚠️  [S003] WARNING: 1/6 schemas are unsecured, schemas where all users can create objects in, exceed the warning threshold: 16%. Object list:
-public
-
-NOTICE:  ==================================================
-NOTICE:  📊 Summary: 3 error(s), 3 warning(s), 0 info
-NOTICE:  🔴 Critical issues found - please review and fix errors
- check 
--------
- t
-(1 row)
-
 SELECT count(*) AS violation_count from pglinter.get_violations() WHERE rule_code = 'B007';
  violation_count 
 -----------------
@@ -374,24 +254,6 @@ NOTICE:  ✅ Rule B007 has been enabled
 -------------------
  t
 (1 row)
-
-SELECT pglinter.check(); -- Should only run B007
-NOTICE:  🔍 pglinter found 1 issue(s):
-NOTICE:  ==================================================
-NOTICE:  ⚠️  [B007] WARNING: 4/6 table(s) with foreign keys outside schema exceed the warning threshold: 66%. Object list:
-sales_schema.orders.has foreign key orders_customer_id_fkey referencing public_schema.customers
-sales_schema.order_items.has foreign key order_items_product_id_fkey referencing public_schema.products
-inventory_schema.stock_movements.has foreign key stock_movements_product_id_fkey referencing public_schema.products
-audit_schema.user_actions.has foreign key user_actions_user_id_fkey referencing public_schema.users
-
-NOTICE:  ==================================================
-NOTICE:  📊 Summary: 0 error(s), 1 warning(s), 0 info
-NOTICE:  🟡 Some warnings found - consider reviewing for optimization
- check 
--------
- t
-(1 row)
-
 -- Show rule status
 SELECT 'Current B007 rule status:' AS status_info;
         status_info        
@@ -451,24 +313,6 @@ SELECT 'B007 with stricter thresholds (should trigger more easily):' AS strict_t
 -------------------------------------------------------------
  B007 with stricter thresholds (should trigger more easily):
 (1 row)
-
-SELECT pglinter.check();
-NOTICE:  🔍 pglinter found 1 issue(s):
-NOTICE:  ==================================================
-NOTICE:  ❌ [B007] ERROR: 4/6 table(s) with foreign keys outside schema exceed the error threshold: 66%. Object list:
-sales_schema.orders.has foreign key orders_customer_id_fkey referencing public_schema.customers
-sales_schema.order_items.has foreign key order_items_product_id_fkey referencing public_schema.products
-inventory_schema.stock_movements.has foreign key stock_movements_product_id_fkey referencing public_schema.products
-audit_schema.user_actions.has foreign key user_actions_user_id_fkey referencing public_schema.users
-
-NOTICE:  ==================================================
-NOTICE:  📊 Summary: 1 error(s), 0 warning(s), 0 info
-NOTICE:  🔴 Critical issues found - please review and fix errors
- check 
--------
- t
-(1 row)
-
 SELECT count(*) AS violation_count from pglinter.get_violations() WHERE rule_code = 'B007';
  violation_count 
 -----------------
@@ -476,14 +320,6 @@ SELECT count(*) AS violation_count from pglinter.get_violations() WHERE rule_cod
 (1 row)
 
 -- Test if file exists and show checksum
-SELECT pglinter.check('/tmp/pglinter_B007_results.sarif');
- check 
--------
- t
-(1 row)
-
-\! md5sum /tmp/pglinter_B007_results.sarif
-e09948f6710ff2b503f72c3da9021c5e  /tmp/pglinter_B007_results.sarif
 -- Reset to original levels
 SELECT pglinter.update_rule_levels('B007', 20, 80) AS B007_reset_levels;
 NOTICE:  ✅ Updated rule B007 levels: warning=20, error=80

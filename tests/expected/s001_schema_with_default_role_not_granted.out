@@ -24,22 +24,6 @@ NOTICE:  ✅ Rule S001 has been enabled
 -------------------
  t
 (1 row)
-
-SELECT pglinter.check(); -- Should only run S001
-NOTICE:  🔍 pglinter found 1 issue(s):
-NOTICE:  ==================================================
-NOTICE:  ❌ [S001] ERROR: No default role grantee on schema 2.2. It means that each time a table is created, you must grant it to roles. Object list:
-public
-s001_schema
-
-NOTICE:  ==================================================
-NOTICE:  📊 Summary: 1 error(s), 0 warning(s), 0 info
-NOTICE:  🔴 Critical issues found - please review and fix errors
- check 
--------
- t
-(1 row)
-
 SELECT count(*) AS violation_count from pglinter.get_violations() WHERE rule_code = 'S001';
  violation_count 
 -----------------

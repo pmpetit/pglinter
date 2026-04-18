@@ -102,12 +102,9 @@ SELECT pglinter.is_rule_enabled('B005') AS B005_status;
 -- Run B005 check to detect uppercase violations
 -- Expected result: Should detect multiple uppercase objects we created
 SELECT 'Running B005 check to detect comprehensive uppercase violations...' AS status;
-SELECT pglinter.check();
 
 -- Test with file output
-SELECT pglinter.check('/tmp/pglinter_B005_results.sarif');
 -- Test if file exists and show checksum
-\! md5sum /tmp/pglinter_B005_results.sarif
 
 SELECT count(*) AS violation_count from pglinter.get_violations() WHERE rule_code = 'B005';
 

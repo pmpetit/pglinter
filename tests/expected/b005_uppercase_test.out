@@ -106,44 +106,8 @@ SELECT 'Running B005 check to detect comprehensive uppercase violations...' AS s
 --------------------------------------------------------------------
  Running B005 check to detect comprehensive uppercase violations...
 (1 row)
-
-SELECT pglinter.check();
-NOTICE:  🔍 pglinter found 1 issue(s):
-NOTICE:  ==================================================
-NOTICE:  ⚠️  [B005] WARNING: 14/26 object(s) using uppercase for name or columns exceed the warning threshold: 53%. Object list:
-column test_b005_schema.ACTIVE_CUSTOMERS.FIRST_NAME
-column test_b005_schema.CUSTOMERS_TABLE.EMAIL_ADDRESS
-column test_b005_schema.CUSTOMERS_TABLE.FIRST_NAME
-function test_b005_schema.GET_CUSTOMER_COUNT
-index test_b005_schema.CUSTOMERS_TABLE_pkey
-index test_b005_schema.EMAIL_UNIQUE_CONSTRAINT
-index test_b005_schema.IDX_CUSTOMERS_EMAIL
-schema TEST_UPPERCASE_SCHEMA.TEST_UPPERCASE_SCHEMA
-sequence test_b005_schema.CUSTOMERS_TABLE_customer_id_seq
-sequence test_b005_schema.CUSTOMER_ID_SEQ
-table test_b005_schema.ACTIVE_CUSTOMERS
-table test_b005_schema.CUSTOMERS_TABLE
-trigger test_b005_schema.UPDATE_TIMESTAMP_TRIGGER
-view test_b005_schema.ACTIVE_CUSTOMERS
-
-NOTICE:  ==================================================
-NOTICE:  📊 Summary: 0 error(s), 1 warning(s), 0 info
-NOTICE:  🟡 Some warnings found - consider reviewing for optimization
- check 
--------
- t
-(1 row)
-
 -- Test with file output
-SELECT pglinter.check('/tmp/pglinter_B005_results.sarif');
- check 
--------
- t
-(1 row)
-
 -- Test if file exists and show checksum
-\! md5sum /tmp/pglinter_B005_results.sarif
-0058cc014457de4b5de5193b98b63faf  /tmp/pglinter_B005_results.sarif
 SELECT count(*) AS violation_count from pglinter.get_violations() WHERE rule_code = 'B005';
  violation_count 
 -----------------

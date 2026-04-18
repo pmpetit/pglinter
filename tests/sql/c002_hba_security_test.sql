@@ -21,8 +21,6 @@ SELECT '=== Test 2: C002 Rule Execution ===' AS test_section;
 SELECT pglinter.perform_cluster_check();
 
 -- Test if file exists and show checksum
-SELECT pglinter.check('/tmp/pglinter_c002_results.sarif');
-\! md5sum /tmp/pglinter_c002_results.sarif
 
 
 -- Test rule explanation

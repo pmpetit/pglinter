@@ -77,7 +77,7 @@ SELECT '=== COMPREHENSIVE pglinter ANALYSIS ===' AS info;
 
 -- Test all rule categories
 SELECT 'RULES:' AS category;
-SELECT pglinter.check();
+SELECT * FROM pglinter.get_violations();
 
 -- Test rule management features
 SELECT '=== RULE MANAGEMENT ===' AS info;
@@ -89,10 +89,6 @@ SELECT pglinter.show_rules();
 SELECT pglinter.explain_rule('B001');
 SELECT pglinter.explain_rule('S002');
 
--- Test output to file functionality
-SELECT '=== OUTPUT TO FILE TEST ===' AS info;
-SELECT pglinter.check('/tmp/integration_base.sarif');
-
 -- Test rule disable/enable functionality
 SELECT '=== RULE TOGGLE TEST ===' AS info;
 
@@ -100,13 +96,13 @@ SELECT '=== RULE TOGGLE TEST ===' AS info;
 SELECT pglinter.disable_rule('B001');
 
 -- Run checks (should skip disabled rules)
-SELECT pglinter.check();
+SELECT * FROM pglinter.get_violations();
 
 -- Re-enable rules
 SELECT pglinter.enable_rule('B001');
 
 -- Final comprehensive check
-SELECT pglinter.check();
+SELECT * FROM pglinter.get_violations();
 
 -- Clean up
 DROP SCHEMA prod_analytics CASCADE;

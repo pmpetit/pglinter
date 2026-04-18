@@ -159,27 +159,6 @@ SELECT 'Running base check to detect B001 violations...' AS status;
 -------------------------------------------------
  Running base check to detect B001 violations...
 (1 row)
-
-SELECT pglinter.check();
-NOTICE:  🔍 pglinter found 1 issue(s):
-NOTICE:  ==================================================
-NOTICE:  ⚠️  [B001] WARNING: 7/10 table(s) without primary key exceed the warning threshold: 70%. Object list:
-public.orders_no_pk
-public.customers_no_pk
-public.products_no_pk
-public.reviews_no_pk
-public.inventory_no_pk
-public.shipments_no_pk
-public.payments_no_pk
-
-NOTICE:  ==================================================
-NOTICE:  📊 Summary: 0 error(s), 1 warning(s), 0 info
-NOTICE:  🟡 Some warnings found - consider reviewing for optimization
- check 
--------
- t
-(1 row)
-
 -- Test rule management for B001
 SELECT 'Testing B001 rule management...' AS test_section;
           test_section           
@@ -208,13 +187,6 @@ SELECT 'Running base check with B001 disabled (should find no B001 violations)..
  Running base check with B001 disabled (should find no B001 violations)...
 (1 row)
 
-SELECT pglinter.check();
-NOTICE:  ✅ No issues found - database schema looks good!
- check 
--------
- t
-(1 row)
-
 -- Re-enable B001
 SELECT pglinter.enable_rule('B001') AS b001_reenabled;
 NOTICE:  ✅ Rule B001 has been enabled
@@ -235,27 +207,6 @@ SELECT 'Running base check with B001 re-enabled...' AS status;
 --------------------------------------------
  Running base check with B001 re-enabled...
 (1 row)
-
-SELECT pglinter.check();
-NOTICE:  🔍 pglinter found 1 issue(s):
-NOTICE:  ==================================================
-NOTICE:  ⚠️  [B001] WARNING: 7/10 table(s) without primary key exceed the warning threshold: 70%. Object list:
-public.orders_no_pk
-public.customers_no_pk
-public.products_no_pk
-public.reviews_no_pk
-public.inventory_no_pk
-public.shipments_no_pk
-public.payments_no_pk
-
-NOTICE:  ==================================================
-NOTICE:  📊 Summary: 0 error(s), 1 warning(s), 0 info
-NOTICE:  🟡 Some warnings found - consider reviewing for optimization
- check 
--------
- t
-(1 row)
-
 SELECT count(*) AS violation_count from pglinter.get_violations() WHERE rule_code = 'B001';
  violation_count 
 -----------------
@@ -283,30 +234,6 @@ SELECT 'Running B001 check after adding primary keys (should show improved perce
 ---------------------------------------------------------------------------------
  Running B001 check after adding primary keys (should show improved percentage):
 (1 row)
-
-SELECT pglinter.check();
-NOTICE:  🔍 pglinter found 1 issue(s):
-NOTICE:  ==================================================
-NOTICE:  ⚠️  [B001] WARNING: 2/10 table(s) without primary key exceed the warning threshold: 20%. Object list:
-public.shipments_no_pk
-public.payments_no_pk
-
-NOTICE:  ==================================================
-NOTICE:  📊 Summary: 0 error(s), 1 warning(s), 0 info
-NOTICE:  🟡 Some warnings found - consider reviewing for optimization
- check 
--------
- t
-(1 row)
-
-SELECT pglinter.check('/tmp/pglinter_b001_results.sarif');
- check 
--------
- t
-(1 row)
-
-\! md5sum /tmp/pglinter_b001_results.sarif
-95b1aa589beea8fdb13fd0a66ea90518  /tmp/pglinter_b001_results.sarif
 SELECT count(*) AS violation_count from pglinter.get_violations() WHERE rule_code = 'B001';
  violation_count 
 -----------------

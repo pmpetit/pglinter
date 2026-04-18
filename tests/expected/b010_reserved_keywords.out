@@ -202,35 +202,6 @@ SELECT 'Running table check with only B010 enabled:' AS test_info;
 ---------------------------------------------
  Running table check with only B010 enabled:
 (1 row)
-
-SELECT pglinter.check();
-NOTICE:  🔍 pglinter found 1 issue(s):
-NOTICE:  ==================================================
-NOTICE:  ❌ [B010] ERROR: 15/8 object(s) using reserved keywords exceed the error threshold: 187%. Object list:
-column in test_keywords_schema.products_with_bad_columns.GROUP is a reserved keyword: GROUP
-column in test_keywords_schema.products_with_bad_columns.HAVING is a reserved keyword: HAVING
-column in test_keywords_schema.products_with_bad_columns.UNION is a reserved keyword: UNION
-column in test_naming_schema.users_with_bad_columns.JOIN is a reserved keyword: JOIN
-column in test_naming_schema.users_with_bad_columns.LIMIT is a reserved keyword: LIMIT
-column in test_naming_schema.users_with_bad_columns.OFFSET is a reserved keyword: OFFSET
-index in test_keywords_schema.FOREIGN is a reserved keyword: FOREIGN
-index in test_keywords_schema.PRIMARY is a reserved keyword: PRIMARY
-index in test_naming_schema.UNIQUE is a reserved keyword: UNIQUE
-table in test_keywords_schema.DISTINCT is a reserved keyword: DISTINCT
-table in test_keywords_schema.FROM is a reserved keyword: FROM
-table in test_keywords_schema.SELECT is a reserved keyword: SELECT
-table in test_naming_schema.INNER is a reserved keyword: INNER
-table in test_naming_schema.ORDER is a reserved keyword: ORDER
-table in test_naming_schema.WHERE is a reserved keyword: WHERE
-
-NOTICE:  ==================================================
-NOTICE:  📊 Summary: 1 error(s), 0 warning(s), 0 info
-NOTICE:  🔴 Critical issues found - please review and fix errors
- check 
--------
- t
-(1 row)
-
 SELECT count(*) AS violation_count from pglinter.get_violations() WHERE rule_code = 'B010';
  violation_count 
 -----------------
@@ -251,13 +222,6 @@ NOTICE:  🔴 Rule B010 has been disabled
  t
 (1 row)
 
-SELECT pglinter.check(); -- Should skip B010
-NOTICE:  ✅ No issues found - database schema looks good!
- check 
--------
- t
-(1 row)
-
 SELECT count(*) AS violation_count from pglinter.get_violations() WHERE rule_code = 'B010';
  violation_count 
 -----------------
@@ -271,35 +235,6 @@ NOTICE:  ✅ Rule B010 has been enabled
 -----------------
  t
 (1 row)
-
-SELECT pglinter.check(); -- Should include B010 again
-NOTICE:  🔍 pglinter found 1 issue(s):
-NOTICE:  ==================================================
-NOTICE:  ❌ [B010] ERROR: 15/8 object(s) using reserved keywords exceed the error threshold: 187%. Object list:
-column in test_keywords_schema.products_with_bad_columns.GROUP is a reserved keyword: GROUP
-column in test_keywords_schema.products_with_bad_columns.HAVING is a reserved keyword: HAVING
-column in test_keywords_schema.products_with_bad_columns.UNION is a reserved keyword: UNION
-column in test_naming_schema.users_with_bad_columns.JOIN is a reserved keyword: JOIN
-column in test_naming_schema.users_with_bad_columns.LIMIT is a reserved keyword: LIMIT
-column in test_naming_schema.users_with_bad_columns.OFFSET is a reserved keyword: OFFSET
-index in test_keywords_schema.FOREIGN is a reserved keyword: FOREIGN
-index in test_keywords_schema.PRIMARY is a reserved keyword: PRIMARY
-index in test_naming_schema.UNIQUE is a reserved keyword: UNIQUE
-table in test_keywords_schema.DISTINCT is a reserved keyword: DISTINCT
-table in test_keywords_schema.FROM is a reserved keyword: FROM
-table in test_keywords_schema.SELECT is a reserved keyword: SELECT
-table in test_naming_schema.INNER is a reserved keyword: INNER
-table in test_naming_schema.ORDER is a reserved keyword: ORDER
-table in test_naming_schema.WHERE is a reserved keyword: WHERE
-
-NOTICE:  ==================================================
-NOTICE:  📊 Summary: 1 error(s), 0 warning(s), 0 info
-NOTICE:  🔴 Critical issues found - please review and fix errors
- check 
--------
- t
-(1 row)
-
 SELECT count(*) AS violation_count from pglinter.get_violations() WHERE rule_code = 'B010';
  violation_count 
 -----------------

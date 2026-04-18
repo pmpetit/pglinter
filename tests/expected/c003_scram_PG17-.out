@@ -114,13 +114,6 @@ SELECT '=== Test 1: C003 Rule Execution with Current Setting ===' AS test_sectio
  === Test 1: C003 Rule Execution with Current Setting ===
 (1 row)
 
-SELECT pglinter.check();
-NOTICE:  ✅ No issues found - database schema looks good!
- check 
--------
- t
-(1 row)
-
 -- Test 2: Manual execution of C003 query
 SELECT '=== Test 2: Manual C003 Query Execution ===' AS test_section;
                 test_section                 
@@ -234,12 +227,6 @@ SELECT '=== Test 7: Export to SARIF ===' AS test_section;
           test_section           
 ---------------------------------
  === Test 7: Export to SARIF ===
-(1 row)
-
-SELECT pglinter.check('/tmp/pglinter_c003_scram_results.sarif');
- check 
--------
- t
 (1 row)
 
 -- Show checksum of generated file if it exists

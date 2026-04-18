@@ -78,7 +78,6 @@ SELECT pglinter.is_rule_enabled('C003') AS c003_status;
 
 -- Test 1: Check if C003 detects any issues with current setting
 SELECT '=== Test 1: C003 Rule Execution with Current Setting ===' AS test_section;
-SELECT pglinter.check();
 
 -- Test 2: Manual execution of C003 query
 SELECT '=== Test 2: Manual C003 Query Execution ===' AS test_section;
@@ -130,7 +129,6 @@ WHERE name = 'password_encryption';
 
 -- Test 7: Export results to SARIF format
 SELECT '=== Test 7: Export to SARIF ===' AS test_section;
-SELECT pglinter.check('/tmp/pglinter_c003_scram_results.sarif');
 
 -- Show checksum of generated file if it exists
 \! test -f /tmp/pglinter_c003_scram_results.sarif && md5sum /tmp/pglinter_c003_scram_results.sarif || echo "SARIF file not generated"

@@ -793,16 +793,18 @@ SELECT pglinter.show_rule_queries('B001');
 ### Rule Execution
 
 ```sql
--- Run all enabled rules
-SELECT pglinter.check();
+-- Get all violations for enabled rules
+SELECT * FROM pglinter.get_violations();
 
--- Run a specific rule only
-SELECT pglinter.check_rule('B001');
-SELECT pglinter.check_rule('C002');
+-- Filter violations for a specific rule
+SELECT * FROM pglinter.get_violations() WHERE rule_code = 'B001';
+SELECT * FROM pglinter.get_violations() WHERE rule_code = 'C002';
 
--- Generate SARIF output
-SELECT pglinter.check('/tmp/results.sarif');
-SELECT pglinter.check_rule('B001', '/tmp/b001_results.sarif');
+-- Count violations per rule
+SELECT rule_code, count(*) AS violation_count
+FROM pglinter.get_violations()
+GROUP BY rule_code
+ORDER BY rule_code;
 ```
 
 ---
@@ -890,19 +892,18 @@ SELECT pglinter.import_rules_from_file('/path/to/rules.yaml');
 **CI/CD Integration**:
 
 ```bash
-# Run all checks as part of deployment pipeline
-psql -c "SELECT pglinter.check('/tmp/results.sarif')"
+# Get all violations as part of deployment pipeline
+psql -c "SELECT * FROM pglinter.get_violations()"
 
-# Run specific critical rules only
-psql -c "SELECT pglinter.check_rule('B001', '/tmp/primary_keys.sarif')"
-psql -c "SELECT pglinter.check_rule('C002', '/tmp/security.sarif')"
+# Check for violations from specific critical rules
+psql -c "SELECT * FROM pglinter.get_violations() WHERE rule_code IN ('B001', 'C002')"
 ```
 
 **Regular Monitoring**:
 
 ```sql
--- Schedule weekly reports
-SELECT pglinter.check();
+-- Get current violations for all enabled rules
+SELECT * FROM pglinter.get_violations();
 ```
 
 **Custom Rule Sets**:
@@ -913,24 +914,6 @@ SELECT pglinter.check();
 SELECT pglinter.disable_rule('B004');
 SELECT pglinter.disable_rule('B005');
 ```
-
----
-
-## SARIF Output Integration
-
-PG Linter supports SARIF (Static Analysis Results Interchange Format) output for integration with modern development tools:
-
-```sql
--- Generate SARIF report
-SELECT pglinter.check('/tmp/analysis.sarif');
-```
-
-SARIF files can be consumed by:
-
-- GitHub Actions (Code Scanning)
-- GitLab CI/CD
-- Azure DevOps
-- Various IDEs and security tools
 
 ---
 

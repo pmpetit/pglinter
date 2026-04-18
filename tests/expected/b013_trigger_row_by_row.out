@@ -68,21 +68,6 @@ NOTICE:  ✅ Rule B013 has been enabled
 -------------------
  t
 (1 row)
-
-SELECT pglinter.check(); -- Should only run B013
-NOTICE:  🔍 pglinter found 1 issue(s):
-NOTICE:  ==================================================
-NOTICE:  ❌ [B013] ERROR: 1/1 table(s) using row by row processing without any where clause exceed the error threshold: 100%. Object list:
-public.pos_tnd_ssn_hst.t_pos_tnd_ssn_hst -> public.f_pos_tnd_ssn_hst
-
-NOTICE:  ==================================================
-NOTICE:  📊 Summary: 1 error(s), 0 warning(s), 0 info
-NOTICE:  🔴 Critical issues found - please review and fix errors
- check 
--------
- t
-(1 row)
-
 SELECT count(*) AS violation_count
 FROM pglinter.get_violations()
 WHERE rule_code = 'B013';
@@ -92,15 +77,7 @@ WHERE rule_code = 'B013';
 (1 row)
 
 -- Test with output
-SELECT pglinter.check('/tmp/pglinter_B013_results.sarif');
- check 
--------
- t
-(1 row)
-
 -- Test if file exists and show checksum
-\! md5sum /tmp/pglinter_B013_results.sarif
-ed1b2a0d0091a61d7d6f87dedd4c3877  /tmp/pglinter_B013_results.sarif
 -- Cleanup
 \echo 'Cleaning up test schema...'
 Cleaning up test schema...

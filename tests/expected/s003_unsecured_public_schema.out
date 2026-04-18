@@ -26,22 +26,6 @@ NOTICE:  ✅ Rule S003 has been enabled
 -------------------
  t
 (1 row)
-
-SELECT pglinter.check(); -- Should only run S003
-NOTICE:  🔍 pglinter found 1 issue(s):
-NOTICE:  ==================================================
-NOTICE:  ❌ [S003] ERROR: 2/2 schemas are unsecured, schemas where all users can create objects in, exceed the error threshold: 100%. Object list:
-public
-s003_schema
-
-NOTICE:  ==================================================
-NOTICE:  📊 Summary: 1 error(s), 0 warning(s), 0 info
-NOTICE:  🔴 Critical issues found - please review and fix errors
- check 
--------
- t
-(1 row)
-
 SELECT count(*) AS violation_count from pglinter.get_violations() WHERE rule_code = 'S003';
  violation_count 
 -----------------

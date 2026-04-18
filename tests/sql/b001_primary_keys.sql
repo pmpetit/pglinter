@@ -156,7 +156,6 @@ SELECT pglinter.is_rule_enabled('B001') AS b001_status;
 
 -- Run base check to detect database-wide primary key percentage issues
 SELECT 'Running base check to detect B001 violations...' AS status;
-SELECT pglinter.check();
 
 -- Test rule management for B001
 SELECT 'Testing B001 rule management...' AS test_section;
@@ -167,7 +166,6 @@ SELECT pglinter.is_rule_enabled('B001') AS b001_status_after_disable;
 
 -- Run base check again (should skip B001)
 SELECT 'Running base check with B001 disabled (should find no B001 violations)...' AS status;
-SELECT pglinter.check();
 
 -- Re-enable B001
 SELECT pglinter.enable_rule('B001') AS b001_reenabled;
@@ -175,7 +173,6 @@ SELECT pglinter.is_rule_enabled('B001') AS b001_status_after_enable;
 
 -- Run base check again (should detect B001 violations)
 SELECT 'Running base check with B001 re-enabled...' AS status;
-SELECT pglinter.check();
 SELECT count(*) AS violation_count from pglinter.get_violations() WHERE rule_code = 'B001';
 
 -- Now let's fix some of the issues by adding primary keys to reduce the percentage
@@ -193,9 +190,6 @@ ALTER TABLE inventory_no_pk ADD CONSTRAINT pk_inventory PRIMARY KEY (inventory_i
 
 -- Run B001 check again (should show reduced violations or no violations)
 SELECT 'Running B001 check after adding primary keys (should show improved percentage):' AS test_info;
-SELECT pglinter.check();
-SELECT pglinter.check('/tmp/pglinter_b001_results.sarif');
-\! md5sum /tmp/pglinter_b001_results.sarif
 
 SELECT count(*) AS violation_count from pglinter.get_violations() WHERE rule_code = 'B001';
 

@@ -16,15 +16,11 @@ Comprehensive documentation for all PGLinter functions providing database analys
 ## Quick Start
 
 ```sql
--- Comprehensive database analysis (recommended for first-time users)
-SELECT pglinter.check();
+-- Run all enabled rules and retrieve violations as a table
+SELECT * FROM pglinter.get_violations();
 
--- Check a specific rule only
-SELECT pglinter.check_rule('B001');
-
--- Generate analysis reports to file
-SELECT pglinter.check('/tmp/analysis.sarif');
-SELECT pglinter.check_rule('B001', '/tmp/primary_keys.sarif');
+-- Filter violations by rule
+SELECT * FROM pglinter.get_violations() WHERE rule_code = 'B001';
 
 -- Check what rules are available
 SELECT pglinter.list_rules();
@@ -38,35 +34,46 @@ SELECT pglinter.disable_rule('B004');
 
 ## Analysis Functions
 
-Core analysis functions that execute rule checks and generate database assessment reports.
+Core analysis functions that execute rule checks and return database assessment results.
 
-### check([output_file])
+### get_violations()
 
-Executes all enabled rules for comprehensive database analysis, including structural integrity, security, and best practice violations.
+Executes all enabled rules and returns all detected violations as a table, including structural integrity, security, and best practice violations.
 
-#### check Syntax
-
-```sql
-SELECT pglinter.check([output_file text]);
-```
-
-#### check Parameters
-
-- `output_file` (optional): File path where SARIF results will be saved. If omitted, results are displayed in the client.
-
-### check_rule(rule_code [, output_file])
-
-Executes a specific rule for targeted database analysis.
-
-#### check_rule Syntax
+#### get_violations Syntax
 
 ```sql
-SELECT pglinter.check_rule(rule_code text [, output_file text]);
+SELECT * FROM pglinter.get_violations();
 ```
 
-#### check_rule Parameters
+#### get_violations Returns
 
-- `output_file` (optional): Path to save SARIF results
+Table with columns:
+
+- `rule_code` (TEXT): The rule identifier (e.g., 'B001')
+- `classid` (OID): Object class identifier
+- `objid` (OID): Object identifier
+- `objsubid` (INTEGER): Object sub-identifier
+- `message` (TEXT): Human-readable violation message
+
+#### get_violations Examples
+
+```sql
+-- Get all violations for enabled rules
+SELECT * FROM pglinter.get_violations();
+
+-- Count violations per rule
+SELECT rule_code, count(*) AS violation_count
+FROM pglinter.get_violations()
+GROUP BY rule_code
+ORDER BY violation_count DESC;
+
+-- Filter by specific rule
+SELECT * FROM pglinter.get_violations() WHERE rule_code = 'B001';
+
+-- Check if any violations exist
+SELECT EXISTS (SELECT 1 FROM pglinter.get_violations());
+```
 
 ---
 

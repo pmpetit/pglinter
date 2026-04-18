@@ -13,12 +13,12 @@ After installation, enable the extension in your PostgreSQL database:
 -- Create the extension
 CREATE EXTENSION pglinter;
 
--- Run a basic check
-SELECT pglinter.check();
+-- Get all violations
+SELECT * FROM pglinter.get_violations();
 
--- Check specific rules
-SELECT pglinter.check_rule('B001');  -- Tables without primary keys
-SELECT pglinter.check_rule('B002');  -- Redundant indexes
+-- Filter violations for a specific rule
+SELECT * FROM pglinter.get_violations() WHERE rule_code = 'B001';  -- Tables without primary keys
+SELECT * FROM pglinter.get_violations() WHERE rule_code = 'B002';  -- Redundant indexes
 ```
 
 ### 📋 Available Rules

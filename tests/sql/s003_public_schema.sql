@@ -56,7 +56,6 @@ GRANT CREATE ON SCHEMA test_insecure_schema_1 TO public;
 
 -- Test S003 with low percentage (should not trigger with default thresholds)
 SELECT 'Running S003 check with LOW percentage of insecure schemas (should not trigger with default thresholds):' AS test_1;
-SELECT pglinter.check();
 
 SELECT count(*) AS violation_count from pglinter.get_violations() WHERE rule_code = 'S003';
 
@@ -65,13 +64,10 @@ GRANT CREATE ON SCHEMA test_insecure_schema_2 TO public;
 
 -- Test S003 with high percentage (should trigger)
 SELECT 'Running S003 check with HIGH percentage of insecure schemas (should trigger):' AS test_2;
-SELECT pglinter.check();
 
 SELECT count(*) AS violation_count from pglinter.get_violations() WHERE rule_code = 'S003';
 -- Test with file output
-SELECT pglinter.check('/tmp/pglinter_s003_results.sarif');
 -- Test if file exists and show checksum
-\! md5sum /tmp/pglinter_s003_results.sarif
 
 
 -- PART 3: Test threshold adjustment
@@ -84,7 +80,6 @@ SELECT 'S003 thresholds updated to warning=50%, error=80%' AS threshold_info;
 
 -- Test with adjusted thresholds
 SELECT 'Running S003 check with adjusted thresholds (warning=50%):' AS test_3;
-SELECT pglinter.check();
 
 SELECT count(*) AS violation_count from pglinter.get_violations() WHERE rule_code = 'S003';
 

@@ -19,13 +19,6 @@ NOTICE:  🔴 Disabled 21 rule(s)
 (1 row)
 
 -- Run table check to detect tables without PK
-SELECT pglinter.check();
-NOTICE:  ✅ No issues found - database schema looks good!
- check 
--------
- t
-(1 row)
-
 SELECT count(*) AS violation_count from pglinter.get_violations() WHERE rule_code = 'B001';
  violation_count 
 -----------------
@@ -61,15 +54,7 @@ SELECT pglinter.is_rule_enabled('B001') AS is_b001_enabled;
 (1 row)
 
 -- Test with file output
-SELECT pglinter.check('/tmp/pglinter_base_results.sarif');
- check 
--------
- t
-(1 row)
-
 -- Test if file exists
-\! md5sum /tmp/pglinter_base_results.sarif
-7cd6073b52ee9a1173c05c016e2458f4  /tmp/pglinter_base_results.sarif
 -- Re-enable B001 rule
 SELECT pglinter.enable_rule('B001') AS enable_b001;
 NOTICE:  ✅ Rule B001 has been enabled
@@ -79,20 +64,6 @@ NOTICE:  ✅ Rule B001 has been enabled
 (1 row)
 
 -- Test again with B001 enabled
-SELECT pglinter.check();
-NOTICE:  🔍 pglinter found 1 issue(s):
-NOTICE:  ==================================================
-NOTICE:  ❌ [B001] ERROR: 1/1 table(s) without primary key exceed the error threshold: 100%. Object list:
-public.my_table_without_pk
-
-NOTICE:  ==================================================
-NOTICE:  📊 Summary: 1 error(s), 0 warning(s), 0 info
-NOTICE:  🔴 Critical issues found - please review and fix errors
- check 
--------
- t
-(1 row)
-
 SELECT count(*) AS violation_count from pglinter.get_violations() WHERE rule_code = 'B001';
  violation_count 
 -----------------
@@ -100,14 +71,6 @@ SELECT count(*) AS violation_count from pglinter.get_violations() WHERE rule_cod
 (1 row)
 
 -- Test with file output
-SELECT pglinter.check('/tmp/pglinter_base_results.sarif');
- check 
--------
- t
-(1 row)
-
 -- Test if file exists
-\! md5sum /tmp/pglinter_base_results.sarif
-abcbc2dd1c791c3445280188aa4a9386  /tmp/pglinter_base_results.sarif
 DROP TABLE my_table_without_pk CASCADE;
 DROP EXTENSION pglinter CASCADE;
