@@ -100,17 +100,6 @@ fn execute_q1_rule_dynamic(
         }
     };
 
-    // Check if query contains parameters
-    let has_parameters = q1.contains("$1");
-
-    if has_parameters {
-        pgrx::debug1!(
-            "execute_q1_rule_dynamic; {} query contains parameters, skipping parameterized execution",
-            ruleid
-        );
-        return Ok(None);
-    }
-
     let result: Result<Option<RuleResult>, spi::SpiError> = Spi::connect(|client| {
         let mut count = 0i64;
         let mut details = Vec::new();
