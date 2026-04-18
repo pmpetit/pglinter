@@ -53,11 +53,8 @@ NOTICE:  📖 Rule Explanation for S002
 🎯 Rule Name: SchemaPrefixedOrSuffixedWithEnvt
 📋 Scope: SCHEMA
 
-📝 Description:
-The schema is prefixed with one of staging,stg,preprod,prod,sandbox,sbox string. Means that when you refresh your preprod, staging environments from production, you have to rename the target schema from prod_ to stg_ or something like. It is possible, but it is never easy.
-
-⚠️  Message Template:
-{0}/{1} schemas are prefixed or suffixed with environment names. It exceed the {2} threshold: {3}%. Prefer prefix or suffix the database name instead. Object list:\n{4}
+📝 Message:
+schema is prefixed with one of staging,stg,preprod,prod,sandbox,sbox string. Means that when you refresh your preprod, staging environments from production, you have to rename the target schema from prod_ to stg_ or something like. It is possible, but it is never easy.
 
 🔧 How to Fix:
    1. Keep the same schema name across environments. Prefer prefix or suffix the database name

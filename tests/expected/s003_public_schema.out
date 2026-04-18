@@ -124,11 +124,8 @@ NOTICE:  📖 Rule Explanation for S003
 🎯 Rule Name: UnsecuredPublicSchema
 📋 Scope: SCHEMA
 
-📝 Description:
-Only authorized users should be allowed to create objects.
-
-⚠️  Message Template:
-{0}/{1} schemas are unsecured, schemas where all users can create objects in, exceed the {2} threshold: {3}%. Object list:\n{4}
+📝 Message:
+only authorized users should be allowed to create objects.
 
 🔧 How to Fix:
    1. REVOKE CREATE ON SCHEMA <schema_name> FROM PUBLIC

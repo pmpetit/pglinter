@@ -33,14 +33,11 @@ NOTICE:  📖 Rule Explanation for B001
 🎯 Rule Name: HowManyTableWithoutPrimaryKey
 📋 Scope: BASE
 
-📝 Description:
-Count number of tables without primary key.
-
-⚠️  Message Template:
-{0}/{1} table(s) without primary key exceed the {2} threshold: {3}%. Object list:\n{4}
+📝 Message:
+table without primary key
 
 🔧 How to Fix:
-   1. create a primary key or change warning/error threshold
+   1. create a primary key
 ============================================================
  explain_rule 
 --------------

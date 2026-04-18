@@ -160,14 +160,11 @@ NOTICE:  📖 Rule Explanation for B003
 🎯 Rule Name: HowManyTableWithoutIndexOnFk
 📋 Scope: BASE
 
-📝 Description:
-Count number of tables without index on foreign key.
-
-⚠️  Message Template:
-{0}/{1} table(s) without index on foreign key exceed the {2} threshold: {3}%. Object list:\n{4}
+📝 Message:
+table without index on foreign key
 
 🔧 How to Fix:
-   1. create a index on foreign key or change warning/error threshold
+   1. create an index on foreign key columns
 ============================================================
  explain_rule 
 --------------

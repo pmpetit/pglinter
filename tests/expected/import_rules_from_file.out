@@ -33,10 +33,10 @@ CREATE EXTENSION pglinter;
 -- Test 1: Import rules from file
 SELECT pglinter.import_rules_from_file('/tmp/test_rules_import.yaml') AS file_import_result;
 NOTICE:  📂 Reading rules from: /tmp/test_rules_import.yaml
-WARNING:  Failed to import: YAML parsing error: rules[0]: missing field `warning_level` at line 6 column 5
-                               file_import_result                               
---------------------------------------------------------------------------------
- YAML parsing error: rules[0]: missing field `warning_level` at line 6 column 5
+NOTICE:  📥 Importing 2 rules from YAML (format v1.0)
+                file_import_result                
+--------------------------------------------------
+ ✅ Import completed: 2 new rules, 0 updated rules
 (1 row)
 
 -- Verify imported rules
@@ -48,9 +48,11 @@ SELECT
 FROM pglinter.rules
 WHERE code LIKE 'TEST_FILE_%'
 ORDER BY code;
- code | name | enable | scope 
-------+------+--------+-------
-(0 rows)
+     code      |          name           | enable |   scope   
+---------------+-------------------------+--------+-----------
+ TEST_FILE_001 | Test File Import Rule 1 | t      | FILE_TEST
+ TEST_FILE_002 | Test File Import Rule 2 | f      | BASE
+(2 rows)
 
 -- Test 2: Import from non-existent file (should return error)
 SELECT pglinter.import_rules_from_file('/tmp/non_existent_file.yaml') AS nonexistent_file_result;
@@ -84,7 +86,7 @@ FROM pglinter.rules
 WHERE code LIKE 'TEST_FILE_%';
  imported_rules_count 
 ----------------------
-                    0
+                    2
 (1 row)
 
 -- Clean up test data and files

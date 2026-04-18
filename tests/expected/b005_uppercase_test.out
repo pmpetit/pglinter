@@ -129,11 +129,8 @@ NOTICE:  📖 Rule Explanation for B005
 🎯 Rule Name: HowManyObjectsWithUppercase
 📋 Scope: BASE
 
-📝 Description:
-Count number of objects with uppercase in name or in columns.
-
-⚠️  Message Template:
-{0}/{1} object(s) using uppercase for name or columns exceed the {2} threshold: {3}%. Object list:\n{4}
+📝 Message:
+objects with uppercase in name or in columns
 
 🔧 How to Fix:
    1. Do not use uppercase for any database objects

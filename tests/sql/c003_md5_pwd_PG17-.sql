@@ -25,7 +25,7 @@ WHERE name = 'password_encryption';
 
 -- Test 2: Run C003 check with current settings
 SELECT '=== Test 2: C003 Rule Execution ===' AS test_section;
-SELECT pglinter.perform_cluster_check();
+SELECT pglinter.get_violations();
 
 -- Test 3: Rule explanation
 SELECT '=== Test 3: C003 Rule Explanation ===' AS test_section;
@@ -33,13 +33,13 @@ SELECT pglinter.explain_rule('C003') AS rule_explanation;
 
 -- Test 4: Rule details
 SELECT '=== Test 4: C003 Rule Details ===' AS test_section;
-SELECT code, name, description, message, fixes
+SELECT code, name, message, fixes
 FROM pglinter.rules
 WHERE code = 'C003';
 
 -- Test 5: Show the actual query used by C003
 SELECT '=== Test 5: C003 Query Details ===' AS test_section;
-SELECT code, q1 as query
+SELECT code, q4 as query
 FROM pglinter.rules
 WHERE code = 'C003';
 

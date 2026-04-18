@@ -19,7 +19,6 @@ rules:
     code: "TEST_YAML_001"
     enable: true
     scope: "TEST"
-    description: "Test rule for YAML import validation"
     message: "Test rule found {0} issues"
     fixes:
       - "Fix suggestion 1"
@@ -41,7 +40,6 @@ SELECT
     name,
     enable,
     scope,
-    description,
     message,
     fixes
 FROM pglinter.rules
@@ -60,7 +58,6 @@ rules:
     code: "TEST_YAML_001"
     enable: false
     scope: "UPDATED_TEST"
-    description: "Updated test rule description"
     message: "Updated test message with {0} items"
     fixes:
       - "Updated fix suggestion"
@@ -74,7 +71,6 @@ SELECT
     name,
     enable,
     scope,
-    description,
     message,
     array_length(fixes, 1) as fixes_count
 FROM pglinter.rules
@@ -92,7 +88,6 @@ rules:
     code: "TEST_YAML_003"
     enable: true
     scope: "BASE"
-    description: "Rule with null values"
     message: "Test message"
     fixes: []
 ') AS null_values_result;
@@ -101,8 +96,6 @@ rules:
 SELECT
     code,
     name,
-    q1 IS NULL as q1_is_null,
-    q2 IS NULL as q2_is_null,
     array_length(fixes, 1) as fixes_count
 FROM pglinter.rules
 WHERE code = 'TEST_YAML_003';
@@ -135,7 +128,6 @@ rules:
     code: "TEST_YAML_MIN"
     enable: true
     scope: "BASE"
-    description: "Minimal rule"
     message: "Simple message"
     fixes: []
 ') AS minimal_rule_result;

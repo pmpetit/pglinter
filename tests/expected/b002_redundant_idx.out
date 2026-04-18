@@ -80,14 +80,11 @@ NOTICE:  📖 Rule Explanation for B002
 🎯 Rule Name: HowManyRedudantIndex
 📋 Scope: BASE
 
-📝 Description:
-Count number of redundant index vs nb index.
-
-⚠️  Message Template:
-{0}/{1} redundant(s) index exceed the {2} threshold: {3}%. Object list:\n{4}
+📝 Message:
+redundant index
 
 🔧 How to Fix:
-   1. remove duplicated index or check if a constraint does not create a redundant index, or change warning/error threshold
+   1. remove duplicated index or check if a constraint does not create a redundant index
 ============================================================
  explain_rule 
 --------------

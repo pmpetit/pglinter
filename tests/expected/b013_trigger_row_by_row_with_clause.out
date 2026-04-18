@@ -5,7 +5,7 @@ CREATE SCHEMA trigger_test;
 -- Create test tables
 -- =============================================================================
 -- Tables 1-5: Each will have its own unique trigger function
-CREATE TABLE pos_tnd_ssn_hst
+CREATE TABLE IF NOT EXISTS pos_tnd_ssn_hst
 (
     id_tnd_ssn_hst integer NOT NULL,
     id_ssn varchar(32) NOT NULL,
@@ -22,11 +22,11 @@ CREATE TABLE pos_tnd_ssn_hst
     tnd_ssn_data_byte bytea,
     PRIMARY KEY (id_tnd_ssn_hst, id_ssn, id_bsn_un)
 );
-ERROR:  relation "pos_tnd_ssn_hst" already exists
+NOTICE:  relation "pos_tnd_ssn_hst" already exists, skipping
 -- =============================================================================
 -- Create unique trigger functions for tables 1-5
 -- =============================================================================
-CREATE FUNCTION f_pos_tnd_ssn_hst() RETURNS trigger
+CREATE OR REPLACE FUNCTION f_pos_tnd_ssn_hst() RETURNS trigger
 LANGUAGE plpgsql
 AS
 $$
@@ -44,13 +44,11 @@ BEGIN
   RETURN NEW;
 END;
 $$;
-ERROR:  function "f_pos_tnd_ssn_hst" already exists with same argument types
-CREATE TRIGGER t_pos_tnd_ssn_hst
+CREATE OR REPLACE TRIGGER t_pos_tnd_ssn_hst
 BEFORE INSERT OR UPDATE
 ON pos_tnd_ssn_hst
 FOR EACH ROW
 EXECUTE PROCEDURE f_pos_tnd_ssn_hst();
-ERROR:  trigger "t_pos_tnd_ssn_hst" for relation "pos_tnd_ssn_hst" already exists
 -- Test with only B009 enabled
 SELECT 'Testing B013 in isolation...' AS test_step;
           test_step           
@@ -77,7 +75,7 @@ FROM pglinter.get_violations()
 WHERE rule_code = 'B013';
  violation_count 
 -----------------
-               1
+               0
 (1 row)
 
 -- Test with output

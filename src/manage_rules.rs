@@ -8,7 +8,6 @@ pub struct Rule {
     pub code: String,
     pub enable: bool,
     pub scope: String,
-    pub description: String,
     pub message: String,
     pub fixes: Vec<String>,
     pub q4: Option<String>,
@@ -187,29 +186,28 @@ pub fn show_rule_status() -> Result<bool, String> {
 
 pub fn explain_rule(rule_code: &str) -> Result<String, String> {
     let explain_query = "
-        SELECT code, name, description, scope, message, fixes
+        SELECT code, name, scope, message, fixes
         FROM pglinter.rules
         WHERE code = $1";
 
-    type RuleExplainRow = (String, String, String, String, String, Vec<Option<String>>);
+    type RuleExplainRow = (String, String, String, String, Vec<Option<String>>);
 
     let result: Result<Option<RuleExplainRow>, spi::SpiError> = Spi::connect(|client| {
         let mut rows = client.select(explain_query, None, &[rule_code.into()])?;
         if let Some(row) = rows.next() {
             let code: String = row.get(1)?.unwrap_or_default();
             let name: String = row.get(2)?.unwrap_or_default();
-            let description: String = row.get(3)?.unwrap_or_default();
-            let scope: String = row.get(4)?.unwrap_or_default();
-            let message: String = row.get(5)?.unwrap_or_default();
-            let fixes: Vec<Option<String>> = row.get(6)?.unwrap_or_default();
-            Ok(Some((code, name, description, scope, message, fixes)))
+            let scope: String = row.get(3)?.unwrap_or_default();
+            let message: String = row.get(4)?.unwrap_or_default();
+            let fixes: Vec<Option<String>> = row.get(5)?.unwrap_or_default();
+            Ok(Some((code, name, scope, message, fixes)))
         } else {
             Ok(None)
         }
     });
 
     match result {
-        Ok(Some((code, name, description, scope, message, fixes))) => {
+        Ok(Some((code, name, scope, message, fixes))) => {
             // Format the fixes section
             let fixes_section = if fixes.is_empty() {
                 "No specific fixes available.".to_string()
@@ -224,12 +222,11 @@ pub fn explain_rule(rule_code: &str) -> Result<String, String> {
             };
 
             let explanation = format!(
-                "📖 Rule Explanation for {}\n{}\n\n🎯 Rule Name: {}\n📋 Scope: {}\n\n📝 Description:\n{}\n\n⚠️  Message Template:\n{}\n\n🔧 How to Fix:\n{}\n{}",
+                "📖 Rule Explanation for {}\n{}\n\n🎯 Rule Name: {}\n📋 Scope: {}\n\n📝 Message:\n{}\n\n🔧 How to Fix:\n{}\n{}",
                 code,
                 "=".repeat(60),
                 name,
                 scope,
-                description,
                 message,
                 fixes_section,
                 "=".repeat(60)
@@ -329,7 +326,7 @@ pub fn show_rule_queries(rule_code: &str) -> Result<bool, String> {
 pub fn export_rules_to_yaml() -> Result<String, String> {
     let query = "
         SELECT id, name, code, enable,
-               scope, description, message, fixes, q4
+               scope, message, fixes, q4
         FROM pglinter.rules
         ORDER BY code";
 
@@ -347,10 +344,9 @@ pub fn export_rules_to_yaml() -> Result<String, String> {
                 code: row.get(3)?.unwrap_or_default(),
                 enable: row.get(4)?.unwrap_or(true),
                 scope: row.get(5)?.unwrap_or_default(),
-                description: row.get(6)?.unwrap_or_default(),
-                message: row.get(7)?.unwrap_or_default(),
+                message: row.get(6)?.unwrap_or_default(),
                 fixes,
-                q4: row.get(9)?,
+                q4: row.get(8)?,
             };
             rules.push(rule);
         }
@@ -445,15 +441,14 @@ pub fn import_rules_from_yaml(yaml_content: &str) -> Result<String, String> {
 
         let upsert_query = "
             INSERT INTO pglinter.rules (id, name, code, enable,
-                                       scope, description, message, fixes, q4)
-            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+                                       scope, message, fixes, q4)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
             ON CONFLICT (id)
             DO UPDATE SET
                 name = EXCLUDED.name,
                 code = EXCLUDED.code,
                 enable = EXCLUDED.enable,
                 scope = EXCLUDED.scope,
-                description = EXCLUDED.description,
                 message = EXCLUDED.message,
                 fixes = EXCLUDED.fixes,
                 q4 = EXCLUDED.q4
@@ -469,7 +464,6 @@ pub fn import_rules_from_yaml(yaml_content: &str) -> Result<String, String> {
                     rule.code.into(),
                     rule.enable.into(),
                     rule.scope.into(),
-                    rule.description.into(),
                     rule.message.into(),
                     fixes_array.into(),
                     rule.q4.into(),

@@ -10,7 +10,7 @@ CREATE SCHEMA trigger_test;
 -- =============================================================================
 
 -- Tables 1-5: Each will have its own unique trigger function
-CREATE TABLE pos_tnd_ssn_hst
+CREATE TABLE IF NOT EXISTS pos_tnd_ssn_hst
 (
     id_tnd_ssn_hst integer NOT NULL,
     id_ssn varchar(32) NOT NULL,
@@ -32,7 +32,7 @@ CREATE TABLE pos_tnd_ssn_hst
 -- Create unique trigger functions for tables 1-5
 -- =============================================================================
 
-CREATE FUNCTION f_pos_tnd_ssn_hst() RETURNS trigger
+CREATE OR REPLACE FUNCTION f_pos_tnd_ssn_hst() RETURNS trigger
 LANGUAGE plpgsql
 AS
 $$
@@ -52,7 +52,7 @@ END;
 $$;
 
 
-CREATE TRIGGER t_pos_tnd_ssn_hst
+CREATE OR REPLACE TRIGGER t_pos_tnd_ssn_hst
 BEFORE INSERT OR UPDATE
 ON pos_tnd_ssn_hst
 FOR EACH ROW
