@@ -53,7 +53,6 @@ SELECT pglinter.export_rules_to_yaml();
 
 This will output a complete YAML structure containing:
 - Metadata (export timestamp, total rules, format version)
-- All rules with their current configuration (enabled status, thresholds, descriptions, etc.)
 
 #### Saving Export to File
 
@@ -82,8 +81,7 @@ rules:
     code: "B001"
     enable: true
     scope: "BASE"
-    description: "Detects tables without primary keys"
-    message: "Found {0} tables without primary keys"
+    message: "table without primary key"
     fixes:
       - "Add primary key constraints to tables"
       - "Consider surrogate keys for tables without natural keys"
@@ -106,10 +104,9 @@ Edit the exported YAML file to customize rules for your environment:
   code: "B002"
   enable: false  # Disable redundant index checking
 
-# 2. Modify rule description
+# 2. Modify rule message
 - id: 1
   code: "B001"
-  description: "Custom description for primary key check"
   message: "Custom message: Found {0} tables needing primary keys"
 
 # 3. Update fix suggestions
@@ -138,8 +135,7 @@ rules:
     code: "B001"
     enable: true
     scope: "BASE"
-    description: "Modified description"
-    message: "Found {0} tables without primary keys"
+    message: "table without primary key"
     fixes:
       - "Add primary key constraints"
 ');

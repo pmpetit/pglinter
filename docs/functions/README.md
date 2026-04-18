@@ -139,7 +139,7 @@ SELECT * FROM pglinter.show_rules();
 Table with columns:
 
 - `rule_code`: Rule identifier (e.g., 'B001')
-- `description`: Brief rule description
+- `message`: Brief rule message.
 - `enabled`: Whether rule is currently enabled
 - `scope`: Rule category (Base, Cluster, Table, Schema)
 

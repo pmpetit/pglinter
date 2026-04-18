@@ -829,8 +829,7 @@ rules:
     code: "B001"
     enable: true
     scope: "BASE"
-    description: "Count number of tables without primary key"
-    message: "{0}/{1} table(s) without primary key exceed the {2} threshold: {3}%."
+    message: "table without primary."
     fixes:
       - "create a primary key or change warning/error threshold"
 ');
