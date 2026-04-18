@@ -288,7 +288,7 @@ pub fn disable_all_rules() -> Result<usize, String> {
     }
 }
 
-/// Show current rule queries for debugging
+/// Show current q4 rule query for debugging
 pub fn show_rule_queries(rule_code: &str) -> Result<bool, String> {
     use crate::rule_queries::get_rule_queries;
 
@@ -304,22 +304,12 @@ pub fn show_rule_queries(rule_code: &str) -> Result<bool, String> {
             pgrx::notice!("🔍 Rule {} Queries ('{}'):", code, name);
             pgrx::notice!("{}", "=".repeat(60));
 
-            match queries.q1 {
+            match queries.q4 {
                 Some(q) => {
-                    pgrx::notice!("📊 q1 Query:");
+                    pgrx::notice!("🎯 q4 Query:");
                     pgrx::notice!("{}", q);
                 }
-                None => pgrx::notice!("📊 q1 Query: <NOT SET>"),
-            }
-
-            pgrx::notice!("");
-
-            match queries.q2 {
-                Some(q) => {
-                    pgrx::notice!("⚠️  q2 Query:");
-                    pgrx::notice!("{}", q);
-                }
-                None => pgrx::notice!("⚠️  q2 Query: <NOT SET>"),
+                None => pgrx::notice!("🎯 q4 Query: <NOT SET>"),
             }
 
             pgrx::notice!("{}", "=".repeat(60));

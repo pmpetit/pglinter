@@ -725,8 +725,8 @@ mod tests {
 
     #[pg_test]
     fn test_show_rule_queries() {
-        // show_rule_queries now uses hardcoded queries from rule_queries module
-        // Test with an existing real rule (B001 has hardcoded q1/q2)
+        // show_rule_queries now uses hardcoded q4 queries from rule_queries module
+        // Test with an existing real rule (B001 has a hardcoded q4)
         let result = manage_rules::show_rule_queries("B001");
         assert!(result.is_ok());
         assert!(result.unwrap());
