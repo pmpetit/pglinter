@@ -11,11 +11,11 @@ on:
   workflow_dispatch:
     inputs:
       image_tag:
-        description: 'Docker image tag'
+        description: "Docker image tag"
         required: false
-        default: 'latest'
+        default: "latest"
       push_image:
-        description: 'Push image to registry'
+        description: "Push image to registry"
         type: boolean
         required: false
         default: true
@@ -24,6 +24,7 @@ env:
   # Following pglinter's registry configuration
   REGISTRY: ghcr.io
   IMAGE_NAME: pmpetit/postgresql_pglinter
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
   build-pgrx-image:

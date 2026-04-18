@@ -1,4 +1,4 @@
-name: 'PR Title Validation'
+name: "PR Title Validation"
 
 on:
   pull_request_target:
@@ -7,13 +7,16 @@ on:
       - edited
       - reopened
     paths-ignore:
-      - 'docs/**'
-      - '*.md'
-      - 'README.md'
+      - "docs/**"
+      - "*.md"
+      - "README.md"
 
 permissions:
   pull-requests: write
   statuses: write
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
   validate-title:
