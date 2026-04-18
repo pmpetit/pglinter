@@ -347,7 +347,7 @@ FROM pglinter.get_violations() v;
 ### Rule Details
 
 ```sql
--- Show SQL queries used by a rule
+-- Show q4 violation-location query used by a rule (for debugging)
 SELECT pglinter.show_rule_queries('B001');
 
 ```

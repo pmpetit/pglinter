@@ -146,54 +146,14 @@ This base checking will be use later to create a global indicator of the databas
 
 #### find the queries
 
-The concept is to compare all tables that have trigger with tables that have the same triggering function.
+Each rule requires a **q4 query** that returns the violation locations consumed by `get_violations()`. The query must return three columns: `classid` (OID of the system catalog class), `objid` (OID of the violating object), and `objsubid` (sub-object identifier, 0 for table-level violations).
 
-- q1: will count all tables with trigger.
-- q2: will count all tables with the same triggering function.
+For B009 we want to identify every table that shares a trigger function with at least one other table:
 
-Then we will compare them to calculate a ratio, and raise warning/critical error message if the ratio is over.
-
-q1 should be
-
-```sql
-SELECT
-    COUNT(DISTINCT event_object_table) as table_using_trigger
-FROM
-    information_schema.triggers t
-WHERE
-    t.trigger_schema NOT IN (
-    'pg_toast', 'pg_catalog', 'information_schema', 'pglinter'
-)
-```
-
-q2 should be
-
-```sql
-SELECT
-    COUNT(DISTINCT t.event_object_table) AS table_using_same_trigger
-FROM (
-    SELECT
-        t.event_object_table ,
-        -- Extracts the function name from the action_statement (e.g., 'public.my_func()')
-        SUBSTRING(t.action_statement FROM 'EXECUTE FUNCTION ([^()]+)') AS trigger_function_name
-    FROM
-        information_schema.triggers t
-    WHERE
-        t.trigger_schema NOT IN (
-        'pg_toast', 'pg_catalog', 'information_schema', 'pglinter'
-    )
-) t
-GROUP BY
-    t.trigger_function_name
-HAVING
-    COUNT(DISTINCT t.event_object_table) > 1
-```
-
-q3 should be
+q4 should be
 
 ```sql
 WITH SharedFunctions AS (
-    -- 1. Identify all trigger functions that are used by more than one table
     SELECT
         SUBSTRING(t.action_statement FROM 'EXECUTE FUNCTION ([^()]+)') AS trigger_function_name
     FROM
@@ -202,28 +162,22 @@ WITH SharedFunctions AS (
         t.trigger_schema NOT IN (
             'pg_toast', 'pg_catalog', 'information_schema', 'pglinter', '_timescaledb', 'timescaledb'
         )
-    GROUP BY
-        1
-    HAVING
-        COUNT(DISTINCT t.event_object_table) > 1
+    GROUP BY 1
+    HAVING COUNT(DISTINCT t.event_object_table) > 1
 )
 SELECT
-    t.event_object_table::TEXT AS table_name,
-    t.trigger_name::TEXT || ' uses the same trigger function ' ||
-    t.trigger_schema::TEXT,
-    s.trigger_function_name::TEXT
-FROM
-    information_schema.triggers t
-JOIN
-    SharedFunctions s ON s.trigger_function_name = SUBSTRING(t.action_statement FROM 'EXECUTE FUNCTION ([^()]+)')
+    'pg_class'::regclass::oid AS classid,
+    c.oid AS objid,
+    0 AS objsubid
+FROM information_schema.triggers t
+JOIN SharedFunctions s
+    ON s.trigger_function_name = SUBSTRING(t.action_statement FROM 'EXECUTE FUNCTION ([^()]+)')
+JOIN pg_class c ON c.relname = t.event_object_table
+JOIN pg_namespace n ON n.oid = c.relnamespace AND n.nspname = t.trigger_schema
 WHERE
     t.trigger_schema NOT IN (
         'pg_toast', 'pg_catalog', 'information_schema', 'pglinter', '_timescaledb', 'timescaledb'
     )
-ORDER BY
-    s.trigger_function_name,
-    t.trigger_schema,
-    t.event_object_table
 ```
 
 #### update rules.sql for B009
@@ -246,36 +200,28 @@ Then add the rule queries to `src/rule_queries.rs` in the `get_rule_queries` mat
 
 ```rust
 "B009" => RuleQueries {
-    q1: Some(r##"SELECT
-    COALESCE(COUNT(DISTINCT event_object_table), 0)::BIGINT as table_using_trigger
-FROM
-    information_schema.triggers t
-WHERE
-    t.trigger_schema NOT IN (
-    'pg_toast', 'pg_catalog', 'information_schema', 'pglinter'
-)"##),
-    q2: Some(r##"SELECT
-    COALESCE(SUM(shared_table_count), 0)::BIGINT AS table_using_same_trigger
-FROM (
+    q4: Some(r##"WITH SharedFunctions AS (
     SELECT
-        COUNT(DISTINCT t.event_object_table) AS shared_table_count
-    FROM (
-        SELECT
-            t.event_object_table,
-            SUBSTRING(t.action_statement FROM 'EXECUTE FUNCTION ([^()]+)') AS trigger_function_name
-        FROM
-            information_schema.triggers t
-        WHERE
-            t.trigger_schema NOT IN (
-            'pg_toast', 'pg_catalog', 'information_schema', 'pglinter'
-        )
-    ) t
-    GROUP BY
-        t.trigger_function_name
-    HAVING
-        COUNT(DISTINCT t.event_object_table) > 1
-) shared_triggers"##),
-    // ... q3 and q4 queries
+        SUBSTRING(t.action_statement FROM 'EXECUTE FUNCTION ([^()]+)') AS trigger_function_name
+    FROM information_schema.triggers t
+    WHERE t.trigger_schema NOT IN (
+        'pg_toast', 'pg_catalog', 'information_schema', 'pglinter', '_timescaledb', 'timescaledb'
+    )
+    GROUP BY 1
+    HAVING COUNT(DISTINCT t.event_object_table) > 1
+)
+SELECT
+    'pg_class'::regclass::oid AS classid,
+    c.oid AS objid,
+    0 AS objsubid
+FROM information_schema.triggers t
+JOIN SharedFunctions s
+    ON s.trigger_function_name = SUBSTRING(t.action_statement FROM 'EXECUTE FUNCTION ([^()]+)')
+JOIN pg_class c ON c.relname = t.event_object_table
+JOIN pg_namespace n ON n.oid = c.relnamespace AND n.nspname = t.trigger_schema
+WHERE t.trigger_schema NOT IN (
+    'pg_toast', 'pg_catalog', 'information_schema', 'pglinter', '_timescaledb', 'timescaledb'
+)"##),
 },
 ```
 

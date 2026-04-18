@@ -784,7 +784,7 @@ WHERE code = 'B001';
 
 -- Get rule threshold levels
 
--- Show rule queries (for debugging)
+-- Show q4 violation-location query used by a rule (for debugging)
 SELECT pglinter.show_rule_queries('B001');
 ```
 
@@ -921,7 +921,7 @@ SELECT pglinter.disable_rule('B005');
 
 1. Check if rule is enabled: `SELECT enable FROM pglinter.rules WHERE code = 'B001';`
 2. Verify thresholds are appropriate for your data
-3. Check if rule queries are returning expected results: `SELECT pglinter.show_rule_queries('B001');`
+3. Inspect the q4 violation-location query for the rule: `SELECT pglinter.show_rule_queries('B001');`
 
 **Performance impact**:
 
@@ -943,7 +943,7 @@ SELECT pglinter.disable_rule('B005');
 ### Getting Help
 
 - Review rule descriptions and examples in this documentation
-- Check the source queries: `SELECT q1, q2 FROM pglinter.rules WHERE code = 'B001';`
+- Check the violation locations for a rule: `SELECT pglinter.show_rule_queries('B001');`
 - Use `pglinter.explain_rule('B001')` for detailed rule information
 - Report issues and contribute improvements on GitHub
 
