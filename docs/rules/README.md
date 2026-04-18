@@ -776,15 +776,13 @@ SELECT pglinter.is_rule_enabled('B001');
 
 ```sql
 -- Check current rule settings
-SELECT code, enable, warning_level, error_level, scope
+SELECT code, enable, scope
 FROM pglinter.rules
 WHERE code = 'B001';
 
 -- Update rule thresholds
-SELECT pglinter.update_rule_levels('B001', 30, 70);
 
 -- Get rule threshold levels
-SELECT pglinter.get_rule_levels('B001');
 
 -- Show rule queries (for debugging)
 SELECT pglinter.show_rule_queries('B001');
@@ -830,8 +828,6 @@ rules:
     name: "HowManyTableWithoutPrimaryKey"
     code: "B001"
     enable: true
-    warning_level: 20
-    error_level: 80
     scope: "BASE"
     description: "Count number of tables without primary key"
     message: "{0}/{1} table(s) without primary key exceed the {2} threshold: {3}%."
@@ -936,9 +932,8 @@ SELECT pglinter.disable_rule('B005');
 
 **False positives**:
 
-1. Adjust thresholds for environment-specific needs: `SELECT pglinter.update_rule_levels('B001', 30, 70);`
-2. Disable rules that don't apply to your use case
-3. Document exceptions and reasoning
+1. Disable rules that don't apply to your use case
+2. Document exceptions and reasoning
 
 **T010 rule disabled**:
 

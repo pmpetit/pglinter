@@ -108,7 +108,7 @@ SELECT pglinter.explain_rule('C003') AS rule_explanation;
 
 -- Test 5: Show rule configuration
 SELECT '=== Test 5: C003 Rule Configuration ===' AS test_section;
-SELECT code, name, description, warning_level, error_level, fixes
+SELECT code, name, description, fixes
 FROM pglinter.rules
 WHERE code = 'C003';
 

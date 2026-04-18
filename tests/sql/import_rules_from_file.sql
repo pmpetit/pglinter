@@ -11,8 +11,6 @@
 \! echo "    name: \"Test File Import Rule 1\"" >> /tmp/test_rules_import.yaml
 \! echo "    code: \"TEST_FILE_001\"" >> /tmp/test_rules_import.yaml
 \! echo "    enable: true" >> /tmp/test_rules_import.yaml
-\! echo "    warning_level: 35" >> /tmp/test_rules_import.yaml
-\! echo "    error_level: 75" >> /tmp/test_rules_import.yaml
 \! echo "    scope: \"FILE_TEST\"" >> /tmp/test_rules_import.yaml
 \! echo "    description: \"Test rule imported from file\"" >> /tmp/test_rules_import.yaml
 \! echo "    message: \"File import test found {0} issues\"" >> /tmp/test_rules_import.yaml
@@ -24,8 +22,6 @@
 \! echo "    name: \"Test File Import Rule 2\"" >> /tmp/test_rules_import.yaml
 \! echo "    code: \"TEST_FILE_002\"" >> /tmp/test_rules_import.yaml
 \! echo "    enable: false" >> /tmp/test_rules_import.yaml
-\! echo "    warning_level: 20" >> /tmp/test_rules_import.yaml
-\! echo "    error_level: 60" >> /tmp/test_rules_import.yaml
 \! echo "    scope: \"BASE\"" >> /tmp/test_rules_import.yaml
 \! echo "    description: \"Second file import test rule\"" >> /tmp/test_rules_import.yaml
 \! echo "    message: \"Second file test message\"" >> /tmp/test_rules_import.yaml
@@ -44,8 +40,6 @@ SELECT
     code,
     name,
     enable,
-    warning_level,
-    error_level,
     scope
 FROM pglinter.rules
 WHERE code LIKE 'TEST_FILE_%'

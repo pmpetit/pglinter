@@ -192,14 +192,6 @@ SELECT 'Running B003 check after adding foreign key indexes (should show no viol
  Running B003 check after adding foreign key indexes (should show no violations):
 (1 row)
 
--- Update B003 thresholds to produce message
-SELECT pglinter.update_rule_levels('B003', 60, 90);
-NOTICE:  ✅ Updated rule B003 levels: warning=60, error=90
- update_rule_levels 
---------------------
- t
-(1 row)
-
 SELECT count(*) AS violation_count from pglinter.get_violations() WHERE rule_code = 'B003';
  violation_count 
 -----------------

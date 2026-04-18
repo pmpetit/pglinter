@@ -1,4 +1,3 @@
-
 use pgrx::prelude::*;
 use serde::{Deserialize, Serialize};
 
@@ -8,14 +7,10 @@ pub struct Rule {
     pub name: String,
     pub code: String,
     pub enable: bool,
-    pub warning_level: i32,
-    pub error_level: i32,
     pub scope: String,
     pub description: String,
     pub message: String,
     pub fixes: Vec<String>,
-    pub q1: Option<String>,
-    pub q2: Option<String>,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -293,115 +288,36 @@ pub fn disable_all_rules() -> Result<usize, String> {
     }
 }
 
-pub fn update_rule_levels(
-    rule_code: &str,
-    warning_level: Option<i32>,
-    error_level: Option<i32>,
-) -> Result<bool, String> {
-    // First check if rule exists
-    let check_query = "
-        SELECT code, warning_level, error_level
-        FROM pglinter.rules
-        WHERE code = $1";
-
-    let result: Result<bool, spi::SpiError> = Spi::connect_mut(|client| {
-        // Check if rule exists and get current values
-        let mut rows = client.select(check_query, None, &[rule_code.into()])?;
-        if let Some(row) = rows.next() {
-            let current_warning: i32 = row.get(2)?.unwrap_or(0);
-            let current_error: i32 = row.get(3)?.unwrap_or(0);
-
-            // Use provided values or keep current ones
-            let new_warning = warning_level.unwrap_or(current_warning);
-            let new_error = error_level.unwrap_or(current_error);
-
-            // Update the rule levels
-            let update_query = "
-                UPDATE pglinter.rules
-                SET warning_level = $1, error_level = $2
-                WHERE code = $3";
-
-            client.update(
-                update_query,
-                None,
-                &[new_warning.into(), new_error.into(), rule_code.into()],
-            )?;
-
-            pgrx::notice!(
-                "✅ Updated rule {} levels: warning={}, error={}",
-                rule_code,
-                new_warning,
-                new_error
-            );
-            Ok(true)
-        } else {
-            pgrx::warning!("⚠️  Rule {} not found", rule_code);
-            Ok(false)
-        }
-    });
-
-    match result {
-        Ok(success) => Ok(success),
-        Err(e) => Err(format!("Database error: {e}")),
-    }
-}
-
-pub fn get_rule_levels(rule_code: &str) -> Result<(i32, i32), String> {
-    let query = "
-        SELECT warning_level, error_level
-        FROM pglinter.rules
-        WHERE code = $1";
-
-    let result: Result<(i32, i32), spi::SpiError> = Spi::connect(|client| {
-        let mut rows = client.select(query, None, &[rule_code.into()])?;
-        if let Some(row) = rows.next() {
-            let warning_level: i32 = row.get(1)?.unwrap_or(0);
-            let error_level: i32 = row.get(2)?.unwrap_or(0);
-            Ok((warning_level, error_level))
-        } else {
-            // Return default values if rule not found
-            Ok((50, 90))
-        }
-    });
-
-    match result {
-        Ok(levels) => Ok(levels),
-        Err(e) => Err(format!("Database error: {e}")),
-    }
-}
-
 /// Show current rule queries for debugging
 pub fn show_rule_queries(rule_code: &str) -> Result<bool, String> {
-    let query = "
-        SELECT code, name, q1, q2
-        FROM pglinter.rules
-        WHERE code = $1";
+    use crate::rule_queries::get_rule_queries;
+
+    let query = "SELECT code, name FROM pglinter.rules WHERE code = $1";
 
     let result: Result<bool, spi::SpiError> = Spi::connect(|client| {
         let mut rows = client.select(query, None, &[rule_code.into()])?;
         if let Some(row) = rows.next() {
             let code: String = row.get(1)?.unwrap_or_default();
             let name: String = row.get(2)?.unwrap_or_default();
-            let q1: Option<String> = row.get(3)?;
-            let q2: Option<String> = row.get(4)?;
+            let queries = get_rule_queries(&code);
 
             pgrx::notice!("🔍 Rule {} Queries ('{}'):", code, name);
             pgrx::notice!("{}", "=".repeat(60));
 
-            match q1 {
-                Some(query) => {
+            match queries.q1 {
+                Some(q) => {
                     pgrx::notice!("📊 q1 Query:");
-                    pgrx::notice!("{}", query);
+                    pgrx::notice!("{}", q);
                 }
                 None => pgrx::notice!("📊 q1 Query: <NOT SET>"),
             }
 
             pgrx::notice!("");
 
-            match q2 {
-                Some(query) => {
+            match queries.q2 {
+                Some(q) => {
                     pgrx::notice!("⚠️  q2 Query:");
-                    pgrx::notice!("{}", query);
+                    pgrx::notice!("{}", q);
                 }
                 None => pgrx::notice!("⚠️  q2 Query: <NOT SET>"),
             }
@@ -423,8 +339,8 @@ pub fn show_rule_queries(rule_code: &str) -> Result<bool, String> {
 /// Export all rules to YAML format
 pub fn export_rules_to_yaml() -> Result<String, String> {
     let query = "
-        SELECT id, name, code, enable, warning_level, error_level,
-               scope, description, message, fixes, q1, q2
+        SELECT id, name, code, enable,
+               scope, description, message, fixes
         FROM pglinter.rules
         ORDER BY code";
 
@@ -433,7 +349,7 @@ pub fn export_rules_to_yaml() -> Result<String, String> {
         let mut rules = Vec::new();
 
         for row in rows {
-            let fixes_array: Vec<Option<String>> = row.get(10)?.unwrap_or_default();
+            let fixes_array: Vec<Option<String>> = row.get(8)?.unwrap_or_default();
             let fixes: Vec<String> = fixes_array.into_iter().flatten().collect();
 
             let rule = Rule {
@@ -441,14 +357,10 @@ pub fn export_rules_to_yaml() -> Result<String, String> {
                 name: row.get(2)?.unwrap_or_default(),
                 code: row.get(3)?.unwrap_or_default(),
                 enable: row.get(4)?.unwrap_or(true),
-                warning_level: row.get(5)?.unwrap_or(50),
-                error_level: row.get(6)?.unwrap_or(90),
-                scope: row.get(7)?.unwrap_or_default(),
-                description: row.get(8)?.unwrap_or_default(),
-                message: row.get(9)?.unwrap_or_default(),
+                scope: row.get(5)?.unwrap_or_default(),
+                description: row.get(6)?.unwrap_or_default(),
+                message: row.get(7)?.unwrap_or_default(),
                 fixes,
-                q1: row.get(11)?,
-                q2: row.get(12)?,
             };
             rules.push(rule);
         }
@@ -542,22 +454,18 @@ pub fn import_rules_from_yaml(yaml_content: &str) -> Result<String, String> {
         let rule_code_for_error = rule.code.clone();
 
         let upsert_query = "
-            INSERT INTO pglinter.rules (id, name, code, enable, warning_level, error_level,
-                                      scope, description, message, fixes, q1, q2)
-            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+            INSERT INTO pglinter.rules (id, name, code, enable,
+                                       scope, description, message, fixes)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
             ON CONFLICT (id)
             DO UPDATE SET
                 name = EXCLUDED.name,
                 code = EXCLUDED.code,
                 enable = EXCLUDED.enable,
-                warning_level = EXCLUDED.warning_level,
-                error_level = EXCLUDED.error_level,
                 scope = EXCLUDED.scope,
                 description = EXCLUDED.description,
                 message = EXCLUDED.message,
-                fixes = EXCLUDED.fixes,
-                q1 = EXCLUDED.q1,
-                q2 = EXCLUDED.q2
+                fixes = EXCLUDED.fixes
             RETURNING (xmax = 0) as is_new";
 
         let result: Result<bool, spi::SpiError> = Spi::connect_mut(|client| {
@@ -569,14 +477,10 @@ pub fn import_rules_from_yaml(yaml_content: &str) -> Result<String, String> {
                     rule.name.into(),
                     rule.code.into(),
                     rule.enable.into(),
-                    rule.warning_level.into(),
-                    rule.error_level.into(),
                     rule.scope.into(),
                     rule.description.into(),
                     rule.message.into(),
                     fixes_array.into(),
-                    rule.q1.into(),
-                    rule.q2.into(),
                 ],
             )?;
 

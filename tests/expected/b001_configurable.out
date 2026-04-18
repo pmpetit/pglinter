@@ -1,4 +1,4 @@
--- Quick test to verify B001 rule uses configurable thresholds
+-- Quick test to verify B001 rule detects tables without primary key
 DROP EXTENSION IF EXISTS pglinter CASCADE;
 NOTICE:  extension "pglinter" does not exist, skipping
 CREATE EXTENSION pglinter;
@@ -29,41 +29,7 @@ NOTICE:  ✅ Rule B001 has been enabled
  t
 (1 row)
 
-SELECT count(*) AS violation_count from pglinter.get_violations() WHERE rule_code = 'B001';
- violation_count 
------------------
-               1
-(1 row)
-
--- Test B001 rule - should show it uses the configured thresholds
--- Update B001 thresholds to very large values (60%, 80%) not to trigger on any table without PK
-SELECT pglinter.update_rule_levels('B001', 60, 80);
-NOTICE:  ✅ Updated rule B001 levels: warning=60, error=80
- update_rule_levels 
---------------------
- t
-(1 row)
-
--- Check updated thresholds
-SELECT
-    warning_level,
-    error_level
-FROM pglinter.rules
-WHERE code = 'B001';
- warning_level | error_level 
----------------+-------------
-            60 |          80
-(1 row)
-
--- Test B001 rule again - should now trigger with new thresholds
--- Update B001 thresholds to very low values (1%, 2%) not to trigger on any table without PK
-SELECT pglinter.update_rule_levels('B001', 60, 80);
-NOTICE:  ✅ Updated rule B001 levels: warning=60, error=80
- update_rule_levels 
---------------------
- t
-(1 row)
-
+-- B001 should detect the table without primary key
 SELECT count(*) AS violation_count from pglinter.get_violations() WHERE rule_code = 'B001';
  violation_count 
 -----------------

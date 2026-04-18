@@ -127,8 +127,6 @@ SELECT 'Running B004 check after dropping some unused indexes (should show fewer
 -- Test if file exists and show checksum
 
 
--- Update B004 thresholds to demonstrate message formatting
-SELECT pglinter.update_rule_levels('B004', 60, 90);
 
 -- Final demonstration with current state
 SELECT 'Final B004 (base check) - Shows percentage-based unused index analysis:' AS b004_demo;

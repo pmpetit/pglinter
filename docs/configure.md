@@ -81,22 +81,16 @@ rules:
     name: "Tables Without Primary Key"
     code: "B001"
     enable: true
-    warning_level: 20
-    error_level: 80
     scope: "BASE"
     description: "Detects tables without primary keys"
     message: "Found {0} tables without primary keys"
     fixes:
       - "Add primary key constraints to tables"
       - "Consider surrogate keys for tables without natural keys"
-    q1: "SELECT COUNT(*) FROM ... WHERE ..."
-    q2: null
   - id: 2
     name: "Redundant Indexes"
     code: "B002"
     enable: false
-    warning_level: 15
-    error_level: 50
     # ... more rule properties
 ```
 
@@ -112,19 +106,13 @@ Edit the exported YAML file to customize rules for your environment:
   code: "B002"
   enable: false  # Disable redundant index checking
 
-# 2. Adjust thresholds
-- id: 4
-  code: "B004"
-  warning_level: 30  # More lenient threshold
-  error_level: 70    # Higher error threshold
-
-# 3. Modify rule description
+# 2. Modify rule description
 - id: 1
   code: "B001"
   description: "Custom description for primary key check"
   message: "Custom message: Found {0} tables needing primary keys"
 
-# 4. Update fix suggestions
+# 3. Update fix suggestions
 - id: 3
   code: "B003"
   fixes:
@@ -142,22 +130,18 @@ After editing the YAML file, import it back:
 SELECT pglinter.import_rules_from_yaml('
 metadata:
   export_timestamp: "2024-01-01T12:00:00Z"
-  total_rules: 2
+  total_rules: 1
   format_version: "1.0"
 rules:
   - id: 1
     name: "Tables Without Primary Key"
     code: "B001"
     enable: true
-    warning_level: 30
-    error_level: 70
     scope: "BASE"
     description: "Modified description"
     message: "Found {0} tables without primary keys"
     fixes:
       - "Add primary key constraints"
-    q1: "SELECT COUNT(*) FROM information_schema.tables..."
-    q2: null
 ');
 
 -- Import rules from file
@@ -169,22 +153,20 @@ SELECT pglinter.import_rules_from_file('/path/to/modified_rules.yaml');
 Create different YAML files for different environments:
 
 ```bash
-# Development environment - more permissive
+# Development environment - permissive
 rules_dev.yaml:
-- Most rules enabled but with higher thresholds
+- Some rules disabled
 - Disable strict naming conventions
 - Focus on structural issues
 
 # Staging environment - moderate settings
 rules_staging.yaml:
-- All rules enabled with standard thresholds
-- Test performance rules
+- All rules enabled
 - Validate before production
 
 # Production environment - strict settings
 rules_production.yaml:
 - All critical rules enabled
-- Low thresholds for early detection
 - Focus on security and performance
 ```
 
@@ -223,19 +205,6 @@ psql -d prod_db -c "SELECT pglinter.import_rules_from_file('modified_rules.yaml'
 
 #### Common Use Cases
 
-**Customize thresholds for your database size:**
-```yaml
-# For large databases, increase thresholds
-- code: "B004"
-  warning_level: 50  # Higher threshold for seq scans
-  error_level: 80
-
-# For small databases, decrease thresholds
-- code: "B001"
-  warning_level: 10  # Stricter primary key checking
-  error_level: 30
-```
-
 **Disable rules not applicable to your use case:**
 ```yaml
 # Disable uppercase naming rules for legacy systems
@@ -264,7 +233,7 @@ Always validate imported configurations:
 
 ```sql
 -- Verify rules were imported correctly
-SELECT code, enable, warning_level, error_level
+SELECT code, enable, scope
 FROM pglinter.rules
 WHERE code IN ('B001', 'B002', 'B003')
 ORDER BY code;

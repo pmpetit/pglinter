@@ -254,17 +254,9 @@ SELECT pglinter.enable_all_rules();
 ### Rule Level Management
 
 ```sql
--- View current rule levels
-SELECT pglinter.get_rule_levels('B001');
 
--- Update warning and error thresholds
-SELECT pglinter.update_rule_levels('B001', 5, 20); -- warning_level=5, error_level=20
 
--- Update only warning level
-SELECT pglinter.update_rule_levels('B001', 10, NULL);
 
--- Update only error level
-SELECT pglinter.update_rule_levels('B001', NULL, 25);
 ```
 
 ### Rule Configuration Import/Export
@@ -285,8 +277,6 @@ metadata:
 rules:
   - code: "B001"
     enabled: true
-    warning_level: 10
-    error_level: 50
 ');
 
 -- Import from file
@@ -360,8 +350,6 @@ FROM pglinter.get_violations() v;
 -- Show SQL queries used by a rule
 SELECT pglinter.show_rule_queries('B001');
 
--- Get detailed rule levels
-SELECT pglinter.get_rule_levels('B001');
 ```
 
 ## Best Practices

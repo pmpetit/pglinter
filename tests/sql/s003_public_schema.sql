@@ -70,16 +70,9 @@ SELECT count(*) AS violation_count from pglinter.get_violations() WHERE rule_cod
 -- Test if file exists and show checksum
 
 
--- PART 3: Test threshold adjustment
-SELECT 'PART 3: Testing S003 threshold adjustments (should not trigger)' AS test_part;
+-- PART 3: Test S003 violations
 
--- Lower the warning threshold to ensure detection
-SELECT pglinter.update_rule_levels('S003', 50, 80);
-
-SELECT 'S003 thresholds updated to warning=50%, error=80%' AS threshold_info;
-
--- Test with adjusted thresholds
-SELECT 'Running S003 check with adjusted thresholds (warning=50%):' AS test_3;
+SELECT 'Running S003 check:' AS test_3;
 
 SELECT count(*) AS violation_count from pglinter.get_violations() WHERE rule_code = 'S003';
 

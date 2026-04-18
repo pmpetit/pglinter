@@ -156,8 +156,6 @@ CREATE INDEX idx_inventory_category_id ON inventory_no_index (category_id);
 -- Run B003 check again (should show no violations or reduced violations)
 SELECT 'Running B003 check after adding foreign key indexes (should show no violations):' AS test_info;
 
--- Update B003 thresholds to produce message
-SELECT pglinter.update_rule_levels('B003', 60, 90);
 
 SELECT count(*) AS violation_count from pglinter.get_violations() WHERE rule_code = 'B003';
 

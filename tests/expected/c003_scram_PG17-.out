@@ -190,12 +190,12 @@ SELECT '=== Test 5: C003 Rule Configuration ===' AS test_section;
  === Test 5: C003 Rule Configuration ===
 (1 row)
 
-SELECT code, name, description, warning_level, error_level, fixes
+SELECT code, name, description, fixes
 FROM pglinter.rules
 WHERE code = 'C003';
- code |          name           |                                                                                description                                                                                 | warning_level | error_level |                                                                                                fixes                                                                                                
-------+-------------------------+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------+---------------+-------------+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
- C003 | PasswordEncryptionIsMd5 | This configuration is not secure anymore and will prevent an upgrade to Postgres 18. Warning, you will need to reset all passwords after this is changed to scram-sha-256. |            20 |          80 | {"change password_encryption parameter to scram-sha-256 (ALTER SYSTEM SET password_encryption = 'scram-sha-256' ). Warning, you will need to reset all passwords after this parameter is updated."}
+ code |          name           |                                                                                description                                                                                 |                                                                                                fixes                                                                                                
+------+-------------------------+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ C003 | PasswordEncryptionIsMd5 | This configuration is not secure anymore and will prevent an upgrade to Postgres 18. Warning, you will need to reset all passwords after this is changed to scram-sha-256. | {"change password_encryption parameter to scram-sha-256 (ALTER SYSTEM SET password_encryption = 'scram-sha-256' ). Warning, you will need to reset all passwords after this parameter is updated."}
 (1 row)
 
 -- Test 6: Demonstrate secure configuration benefits

@@ -65,12 +65,9 @@ REGRESS_TESTS+= s003_public_schema
 REGRESS_TESTS+= s003_unsecured_public_schema
 # REGRESS_TESTS+= s004_owner_schema_is_internal_role
 REGRESS_TESTS+= s005_several_table_owner_in_schema
-REGRESS_TESTS+= demo_rule_levels
 REGRESS_TESTS+= import_rules_from_file
 REGRESS_TESTS+= import_rules_from_yaml
 #REGRESS_TESTS+= integration_test
-REGRESS_TESTS+= quick_demo_levels
-#REGRESS_TESTS+= rule_management
 REGRESS_TESTS+= schema_rules
 
 # REGRESS_TESTS+= b001

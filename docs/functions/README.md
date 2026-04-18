@@ -397,103 +397,6 @@ SELECT pglinter.enable_all_rules();  -- Re-enable after maintenance
 
 ---
 
-### update_rule_levels(rule_code, warning_level, error_level)
-
-Updates the warning and error thresholds for configurable rules, allowing customization of sensitivity levels.
-
-#### update_rule_levels Syntax
-
-```sql
-SELECT pglinter.update_rule_levels(
-    rule_code text,
-    warning_level numeric,
-    error_level numeric
-);
-```
-
-#### update_rule_levels Parameters
-
-- `rule_code`: Rule identifier to update (e.g., 'T005')
-- `warning_level`: Warning threshold (NULL to keep current value)
-- `error_level`: Error threshold (NULL to keep current value)
-
-#### update_rule_levels Returns
-
-- `text`: Success message confirming the update
-
-#### update_rule_levels Examples
-
-```sql
--- Update both levels for T005 (sequential scan rule)
-SELECT pglinter.update_rule_levels('B001', 40.0, 80.0);
--- Returns: "Updated rule T005: warning_level=40, error_level=80"
-
--- Update only warning level
-SELECT pglinter.update_rule_levels('B001', 30.0, NULL);
--- Returns: "Updated rule T005: warning_level=30"
-
--- Update only error level
-SELECT pglinter.update_rule_levels('B001', NULL, 95.0);
--- Returns: "Updated rule T005: error_level=95"
-
--- Environment-specific configurations
--- Development: Relaxed thresholds
-SELECT pglinter.update_rule_levels('B001', 70.0, 95.0);
-
--- Production: Strict thresholds
-SELECT pglinter.update_rule_levels('B001', 30.0, 60.0);
-```
-
-#### update_rule_levels Notes
-
-- Only applies to rules with configurable thresholds (currently T005)
-- Use NULL to preserve existing values for either parameter
-- For T005: values represent percentage thresholds for sequential scan ratio
-
----
-
-### get_rule_levels(rule_code)
-
-Retrieves the current warning and error threshold levels for a rule, useful for configuration management.
-
-#### get_rule_levels Syntax
-
-```sql
-SELECT pglinter.get_rule_levels(rule_code text);
-```
-
-#### get_rule_levels Parameters
-
-- `rule_code`: Rule identifier to query
-
-#### get_rule_levels Returns
-
-- `text`: Current warning and error levels, or default values if rule not configured
-
-#### get_rule_levels Examples
-
-```sql
--- Get current levels for T005
-SELECT pglinter.get_rule_levels('B001');
--- Returns: "Rule B001: warning_level=50, error_level=90"
-
--- Check levels for all configurable rules
-SELECT 'B001' as rule_code, pglinter.get_rule_levels('B001') as levels;
-
--- Validate configuration before update
-SELECT pglinter.get_rule_levels('B001') as current_config;
-SELECT pglinter.update_rule_levels('B001', 40.0, 80.0);
-SELECT pglinter.get_rule_levels('B001') as new_config;
-```
-
-#### get_rule_levels Notes
-
-- Returns default values (warning=50, error=90) for unconfigured rules
-- Currently only T005 supports configurable levels
-- Values for T005 represent percentage thresholds
-
----
-
 ## Import/Export Functions
 
 Functions for managing rule configurations as code, enabling version control and environment synchronization.
@@ -538,8 +441,6 @@ rules:
     name: "Tables without primary keys"
     enabled: true
     scope: "BASE"
-    warning_level: 20
-    error_level: 80
     message: "Tables without primary key found"
 ```
 
@@ -620,8 +521,6 @@ rules:
     name: "Custom validation rule"
     enabled: true
     scope: "TABLE"
-    warning_level: 10
-    error_level: 50
 ');
 
 -- Import configuration changes
@@ -631,12 +530,8 @@ metadata:
 rules:
   B001:
     enabled: false
-    warning_level: 15
-    error_level: 85
   T005:
     enabled: true
-    warning_level: 30
-    error_level: 70
 ');
 
 -- Environment-specific rule configuration
@@ -647,8 +542,6 @@ metadata:
 rules:
   T005:
     enabled: true
-    warning_level: 20
-    error_level: 50
   B004:
     enabled: false
 ');
@@ -705,16 +598,12 @@ SELECT pglinter.import_rules_from_file('/backups/prod_rules.yaml');
 SELECT pglinter.import_rules_from_yaml('
 rules:
   T005:
-    warning_level: 80
-    error_level: 95
 ');
 
 -- Production: Strict rules
 SELECT pglinter.import_rules_from_yaml('
 rules:
   T005:
-    warning_level: 30
-    error_level: 60
 ');
 
 -- 3. Version Control Integration

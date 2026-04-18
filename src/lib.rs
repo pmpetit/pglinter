@@ -3,6 +3,7 @@ use pgrx::prelude::*;
 
 mod execute_rules;
 mod manage_rules;
+mod rule_queries;
 
 #[cfg(any(test, feature = "pg_test"))]
 mod fixtures;
@@ -98,32 +99,6 @@ mod pglinter {
             Err(e) => {
                 pgrx::warning!("Failed to disable all rules: {}", e);
                 Some(-1)
-            }
-        }
-    }
-
-    #[pg_extern(security_definer)]
-    fn update_rule_levels(
-        rule_code: &str,
-        warning_level: Option<i32>,
-        error_level: Option<i32>,
-    ) -> Option<bool> {
-        match manage_rules::update_rule_levels(rule_code, warning_level, error_level) {
-            Ok(success) => Some(success),
-            Err(e) => {
-                pgrx::warning!("Failed to update rule levels for {}: {}", rule_code, e);
-                Some(false)
-            }
-        }
-    }
-
-    #[pg_extern(security_definer)]
-    fn get_rule_levels(rule_code: &str) -> Option<String> {
-        match manage_rules::get_rule_levels(rule_code) {
-            Ok((warning, error)) => Some(format!("warning_level={warning}, error_level={error}")),
-            Err(e) => {
-                pgrx::warning!("Failed to get rule levels for {}: {}", rule_code, e);
-                None
             }
         }
     }
@@ -294,7 +269,7 @@ mod tests {
     fn test_enable_rule_success() {
         // Test enabling an existing rule
         // Setup disabled test rule using fixture
-        fixtures::setup_test_rule("TEST001", 9001, "Test Rule", false, 20, 80);
+        fixtures::setup_test_rule("TEST001", 9001, "Test Rule", false);
 
         // Enable the rule
         let result = manage_rules::enable_rule("TEST001");
@@ -321,7 +296,7 @@ mod tests {
     fn test_disable_rule_success() {
         // Test disabling an existing rule
         // Setup enabled test rule using fixture
-        fixtures::setup_test_rule("TEST002", 9002, "Test Rule 2", true, 20, 80);
+        fixtures::setup_test_rule("TEST002", 9002, "Test Rule 2", true);
 
         // Disable the rule
         let result = manage_rules::disable_rule("TEST002");
@@ -347,7 +322,7 @@ mod tests {
     #[pg_test]
     fn test_is_rule_enabled_true() {
         // Test checking if an enabled rule is enabled
-        fixtures::setup_test_rule("TEST003", 9003, "Test Rule 3", true, 20, 80);
+        fixtures::setup_test_rule("TEST003", 9003, "Test Rule 3", true);
 
         let result = manage_rules::is_rule_enabled("TEST003");
         assert!(result.is_ok());
@@ -360,7 +335,7 @@ mod tests {
     #[pg_test]
     fn test_is_rule_enabled_false() {
         // Test checking if a disabled rule is enabled
-        fixtures::setup_test_rule("TEST004", 9004, "Test Rule 4", false, 20, 80);
+        fixtures::setup_test_rule("TEST004", 9004, "Test Rule 4", false);
 
         let result = manage_rules::is_rule_enabled("TEST004");
         assert!(result.is_ok());
@@ -381,8 +356,8 @@ mod tests {
     #[pg_test]
     fn test_list_rules() {
         // Setup test rules using fixture
-        fixtures::setup_test_rule("TEST005", 9005, "Test Rule 5", true, 20, 80);
-        fixtures::setup_test_rule("TEST006", 9006, "Test Rule 6", false, 20, 80);
+        fixtures::setup_test_rule("TEST005", 9005, "Test Rule 5", true);
+        fixtures::setup_test_rule("TEST006", 9006, "Test Rule 6", false);
 
         let result = manage_rules::list_rules();
         assert!(result.is_ok());
@@ -411,7 +386,7 @@ mod tests {
     #[pg_test]
     fn test_show_rule_status() {
         // Setup test rule using fixture
-        fixtures::setup_test_rule("TEST007", 9007, "Test Rule 7", false, 20, 80);
+        fixtures::setup_test_rule("TEST007", 9007, "Test Rule 7", false);
 
         let result = manage_rules::show_rule_status();
         assert!(result.is_ok());
@@ -424,7 +399,7 @@ mod tests {
     #[pg_test]
     fn test_explain_rule_success() {
         // Setup test rule with complete information using fixture
-        fixtures::setup_test_rule("TEST008", 9008, "Test Rule 8", true, 20, 80);
+        fixtures::setup_test_rule("TEST008", 9008, "Test Rule 8", true);
 
         let result = manage_rules::explain_rule("TEST008");
         assert!(result.is_ok());
@@ -596,7 +571,7 @@ mod tests {
     #[pg_test]
     fn test_rule_toggle_workflow() {
         // Test a complete workflow: enable -> check -> disable -> check
-        fixtures::setup_test_rule("TEST009", 9009, "Test Rule 9", false, 20, 80);
+        fixtures::setup_test_rule("TEST009", 9009, "Test Rule 9", false);
 
         // Initially disabled
         let status = manage_rules::is_rule_enabled("TEST009").unwrap();
@@ -625,9 +600,9 @@ mod tests {
     #[pg_test]
     fn test_enable_all_rules() {
         // Set up test rules with mixed enabled/disabled states using fixtures
-        fixtures::setup_test_rule("TEST010", 9010, "Test Rule 10", false, 20, 80);
-        fixtures::setup_test_rule("TEST011", 9011, "Test Rule 11", false, 20, 80);
-        fixtures::setup_test_rule("TEST012", 9012, "Test Rule 12", true, 20, 80);
+        fixtures::setup_test_rule("TEST010", 9010, "Test Rule 10", false);
+        fixtures::setup_test_rule("TEST011", 9011, "Test Rule 11", false);
+        fixtures::setup_test_rule("TEST012", 9012, "Test Rule 12", true);
 
         // Count currently disabled rules before our operation
         let disabled_count_before =
@@ -666,9 +641,9 @@ mod tests {
     #[pg_test]
     fn test_disable_all_rules() {
         // Set up test rules with mixed enabled/disabled states using fixtures
-        fixtures::setup_test_rule("TEST013", 9013, "Test Rule 13", true, 20, 80);
-        fixtures::setup_test_rule("TEST014", 9014, "Test Rule 14", true, 20, 80);
-        fixtures::setup_test_rule("TEST015", 9015, "Test Rule 15", false, 20, 80);
+        fixtures::setup_test_rule("TEST013", 9013, "Test Rule 13", true);
+        fixtures::setup_test_rule("TEST014", 9014, "Test Rule 14", true);
+        fixtures::setup_test_rule("TEST015", 9015, "Test Rule 15", false);
 
         // Count currently enabled rules before our operation
         let enabled_count_before =
@@ -707,8 +682,8 @@ mod tests {
     #[pg_test]
     fn test_enable_disable_all_workflow() {
         // Test the complete workflow of enabling and disabling all rules
-        fixtures::setup_test_rule("TEST016", 9016, "Test Rule 16", true, 20, 80);
-        fixtures::setup_test_rule("TEST017", 9017, "Test Rule 17", false, 20, 80);
+        fixtures::setup_test_rule("TEST016", 9016, "Test Rule 16", true);
+        fixtures::setup_test_rule("TEST017", 9017, "Test Rule 17", false);
 
         // Count rules before operations
         let enabled_count_before =
@@ -749,197 +724,17 @@ mod tests {
     }
 
     #[pg_test]
-    fn test_update_rule_levels() {
-        // Setup: ensure test rule exists
-        fixtures::setup_test_rule("TEST_SQL_LEVELS", 9998, "Test SQL Levels Rule", true, 5, 10);
-        // Test SQL interface for getting rule levels
-        let levels =
-            Spi::get_one::<String>("SELECT pglinter.get_rule_levels('TEST_SQL_LEVELS')").unwrap();
-        assert!(levels.is_some());
-        let levels_str = levels.unwrap();
-        assert_eq!(levels_str, "warning_level=5, error_level=10");
-
-        // Test SQL interface for updating rule levels (both)
-        let result =
-            Spi::get_one::<bool>("SELECT pglinter.update_rule_levels('TEST_SQL_LEVELS', 15, 25)")
-                .unwrap();
-        assert!(result.is_some());
-        assert!(result.unwrap());
-
-        // Verify the update via SQL
-        let updated_levels =
-            Spi::get_one::<String>("SELECT pglinter.get_rule_levels('TEST_SQL_LEVELS')").unwrap();
-        assert!(updated_levels.is_some());
-        assert_eq!(updated_levels.unwrap(), "warning_level=15, error_level=25");
-
-        // Test SQL interface for updating only warning level (using NULL for error_level)
-        let result2 =
-            Spi::get_one::<bool>("SELECT pglinter.update_rule_levels('TEST_SQL_LEVELS', 50, NULL)")
-                .unwrap();
-        assert!(result2.is_some());
-        assert!(result2.unwrap());
-
-        // Verify only warning level changed
-        let updated_levels2 =
-            Spi::get_one::<String>("SELECT pglinter.get_rule_levels('TEST_SQL_LEVELS')").unwrap();
-        assert!(updated_levels2.is_some());
-        assert_eq!(updated_levels2.unwrap(), "warning_level=50, error_level=25");
-
-        // Test SQL interface for updating only error level
-        let result3 =
-            Spi::get_one::<bool>("SELECT pglinter.update_rule_levels('TEST_SQL_LEVELS', NULL, 75)")
-                .unwrap();
-        assert!(result3.is_some());
-        assert!(result3.unwrap());
-
-        // Verify only error level changed
-        let updated_levels3 =
-            Spi::get_one::<String>("SELECT pglinter.get_rule_levels('TEST_SQL_LEVELS')").unwrap();
-        assert!(updated_levels3.is_some());
-        assert_eq!(updated_levels3.unwrap(), "warning_level=50, error_level=75");
-
-        // Clean up
-        let _ = Spi::run("DELETE FROM pglinter.rules WHERE code = 'TEST_SQL_LEVELS'");
-    }
-
-    #[pg_test]
-    fn test_update_rule_levels_exceptions() {
-        // Test 1: Test with non-existent rule (should return false, not throw exception)
-        let result_nonexistent =
-            manage_rules::update_rule_levels("NONEXISTENT_RULE", Some(10), Some(20));
-        assert!(result_nonexistent.is_ok());
-        assert_eq!(result_nonexistent.unwrap(), false); // Should return false for non-existent rule
-
-        // Test 2: Test SQL interface with non-existent rule
-        let sql_result_nonexistent =
-            Spi::get_one::<bool>("SELECT pglinter.update_rule_levels('NONEXISTENT_RULE', 10, 20)")
-                .unwrap();
-        assert!(sql_result_nonexistent.is_some());
-        assert_eq!(sql_result_nonexistent.unwrap(), false);
-
-        // Test 3: Setup a rule and test valid updates to ensure basic functionality works
-        fixtures::setup_test_rule(
-            "TEST_EXCEPTION_RULE",
-            9997,
-            "Test Exception Rule",
-            true,
-            5,
-            10,
-        );
-
-        // Test valid update first
-        let result_valid =
-            manage_rules::update_rule_levels("TEST_EXCEPTION_RULE", Some(20), Some(40));
-        assert!(result_valid.is_ok());
-        assert_eq!(result_valid.unwrap(), true);
-
-        // Verify the update worked
-        let levels = manage_rules::get_rule_levels("TEST_EXCEPTION_RULE");
-        assert!(levels.is_ok());
-        let (warning, error) = levels.unwrap();
-        assert_eq!(warning, 20);
-        assert_eq!(error, 40);
-
-        // Test 4: Test with extreme values (PostgreSQL integer limits)
-        // This should work within PostgreSQL's integer range (-2147483648 to 2147483647)
-        let result_extreme = manage_rules::update_rule_levels(
-            "TEST_EXCEPTION_RULE",
-            Some(2147483647),
-            Some(-2147483648),
-        );
-        assert!(result_extreme.is_ok());
-        assert_eq!(result_extreme.unwrap(), true);
-
-        // Test 5: Test updating with NULL values (should keep current values)
-        let result_null_both = manage_rules::update_rule_levels("TEST_EXCEPTION_RULE", None, None);
-        assert!(result_null_both.is_ok());
-        assert_eq!(result_null_both.unwrap(), true);
-
-        // Verify values remained the same (extreme values from previous test)
-        let levels_after_null = manage_rules::get_rule_levels("TEST_EXCEPTION_RULE");
-        assert!(levels_after_null.is_ok());
-        let (warning_after, error_after) = levels_after_null.unwrap();
-        assert_eq!(warning_after, 2147483647);
-        assert_eq!(error_after, -2147483648);
-
-        // Test 6: Test with mixed NULL and valid values
-        let result_mixed = manage_rules::update_rule_levels("TEST_EXCEPTION_RULE", Some(100), None);
-        assert!(result_mixed.is_ok());
-        assert_eq!(result_mixed.unwrap(), true);
-
-        // Verify warning changed but error remained
-        let levels_mixed = manage_rules::get_rule_levels("TEST_EXCEPTION_RULE");
-        assert!(levels_mixed.is_ok());
-        let (warning_mixed, error_mixed) = levels_mixed.unwrap();
-        assert_eq!(warning_mixed, 100);
-        assert_eq!(error_mixed, -2147483648); // Should remain unchanged
-
-        // Test 7: Test the SQL interface with extreme values to ensure it handles the same edge cases
-        let sql_result_extreme = Spi::get_one::<bool>(
-            "SELECT pglinter.update_rule_levels('TEST_EXCEPTION_RULE', -2147483648, 2147483647)",
-        )
-        .unwrap();
-        assert!(sql_result_extreme.is_some());
-        assert_eq!(sql_result_extreme.unwrap(), true);
-
-        // Test 8: Test error handling by attempting to corrupt the rule and then update
-        // This simulates scenarios where database constraints or data integrity issues might occur
-
-        // First, let's create a scenario with a rule that has unusual data
-        let _ = Spi::run("DELETE FROM pglinter.rules WHERE code = 'TEST_CORRUPTED_RULE'");
-        let _ = Spi::run("INSERT INTO pglinter.rules (id, code, name, enable, warning_level, error_level, scope) VALUES (9996, 'TEST_CORRUPTED_RULE', 'Test Corrupted Rule', true, NULL, NULL, 'BASE')");
-
-        // Update rule with NULL current values - function should handle this gracefully
-        let result_null_current =
-            manage_rules::update_rule_levels("TEST_CORRUPTED_RULE", Some(10), Some(20));
-        assert!(result_null_current.is_ok());
-        assert_eq!(result_null_current.unwrap(), true);
-
-        // Verify it worked
-        let levels_null_current = manage_rules::get_rule_levels("TEST_CORRUPTED_RULE");
-        assert!(levels_null_current.is_ok());
-        let (warning_null, error_null) = levels_null_current.unwrap();
-        assert_eq!(warning_null, 10);
-        assert_eq!(error_null, 20);
-
-        // Clean up test rules
-        fixtures::cleanup_test_rule("TEST_EXCEPTION_RULE");
-        fixtures::cleanup_test_rule("TEST_CORRUPTED_RULE");
-    }
-
-    #[pg_test]
     fn test_show_rule_queries() {
-        // Setup: create a test rule with queries
-        fixtures::cleanup_test_rule("TEST_SHOW_QUERIES");
-        let q1 = "SELECT count(*) FROM pg_stat_user_tables";
-        let q2 = "SELECT count(*) FROM pg_stat_user_tables WHERE n_tup_ins = 0";
-
-        let _ = Spi::run(&format!(
-            "INSERT INTO pglinter.rules (id, code, name, enable, q1, q2) VALUES (9995, 'TEST_SHOW_QUERIES', 'Test Show Queries Rule', true, '{}', '{}')",
-            q1, q2
-        ));
-
-        // Test showing rule queries for existing rule
-        let result = manage_rules::show_rule_queries("TEST_SHOW_QUERIES");
+        // show_rule_queries now uses hardcoded queries from rule_queries module
+        // Test with an existing real rule (B001 has hardcoded q1/q2)
+        let result = manage_rules::show_rule_queries("B001");
         assert!(result.is_ok());
         assert!(result.unwrap());
-
-        // Test showing rule queries for rule with NULL queries
-        let _ = Spi::run("DELETE FROM pglinter.rules WHERE code = 'TEST_NULL_QUERIES'");
-        let _ = Spi::run("INSERT INTO pglinter.rules (id, code, name, enable, q1, q2) VALUES (9994, 'TEST_NULL_QUERIES', 'Test Null Queries Rule', true, NULL, NULL)");
-
-        let result_null = manage_rules::show_rule_queries("TEST_NULL_QUERIES");
-        assert!(result_null.is_ok());
-        assert!(result_null.unwrap());
 
         // Test showing rule queries for non-existent rule
         let result_not_found = manage_rules::show_rule_queries("NONEXISTENT_RULE");
         assert!(result_not_found.is_ok());
         assert!(!result_not_found.unwrap()); // Should return false
-
-        // Clean up
-        fixtures::cleanup_test_rule("TEST_SHOW_QUERIES");
-        fixtures::cleanup_test_rule("TEST_NULL_QUERIES");
     }
 
     #[pg_test]
@@ -992,23 +787,11 @@ mod tests {
                 .unwrap();
         assert!(rule1_enabled.unwrap());
 
-        let rule1_warning = Spi::get_one::<i32>(
-            "SELECT warning_level FROM pglinter.rules WHERE code = 'TEST_IMPORT_1'",
-        )
-        .unwrap();
-        assert_eq!(rule1_warning.unwrap(), 30);
-
         // Test 6: Verify rule2 properties
         let rule2_enabled =
             Spi::get_one::<bool>("SELECT enable FROM pglinter.rules WHERE code = 'TEST_IMPORT_2'")
                 .unwrap();
         assert!(!rule2_enabled.unwrap()); // Should be false
-
-        let rule2_error = Spi::get_one::<i32>(
-            "SELECT error_level FROM pglinter.rules WHERE code = 'TEST_IMPORT_2'",
-        )
-        .unwrap();
-        assert_eq!(rule2_error.unwrap(), 80);
 
         // Test 7: Test updating existing rules (import again)
         let result_update = manage_rules::import_rules_from_file(temp_file_path);
@@ -1112,35 +895,11 @@ mod tests {
                 .unwrap();
         assert!(rule1_enabled.unwrap());
 
-        let rule1_warning = Spi::get_one::<i32>(
-            "SELECT warning_level FROM pglinter.rules WHERE code = 'TEST_IMPORT_1'",
-        )
-        .unwrap();
-        assert_eq!(rule1_warning.unwrap(), 30);
-
-        let rule1_error = Spi::get_one::<i32>(
-            "SELECT error_level FROM pglinter.rules WHERE code = 'TEST_IMPORT_1'",
-        )
-        .unwrap();
-        assert_eq!(rule1_error.unwrap(), 70);
-
-        // Test 5: Verify TEST_IMPORT_2 properties (disabled, null q1)
+        // Test 5: Verify TEST_IMPORT_2 properties (disabled)
         let rule2_enabled =
             Spi::get_one::<bool>("SELECT enable FROM pglinter.rules WHERE code = 'TEST_IMPORT_2'")
                 .unwrap();
         assert!(!rule2_enabled.unwrap());
-
-        let rule2_q1_is_null = Spi::get_one::<bool>(
-            "SELECT q1 IS NULL FROM pglinter.rules WHERE code = 'TEST_IMPORT_2'",
-        )
-        .unwrap();
-        assert!(rule2_q1_is_null.unwrap());
-
-        let rule2_q2_is_null = Spi::get_one::<bool>(
-            "SELECT q2 IS NULL FROM pglinter.rules WHERE code = 'TEST_IMPORT_2'",
-        )
-        .unwrap();
-        assert!(!rule2_q2_is_null.unwrap()); // Should not be null
 
         // Test 7: Re-import same YAML to test updates
         let result_update = manage_rules::import_rules_from_yaml(valid_yaml_content);
@@ -1198,8 +957,8 @@ mod tests {
     #[pg_test]
     fn test_export_rules_to_yaml() {
         // Setup test rules with different configurations
-        fixtures::setup_test_rule("EXPORT_TEST_1", 9993, "Export Test Rule 1", true, 10, 50);
-        fixtures::setup_test_rule("EXPORT_TEST_2", 9992, "Export Test Rule 2", false, 20, 60);
+        fixtures::setup_test_rule("EXPORT_TEST_1", 9993, "Export Test Rule 1", true);
+        fixtures::setup_test_rule("EXPORT_TEST_2", 9992, "Export Test Rule 2", false);
 
         // Test export_rules_to_yaml function
         let result = manage_rules::export_rules_to_yaml();
@@ -1232,7 +991,7 @@ mod tests {
     #[pg_test]
     fn test_export_rules_to_file() {
         // Setup test rules
-        fixtures::setup_test_rule("FILE_EXPORT_1", 9991, "File Export Test Rule", true, 15, 75);
+        fixtures::setup_test_rule("FILE_EXPORT_1", 9991, "File Export Test Rule", true);
 
         // Test 1: Export to valid file path
         let export_file_path = "/tmp/pglinter_export_test.yaml";
@@ -1289,81 +1048,11 @@ mod tests {
     }
 
     #[pg_test]
-    fn test_get_rule_levels() {
-        // Setup test rule with specific levels
-        fixtures::setup_test_rule(
-            "GET_LEVELS_TEST",
-            9990,
-            "Get Levels Test Rule",
-            true,
-            25,
-            85,
-        );
-
-        // Test 1: Get levels for existing rule
-        let result = manage_rules::get_rule_levels("GET_LEVELS_TEST");
-        assert!(result.is_ok());
-        let (warning, error) = result.unwrap();
-        assert_eq!(warning, 25);
-        assert_eq!(error, 85);
-
-        // Test 2: Test via SQL interface
-        let sql_result =
-            Spi::get_one::<String>("SELECT pglinter.get_rule_levels('GET_LEVELS_TEST')").unwrap();
-        assert!(sql_result.is_some());
-        let levels_str = sql_result.unwrap();
-        assert_eq!(levels_str, "warning_level=25, error_level=85");
-
-        // Test 3: Get levels for non-existent rule (returns default values, not error)
-        let result_nonexistent = manage_rules::get_rule_levels("NONEXISTENT_LEVELS");
-        assert!(result_nonexistent.is_ok());
-        let (warning_default, error_default) = result_nonexistent.unwrap();
-        assert_eq!(warning_default, 50); // Default warning level
-        assert_eq!(error_default, 90); // Default error level
-
-        // Test 4: Test SQL interface with non-existent rule
-        let sql_result_nonexistent =
-            Spi::get_one::<String>("SELECT pglinter.get_rule_levels('NONEXISTENT_LEVELS')")
-                .unwrap();
-        assert!(sql_result_nonexistent.is_some()); // Should return default values, not NULL
-        let nonexistent_levels_str = sql_result_nonexistent.unwrap();
-        assert_eq!(nonexistent_levels_str, "warning_level=50, error_level=90");
-
-        // Test 5: Test with rule that has NULL levels
-        let _ = Spi::run("DELETE FROM pglinter.rules WHERE code = 'NULL_LEVELS_TEST'");
-        let _ = Spi::run("INSERT INTO pglinter.rules (id, code, name, enable, warning_level, error_level) VALUES (9989, 'NULL_LEVELS_TEST', 'Null Levels Test', true, NULL, NULL)");
-
-        let result_null = manage_rules::get_rule_levels("NULL_LEVELS_TEST");
-        assert!(result_null.is_ok());
-        let (warning_null, error_null) = result_null.unwrap();
-        assert_eq!(warning_null, 0); // Should default to 0 for NULL values
-        assert_eq!(error_null, 0);
-
-        // Test 6: Test SQL interface with NULL levels rule
-        let sql_result_null =
-            Spi::get_one::<String>("SELECT pglinter.get_rule_levels('NULL_LEVELS_TEST')").unwrap();
-        assert!(sql_result_null.is_some());
-        let null_levels_str = sql_result_null.unwrap();
-        assert_eq!(null_levels_str, "warning_level=0, error_level=0");
-
-        // Cleanup
-        fixtures::cleanup_test_rule("GET_LEVELS_TEST");
-        fixtures::cleanup_test_rule("NULL_LEVELS_TEST");
-    }
-
-    #[pg_test]
     fn test_list_rules_error_handling() {
         // Test list_rules function with database in various states
 
         // Test 1: Normal operation (covered in existing test_list_rules)
-        fixtures::setup_test_rule(
-            "LIST_ERROR_TEST",
-            9988,
-            "List Error Test Rule",
-            true,
-            10,
-            20,
-        );
+        fixtures::setup_test_rule("LIST_ERROR_TEST", 9988, "List Error Test Rule", true);
 
         let result = manage_rules::list_rules();
         assert!(result.is_ok());
@@ -1401,54 +1090,34 @@ mod tests {
     use crate::execute_rules::get_violations;
     #[pg_test]
     fn test_get_violations() {
-        // Setup: create two enabled rules with q4 using fixtures
-        fixtures::setup_test_rule("TESTQ4A", 99992, "Test Rule Q4A", true, 20, 80);
-        fixtures::setup_test_rule("TESTQ4B", 99993, "Test Rule Q4B", true, 20, 80);
-        let _ = Spi::run(
-            "UPDATE pglinter.rules SET q4 = 'SELECT 10::oid, 20::oid, 30' WHERE code = 'TESTQ4A'",
-        );
-        let _ = Spi::run(
-            "UPDATE pglinter.rules SET q4 = 'SELECT 11::oid, 21::oid, 31' WHERE code = 'TESTQ4B'",
-        );
-
+        // get_violations now uses hardcoded q4 queries from rule_queries module.
+        // Test that it returns a result (may or may not have violations depending on DB state).
         let result = get_violations();
         assert!(result.is_ok());
+        // All enabled rules should be in the result
         let all = result.unwrap();
-        // Should contain both rules
-        let mut found_a = false;
-        let mut found_b = false;
-        for (code, violations) in all {
-            if code == "TESTQ4A" {
-                assert_eq!(violations, vec![(10, 20, 30)]);
-                found_a = true;
-            }
-            if code == "TESTQ4B" {
-                assert_eq!(violations, vec![(11, 21, 31)]);
-                found_b = true;
-            }
+        assert!(!all.is_empty());
+        // Each entry has a code and a (possibly empty) violation list
+        for (code, violations) in &all {
+            assert!(!code.is_empty());
+            // violations is a Vec<(i32, i32, i32)>
+            let _ = violations;
         }
-        assert!(found_a && found_b);
-        // Cleanup
-        fixtures::cleanup_test_rule("TESTQ4A");
-        fixtures::cleanup_test_rule("TESTQ4B");
     }
 
     use crate::execute_rules::get_violations_for_rule;
     #[pg_test]
     fn test_get_violations_for_rule() {
-        // Setup: create a rule with q4 using fixtures
-        fixtures::setup_test_rule("TESTQ4C", 99994, "Test Rule Q4C", true, 20, 80);
-        let _ = Spi::run(
-            "UPDATE pglinter.rules SET q4 = 'SELECT 42::oid, 43::oid, 44' WHERE code = 'TESTQ4C'",
-        );
-
-        let result = get_violations_for_rule("TESTQ4C");
+        // Test with a rule that has a hardcoded q4 (B001 has a q4 query)
+        let result = get_violations_for_rule("B001");
         assert!(result.is_ok());
-        let violations = result.unwrap();
-        assert_eq!(violations, vec![(42, 43, 44)]);
+        // Result may be empty (no violations) or non-empty; either is valid
+        let _ = result.unwrap();
 
-        // Cleanup
-        fixtures::cleanup_test_rule("TESTQ4C");
+        // Test with an unknown rule (no q4 defined) - should return empty vec
+        let result_unknown = get_violations_for_rule("UNKNOWN_RULE_XYZ");
+        assert!(result_unknown.is_ok());
+        assert!(result_unknown.unwrap().is_empty());
     }
 }
 

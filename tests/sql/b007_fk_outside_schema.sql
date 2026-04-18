@@ -201,19 +201,11 @@ SELECT pglinter.enable_rule('B007') AS B007_only_enabled;
 SELECT 'Current B007 rule status:' AS status_info;
 SELECT * FROM pglinter.rules WHERE code = 'B007';
 
--- Test threshold configuration
-SELECT 'Testing B007 threshold configuration...' AS test_step;
-SELECT pglinter.get_rule_levels('B007') AS current_B007_levels;
-
--- Make B007 more strict temporarily
-SELECT pglinter.update_rule_levels('B007', 10, 30) AS B007_strict_update;
-SELECT 'B007 with stricter thresholds (should trigger more easily):' AS strict_test;
+-- Test violations
+SELECT 'Testing B007 violations...' AS test_step;
 SELECT count(*) AS violation_count from pglinter.get_violations() WHERE rule_code = 'B007';
 
 -- Test if file exists and show checksum
-
--- Reset to original levels
-SELECT pglinter.update_rule_levels('B007', 20, 80) AS B007_reset_levels;
 
 SELECT 'B007 comprehensive test completed successfully!' as test_result;
 DROP SCHEMA public_schema CASCADE;
