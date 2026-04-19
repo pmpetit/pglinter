@@ -53,19 +53,17 @@ SELECT
 
   get_violations() returns oid, not the name. To get readable values, you can use
 
-  ```sql
-  SELECT
-      (pg_identify_object(classid, objid, objsubid)).type AS object_type,
-      (pg_identify_object(classid, objid, objsubid)).schema AS object_schema,
-      (pg_identify_object(classid, objid, objsubid)).name AS object_name,
-      (pg_identify_object(classid, objid, objsubid)).identity AS object_identity
-  FROM pglinter.get_violations()
-  ```
+```sql
+SELECT
+    (pg_identify_object(classid, objid, objsubid)).type AS object_type,
+    (pg_identify_object(classid, objid, objsubid)).schema AS object_schema,
+    (pg_identify_object(classid, objid, objsubid)).name AS object_name,
+    (pg_identify_object(classid, objid, objsubid)).identity AS object_identity
+FROM pglinter.get_violations()
+```
 
-  - On success: `Ok(Vec<(rule_code, Vec<(classid, objid, objsubid)>)>)`
-  - On error: `Err(String)` with a descriptive error message
-
-
+- On success: `Ok(Vec<(rule_code, Vec<(classid, objid, objsubid)>)>)`
+- On error: `Err(String)` with a descriptive error message
 
 ## Typical Use Cases
 

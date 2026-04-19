@@ -23,7 +23,7 @@ nav:
   - How-To Guides:
     - 'Overview': how-to/README.md
   - Rules Reference:
-    - 'Rules': rules/README.mdmd
+    - 'Rules': rules/README.md
   - Examples:
     - 'Examples': examples/README.md
 
