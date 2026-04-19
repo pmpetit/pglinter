@@ -275,13 +275,15 @@ deb: package
 # The `package` command needs pg_config from the target version
 # https://github.com/pgcentralfoundation/pgrx/issues/288
 
+PGRX_PACKAGE_FLAGS?=
+
 package:
 	$(eval PG_CONFIG := $(shell $(PGRX) info pg-config $(PGVER) 2> /dev/null || echo pg_config))
 	$(eval PG_SHAREDIR := $(shell $(PG_CONFIG) --sharedir))
 	$(eval PG_LIBDIR := $(shell $(PG_CONFIG) --libdir))
 	$(eval PG_PKGLIBDIR := $(shell $(PG_CONFIG) --pkglibdir))
 	$(eval PG_BINDIR := $(shell $(PG_CONFIG) --bindir))
-	$(PGRX) package --pg-config $(PG_CONFIG)
+	$(PGRX) package --pg-config $(PG_CONFIG) $(PGRX_PACKAGE_FLAGS)
 
 ##
 ## D O C K E R
