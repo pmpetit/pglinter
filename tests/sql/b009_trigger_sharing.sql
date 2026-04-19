@@ -62,7 +62,7 @@ CREATE TABLE trigger_test.table_07 (
 
 CREATE TABLE trigger_test.table_08 (
     id SERIAL PRIMARY KEY,
-    amount DECIMAL(10,2),
+    amount DECIMAL(10, 2),
     updated_at TIMESTAMP DEFAULT NOW()
 );
 
@@ -166,45 +166,45 @@ $$ LANGUAGE plpgsql;
 
 -- Unique triggers for tables 1-5
 CREATE TRIGGER trigger_table_01_update
-    BEFORE UPDATE ON trigger_test.table_01
-    FOR EACH ROW
-    EXECUTE FUNCTION trigger_test.update_table_01_timestamp();
+BEFORE UPDATE ON trigger_test.table_01
+FOR EACH ROW
+EXECUTE FUNCTION trigger_test.update_table_01_timestamp();
 
 CREATE TRIGGER trigger_table_02_update
-    BEFORE UPDATE ON trigger_test.table_02
-    FOR EACH ROW
-    EXECUTE FUNCTION trigger_test.update_table_02_timestamp();
+BEFORE UPDATE ON trigger_test.table_02
+FOR EACH ROW
+EXECUTE FUNCTION trigger_test.update_table_02_timestamp();
 
 CREATE TRIGGER trigger_table_03_update
-    BEFORE UPDATE ON trigger_test.table_03
-    FOR EACH ROW
-    EXECUTE FUNCTION trigger_test.update_table_03_timestamp();
+BEFORE UPDATE ON trigger_test.table_03
+FOR EACH ROW
+EXECUTE FUNCTION trigger_test.update_table_03_timestamp();
 
 CREATE TRIGGER trigger_table_04_update
-    BEFORE UPDATE ON trigger_test.table_04
-    FOR EACH ROW
-    EXECUTE FUNCTION trigger_test.update_table_04_timestamp();
+BEFORE UPDATE ON trigger_test.table_04
+FOR EACH ROW
+EXECUTE FUNCTION trigger_test.update_table_04_timestamp();
 
 CREATE TRIGGER trigger_table_05_update
-    BEFORE UPDATE ON trigger_test.table_05
-    FOR EACH ROW
-    EXECUTE FUNCTION trigger_test.update_table_05_timestamp();
+BEFORE UPDATE ON trigger_test.table_05
+FOR EACH ROW
+EXECUTE FUNCTION trigger_test.update_table_05_timestamp();
 
 -- Shared triggers for tables 6-8 (using the same function)
 CREATE TRIGGER trigger_table_06_update
-    BEFORE UPDATE ON trigger_test.table_06
-    FOR EACH ROW
-    EXECUTE FUNCTION trigger_test.shared_update_timestamp();
+BEFORE UPDATE ON trigger_test.table_06
+FOR EACH ROW
+EXECUTE FUNCTION trigger_test.shared_update_timestamp();
 
 CREATE TRIGGER trigger_table_07_update
-    BEFORE UPDATE ON trigger_test.table_07
-    FOR EACH ROW
-    EXECUTE FUNCTION trigger_test.shared_update_timestamp();
+BEFORE UPDATE ON trigger_test.table_07
+FOR EACH ROW
+EXECUTE FUNCTION trigger_test.shared_update_timestamp();
 
 CREATE TRIGGER trigger_table_08_update
-    BEFORE UPDATE ON trigger_test.table_08
-    FOR EACH ROW
-    EXECUTE FUNCTION trigger_test.shared_update_timestamp();
+BEFORE UPDATE ON trigger_test.table_08
+FOR EACH ROW
+EXECUTE FUNCTION trigger_test.shared_update_timestamp();
 
 -- Tables 9 and 10 have NO triggers (as required)
 
@@ -222,14 +222,24 @@ INSERT INTO trigger_test.table_06 (data) VALUES ('{"test": "data"}');
 INSERT INTO trigger_test.table_07 (content) VALUES ('Sample content');
 INSERT INTO trigger_test.table_08 (amount) VALUES (99.99);
 INSERT INTO trigger_test.table_09 (notes) VALUES ('No trigger table');
-INSERT INTO trigger_test.table_10 (archived) VALUES (false);
+INSERT INTO trigger_test.table_10 (archived) VALUES (FALSE);
 
 -- Test with only B009 enabled
 SELECT 'Testing B009 in isolation...' AS test_step;
 SELECT pglinter.disable_all_rules() AS all_disabled;
-SELECT pglinter.enable_rule('B009') AS B009_only_enabled;
+SELECT pglinter.enable_rule('B009') AS b009_only_enabled;
 
-SELECT count(*) AS violation_count from pglinter.get_violations() WHERE rule_code = 'B009';
+SELECT COUNT(*) AS violation_count
+FROM pglinter.get_violations()
+WHERE rule_code = 'B009';
+
+SELECT
+    (PG_IDENTIFY_OBJECT(classid, objid, objsubid)).type AS object_type,
+    (PG_IDENTIFY_OBJECT(classid, objid, objsubid)).schema AS object_schema,
+    (PG_IDENTIFY_OBJECT(classid, objid, objsubid)).name AS object_name,
+    (PG_IDENTIFY_OBJECT(classid, objid, objsubid)).identity AS object_identity
+FROM pglinter.get_violations()
+WHERE rule_code = 'B009';
 
 -- Test with output
 -- Test if file exists and show checksum

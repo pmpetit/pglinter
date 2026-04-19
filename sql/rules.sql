@@ -171,7 +171,7 @@ WHERE n.nspname NOT IN ('pg_toast', 'pg_catalog', 'information_schema', 'pglinte
     c.relname != LOWER(c.relname)
   )
 UNION ALL
-SELECT 'pg_attribute'::regclass::oid AS classid, a.attrelid AS objid, a.attnum AS objsubid
+SELECT 'pg_class'::regclass::oid AS classid, a.attrelid AS objid, a.attnum AS objsubid
 FROM pg_attribute a
 JOIN pg_class c ON c.oid = a.attrelid
 JOIN pg_namespace n ON n.oid = c.relnamespace
@@ -277,7 +277,7 @@ WHERE
         'ask a dba'
     ],
     $q$SELECT
-    'pg_attribute'::regclass::oid AS classid,
+    'pg_class'::regclass::oid AS classid,
     c.oid AS objid,
     a.attnum AS objsubid
 FROM information_schema.table_constraints AS tc
@@ -377,7 +377,7 @@ obj_class AS (
 -- Columns
 obj_column AS (
     SELECT
-        'pg_attribute'::regclass::oid AS classid,
+        'pg_class'::regclass::oid AS classid,
         a.attrelid AS objid,
         a.attnum AS objsubid
     FROM pg_attribute a

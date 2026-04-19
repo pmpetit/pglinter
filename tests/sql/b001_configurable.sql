@@ -23,7 +23,17 @@ SELECT pglinter.disable_all_rules() AS all_rules_disabled;
 SELECT pglinter.enable_rule('B001') AS b001_enabled;
 
 -- B001 should detect the table without primary key
-SELECT count(*) AS violation_count from pglinter.get_violations() WHERE rule_code = 'B001';
+SELECT count(*) AS violation_count
+FROM pglinter.get_violations()
+WHERE rule_code = 'B001';
+
+SELECT
+    (pg_identify_object(classid, objid, objsubid)).type AS object_type,
+    (pg_identify_object(classid, objid, objsubid)).schema AS object_schema,
+    (pg_identify_object(classid, objid, objsubid)).name AS object_name,
+    (pg_identify_object(classid, objid, objsubid)).identity AS object_identity
+FROM pglinter.get_violations()
+WHERE rule_code = 'B001';
 
 DROP TABLE test_no_pk CASCADE;
 DROP TABLE test_with_pk CASCADE;

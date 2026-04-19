@@ -19,9 +19,19 @@ ALTER TABLE s005_schema.table2 OWNER TO s005_owner2;
 
 SELECT 'Testing B011 in isolation...' AS test_step;
 SELECT pglinter.disable_all_rules() AS all_disabled;
-SELECT pglinter.enable_rule('B011') AS B011_only_enabled;
+SELECT pglinter.enable_rule('B011') AS b011_only_enabled;
 
-SELECT count(*) AS violation_count from pglinter.get_violations() WHERE rule_code = 'B011';
+SELECT count(*) AS violation_count
+FROM pglinter.get_violations()
+WHERE rule_code = 'B011';
+
+SELECT
+    (pg_identify_object(classid, objid, objsubid)).type AS object_type,
+    (pg_identify_object(classid, objid, objsubid)).schema AS object_schema,
+    (pg_identify_object(classid, objid, objsubid)).name AS object_name,
+    (pg_identify_object(classid, objid, objsubid)).identity AS object_identity
+FROM pglinter.get_violations()
+WHERE rule_code = 'B011';
 
 -- Cleanup
 DROP TABLE s005_schema.table1;

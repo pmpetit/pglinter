@@ -12,7 +12,15 @@ CREATE SCHEMA s004_schema AUTHORIZATION postgres;
 
 SELECT 'Testing S004 in isolation...' AS test_step;
 SELECT pglinter.disable_all_rules() AS all_disabled;
-SELECT pglinter.enable_rule('S004') AS S004_only_enabled;
+SELECT pglinter.enable_rule('S004') AS s004_only_enabled;
+
+SELECT
+    (pg_identify_object(classid, objid, objsubid)).type AS object_type,
+    (pg_identify_object(classid, objid, objsubid)).schema AS object_schema,
+    (pg_identify_object(classid, objid, objsubid)).name AS object_name,
+    (pg_identify_object(classid, objid, objsubid)).identity AS object_identity
+FROM pglinter.get_violations()
+WHERE rule_code = 'S004';
 
 -- Cleanup
 DROP SCHEMA s004_schema CASCADE;

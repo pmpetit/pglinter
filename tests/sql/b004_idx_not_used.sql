@@ -20,14 +20,21 @@ CREATE TABLE customer_analytics (
 );
 
 -- Mix of used and unused indexes
-CREATE INDEX idx_analytics_customer_id ON customer_analytics (customer_id);     -- Will be used
-CREATE INDEX idx_analytics_last_login ON customer_analytics (last_login);       -- Will be used
-CREATE INDEX idx_analytics_device_type ON customer_analytics (device_type);     -- Will NOT be used
-CREATE INDEX idx_analytics_browser ON customer_analytics (browser);             -- Will NOT be used
-CREATE INDEX idx_analytics_ip_address ON customer_analytics (ip_address);       -- Will NOT be used
+-- Will be used
+CREATE INDEX idx_analytics_customer_id ON customer_analytics (customer_id);
+-- Will be used
+CREATE INDEX idx_analytics_last_login ON customer_analytics (last_login);
+-- Will NOT be used
+CREATE INDEX idx_analytics_device_type ON customer_analytics (device_type);
+-- Will NOT be used
+CREATE INDEX idx_analytics_browser ON customer_analytics (browser);
+-- Will NOT be used
+CREATE INDEX idx_analytics_ip_address ON customer_analytics (ip_address);
 
 -- Insert large amount of analytics data
-INSERT INTO customer_analytics (customer_id, page_views, session_duration, last_login, device_type, browser)
+INSERT INTO customer_analytics (
+    customer_id, page_views, session_duration, last_login, device_type, browser
+)
 SELECT
     (i % 5) + 1,  -- customer_id (1-5)
     i % 100 + 10,  -- page_views (10-109)
@@ -106,7 +113,9 @@ SELECT pglinter.is_rule_enabled('B004') AS b004_status;
 -- Expected result: Should detect unused indexes with idx_scan = 0
 SELECT 'Running base check to detect B004 violations...' AS status;
 
-SELECT count(*) AS violation_count from pglinter.get_violations() WHERE rule_code = 'B004';
+SELECT COUNT(*) AS violation_count
+FROM pglinter.get_violations()
+WHERE rule_code = 'B004';
 
 -- Test rule management for B004
 SELECT 'Testing B004 rule management...' AS test_section;
@@ -127,11 +136,20 @@ SELECT 'Running B004 check after dropping some unused indexes (should show fewer
 -- Test if file exists and show checksum
 
 
-
 -- Final demonstration with current state
 SELECT 'Final B004 (base check) - Shows percentage-based unused index analysis:' AS b004_demo;
 
-SELECT count(*) AS violation_count from pglinter.get_violations() WHERE rule_code = 'B004';
+SELECT COUNT(*) AS violation_count
+FROM pglinter.get_violations()
+WHERE rule_code = 'B004';
+
+SELECT
+    (PG_IDENTIFY_OBJECT(classid, objid, objsubid)).type AS object_type,
+    (PG_IDENTIFY_OBJECT(classid, objid, objsubid)).schema AS object_schema,
+    (PG_IDENTIFY_OBJECT(classid, objid, objsubid)).name AS object_name,
+    (PG_IDENTIFY_OBJECT(classid, objid, objsubid)).identity AS object_identity
+FROM pglinter.get_violations()
+WHERE rule_code = 'B004';
 
 DROP TABLE customer_analytics;
 

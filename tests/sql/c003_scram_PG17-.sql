@@ -10,7 +10,9 @@ SELECT 'Testing C003 rule with SCRAM-SHA-256 password encryption...' AS test_inf
 
 -- Store original password_encryption setting
 CREATE TEMP TABLE original_settings AS
-SELECT name, setting as original_value
+SELECT
+    name,
+    setting AS original_value
 FROM pg_settings
 WHERE name = 'password_encryption';
 
@@ -58,12 +60,14 @@ $$;
 SELECT '=== Current Password Encryption Setting ===' AS test_section;
 SELECT
     name,
-    setting as current_value,
+    setting AS current_value,
     CASE
-        WHEN setting = 'scram-sha-256' THEN '✅ SECURE: Using recommended SCRAM-SHA-256'
+        WHEN
+            setting = 'scram-sha-256'
+            THEN '✅ SECURE: Using recommended SCRAM-SHA-256'
         WHEN setting = 'md5' THEN '❌ INSECURE: Using deprecated MD5'
         ELSE '❓ OTHER: Using ' || setting
-    END as security_status
+    END AS security_status
 FROM pg_settings
 WHERE name = 'password_encryption';
 
@@ -82,23 +86,23 @@ SELECT '=== Test 1: C003 Rule Execution with Current Setting ===' AS test_sectio
 -- Test 2: Manual execution of C003 query
 SELECT '=== Test 2: Manual C003 Query Execution ===' AS test_section;
 SELECT
-    count(*) as md5_password_count,
+    count(*) AS md5_password_count,
     CASE
         WHEN count(*) = 0 THEN '✅ PASS: No MD5 password encryption detected'
         ELSE '❌ FAIL: ' || count(*) || ' MD5 configuration(s) found'
-    END as test_result
+    END AS test_result
 FROM pg_catalog.pg_settings
-WHERE name='password_encryption' AND setting='md5';
+WHERE name = 'password_encryption' AND setting = 'md5';
 
 -- Test 3: Show what C003 is actually checking
 SELECT '=== Test 3: C003 Query and Logic ===' AS test_section;
 SELECT
-    'C003 checks for: password_encryption = ''md5''' as what_c003_checks,
-    'Current setting: ' || setting as current_setting,
+    'C003 checks for: password_encryption = ''md5''' AS what_c003_checks,
+    'Current setting: ' || setting AS current_setting,
     'Expected result: ' || CASE
         WHEN setting = 'md5' THEN 'FAIL (MD5 detected)'
         ELSE 'PASS (No MD5)'
-    END as expected_result
+    END AS expected_result
 FROM pg_settings
 WHERE name = 'password_encryption';
 
@@ -108,22 +112,29 @@ SELECT pglinter.explain_rule('C003') AS rule_explanation;
 
 -- Test 5: Show rule configuration
 SELECT '=== Test 5: C003 Rule Configuration ===' AS test_section;
-SELECT code, name, fixes
+SELECT
+    code,
+    name,
+    fixes
 FROM pglinter.rules
 WHERE code = 'C003';
 
 -- Test 6: Demonstrate secure configuration benefits
 SELECT '=== Test 6: Security Assessment ===' AS test_section;
 SELECT
+    'Recommendation: Use scram-sha-256 for new installations' AS recommendation,
     CASE
-        WHEN setting = 'scram-sha-256' THEN
-            'SECURE: SCRAM-SHA-256 provides strong password hashing and is PostgreSQL 18+ compatible'
-        WHEN setting = 'md5' THEN
-            'INSECURE: MD5 is deprecated, weak, and prevents upgrade to PostgreSQL 18+'
+        WHEN setting = 'scram-sha-256'
+            THEN
+                'SECURE: SCRAM-SHA-256 provides strong password hashing and is PostgreSQL 18+ compatible'
+        WHEN setting = 'md5'
+            THEN
+                'INSECURE: MD5 is deprecated, weak, and prevents upgrade to PostgreSQL 18+'
         ELSE
-            'UNKNOWN: Setting ' || setting || ' - check PostgreSQL documentation'
-    END as security_assessment,
-    'Recommendation: Use scram-sha-256 for new installations' as recommendation
+            'UNKNOWN: Setting '
+            || setting
+            || ' - check PostgreSQL documentation'
+    END AS security_assessment
 FROM pg_settings
 WHERE name = 'password_encryption';
 

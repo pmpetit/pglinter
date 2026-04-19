@@ -42,7 +42,9 @@ NOTICE:  ✅ Rule B002 has been enabled
 
 -- Test with file output
 -- Test if file exists and show checksum
-SELECT count(*) AS violation_count from pglinter.get_violations() WHERE rule_code = 'B002';
+SELECT COUNT(*) AS violation_count
+FROM pglinter.get_violations()
+WHERE rule_code = 'B002';
  violation_count 
 -----------------
                0
@@ -83,11 +85,24 @@ NOTICE:  🔴 Rule B002 has been disabled
  t
 (1 row)
 
-SELECT count(*) AS violation_count from pglinter.get_violations() WHERE rule_code = 'B002';
+SELECT COUNT(*) AS violation_count
+FROM pglinter.get_violations()
+WHERE rule_code = 'B002';
  violation_count 
 -----------------
                0
 (1 row)
+
+SELECT
+    (PG_IDENTIFY_OBJECT(classid, objid, objsubid)).type AS object_type,
+    (PG_IDENTIFY_OBJECT(classid, objid, objsubid)).schema AS object_schema,
+    (PG_IDENTIFY_OBJECT(classid, objid, objsubid)).name AS object_name,
+    (PG_IDENTIFY_OBJECT(classid, objid, objsubid)).identity AS object_identity
+FROM pglinter.get_violations()
+WHERE rule_code = 'B002';
+ object_type | object_schema | object_name | object_identity 
+-------------+---------------+-------------+-----------------
+(0 rows)
 
 DROP TABLE orders_table CASCADE;
 DROP TABLE orders_table_with_constraint CASCADE;

@@ -68,8 +68,17 @@ SELECT pglinter.enable_rule('B002') AS b001_enabled;
 
 -- Test if file exists and show checksum
 
-SELECT count(*) AS violation_count from pglinter.get_violations() WHERE rule_code = 'B002';
+SELECT COUNT(*) AS violation_count
+FROM pglinter.get_violations()
+WHERE rule_code = 'B002';
 
+SELECT
+    (PG_IDENTIFY_OBJECT(classid, objid, objsubid)).type AS object_type,
+    (PG_IDENTIFY_OBJECT(classid, objid, objsubid)).schema AS object_schema,
+    (PG_IDENTIFY_OBJECT(classid, objid, objsubid)).name AS object_name,
+    (PG_IDENTIFY_OBJECT(classid, objid, objsubid)).identity AS object_identity
+FROM pglinter.get_violations()
+WHERE rule_code = 'B002';
 -- Test with no output file (should output to prompt)
 
 -- Test rule management for B002
@@ -81,7 +90,9 @@ SELECT pglinter.is_rule_enabled('B002') AS b002_enabled;
 -- Disable B002 temporarily and test
 SELECT pglinter.disable_rule('B002') AS b002_disabled;
 
-SELECT count(*) AS violation_count from pglinter.get_violations() WHERE rule_code = 'B002';
+SELECT COUNT(*) AS violation_count
+FROM pglinter.get_violations()
+WHERE rule_code = 'B002';
 
 DROP TABLE orders_table CASCADE;
 DROP TABLE orders_table_with_constraint CASCADE;

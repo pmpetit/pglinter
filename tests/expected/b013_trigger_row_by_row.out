@@ -77,6 +77,18 @@ WHERE rule_code = 'B013';
                1
 (1 row)
 
+SELECT
+    (pg_identify_object(classid, objid, objsubid)).type AS object_type,
+    (pg_identify_object(classid, objid, objsubid)).schema AS object_schema,
+    (pg_identify_object(classid, objid, objsubid)).name AS object_name,
+    (pg_identify_object(classid, objid, objsubid)).identity AS object_identity
+FROM pglinter.get_violations()
+WHERE rule_code = 'B013';
+ object_type | object_schema | object_name |               object_identity               
+-------------+---------------+-------------+---------------------------------------------
+ trigger     |               |             | t_pos_tnd_ssn_hst on public.pos_tnd_ssn_hst
+(1 row)
+
 -- Test with output
 -- Test if file exists and show checksum
 -- Cleanup

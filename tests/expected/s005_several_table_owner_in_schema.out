@@ -25,17 +25,31 @@ NOTICE:  🔴 Disabled 21 rule(s)
            21
 (1 row)
 
-SELECT pglinter.enable_rule('S005') AS S005_only_enabled;
+SELECT pglinter.enable_rule('S005') AS s005_only_enabled;
 NOTICE:  ✅ Rule S005 has been enabled
  s005_only_enabled 
 -------------------
  t
 (1 row)
 
-SELECT count(*) AS violation_count from pglinter.get_violations() WHERE rule_code = 'S005';
+SELECT count(*) AS violation_count
+FROM pglinter.get_violations()
+WHERE rule_code = 'S005';
  violation_count 
 -----------------
                1
+(1 row)
+
+SELECT
+    (pg_identify_object(classid, objid, objsubid)).type AS object_type,
+    (pg_identify_object(classid, objid, objsubid)).schema AS object_schema,
+    (pg_identify_object(classid, objid, objsubid)).name AS object_name,
+    (pg_identify_object(classid, objid, objsubid)).identity AS object_identity
+FROM pglinter.get_violations()
+WHERE rule_code = 'S005';
+ object_type | object_schema | object_name |  object_identity   
+-------------+---------------+-------------+--------------------
+ table       | s005_schema   | table2      | s005_schema.table2
 (1 row)
 
 -- Cleanup

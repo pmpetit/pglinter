@@ -62,12 +62,18 @@ CREATE TABLE test_naming_schema.users_with_bad_columns (
 
 -- Create views using reserved keywords (should trigger B010)
 CREATE VIEW test_keywords_schema."DISTINCT" AS
-SELECT product_id, product_name, price
+SELECT
+    product_id,
+    product_name,
+    price
 FROM test_keywords_schema.products_with_bad_columns
 WHERE price > 10.00;
 
 CREATE VIEW test_naming_schema."INNER" AS
-SELECT user_id, username, email
+SELECT
+    user_id,
+    username,
+    email
 FROM test_naming_schema.users_with_bad_columns
 WHERE user_id > 0;
 
@@ -77,7 +83,9 @@ CREATE SEQUENCE test_naming_schema."TRUE";
 CREATE SEQUENCE test_keywords_schema."FALSE";
 
 -- Create indexes using reserved keywords (should trigger B010)
-CREATE INDEX "PRIMARY" ON test_keywords_schema.products_with_bad_columns (product_name);
+CREATE INDEX "PRIMARY" ON test_keywords_schema.products_with_bad_columns (
+    product_name
+);
 CREATE INDEX "UNIQUE" ON test_naming_schema.users_with_bad_columns (username);
 CREATE INDEX "FOREIGN" ON test_keywords_schema."FROM" (source_name);
 
@@ -97,7 +105,9 @@ END;
 $$ LANGUAGE plpgsql;
 
 -- Create user-defined types using reserved keywords (should trigger B010)
-CREATE TYPE test_keywords_schema."CASE" AS ENUM ('option1', 'option2', 'option3');
+CREATE TYPE test_keywords_schema."CASE" AS ENUM (
+    'option1', 'option2', 'option3'
+);
 CREATE TYPE test_naming_schema."WHEN" AS (
     condition TEXT,
     result INTEGER
@@ -113,8 +123,8 @@ END;
 $$ LANGUAGE plpgsql;
 
 CREATE TRIGGER "ELSE"
-    BEFORE UPDATE ON test_keywords_schema.products_with_bad_columns
-    FOR EACH ROW EXECUTE FUNCTION test_keywords_schema."THEN"();
+BEFORE UPDATE ON test_keywords_schema.products_with_bad_columns
+FOR EACH ROW EXECUTE FUNCTION test_keywords_schema."THEN"();
 
 CREATE OR REPLACE FUNCTION test_naming_schema."END"()
 RETURNS TRIGGER AS $$
@@ -125,8 +135,8 @@ END;
 $$ LANGUAGE plpgsql;
 
 CREATE TRIGGER "BINARY"
-    BEFORE UPDATE ON test_naming_schema.users_with_bad_columns
-    FOR EACH ROW EXECUTE FUNCTION test_naming_schema."END"();
+BEFORE UPDATE ON test_naming_schema.users_with_bad_columns
+FOR EACH ROW EXECUTE FUNCTION test_naming_schema."END"();
 
 -- Create tables and objects with GOOD names (should NOT trigger B010)
 CREATE TABLE test_keywords_schema.good_products (
@@ -148,12 +158,17 @@ CREATE TABLE test_naming_schema.good_users (
 );
 
 CREATE VIEW test_keywords_schema.active_products AS
-SELECT id, product_name, price
+SELECT
+    id,
+    product_name,
+    price
 FROM test_keywords_schema.good_products
 WHERE price > 0;
 
 CREATE SEQUENCE test_naming_schema.user_id_seq;
-CREATE INDEX idx_product_name ON test_keywords_schema.good_products (product_name);
+CREATE INDEX idx_product_name ON test_keywords_schema.good_products (
+    product_name
+);
 CREATE INDEX idx_username ON test_naming_schema.good_users (username);
 
 -- Insert test data
@@ -172,7 +187,9 @@ INSERT INTO test_naming_schema."WHERE" (condition_text, is_active) VALUES
 ('price > 100', TRUE),
 ('category IS NOT NULL', FALSE);
 
-INSERT INTO test_naming_schema."ORDER" (customer_name, total_amount, order_date) VALUES
+INSERT INTO test_naming_schema."ORDER" (
+    customer_name, total_amount, order_date
+) VALUES
 ('John Doe', 150.99, '2024-01-10'),
 ('Jane Smith', 275.50, '2024-01-11'),
 ('Bob Johnson', 89.99, '2024-01-12');
@@ -210,27 +227,40 @@ ANALYZE test_keywords_schema.good_products;
 ANALYZE test_naming_schema.good_users;
 
 
-
 -- Disable all rules first to isolate B010 testing
 SELECT 'Disabling all rules to test B010 specifically...' AS status;
 SELECT pglinter.disable_all_rules() AS all_rules_disabled;
-SELECT pglinter.enable_rule('B010') AS B010_enabled;
+SELECT pglinter.enable_rule('B010') AS b010_enabled;
 
 -- Run table check (should detect objects with reserved keyword names)
 SELECT 'Running table check with only B010 enabled:' AS test_info;
 
-SELECT count(*) AS violation_count from pglinter.get_violations() WHERE rule_code = 'B010';
+SELECT count(*) AS violation_count
+FROM pglinter.get_violations()
+WHERE rule_code = 'B010';
 
 -- Test disabling B010 temporarily
 SELECT 'Testing B010 disable/enable cycle:' AS test_info;
-SELECT pglinter.disable_rule('B010') AS B010_disabled;
+SELECT pglinter.disable_rule('B010') AS b010_disabled;
 
-SELECT count(*) AS violation_count from pglinter.get_violations() WHERE rule_code = 'B010';
+SELECT count(*) AS violation_count
+FROM pglinter.get_violations()
+WHERE rule_code = 'B010';
 
 -- Re-enable B010 and test again
-SELECT pglinter.enable_rule('B010') AS B010_re_enabled;
+SELECT pglinter.enable_rule('B010') AS b010_re_enabled;
 
-SELECT count(*) AS violation_count from pglinter.get_violations() WHERE rule_code = 'B010';
+SELECT count(*) AS violation_count
+FROM pglinter.get_violations()
+WHERE rule_code = 'B010';
+
+SELECT
+    (pg_identify_object(classid, objid, objsubid)).type AS object_type,
+    (pg_identify_object(classid, objid, objsubid)).schema AS object_schema,
+    (pg_identify_object(classid, objid, objsubid)).name AS object_name,
+    (pg_identify_object(classid, objid, objsubid)).identity AS object_identity
+FROM pglinter.get_violations()
+WHERE rule_code = 'B010';
 
 -- ROLLBACK;
 

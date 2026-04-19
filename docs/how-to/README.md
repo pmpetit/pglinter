@@ -34,7 +34,7 @@ SELECT
   (pg_identify_object(classid, objid, objsubid)).name,
   (pg_identify_object(classid, objid, objsubid)).identity
   from pglinter.get_violations()
-  
+
 ```
 
 ### 📋 Available Rules
@@ -43,15 +43,29 @@ SELECT
 - **C00**: Cluster security rules
 - **S00**: Schema rules
 
+### How it works
 
-- **How it works:**
   1. Queries the `pglinter.rules` table for all enabled rules.
   2. For each rule, calls `get_violations_for_rule()` to fetch all violation locations.
   3. Returns a vector of tuples: each tuple contains the rule code and a vector of violation locations.
 
-- **Return Value:**
+#### Return Value
+
+  get_violations() returns oid, not the name. To get readable values, you can use
+
+  ```sql
+  SELECT
+      (pg_identify_object(classid, objid, objsubid)).type AS object_type,
+      (pg_identify_object(classid, objid, objsubid)).schema AS object_schema,
+      (pg_identify_object(classid, objid, objsubid)).name AS object_name,
+      (pg_identify_object(classid, objid, objsubid)).identity AS object_identity
+  FROM pglinter.get_violations()
+  ```
+
   - On success: `Ok(Vec<(rule_code, Vec<(classid, objid, objsubid)>)>)`
   - On error: `Err(String)` with a descriptive error message
+
+
 
 ## Typical Use Cases
 

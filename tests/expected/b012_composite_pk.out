@@ -26,10 +26,24 @@ CREATE TABLE test_composite_pk (
     PRIMARY KEY (a, b, c, d, e, f)
 );
 -- Run pglinter check
-SELECT count(*) AS violation_count from pglinter.get_violations() WHERE rule_code = 'B012';
+SELECT count(*) AS violation_count
+FROM pglinter.get_violations()
+WHERE rule_code = 'B012';
  violation_count 
 -----------------
                1
+(1 row)
+
+SELECT
+    (pg_identify_object(classid, objid, objsubid)).type AS object_type,
+    (pg_identify_object(classid, objid, objsubid)).schema AS object_schema,
+    (pg_identify_object(classid, objid, objsubid)).name AS object_name,
+    (pg_identify_object(classid, objid, objsubid)).identity AS object_identity
+FROM pglinter.get_violations()
+WHERE rule_code = 'B012';
+ object_type | object_schema |    object_name    |     object_identity      
+-------------+---------------+-------------------+--------------------------
+ table       | public        | test_composite_pk | public.test_composite_pk
 (1 row)
 
 DROP TABLE test_composite_pk CASCADE;

@@ -6,7 +6,7 @@ CREATE EXTENSION IF NOT EXISTS pglinter;
 CREATE ROLE s003_owner LOGIN;
 CREATE SCHEMA s003_schema AUTHORIZATION s003_owner;
 -- Grant CREATE privilege to PUBLIC
-GRANT CREATE ON SCHEMA s003_schema TO PUBLIC;
+GRANT CREATE ON SCHEMA s003_schema TO public;
 SELECT 'Testing S003 in isolation...' AS test_step;
           test_step           
 ------------------------------
@@ -20,21 +20,36 @@ NOTICE:  🔴 Disabled 21 rule(s)
            21
 (1 row)
 
-SELECT pglinter.enable_rule('S003') AS S003_only_enabled;
+SELECT pglinter.enable_rule('S003') AS s003_only_enabled;
 NOTICE:  ✅ Rule S003 has been enabled
  s003_only_enabled 
 -------------------
  t
 (1 row)
 
-SELECT count(*) AS violation_count from pglinter.get_violations() WHERE rule_code = 'S003';
+SELECT count(*) AS violation_count
+FROM pglinter.get_violations()
+WHERE rule_code = 'S003';
  violation_count 
 -----------------
                2
 (1 row)
 
+SELECT
+    (pg_identify_object(classid, objid, objsubid)).type AS object_type,
+    (pg_identify_object(classid, objid, objsubid)).schema AS object_schema,
+    (pg_identify_object(classid, objid, objsubid)).name AS object_name,
+    (pg_identify_object(classid, objid, objsubid)).identity AS object_identity
+FROM pglinter.get_violations()
+WHERE rule_code = 'S003';
+ object_type | object_schema | object_name | object_identity 
+-------------+---------------+-------------+-----------------
+ schema      |               | public      | public
+ schema      |               | s003_schema | s003_schema
+(2 rows)
+
 -- Cleanup
-REVOKE CREATE ON SCHEMA s003_schema FROM PUBLIC;
+REVOKE CREATE ON SCHEMA s003_schema FROM public;
 DROP SCHEMA s003_schema CASCADE;
 DROP ROLE s003_owner;
 DROP EXTENSION pglinter CASCADE;

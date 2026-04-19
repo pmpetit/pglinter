@@ -134,7 +134,8 @@ pub fn get_sanitized_message(rule_id: &str, classid: i32, objid: i32, objsubid: 
 
     // Helper to resolve object name from classid, objid, objsubid
     fn resolve_object_name(classid: i32, objid: i32, objsubid: i32) -> String {
-        // If classid is 1249 (pg_type) and objsubid != 0, treat as 1259 (pg_class) for columns of views/tables
+        // Legacy rule rows may use pg_attribute (1249) for column references.
+        // pg_identify_object expects relation columns as (pg_class, relid, attnum).
         let (mut classid, objid, objsubid) = (classid, objid, objsubid);
         if classid == 1249 && objsubid != 0 {
             classid = 1259;

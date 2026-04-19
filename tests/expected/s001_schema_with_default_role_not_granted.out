@@ -18,18 +18,33 @@ NOTICE:  🔴 Disabled 21 rule(s)
            21
 (1 row)
 
-SELECT pglinter.enable_rule('S001') AS S001_only_enabled;
+SELECT pglinter.enable_rule('S001') AS s001_only_enabled;
 NOTICE:  ✅ Rule S001 has been enabled
  s001_only_enabled 
 -------------------
  t
 (1 row)
 
-SELECT count(*) AS violation_count from pglinter.get_violations() WHERE rule_code = 'S001';
+SELECT count(*) AS violation_count
+FROM pglinter.get_violations()
+WHERE rule_code = 'S001';
  violation_count 
 -----------------
                2
 (1 row)
+
+SELECT
+    (pg_identify_object(classid, objid, objsubid)).type AS object_type,
+    (pg_identify_object(classid, objid, objsubid)).schema AS object_schema,
+    (pg_identify_object(classid, objid, objsubid)).name AS object_name,
+    (pg_identify_object(classid, objid, objsubid)).identity AS object_identity
+FROM pglinter.get_violations()
+WHERE rule_code = 'S001';
+ object_type | object_schema | object_name | object_identity 
+-------------+---------------+-------------+-----------------
+ schema      |               | public      | public
+ schema      |               | s001_schema | s001_schema
+(2 rows)
 
 -- Cleanup
 DROP SCHEMA s001_schema CASCADE;

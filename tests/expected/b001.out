@@ -19,7 +19,9 @@ NOTICE:  🔴 Disabled 21 rule(s)
 (1 row)
 
 -- Run table check to detect tables without PK
-SELECT count(*) AS violation_count from pglinter.get_violations() WHERE rule_code = 'B001';
+SELECT count(*) AS violation_count
+FROM pglinter.get_violations()
+WHERE rule_code = 'B001';
  violation_count 
 -----------------
                0
@@ -61,10 +63,24 @@ NOTICE:  ✅ Rule B001 has been enabled
 (1 row)
 
 -- Test again with B001 enabled
-SELECT count(*) AS violation_count from pglinter.get_violations() WHERE rule_code = 'B001';
+SELECT count(*) AS violation_count
+FROM pglinter.get_violations()
+WHERE rule_code = 'B001';
  violation_count 
 -----------------
                1
+(1 row)
+
+SELECT
+    (pg_identify_object(classid, objid, objsubid)).type AS object_type,
+    (pg_identify_object(classid, objid, objsubid)).schema AS object_schema,
+    (pg_identify_object(classid, objid, objsubid)).name AS object_name,
+    (pg_identify_object(classid, objid, objsubid)).identity AS object_identity
+FROM pglinter.get_violations()
+WHERE rule_code = 'B001';
+ object_type | object_schema |     object_name     |      object_identity       
+-------------+---------------+---------------------+----------------------------
+ table       | public        | my_table_without_pk | public.my_table_without_pk
 (1 row)
 
 -- Test with file output

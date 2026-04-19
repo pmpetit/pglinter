@@ -5,7 +5,8 @@ CREATE EXTENSION pglinter;
 \pset pager off
 
 -- Clean up any existing test rules
-DELETE FROM pglinter.rules WHERE code IN ('TEST_YAML_001', 'TEST_YAML_002');
+DELETE FROM pglinter.rules
+WHERE code IN ('TEST_YAML_001', 'TEST_YAML_002');
 
 -- Test 1: Valid YAML import with new rules
 SELECT pglinter.import_rules_from_yaml('
@@ -72,7 +73,7 @@ SELECT
     enable,
     scope,
     message,
-    array_length(fixes, 1) as fixes_count
+    array_length(fixes, 1) AS fixes_count
 FROM pglinter.rules
 WHERE code = 'TEST_YAML_001';
 
@@ -96,7 +97,7 @@ rules:
 SELECT
     code,
     name,
-    array_length(fixes, 1) as fixes_count
+    array_length(fixes, 1) AS fixes_count
 FROM pglinter.rules
 WHERE code = 'TEST_YAML_003';
 
@@ -133,13 +134,20 @@ rules:
 ') AS minimal_rule_result;
 
 -- Verify minimal rule
-SELECT code, name, scope FROM pglinter.rules WHERE code = 'TEST_YAML_MIN';
+SELECT
+    code,
+    name,
+    scope
+FROM pglinter.rules
+WHERE code = 'TEST_YAML_MIN';
 
 -- Clean up test data
-DELETE FROM pglinter.rules WHERE code IN ('TEST_YAML_001', 'TEST_YAML_002', 'TEST_YAML_003', 'TEST_YAML_MIN');
+DELETE FROM pglinter.rules
+WHERE
+    code IN ('TEST_YAML_001', 'TEST_YAML_002', 'TEST_YAML_003', 'TEST_YAML_MIN');
 
 -- Test count verification
-SELECT COUNT(*) as remaining_test_rules
+SELECT count(*) AS remaining_test_rules
 FROM pglinter.rules
 WHERE code LIKE 'TEST_YAML_%';
 

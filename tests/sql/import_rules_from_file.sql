@@ -56,13 +56,13 @@ SELECT pglinter.import_rules_from_file('/tmp/invalid_rules.yaml') AS invalid_fil
 SELECT pglinter.import_rules_from_file('/tmp/empty_rules.yaml') AS empty_file_result;
 
 -- Verify final state - should still have our valid imported rules
-SELECT
-    COUNT(*) AS imported_rules_count
+SELECT COUNT(*) AS imported_rules_count
 FROM pglinter.rules
 WHERE code LIKE 'TEST_FILE_%';
 
 -- Clean up test data and files
-DELETE FROM pglinter.rules WHERE code LIKE 'TEST_FILE_%';
+DELETE FROM pglinter.rules
+WHERE code LIKE 'TEST_FILE_%';
 
 \! rm -f /tmp/test_rules_import.yaml /tmp/invalid_rules.yaml /tmp/empty_rules.yaml
 

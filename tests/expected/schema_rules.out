@@ -38,7 +38,7 @@ NOTICE:  ✅ Rule S002 has been enabled
 (1 row)
 
 -- Test the schema rules
-SELECT 'Testing schema rules S002...' as test_info;
+SELECT 'Testing schema rules S002...' AS test_info;
           test_info           
 ------------------------------
  Testing schema rules S002...
@@ -87,11 +87,27 @@ NOTICE:  ✅ Rule S002 has been enabled
  t
 (1 row)
 
-SELECT count(*) AS violation_count from pglinter.get_violations() WHERE rule_code = 'S002';
+SELECT count(*) AS violation_count
+FROM pglinter.get_violations()
+WHERE rule_code = 'S002';
  violation_count 
 -----------------
                3
 (1 row)
+
+SELECT
+    (pg_identify_object(classid, objid, objsubid)).type AS object_type,
+    (pg_identify_object(classid, objid, objsubid)).schema AS object_schema,
+    (pg_identify_object(classid, objid, objsubid)).name AS object_name,
+    (pg_identify_object(classid, objid, objsubid)).identity AS object_identity
+FROM pglinter.get_violations()
+WHERE rule_code = 'S002';
+ object_type | object_schema |   object_name   | object_identity 
+-------------+---------------+-----------------+-----------------
+ schema      |               | prod_sales      | prod_sales
+ schema      |               | dev_analytics   | dev_analytics
+ schema      |               | reports_staging | reports_staging
+(3 rows)
 
 DROP SCHEMA prod_sales CASCADE;
 NOTICE:  drop cascades to table prod_sales.customers

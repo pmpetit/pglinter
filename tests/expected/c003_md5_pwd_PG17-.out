@@ -39,7 +39,10 @@ SELECT '=== Test 1: Current password_encryption setting ===' AS test_section;
  === Test 1: Current password_encryption setting ===
 (1 row)
 
-SELECT name, setting, context
+SELECT
+    name,
+    setting,
+    context
 FROM pg_settings
 WHERE name = 'password_encryption';
         name         |    setting    | context 
@@ -91,7 +94,11 @@ SELECT '=== Test 4: C003 Rule Details ===' AS test_section;
  === Test 4: C003 Rule Details ===
 (1 row)
 
-SELECT code, name, message, fixes
+SELECT
+    code,
+    name,
+    message,
+    fixes
 FROM pglinter.rules
 WHERE code = 'C003';
  code |          name           |                                                                                  message                                                                                   |                                                                                                fixes                                                                                                
@@ -106,7 +113,9 @@ SELECT '=== Test 5: C003 Query Details ===' AS test_section;
  === Test 5: C003 Query Details ===
 (1 row)
 
-SELECT code, q4 as query
+SELECT
+    code,
+    q4 AS query
 FROM pglinter.rules
 WHERE code = 'C003';
  code | query 
@@ -121,9 +130,9 @@ SELECT '=== Test 6: Manual C003 Query Execution ===' AS test_section;
  === Test 6: Manual C003 Query Execution ===
 (1 row)
 
-SELECT count(*) as md5_password_count
+SELECT count(*) AS md5_password_count
 FROM pg_catalog.pg_settings
-WHERE name='password_encryption' AND setting='md5';
+WHERE name = 'password_encryption' AND setting = 'md5';
  md5_password_count 
 --------------------
                   0

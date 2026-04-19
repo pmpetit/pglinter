@@ -3,30 +3,36 @@
 -- the comprehensive B005 rule detection across all PostgreSQL object types
 CREATE EXTENSION pglinter;
 -- Create a test schema for our objects
-CREATE SCHEMA test_B005_schema;
+CREATE SCHEMA test_b005_schema;
 -- Create test objects with UPPERCASE names (should trigger B005)
 -- Using quoted identifiers to force case-sensitive storage
 -- 1. Table with uppercase name (quoted for case sensitivity)
-CREATE TABLE test_B005_schema."CUSTOMERS_TABLE" (
+CREATE TABLE test_b005_schema."CUSTOMERS_TABLE" (
     customer_id SERIAL PRIMARY KEY,
     "FIRST_NAME" VARCHAR(50),  -- Column with uppercase (quoted)
-    last_name VARCHAR(50),     -- Column with lowercase (unquoted - should not trigger)
+    -- Column with lowercase (unquoted - should not trigger)
+    last_name VARCHAR(50),
     "EMAIL_ADDRESS" VARCHAR(100), -- Column with uppercase (quoted)
     phone_number VARCHAR(20)   -- Column with lowercase (unquoted)
 );
 -- 2. View with uppercase name (quoted for case sensitivity)
-CREATE VIEW test_B005_schema."ACTIVE_CUSTOMERS" AS
+CREATE VIEW test_b005_schema."ACTIVE_CUSTOMERS" AS
 SELECT
     customer_id,
     "FIRST_NAME",
     last_name
-FROM test_B005_schema."CUSTOMERS_TABLE"
+FROM test_b005_schema."CUSTOMERS_TABLE"
 WHERE customer_id > 0;
 -- 3. Index with uppercase name (quoted for case sensitivity)
-CREATE INDEX "IDX_CUSTOMERS_EMAIL" ON test_B005_schema."CUSTOMERS_TABLE" ("EMAIL_ADDRESS");
-CREATE INDEX idx_customers_phone ON test_B005_schema."CUSTOMERS_TABLE" (phone_number); -- lowercase, should not trigger
+CREATE INDEX "IDX_CUSTOMERS_EMAIL" ON test_b005_schema."CUSTOMERS_TABLE" (
+    "EMAIL_ADDRESS"
+);
+-- lowercase, should not trigger
+CREATE INDEX idx_customers_phone ON test_b005_schema."CUSTOMERS_TABLE" (
+    phone_number
+);
 -- 4. Sequence with uppercase name (quoted for case sensitivity)
-CREATE SEQUENCE test_B005_schema."CUSTOMER_ID_SEQ";
+CREATE SEQUENCE test_b005_schema."CUSTOMER_ID_SEQ";
 -- 5. Function with uppercase name (quoted for case sensitivity)
 CREATE OR REPLACE FUNCTION test_B005_schema."GET_CUSTOMER_COUNT"()
 RETURNS INTEGER AS $$
@@ -50,27 +56,32 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 -- Add timestamp column for trigger
-ALTER TABLE test_B005_schema."CUSTOMERS_TABLE" ADD COLUMN updated_at TIMESTAMP DEFAULT NOW();
+ALTER TABLE test_b005_schema."CUSTOMERS_TABLE" ADD COLUMN updated_at TIMESTAMP DEFAULT NOW();
 CREATE TRIGGER "UPDATE_TIMESTAMP_TRIGGER"
-BEFORE UPDATE ON test_B005_schema."CUSTOMERS_TABLE"
+BEFORE UPDATE ON test_b005_schema."CUSTOMERS_TABLE"
 FOR EACH ROW EXECUTE FUNCTION test_B005_schema.update_timestamp();
 -- 8. Constraint with uppercase name (user-defined, not auto-generated)
-ALTER TABLE test_B005_schema."CUSTOMERS_TABLE"
+ALTER TABLE test_b005_schema."CUSTOMERS_TABLE"
 ADD CONSTRAINT "EMAIL_UNIQUE_CONSTRAINT" UNIQUE ("EMAIL_ADDRESS");
 -- 9. User-defined type with uppercase name
-CREATE TYPE test_B005_schema."CUSTOMER_STATUS" AS ENUM ('active', 'inactive', 'pending');
+CREATE TYPE test_B005_schema."CUSTOMER_STATUS" AS ENUM (
+    'active', 'inactive', 'pending'
+);
 -- 10. Domain with uppercase name
-CREATE DOMAIN test_B005_schema."EMAIL_DOMAIN" AS VARCHAR(100)
+CREATE DOMAIN test_b005_schema."EMAIL_DOMAIN" AS VARCHAR(100)
 CHECK (value ~ '^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$');
 -- 11. Create another schema with uppercase name
 CREATE SCHEMA "TEST_UPPERCASE_SCHEMA";
 -- Create some data for testing
-INSERT INTO test_B005_schema."CUSTOMERS_TABLE" ("FIRST_NAME", last_name, "EMAIL_ADDRESS", phone_number) VALUES
+INSERT INTO test_b005_schema."CUSTOMERS_TABLE" (
+    "FIRST_NAME", last_name, "EMAIL_ADDRESS", phone_number
+) VALUES
 ('John', 'Doe', 'john.doe@example.com', '555-1234'),
 ('Jane', 'Smith', 'jane.smith@example.com', '555-5678'),
 ('Bob', 'Johnson', 'bob.johnson@example.com', '555-9012');
 -- Test B005 rule
-SELECT 'Testing B005 rule - Comprehensive uppercase object detection...' AS test_info;
+SELECT
+    'Testing B005 rule - Comprehensive uppercase object detection...' AS test_info;
                             test_info                            
 -----------------------------------------------------------------
  Testing B005 rule - Comprehensive uppercase object detection...
@@ -85,7 +96,7 @@ NOTICE:  🔴 Disabled 21 rule(s)
 (1 row)
 
 -- Enable only B005 for focused testing
-SELECT pglinter.enable_rule('B005') AS B005_enabled;
+SELECT pglinter.enable_rule('B005') AS b005_enabled;
 NOTICE:  ✅ Rule B005 has been enabled
  b005_enabled 
 --------------
@@ -93,7 +104,7 @@ NOTICE:  ✅ Rule B005 has been enabled
 (1 row)
 
 -- Verify B005 is enabled
-SELECT pglinter.is_rule_enabled('B005') AS B005_status;
+SELECT pglinter.is_rule_enabled('B005') AS b005_status;
  b005_status 
 -------------
  t
@@ -101,7 +112,8 @@ SELECT pglinter.is_rule_enabled('B005') AS B005_status;
 
 -- Run B005 check to detect uppercase violations
 -- Expected result: Should detect multiple uppercase objects we created
-SELECT 'Running B005 check to detect comprehensive uppercase violations...' AS status;
+SELECT
+    'Running B005 check to detect comprehensive uppercase violations...' AS status;
                                status                               
 --------------------------------------------------------------------
  Running B005 check to detect comprehensive uppercase violations...
@@ -109,11 +121,45 @@ SELECT 'Running B005 check to detect comprehensive uppercase violations...' AS s
 
 -- Test with file output
 -- Test if file exists and show checksum
-SELECT count(*) AS violation_count from pglinter.get_violations() WHERE rule_code = 'B005';
+SELECT COUNT(*) AS violation_count
+FROM pglinter.get_violations()
+WHERE rule_code = 'B005';
  violation_count 
 -----------------
               21
 (1 row)
+
+SELECT
+    (PG_IDENTIFY_OBJECT(classid, objid, objsubid)).type AS object_type,
+    (PG_IDENTIFY_OBJECT(classid, objid, objsubid)).schema AS object_schema,
+    (PG_IDENTIFY_OBJECT(classid, objid, objsubid)).name AS object_name,
+    (PG_IDENTIFY_OBJECT(classid, objid, objsubid)).identity AS object_identity
+FROM pglinter.get_violations()
+WHERE rule_code = 'B005';
+ object_type  |  object_schema   |            object_name            |                         object_identity                          
+--------------+------------------+-----------------------------------+------------------------------------------------------------------
+ view         | test_b005_schema | "ACTIVE_CUSTOMERS"                | test_b005_schema."ACTIVE_CUSTOMERS"
+ index        | test_b005_schema | "IDX_CUSTOMERS_EMAIL"             | test_b005_schema."IDX_CUSTOMERS_EMAIL"
+ sequence     | test_b005_schema | "CUSTOMER_ID_SEQ"                 | test_b005_schema."CUSTOMER_ID_SEQ"
+ table        | test_b005_schema | "CUSTOMERS_TABLE"                 | test_b005_schema."CUSTOMERS_TABLE"
+ index        | test_b005_schema | "EMAIL_UNIQUE_CONSTRAINT"         | test_b005_schema."EMAIL_UNIQUE_CONSTRAINT"
+ sequence     | test_b005_schema | "CUSTOMERS_TABLE_customer_id_seq" | test_b005_schema."CUSTOMERS_TABLE_customer_id_seq"
+ index        | test_b005_schema | "CUSTOMERS_TABLE_pkey"            | test_b005_schema."CUSTOMERS_TABLE_pkey"
+ view column  | test_b005_schema | "ACTIVE_CUSTOMERS"                | test_b005_schema."ACTIVE_CUSTOMERS"."FIRST_NAME"
+ index column | test_b005_schema | "IDX_CUSTOMERS_EMAIL"             | test_b005_schema."IDX_CUSTOMERS_EMAIL"."EMAIL_ADDRESS"
+ table column | test_b005_schema | "CUSTOMERS_TABLE"                 | test_b005_schema."CUSTOMERS_TABLE"."FIRST_NAME"
+ table column | test_b005_schema | "CUSTOMERS_TABLE"                 | test_b005_schema."CUSTOMERS_TABLE"."EMAIL_ADDRESS"
+ index column | test_b005_schema | "EMAIL_UNIQUE_CONSTRAINT"         | test_b005_schema."EMAIL_UNIQUE_CONSTRAINT"."EMAIL_ADDRESS"
+ index        | test_b005_schema | "IDX_CUSTOMERS_EMAIL"             | test_b005_schema."IDX_CUSTOMERS_EMAIL"
+ index        | test_b005_schema | "EMAIL_UNIQUE_CONSTRAINT"         | test_b005_schema."EMAIL_UNIQUE_CONSTRAINT"
+ index        | test_b005_schema | "CUSTOMERS_TABLE_pkey"            | test_b005_schema."CUSTOMERS_TABLE_pkey"
+ sequence     | test_b005_schema | "CUSTOMER_ID_SEQ"                 | test_b005_schema."CUSTOMER_ID_SEQ"
+ sequence     | test_b005_schema | "CUSTOMERS_TABLE_customer_id_seq" | test_b005_schema."CUSTOMERS_TABLE_customer_id_seq"
+ view         | test_b005_schema | "ACTIVE_CUSTOMERS"                | test_b005_schema."ACTIVE_CUSTOMERS"
+ function     | test_b005_schema |                                   | test_b005_schema."GET_CUSTOMER_COUNT"()
+ trigger      |                  |                                   | "UPDATE_TIMESTAMP_TRIGGER" on test_b005_schema."CUSTOMERS_TABLE"
+ schema       |                  | "TEST_UPPERCASE_SCHEMA"           | "TEST_UPPERCASE_SCHEMA"
+(21 rows)
 
 -- Test rule management for B005
 SELECT 'Testing B005 rule management...' AS test_section;
@@ -140,7 +186,7 @@ objects with uppercase in name or in columns
  t
 (1 row)
 
-DROP SCHEMA test_B005_schema CASCADE;
+DROP SCHEMA test_b005_schema CASCADE;
 NOTICE:  drop cascades to 8 other objects
 DETAIL:  drop cascades to table test_b005_schema."CUSTOMERS_TABLE"
 drop cascades to view test_b005_schema."ACTIVE_CUSTOMERS"
