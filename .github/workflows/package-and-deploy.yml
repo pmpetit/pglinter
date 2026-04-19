@@ -89,7 +89,7 @@ jobs:
       }}-package-build"
     runs-on: ${{ matrix.runs_on }}
     container:
-      image: ghcr.io/pmpetit/postgresql_pglinter:pgrx
+      image: ghcr.io/pmpetit/postgresql_pglinter:pgrx-${{ matrix.arch }}
       options: --user root
       credentials:
         username: ${{ github.actor }}
