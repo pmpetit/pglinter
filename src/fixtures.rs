@@ -23,29 +23,6 @@ pub fn cleanup_test_rule(code: &str) {
     ));
 }
 
-/// Create test tables for rule testing
-pub fn setup_test_tables() {
-    // Table without primary key (for B001 testing)
-    let _ = Spi::run("DROP TABLE IF EXISTS test_table_no_pk CASCADE");
-    let _ = Spi::run("CREATE TABLE test_table_no_pk (id INTEGER, name TEXT)");
-    let _ = Spi::run("INSERT INTO test_table_no_pk VALUES (1, 'test')");
-
-    // Table with primary key
-    let _ = Spi::run("DROP TABLE IF EXISTS test_table_with_pk CASCADE");
-    let _ = Spi::run("CREATE TABLE test_table_with_pk (id INTEGER PRIMARY KEY, name TEXT)");
-    let _ = Spi::run("INSERT INTO test_table_with_pk VALUES (1, 'test')");
-
-    // Update statistics
-    let _ = Spi::run("ANALYZE test_table_no_pk");
-    let _ = Spi::run("ANALYZE test_table_with_pk");
-}
-
-/// Cleanup test tables
-pub fn cleanup_test_tables() {
-    let _ = Spi::run("DROP TABLE IF EXISTS test_table_no_pk CASCADE");
-    let _ = Spi::run("DROP TABLE IF EXISTS test_table_with_pk CASCADE");
-}
-
 /// Get rule boolean property from database
 pub fn get_rule_bool_property(code: &str, property: &str) -> Option<bool> {
     let query = format!(

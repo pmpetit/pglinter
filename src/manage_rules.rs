@@ -335,7 +335,7 @@ pub fn export_rules_to_yaml() -> Result<String, String> {
         let mut rules = Vec::new();
 
         for row in rows {
-            let fixes_array: Vec<Option<String>> = row.get(8)?.unwrap_or_default();
+            let fixes_array: Vec<Option<String>> = row.get(7)?.unwrap_or_default();
             let fixes: Vec<String> = fixes_array.into_iter().flatten().collect();
 
             let rule = Rule {

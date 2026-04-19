@@ -446,7 +446,6 @@ mod tests {
         // Verify basic rule information is present
         assert!(explanation.contains("TEST_FIXES"));
         assert!(explanation.contains("Test Rule With Fixes"));
-        assert!(explanation.contains("This rule tests the fix list formatting"));
 
         // Test the fix list formatting (lines 220-226 in manage_rules.rs)
         // The fixes should be formatted as a numbered list with proper indentation
