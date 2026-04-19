@@ -81,10 +81,16 @@ runs:
     - name: Build selected package
       run: |
         export PACKAGE_ARCH=${{ inputs.arch }}
+        if [ "${{ inputs.arch }}" = "arm64" ]; then
+          export CARGO_PROFILE_RELEASE_LTO=off
+          export CARGO_PROFILE_RELEASE_CODEGEN_UNITS=16
+          echo "Using arm64 packaging workaround: CARGO_PROFILE_RELEASE_LTO=$CARGO_PROFILE_RELEASE_LTO"
+        fi
+
         if [ "${{ inputs.pkgtype }}" = "deb" ]; then
-          su - postgres -c "cd $GITHUB_WORKSPACE && PGVER=${{ inputs.pgver }} PACKAGE_ARCH=${{ env.DEB_ARCH }} make deb"
+          su - postgres -c "cd $GITHUB_WORKSPACE && PGVER=${{ inputs.pgver }} PACKAGE_ARCH=${{ env.DEB_ARCH }} CARGO_PROFILE_RELEASE_LTO=${CARGO_PROFILE_RELEASE_LTO:-} CARGO_PROFILE_RELEASE_CODEGEN_UNITS=${CARGO_PROFILE_RELEASE_CODEGEN_UNITS:-} make deb"
         elif [ "${{ inputs.pkgtype }}" = "rpm" ]; then
-          su - postgres -c "cd $GITHUB_WORKSPACE && PGVER=${{ inputs.pgver }} PACKAGE_ARCH=${{ env.RPM_ARCH }} make rpm"
+          su - postgres -c "cd $GITHUB_WORKSPACE && PGVER=${{ inputs.pgver }} PACKAGE_ARCH=${{ env.RPM_ARCH }} CARGO_PROFILE_RELEASE_LTO=${CARGO_PROFILE_RELEASE_LTO:-} CARGO_PROFILE_RELEASE_CODEGEN_UNITS=${CARGO_PROFILE_RELEASE_CODEGEN_UNITS:-} make rpm"
         else
           echo "Unknown package type: ${{ inputs.pkgtype }}"
           exit 1
@@ -95,12 +101,14 @@ runs:
       if: ${{ inputs.pkgtype == 'rpm' }}
       uses: actions/upload-artifact@v4
       with:
-        name: postgresql_pglinter_${{ env.PG_VERSION }}-${{ env.PGLINTER_MINOR_VERSION}}-1.${{ env.RPM_ARCH }}.rpm
+        name: postgresql_pglinter_${{ env.PG_VERSION }}-${{
+          env.PGLINTER_MINOR_VERSION}}-1.${{ env.RPM_ARCH }}.rpm
         path: target/release/pglinter-${{ inputs.pgver }}/*.rpm
 
     - name: "DEB package for ${{ inputs.pgver }} (${{ inputs.arch }})"
       if: ${{ inputs.pkgtype == 'deb' }}
       uses: actions/upload-artifact@v4
       with:
-        name: postgresql_pglinter_${{ env.PG_VERSION }}-${{ env.PGLINTER_MINOR_VERSION}}_${{ env.DEB_ARCH }}.deb
+        name: postgresql_pglinter_${{ env.PG_VERSION }}-${{
+          env.PGLINTER_MINOR_VERSION}}_${{ env.DEB_ARCH }}.deb
         path: target/release/pglinter-${{ inputs.pgver }}/*.deb
