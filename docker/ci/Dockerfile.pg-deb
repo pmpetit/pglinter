@@ -1,9 +1,9 @@
 
-ARG PG_MAJOR_VERSION=13
+ARG PG_MAJOR_VERSION=14
 FROM postgres:${PG_MAJOR_VERSION}
 
 # Re-declare ARG variables for use inside the build stage
-ARG PG_MAJOR_VERSION=13
+ARG PG_MAJOR_VERSION=14
 ARG PACKAGE_PATH=docker/ci
 ARG PACKAGE_NAME
 
