@@ -1,21 +1,22 @@
 # .github/actions/reusable-package-action/action.yml
-name: 'Build package and upload'
+name: "Build package and upload"
 
-description: 'Builds rpm/deb package and upload.'
+description: "Builds rpm/deb package and upload."
 
 inputs:
   pgver:
-    description: 'The PostgreSQL major version with the "pg" prefix (e.g. `pg13`, `pg16`, etc.)'
+    description: "The PostgreSQL major version with the \"pg\" prefix (e.g. `pg13`,
+      `pg16`, etc.)"
     required: true
   tag:
     description: "The tag version"
     required: true
   arch:
-    description: 'Target architecture (amd64 or arm64)'
+    description: "Target architecture (amd64 or arm64)"
     required: false
     default: amd64
   pkgtype:
-    description: 'Package type to build (rpm or deb)'
+    description: "Package type to build (rpm or deb)"
     required: true
     default: deb
 
@@ -55,6 +56,28 @@ runs:
         echo "PG_VERSION=$(echo '${{ inputs.pgver }}' | sed 's/^pg//')" >> $GITHUB_ENV
       shell: bash
 
+    - name: Ensure matching cargo-pgrx version
+      run: |
+        set -euo pipefail
+        PGRX_VERSION="$(sed -nE 's/^pgrx = "([^"]+)"/\1/p' "$GITHUB_WORKSPACE/Cargo.toml" | head -n1)"
+        if [ -z "$PGRX_VERSION" ]; then
+          echo "Could not determine pgrx version from Cargo.toml"
+          exit 1
+        fi
+
+        su - postgres -c "PGRX_VERSION='$PGRX_VERSION' bash -lc '
+          set -euo pipefail
+          installed_version=\$(cargo pgrx --version 2>/dev/null | grep -Eo \"[0-9]+\\.[0-9]+\\.[0-9]+\" | head -n1 || true)
+          if [ \"\$installed_version\" != \"\$PGRX_VERSION\" ]; then
+            cargo install --locked --version \"\$PGRX_VERSION\" cargo-pgrx
+          fi
+          if [ ! -f \"\$HOME/.pgrx/config.toml\" ]; then
+            cargo pgrx init
+          fi
+          cargo pgrx --version
+        '"
+      shell: bash
+
     - name: Build selected package
       run: |
         export PACKAGE_ARCH=${{ inputs.arch }}
@@ -68,16 +91,17 @@ runs:
         fi
       shell: bash
 
-    - name: 'RPM package for ${{ inputs.pgver }} (${{ inputs.arch }})'
+    - name: "RPM package for ${{ inputs.pgver }} (${{ inputs.arch }})"
       if: ${{ inputs.pkgtype == 'rpm' }}
       uses: actions/upload-artifact@v4
       with:
-        name: postgresql_pglinter_${{ env.PG_VERSION }}-${{ env.PGLINTER_MINOR_VERSION }}-1.${{ env.RPM_ARCH }}.rpm
+        name: postgresql_pglinter_${{ env.PG_VERSION }}-${{ env.PGLINTER_MINOR_VERSION
+          }}-1.${{ env.RPM_ARCH }}.rpm
         path: target/release/pglinter-${{ inputs.pgver }}/*.rpm
 
-    - name: 'DEB package for ${{ inputs.pgver }} (${{ inputs.arch }})'
+    - name: "DEB package for ${{ inputs.pgver }} (${{ inputs.arch }})"
       if: ${{ inputs.pkgtype == 'deb' }}
       uses: actions/upload-artifact@v4
       with:
-        name: postgresql_pglinter_${{ env.PG_VERSION }}-${{ env.PGLINTER_MINOR_VERSION }}_${{ env.DEB_ARCH }}.deb
+        name: postgresql_pglinter_${{ env.PG_VERSION }}-${{ env.PGLINTER_MINOR_VERSION}}_${{ env.DEB_ARCH }}.deb
         path: target/release/pglinter-${{ inputs.pgver }}/*.deb
