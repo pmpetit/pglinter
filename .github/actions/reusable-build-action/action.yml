@@ -1,14 +1,15 @@
 # .github/actions/reusable-build-action/action.yml
-name: 'Build and Test PostgreSQL Version'
+name: "Build and Test PostgreSQL Version"
 
-description: 'Builds and tests the pglinter extension for a given PostgreSQL version.'
+description: "Builds and tests the pglinter extension for a given PostgreSQL version."
 
 inputs:
   pgver:
-    description: 'The PostgreSQL major version with the "pg" prefix (e.g. `pg13`, `pg16`, etc.)'
+    description: "The PostgreSQL major version with the \"pg\" prefix (e.g. `pg13`,
+      `pg16`, etc.)"
     required: true
   always:
-    description: 'If defined, all jobs are launched in any case.'
+    description: "If defined, all jobs are launched in any case."
     required: false
 
 runs:
@@ -21,6 +22,28 @@ runs:
       run: |
         chown -R postgres:postgres $GITHUB_WORKSPACE
         chmod -R 755 $GITHUB_WORKSPACE
+      shell: bash
+
+    - name: Ensure matching cargo-pgrx version
+      run: |
+        set -euo pipefail
+        PGRX_VERSION="$(sed -nE 's/^pgrx = "([^"]+)"/\1/p' "$GITHUB_WORKSPACE/Cargo.toml" | head -n1)"
+        if [ -z "$PGRX_VERSION" ]; then
+          echo "Could not determine pgrx version from Cargo.toml"
+          exit 1
+        fi
+
+        su - postgres -c "PGRX_VERSION='$PGRX_VERSION' bash -lc '
+          set -euo pipefail
+          installed_version=\$(cargo pgrx --version 2>/dev/null | grep -Eo \"[0-9]+\\.[0-9]+\\.[0-9]+\" | head -n1 || true)
+          if [ \"\$installed_version\" != \"\$PGRX_VERSION\" ]; then
+            cargo install --locked --version \"\$PGRX_VERSION\" cargo-pgrx
+          fi
+          if [ ! -f \"\$HOME/.pgrx/config.toml\" ]; then
+            cargo pgrx init
+          fi
+          cargo pgrx --version
+        '"
       shell: bash
 
     - name: Lint (only for default PG version)
