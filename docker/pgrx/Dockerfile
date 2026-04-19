@@ -8,42 +8,42 @@
 
 FROM rockylinux:8 AS rhel8_devtools
 
-ARG PGRX_VERSION=0.16.1
+ARG PGRX_VERSION=0.18.0
 
 COPY docker/pgrx/goreleaser.repo /etc/yum.repos.d/goreleaser.repo
 
 
 # Fix ARM64 repository configuration (following pglinter PostgreSQL compatibility requirements)
 RUN dnf update -y ca-certificates curl \
- && dnf install -y 'dnf-command(config-manager)' \
- && if [ "$(uname -m)" = "aarch64" ]; then \
-      # For ARM64: Use CRB instead of PowerTools and skip problematic repos
-      dnf config-manager -y --set-enabled crb || \
-      dnf config-manager -y --set-enabled powertools || true; \
-    else \
-      # For AMD64: Use standard PowerTools
-      dnf config-manager -y --set-enabled powertools; \
-    fi \
- && dnf groupinstall -y 'Development Tools' \
- && dnf install -y epel-release
+  && dnf install -y 'dnf-command(config-manager)' \
+  && if [ "$(uname -m)" = "aarch64" ]; then \
+  # For ARM64: Use CRB instead of PowerTools and skip problematic repos
+  dnf config-manager -y --set-enabled crb || \
+  dnf config-manager -y --set-enabled powertools || true; \
+  else \
+  # For AMD64: Use standard PowerTools
+  dnf config-manager -y --set-enabled powertools; \
+  fi \
+  && dnf groupinstall -y 'Development Tools' \
+  && dnf install -y epel-release
 
 
 # https://github.com/pgcentralfoundation/pgrx?tab=readme-ov-file#system-requirements
 RUN dnf install -y 'dnf-command(config-manager)' \
- && dnf groupinstall -y 'Development Tools' \
- && dnf install -y epel-release \
- && dnf install -y \
-      cmake \
-      git \
-      clang \
-      nfpm \
-      bison-devel \
-      libicu-devel \
-      readline-devel \
-      zlib-devel \
-      openssl-devel \
-      ccache \
-      wget \
+  && dnf groupinstall -y 'Development Tools' \
+  && dnf install -y epel-release \
+  && dnf install -y \
+  cmake \
+  git \
+  clang \
+  nfpm \
+  bison-devel \
+  libicu-devel \
+  readline-devel \
+  zlib-devel \
+  openssl-devel \
+  ccache \
+  wget \
   && dnf clean all \
   && rm -rf /var/cache/yum
 
@@ -62,15 +62,15 @@ FROM rhel8_devtools AS rhel8_rust
 ARG UID=1000
 ARG GID=1000
 RUN groupadd -g "${GID}" postgres \
- && useradd --create-home --no-log-init -u "${UID}" -g "${GID}" postgres
+  && useradd --create-home --no-log-init -u "${UID}" -g "${GID}" postgres
 
 # GitHub Actions compatibility: install sudo and setup directories
 RUN dnf install -y sudo \
- && echo "postgres ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers \
- && mkdir -p /__w/_temp/_runner_file_commands /__w/_actions /github/workspacem \
- && chown -R postgres:postgres /__w /github \
- && chmod -R 777 /__w \
- && chmod -R 755 /github
+  && echo "postgres ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers \
+  && mkdir -p /__w/_temp/_runner_file_commands /__w/_actions /github/workspacem \
+  && chown -R postgres:postgres /__w /github \
+  && chmod -R 777 /__w \
+  && chmod -R 755 /github
 
 USER postgres
 ENV USER=postgres
@@ -78,8 +78,8 @@ ENV USER=postgres
 # Install Rust
 
 RUN wget https://sh.rustup.rs -O /tmp/install-rust.sh \
- && chmod +x /tmp/install-rust.sh \
- && /tmp/install-rust.sh -y
+  && chmod +x /tmp/install-rust.sh \
+  && /tmp/install-rust.sh -y
 
 ENV PATH="/home/postgres/.cargo/bin/:${PATH}"
 
@@ -87,10 +87,10 @@ ENV PATH="/home/postgres/.cargo/bin/:${PATH}"
 FROM rhel8_rust AS rhel8_pgrx
 
 RUN rustup self update \
- && rustup component add clippy llvm-tools-preview \
- && cargo install grcov \
- && cargo install --locked --version "${PGRX_VERSION}" cargo-pgrx \
- && cargo pgrx init
+  && rustup component add clippy llvm-tools-preview \
+  && cargo install grcov \
+  && cargo install --locked --version "${PGRX_VERSION}" cargo-pgrx \
+  && cargo pgrx init
 
 ENV CARGO_HOME=~postgres/.cargo/
 

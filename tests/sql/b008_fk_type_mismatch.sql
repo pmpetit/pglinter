@@ -39,7 +39,8 @@ CREATE TABLE test_regions_text (
 -- FK type mismatch: INTEGER references BIGINT
 CREATE TABLE test_orders_int_to_bigint (
     order_id SERIAL PRIMARY KEY,
-    user_id INTEGER NOT NULL REFERENCES test_users_bigint(user_id), -- MISMATCH!
+    -- MISMATCH!
+    user_id INTEGER NOT NULL REFERENCES test_users_bigint (user_id),
     order_date DATE NOT NULL DEFAULT '2024-01-15',
     total_amount DECIMAL(10, 2),
     created_at TIMESTAMP DEFAULT '2024-01-15 14:30:00'
@@ -48,7 +49,10 @@ CREATE TABLE test_orders_int_to_bigint (
 -- FK type mismatch: BIGINT references INTEGER
 CREATE TABLE test_reviews_bigint_to_int (
     review_id SERIAL PRIMARY KEY,
-    category_id BIGINT NOT NULL REFERENCES test_categories_integer(category_id), -- MISMATCH!
+    -- MISMATCH!
+    category_id BIGINT NOT NULL REFERENCES test_categories_integer (
+        category_id
+    ),
     rating INTEGER CHECK (rating >= 1 AND rating <= 5),
     review_text TEXT,
     created_at TIMESTAMP DEFAULT '2024-01-15 14:30:00'
@@ -57,7 +61,8 @@ CREATE TABLE test_reviews_bigint_to_int (
 -- FK type mismatch: INTEGER references SMALLINT
 CREATE TABLE test_inventory_int_to_smallint (
     inventory_id SERIAL PRIMARY KEY,
-    product_id INTEGER NOT NULL REFERENCES test_products_smallint(product_id), -- MISMATCH!
+    -- MISMATCH!
+    product_id INTEGER NOT NULL REFERENCES test_products_smallint (product_id),
     quantity INTEGER DEFAULT 0,
     warehouse_location VARCHAR(50),
     created_at TIMESTAMP DEFAULT '2024-01-15 14:30:00'
@@ -66,7 +71,8 @@ CREATE TABLE test_inventory_int_to_smallint (
 -- FK type mismatch: VARCHAR references TEXT
 CREATE TABLE test_stores_varchar_to_text (
     store_id SERIAL PRIMARY KEY,
-    region_code VARCHAR(10) NOT NULL REFERENCES test_regions_text(region_code), -- MISMATCH!
+    -- MISMATCH!
+    region_code VARCHAR(10) NOT NULL REFERENCES test_regions_text (region_code),
     store_name VARCHAR(100) NOT NULL,
     address TEXT,
     created_at TIMESTAMP DEFAULT '2024-01-15 14:30:00'
@@ -75,7 +81,10 @@ CREATE TABLE test_stores_varchar_to_text (
 -- FK type mismatch: SMALLINT references INTEGER
 CREATE TABLE test_discounts_smallint_to_int (
     discount_id SERIAL PRIMARY KEY,
-    category_id SMALLINT NOT NULL REFERENCES test_categories_integer(category_id), -- MISMATCH!
+    -- MISMATCH!
+    category_id SMALLINT NOT NULL REFERENCES test_categories_integer (
+        category_id
+    ),
     discount_percentage DECIMAL(5, 2),
     start_date DATE,
     end_date DATE,
@@ -86,7 +95,7 @@ CREATE TABLE test_discounts_smallint_to_int (
 
 CREATE TABLE test_user_profiles_correct (
     profile_id SERIAL PRIMARY KEY,
-    user_id BIGINT NOT NULL REFERENCES test_users_bigint(user_id), -- CORRECT!
+    user_id BIGINT NOT NULL REFERENCES test_users_bigint (user_id), -- CORRECT!
     first_name VARCHAR(50),
     last_name VARCHAR(50),
     bio TEXT,
@@ -95,7 +104,10 @@ CREATE TABLE test_user_profiles_correct (
 
 CREATE TABLE test_category_stats_correct (
     stat_id SERIAL PRIMARY KEY,
-    category_id INTEGER NOT NULL REFERENCES test_categories_integer(category_id), -- CORRECT!
+    -- CORRECT!
+    category_id INTEGER NOT NULL REFERENCES test_categories_integer (
+        category_id
+    ),
     product_count INTEGER DEFAULT 0,
     avg_rating DECIMAL(3, 2),
     created_at TIMESTAMP DEFAULT '2024-01-15 14:30:00'
@@ -103,7 +115,8 @@ CREATE TABLE test_category_stats_correct (
 
 CREATE TABLE test_product_details_correct (
     detail_id SERIAL PRIMARY KEY,
-    product_id SMALLINT NOT NULL REFERENCES test_products_smallint(product_id), -- CORRECT!
+    -- CORRECT!
+    product_id SMALLINT NOT NULL REFERENCES test_products_smallint (product_id),
     specifications TEXT,
     warranty_months INTEGER,
     created_at TIMESTAMP DEFAULT '2024-01-15 14:30:00'
@@ -155,7 +168,9 @@ VALUES
 (200, 4, 'Good furniture quality'),
 (300, 5, 'Great book collection');
 
-INSERT INTO test_inventory_int_to_smallint (product_id, quantity, warehouse_location)
+INSERT INTO test_inventory_int_to_smallint (
+    product_id, quantity, warehouse_location
+)
 VALUES
 (1, 50, 'Warehouse A'),
 (2, 25, 'Warehouse B'),
@@ -167,7 +182,9 @@ VALUES
 ('US-WEST', 'West Coast Store', '456 Oak Ave, Los Angeles'),
 ('CA-ON', 'Toronto Store', '789 Queen St, Toronto');
 
-INSERT INTO test_discounts_smallint_to_int (category_id, discount_percentage, start_date, end_date)
+INSERT INTO test_discounts_smallint_to_int (
+    category_id, discount_percentage, start_date, end_date
+)
 VALUES
 (100, 10.00, '2024-01-01', '2024-01-31'),
 (200, 15.00, '2024-02-01', '2024-02-29'),
@@ -186,7 +203,9 @@ VALUES
 (200, 800, 4.0),
 (300, 2000, 4.5);
 
-INSERT INTO test_product_details_correct (product_id, specifications, warranty_months)
+INSERT INTO test_product_details_correct (
+    product_id, specifications, warranty_months
+)
 VALUES
 (1, 'Intel i7, 16GB RAM, 512GB SSD', 24),
 (2, 'Ergonomic design, adjustable height', 12),
@@ -209,26 +228,38 @@ ANALYZE test_product_details_correct;
 -- Disable all rules first to isolate B008 testing
 SELECT 'Disabling all rules to test B008 specifically...' AS status;
 SELECT pglinter.disable_all_rules() AS all_rules_disabled;
-SELECT pglinter.enable_rule('B008') AS B008_enabled;
+SELECT pglinter.enable_rule('B008') AS b008_enabled;
 
 -- Run table check (should show no results since all rules are disabled)
-SELECT 'Running table check with all rules disabled (should show no B008 results):' AS test_info;
-SELECT pglinter.check();
+SELECT
+    'Running table check with all rules disabled (should show no B008 results):' AS test_info;
 
-SELECT count(*) AS violation_count from pglinter.get_violations() WHERE rule_code = 'B008';
+SELECT count(*) AS violation_count
+FROM pglinter.get_violations()
+WHERE rule_code = 'B008';
 
 -- Test disabling B008 temporarily
 SELECT 'Testing B008 disable/enable cycle:' AS test_info;
-SELECT pglinter.disable_rule('B008') AS B008_disabled;
-SELECT pglinter.check(); -- Should skip B008
+SELECT pglinter.disable_rule('B008') AS b008_disabled;
 
-SELECT count(*) AS violation_count from pglinter.get_violations() WHERE rule_code = 'B008';
+SELECT count(*) AS violation_count
+FROM pglinter.get_violations()
+WHERE rule_code = 'B008';
+
+SELECT
+    (pg_identify_object(classid, objid, objsubid)).type AS object_type,
+    (pg_identify_object(classid, objid, objsubid)).schema AS object_schema,
+    (pg_identify_object(classid, objid, objsubid)).name AS object_name,
+    (pg_identify_object(classid, objid, objsubid)).identity AS object_identity
+FROM pglinter.get_violations()
+WHERE rule_code = 'B008';
 
 -- Re-enable B008 and test again
-SELECT pglinter.enable_rule('B008') AS B008_re_enabled;
-SELECT pglinter.check(); -- Should include B008 again
+SELECT pglinter.enable_rule('B008') AS b008_re_enabled;
 
-SELECT count(*) AS violation_count from pglinter.get_violations() WHERE rule_code = 'B008';
+SELECT count(*) AS violation_count
+FROM pglinter.get_violations()
+WHERE rule_code = 'B008';
 
 DROP TABLE test_orders_int_to_bigint CASCADE;
 DROP TABLE test_reviews_bigint_to_int CASCADE;

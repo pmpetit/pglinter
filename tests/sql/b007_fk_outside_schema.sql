@@ -24,7 +24,7 @@ CREATE TABLE public_schema.customers (
 CREATE TABLE public_schema.products (
     product_id SERIAL PRIMARY KEY,
     product_name VARCHAR(100) NOT NULL,
-    price DECIMAL(10,2) NOT NULL,
+    price DECIMAL(10, 2) NOT NULL,
     category VARCHAR(50),
     stock_quantity INTEGER DEFAULT 0,
     created_at TIMESTAMP DEFAULT NOW()
@@ -44,9 +44,12 @@ CREATE TABLE public_schema.users (
 -- Sales schema table with FK to public_schema (CROSS-SCHEMA - should be counted)
 CREATE TABLE sales_schema.orders (
     order_id SERIAL PRIMARY KEY,
-    customer_id INTEGER NOT NULL REFERENCES public_schema.customers(customer_id), -- Cross-schema FK
+    -- Cross-schema FK
+    customer_id INTEGER NOT NULL REFERENCES public_schema.customers (
+        customer_id
+    ),
     order_date DATE NOT NULL DEFAULT CURRENT_DATE,
-    total_amount DECIMAL(10,2),
+    total_amount DECIMAL(10, 2),
     status VARCHAR(20) DEFAULT 'pending',
     created_at TIMESTAMP DEFAULT NOW()
 );
@@ -54,17 +57,20 @@ CREATE TABLE sales_schema.orders (
 -- Another sales schema table with FK to public_schema (CROSS-SCHEMA - should be counted)
 CREATE TABLE sales_schema.order_items (
     item_id SERIAL PRIMARY KEY,
-    order_id INTEGER NOT NULL REFERENCES sales_schema.orders(order_id), -- Same schema - OK
-    product_id INTEGER NOT NULL REFERENCES public_schema.products(product_id), -- Cross-schema FK
+    -- Same schema - OK
+    order_id INTEGER NOT NULL REFERENCES sales_schema.orders (order_id),
+    -- Cross-schema FK
+    product_id INTEGER NOT NULL REFERENCES public_schema.products (product_id),
     quantity INTEGER NOT NULL DEFAULT 1,
-    unit_price DECIMAL(10,2),
+    unit_price DECIMAL(10, 2),
     created_at TIMESTAMP DEFAULT NOW()
 );
 
 -- Inventory schema table with FK to public_schema (CROSS-SCHEMA - should be counted)
 CREATE TABLE inventory_schema.stock_movements (
     movement_id SERIAL PRIMARY KEY,
-    product_id INTEGER NOT NULL REFERENCES public_schema.products(product_id), -- Cross-schema FK
+    -- Cross-schema FK
+    product_id INTEGER NOT NULL REFERENCES public_schema.products (product_id),
     movement_type VARCHAR(20) NOT NULL, -- 'IN', 'OUT', 'ADJUSTMENT'
     quantity INTEGER NOT NULL,
     movement_date DATE DEFAULT CURRENT_DATE,
@@ -75,7 +81,8 @@ CREATE TABLE inventory_schema.stock_movements (
 -- Audit schema table with FK to public_schema (CROSS-SCHEMA - should be counted)
 CREATE TABLE audit_schema.user_actions (
     action_id SERIAL PRIMARY KEY,
-    user_id INTEGER NOT NULL REFERENCES public_schema.users(user_id), -- Cross-schema FK
+    -- Cross-schema FK
+    user_id INTEGER NOT NULL REFERENCES public_schema.users (user_id),
     action_type VARCHAR(50) NOT NULL,
     table_name VARCHAR(100),
     record_id INTEGER,
@@ -99,9 +106,10 @@ CREATE TABLE clean_schema.employees (
     first_name VARCHAR(50) NOT NULL,
     last_name VARCHAR(50) NOT NULL,
     email VARCHAR(150) UNIQUE,
-    department_id INTEGER REFERENCES clean_schema.departments(department_id), -- Same schema FK - OK
+    -- Same schema FK - OK
+    department_id INTEGER REFERENCES clean_schema.departments (department_id),
     hire_date DATE DEFAULT CURRENT_DATE,
-    salary DECIMAL(10,2),
+    salary DECIMAL(10, 2),
     created_at TIMESTAMP DEFAULT NOW()
 );
 
@@ -117,7 +125,10 @@ CREATE TABLE clean_schema.company_settings (
 -- Public schema table with internal FK only (should NOT be counted)
 CREATE TABLE public_schema.customer_addresses (
     address_id SERIAL PRIMARY KEY,
-    customer_id INTEGER NOT NULL REFERENCES public_schema.customers(customer_id), -- Same schema FK - OK
+    -- Same schema FK - OK
+    customer_id INTEGER NOT NULL REFERENCES public_schema.customers (
+        customer_id
+    ),
     address_type VARCHAR(20) DEFAULT 'home', -- 'home', 'work', 'billing'
     street_address VARCHAR(200),
     city VARCHAR(100),
@@ -133,7 +144,9 @@ INSERT INTO public_schema.customers (customer_name, email, phone) VALUES
 ('Jane Smith', 'jane@example.com', '555-0102'),
 ('Bob Johnson', 'bob@example.com', '555-0103');
 
-INSERT INTO public_schema.products (product_name, price, category, stock_quantity) VALUES
+INSERT INTO public_schema.products (
+    product_name, price, category, stock_quantity
+) VALUES
 ('Widget A', 29.99, 'widgets', 100),
 ('Gadget B', 49.99, 'gadgets', 50),
 ('Tool C', 79.99, 'tools', 25);
@@ -148,7 +161,9 @@ INSERT INTO sales_schema.orders (customer_id, total_amount, status) VALUES
 (2, 49.99, 'pending'),
 (3, 109.98, 'shipped');
 
-INSERT INTO sales_schema.order_items (order_id, product_id, quantity, unit_price) VALUES
+INSERT INTO sales_schema.order_items (
+    order_id, product_id, quantity, unit_price
+) VALUES
 (1, 1, 2, 29.99),
 (1, 3, 1, 79.99),
 (2, 2, 1, 49.99),
@@ -159,7 +174,9 @@ INSERT INTO clean_schema.departments (department_name, description) VALUES
 ('Sales', 'Sales and marketing team'),
 ('HR', 'Human resources');
 
-INSERT INTO clean_schema.employees (first_name, last_name, email, department_id, salary) VALUES
+INSERT INTO clean_schema.employees (
+    first_name, last_name, email, department_id, salary
+) VALUES
 ('Alice', 'Engineer', 'alice@company.com', 1, 85000.00),
 ('Bob', 'Salesman', 'bob@company.com', 2, 65000.00),
 ('Carol', 'HR Manager', 'carol@company.com', 3, 75000.00);
@@ -168,61 +185,64 @@ INSERT INTO clean_schema.employees (first_name, last_name, email, department_id,
 
 
 -- Test B007 rule execution
-SELECT 'Testing B007 rule - Tables with foreign keys outside schema...' AS test_info;
+SELECT
+    'Testing B007 rule - Tables with foreign keys outside schema...' AS test_info;
 
 -- Test the B007 rule with base check
 SELECT 'Running base check to test B007 rule:' AS test_step;
-SELECT pglinter.check();
 
-SELECT count(*) AS violation_count from pglinter.get_violations() WHERE rule_code = 'B007';
+SELECT COUNT(*) AS violation_count
+FROM pglinter.get_violations()
+WHERE rule_code = 'B007';
 
 -- Test rule management for B007
 SELECT 'Testing B007 rule management...' AS test_step;
 SELECT pglinter.explain_rule('B007');
-SELECT pglinter.is_rule_enabled('B007') AS B007_enabled;
+SELECT pglinter.is_rule_enabled('B007') AS b007_enabled;
 
 -- Test disabling B007
 SELECT 'Testing B007 disable...' AS test_step;
-SELECT pglinter.disable_rule('B007') AS B007_disabled;
-SELECT pglinter.check(); -- Should skip B007
+SELECT pglinter.disable_rule('B007') AS b007_disabled;
 
-SELECT count(*) AS violation_count from pglinter.get_violations() WHERE rule_code = 'B007';
+SELECT COUNT(*) AS violation_count
+FROM pglinter.get_violations()
+WHERE rule_code = 'B007';
 
 -- Re-enable B007
 SELECT 'Testing B007 re-enable...' AS test_step;
-SELECT pglinter.enable_rule('B007') AS B007_reenabled;
-SELECT pglinter.check(); -- Should include B007 again
+SELECT pglinter.enable_rule('B007') AS b007_reenabled;
 
-SELECT count(*) AS violation_count from pglinter.get_violations() WHERE rule_code = 'B007';
+SELECT COUNT(*) AS violation_count
+FROM pglinter.get_violations()
+WHERE rule_code = 'B007';
 
 -- Test with only B007 enabled
 SELECT 'Testing B007 in isolation...' AS test_step;
 SELECT pglinter.disable_all_rules() AS all_disabled;
-SELECT pglinter.enable_rule('B007') AS B007_only_enabled;
-SELECT pglinter.check(); -- Should only run B007
+SELECT pglinter.enable_rule('B007') AS b007_only_enabled;
 
 -- Show rule status
 SELECT 'Current B007 rule status:' AS status_info;
-SELECT * FROM pglinter.rules WHERE code = 'B007';
+SELECT * FROM pglinter.rules
+WHERE code = 'B007';
 
--- Test threshold configuration
-SELECT 'Testing B007 threshold configuration...' AS test_step;
-SELECT pglinter.get_rule_levels('B007') AS current_B007_levels;
+-- Test violations
+SELECT 'Testing B007 violations...' AS test_step;
+SELECT COUNT(*) AS violation_count
+FROM pglinter.get_violations()
+WHERE rule_code = 'B007';
 
--- Make B007 more strict temporarily
-SELECT pglinter.update_rule_levels('B007', 10, 30) AS B007_strict_update;
-SELECT 'B007 with stricter thresholds (should trigger more easily):' AS strict_test;
-SELECT pglinter.check();
-SELECT count(*) AS violation_count from pglinter.get_violations() WHERE rule_code = 'B007';
+SELECT
+    (PG_IDENTIFY_OBJECT(classid, objid, objsubid)).type AS object_type,
+    (PG_IDENTIFY_OBJECT(classid, objid, objsubid)).schema AS object_schema,
+    (PG_IDENTIFY_OBJECT(classid, objid, objsubid)).name AS object_name,
+    (PG_IDENTIFY_OBJECT(classid, objid, objsubid)).identity AS object_identity
+FROM pglinter.get_violations()
+WHERE rule_code = 'B007';
 
 -- Test if file exists and show checksum
-SELECT pglinter.check('/tmp/pglinter_B007_results.sarif');
-\! md5sum /tmp/pglinter_B007_results.sarif
 
--- Reset to original levels
-SELECT pglinter.update_rule_levels('B007', 20, 80) AS B007_reset_levels;
-
-SELECT 'B007 comprehensive test completed successfully!' as test_result;
+SELECT 'B007 comprehensive test completed successfully!' AS test_result;
 DROP SCHEMA public_schema CASCADE;
 DROP SCHEMA sales_schema CASCADE;
 DROP SCHEMA inventory_schema CASCADE;

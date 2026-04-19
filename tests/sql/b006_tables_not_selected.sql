@@ -14,9 +14,9 @@ CREATE TABLE active_users_table (
     id SERIAL PRIMARY KEY,
     username VARCHAR(50) UNIQUE NOT NULL,
     email VARCHAR(100) NOT NULL,
-    last_login TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    last_login TIMESTAMP DEFAULT current_timestamp,
     is_active BOOLEAN DEFAULT true,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    created_at TIMESTAMP DEFAULT current_timestamp
 );
 
 -- Add index for performance
@@ -28,7 +28,7 @@ CREATE TABLE dormant_logs_table (
     id SERIAL,
     log_level VARCHAR(20),
     message TEXT,
-    logged_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    logged_at TIMESTAMP DEFAULT current_timestamp,
     user_id INTEGER
 );
 
@@ -38,7 +38,7 @@ CREATE TABLE unused_config_table (
     config_key VARCHAR(100) UNIQUE NOT NULL,
     config_value TEXT,
     description TEXT,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    created_at TIMESTAMP DEFAULT current_timestamp
 );
 
 -- Table 4: Frequently accessed table (high activity)
@@ -46,13 +46,15 @@ CREATE TABLE frequently_accessed_table (
     id SERIAL PRIMARY KEY,
     product_name VARCHAR(100) NOT NULL,
     category VARCHAR(50),
-    price DECIMAL(10,2),
+    price DECIMAL(10, 2),
     stock_quantity INTEGER DEFAULT 0,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    updated_at TIMESTAMP DEFAULT current_timestamp
 );
 
 -- Add multiple indexes for various query patterns
-CREATE INDEX idx_frequently_product_name ON frequently_accessed_table (product_name);
+CREATE INDEX idx_frequently_product_name ON frequently_accessed_table (
+    product_name
+);
 CREATE INDEX idx_frequently_category ON frequently_accessed_table (category);
 CREATE INDEX idx_frequently_price ON frequently_accessed_table (price);
 
@@ -61,7 +63,7 @@ CREATE TABLE completely_unused_table (
     id SERIAL,
     data_field VARCHAR(200),
     numeric_field INTEGER,
-    timestamp_field TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    timestamp_field TIMESTAMP DEFAULT current_timestamp,
     status VARCHAR(20) DEFAULT 'inactive'
 );
 
@@ -71,9 +73,9 @@ INSERT INTO active_users_table (username, email, last_login, is_active)
 SELECT
     'user_' || i,
     'user' || i || '@example.com',
-    '2024-01-01'::timestamp + (i || ' hours')::interval,
+    '2024-01-01'::TIMESTAMP + (i || ' hours')::INTERVAL,
     (i % 2 = 0)
-FROM generate_series(1, 8000) i;
+FROM generate_series(1, 8000) AS i;
 
 -- Dormant logs table
 INSERT INTO dormant_logs_table (log_level, message, logged_at, user_id)
@@ -85,9 +87,9 @@ SELECT
         ELSE 'DEBUG'
     END,
     'Log message number ' || i,
-    '2024-01-01'::timestamp + (i || ' minutes')::interval,
+    '2024-01-01'::TIMESTAMP + (i || ' minutes')::INTERVAL,
     (i % 1000) + 1
-FROM generate_series(1, 15000) i;
+FROM generate_series(1, 15000) AS i;
 
 -- Unused configuration table (has data but NEVER queried)
 INSERT INTO unused_config_table (config_key, config_value, description)
@@ -95,10 +97,12 @@ SELECT
     'config_key_' || i,
     'config_value_' || i,
     'Configuration setting number ' || i
-FROM generate_series(1, 2000) i;
+FROM generate_series(1, 2000) AS i;
 
 -- Frequently accessed table
-INSERT INTO frequently_accessed_table (product_name, category, price, stock_quantity)
+INSERT INTO frequently_accessed_table (
+    product_name, category, price, stock_quantity
+)
 SELECT
     'Product_' || i,
     CASE (i % 5)
@@ -110,7 +114,7 @@ SELECT
     END,
     (i % 1000) + 10.99,
     (i % 100) + 1
-FROM generate_series(1, 12000) i;
+FROM generate_series(1, 12000) AS i;
 
 -- Completely unused table (has data but NEVER queried)
 INSERT INTO completely_unused_table (data_field, numeric_field, status)
@@ -122,7 +126,7 @@ SELECT
         WHEN 1 THEN 'pending'
         ELSE 'archived'
     END
-FROM generate_series(1, 5000) i;
+FROM generate_series(1, 5000) AS i;
 
 -- Reset PostgreSQL statistics to start with clean slate
 
@@ -134,12 +138,12 @@ VACUUM ANALYZE unused_config_table;
 VACUUM ANALYZE frequently_accessed_table;
 VACUUM ANALYZE completely_unused_table;
 
-select pg_sleep(2);
+SELECT pg_sleep(2);
 
 -- Create the extension and test b006 rule
 
 
-SELECT 'Testing B006 rule - Tables never selected detection...' as test_info;
+SELECT 'Testing B006 rule - Tables never selected detection...' AS test_info;
 
 -- First, disable all rules to isolate B006 testing
 SELECT pglinter.disable_all_rules() AS all_rules_disabled;
@@ -150,35 +154,73 @@ SELECT pglinter.enable_rule('B006') AS b006_enabled;
 -- Verify B006 is enabled
 SELECT pglinter.is_rule_enabled('B006') AS b006_status;
 
-SELECT pglinter.check();
 
 -- Test with file output
-SELECT pglinter.check('/tmp/pglinter_b006_results.sarif');
-\! md5sum /tmp/pglinter_b006_results.sarif
 
-SELECT count(*) AS violation_count from pglinter.get_violations() WHERE rule_code = 'B006';
+SELECT count(*) AS violation_count
+FROM pglinter.get_violations()
+WHERE rule_code = 'B006';
 
 -- Now simulate realistic usage patterns:
 
 -- 1. Heavy usage of active_users_table (both index and sequential scans)
-SELECT COUNT(*) FROM active_users_table WHERE is_active = true;
-SELECT COUNT(*) FROM active_users_table WHERE username = 'user_100';
-SELECT COUNT(*) FROM active_users_table WHERE username LIKE 'user_1%';
-SELECT id, username, email FROM active_users_table WHERE last_login > '2024-01-15' ORDER BY last_login DESC LIMIT 20;
-SELECT username, email FROM active_users_table WHERE is_active = true ORDER BY id LIMIT 100;
+SELECT count(*) FROM active_users_table
+WHERE is_active = true;
+SELECT count(*) FROM active_users_table
+WHERE username = 'user_100';
+SELECT count(*) FROM active_users_table
+WHERE username LIKE 'user_1%';
+SELECT
+    id,
+    username,
+    email
+FROM active_users_table
+WHERE last_login > '2024-01-15'
+ORDER BY last_login DESC
+LIMIT 20;
+SELECT
+    username,
+    email
+FROM active_users_table
+WHERE is_active = true
+ORDER BY id
+LIMIT 100;
 
 -- 2. Moderate usage of dormant_logs_table (some scans)
-SELECT COUNT(*) FROM dormant_logs_table WHERE log_level = 'ERROR';
-SELECT message FROM dormant_logs_table WHERE logged_at > '2024-01-01' LIMIT 50;
-SELECT COUNT(*) FROM dormant_logs_table WHERE user_id IS NOT NULL;
+SELECT count(*) FROM dormant_logs_table
+WHERE log_level = 'ERROR';
+SELECT message FROM dormant_logs_table
+WHERE logged_at > '2024-01-01' LIMIT 50;
+SELECT count(*) FROM dormant_logs_table
+WHERE user_id IS NOT null;
 
 -- 3. High usage of frequently_accessed_table (many different query patterns)
-SELECT COUNT(*) FROM frequently_accessed_table WHERE category = 'Electronics';
-SELECT product_name, price FROM frequently_accessed_table WHERE price > 500 ORDER BY price DESC LIMIT 10;
-SELECT category, COUNT(*) FROM frequently_accessed_table GROUP BY category;
-SELECT AVG(price) FROM frequently_accessed_table WHERE stock_quantity > 50;
-SELECT id,product_name,category,price FROM frequently_accessed_table WHERE product_name = 'Product_1000';
-SELECT COUNT(*) FROM frequently_accessed_table WHERE category IN ('Electronics', 'Books');
+SELECT count(*) FROM frequently_accessed_table
+WHERE category = 'Electronics';
+SELECT
+    product_name,
+    price
+FROM frequently_accessed_table
+WHERE price > 500
+ORDER BY price DESC
+LIMIT 10;
+SELECT
+    category,
+    count(*)
+FROM frequently_accessed_table
+GROUP BY category;
+SELECT avg(price) FROM frequently_accessed_table
+WHERE stock_quantity > 50;
+SELECT
+    id,
+    product_name,
+    category,
+    price
+FROM frequently_accessed_table
+WHERE product_name = 'Product_1000';
+SELECT count(*)
+FROM frequently_accessed_table
+WHERE category IN ('Electronics', 'Books');
 
 -- 4. NO usage of unused_config_table (b006 violation - never selected)
 -- (Intentionally no queries to simulate unused table)
@@ -198,12 +240,21 @@ SELECT pg_sleep(5);
 
 -- Run base check to detect b006 violations
 -- Expected result: Should detect unused_config_table and completely_unused_table
-SELECT 'Running base check to detect b006 violations (tables never selected)...' as status;
-SELECT pglinter.check();
+SELECT 'Running base check to detect b006 violations (tables never selected)...' AS status;
 
-SELECT count(*) AS violation_count from pglinter.get_violations() WHERE rule_code = 'B006';
+SELECT count(*) AS violation_count
+FROM pglinter.get_violations()
+WHERE rule_code = 'B006';
 
-SELECT 'b006 comprehensive test completed successfully!' as test_result;
+SELECT 'b006 comprehensive test completed successfully!' AS test_result;
+
+SELECT
+    (pg_identify_object(classid, objid, objsubid)).type AS object_type,
+    (pg_identify_object(classid, objid, objsubid)).schema AS object_schema,
+    (pg_identify_object(classid, objid, objsubid)).name AS object_name,
+    (pg_identify_object(classid, objid, objsubid)).identity AS object_identity
+FROM pglinter.get_violations()
+WHERE rule_code = 'B006';
 
 -- Clean up test tables
 DROP TABLE active_users_table CASCADE;

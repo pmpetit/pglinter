@@ -70,11 +70,11 @@ Schema-level checks:
 ### **Run Analysis**
 
 ```sql
-   -- Analyze entire database
-   SELECT pglinter.perform_base_check();
+   -- Get all violations for enabled rules
+   SELECT * FROM pglinter.get_violations();
 
-   -- Save results to file
-   SELECT pglinter.perform_base_check('/path/to/results.sarif');
+   -- Filter violations for a specific rule
+   SELECT * FROM pglinter.get_violations() WHERE rule_code = 'B001';
 ```
 
 ### **Manage Rules**

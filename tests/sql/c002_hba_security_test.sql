@@ -17,12 +17,15 @@ SELECT pglinter.enable_rule('C002') AS c002_enabled;
 SELECT pglinter.is_rule_enabled('C002') AS c002_status;
 
 -- Test 1: Run C002 check with current settings
-SELECT '=== Test 2: C002 Rule Execution ===' AS test_section;
-SELECT pglinter.perform_cluster_check();
+SELECT
+    (pg_identify_object(classid, objid, objsubid)).type AS object_type,
+    (pg_identify_object(classid, objid, objsubid)).schema AS object_schema,
+    (pg_identify_object(classid, objid, objsubid)).name AS object_name,
+    (pg_identify_object(classid, objid, objsubid)).identity AS object_identity
+FROM pglinter.get_violations()
+WHERE rule_code = 'C002';
 
 -- Test if file exists and show checksum
-SELECT pglinter.check('/tmp/pglinter_c002_results.sarif');
-\! md5sum /tmp/pglinter_c002_results.sarif
 
 
 -- Test rule explanation

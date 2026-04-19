@@ -38,29 +38,13 @@ NOTICE:  ✅ Rule S002 has been enabled
 (1 row)
 
 -- Test the schema rules
-SELECT 'Testing schema rules S002...' as test_info;
+SELECT 'Testing schema rules S002...' AS test_info;
           test_info           
 ------------------------------
  Testing schema rules S002...
 (1 row)
 
 -- Run schema check to detect environment-named schemas and default privilege issues
-SELECT pglinter.check();
-NOTICE:  🔍 pglinter found 1 issue(s):
-NOTICE:  ==================================================
-NOTICE:  ❌ [S002] ERROR: 3/6 schemas are prefixed or suffixed with environment names. It exceed the error threshold: 50%. Prefer prefix or suffix the database name instead. Object list:
-dev_analytics
-prod_sales
-reports_staging
-
-NOTICE:  ==================================================
-NOTICE:  📊 Summary: 1 error(s), 0 warning(s), 0 info
-NOTICE:  🔴 Critical issues found - please review and fix errors
- check 
--------
- t
-(1 row)
-
 -- Test individual schema rules
 SELECT pglinter.explain_rule('S002');
 NOTICE:  📖 Rule Explanation for S002
@@ -69,11 +53,8 @@ NOTICE:  📖 Rule Explanation for S002
 🎯 Rule Name: SchemaPrefixedOrSuffixedWithEnvt
 📋 Scope: SCHEMA
 
-📝 Description:
-The schema is prefixed with one of staging,stg,preprod,prod,sandbox,sbox string. Means that when you refresh your preprod, staging environments from production, you have to rename the target schema from prod_ to stg_ or something like. It is possible, but it is never easy.
-
-⚠️  Message Template:
-{0}/{1} schemas are prefixed or suffixed with environment names. It exceed the {2} threshold: {3}%. Prefer prefix or suffix the database name instead. Object list:\n{4}
+📝 Message:
+schema is prefixed with one of staging,stg,preprod,prod,sandbox,sbox string. Means that when you refresh your preprod, staging environments from production, you have to rename the target schema from prod_ to stg_ or something like. It is possible, but it is never easy.
 
 🔧 How to Fix:
    1. Keep the same schema name across environments. Prefer prefix or suffix the database name
@@ -98,13 +79,6 @@ NOTICE:  🔴 Rule S002 has been disabled
  t
 (1 row)
 
-SELECT pglinter.check(); -- Should skip S002
-NOTICE:  ✅ No issues found - database schema looks good!
- check 
--------
- t
-(1 row)
-
 -- Re-enable S002
 SELECT pglinter.enable_rule('S002') AS s002_reenabled;
 NOTICE:  ✅ Rule S002 has been enabled
@@ -113,27 +87,27 @@ NOTICE:  ✅ Rule S002 has been enabled
  t
 (1 row)
 
-SELECT pglinter.check(); -- Should include S002 again
-NOTICE:  🔍 pglinter found 1 issue(s):
-NOTICE:  ==================================================
-NOTICE:  ❌ [S002] ERROR: 3/6 schemas are prefixed or suffixed with environment names. It exceed the error threshold: 50%. Prefer prefix or suffix the database name instead. Object list:
-dev_analytics
-prod_sales
-reports_staging
-
-NOTICE:  ==================================================
-NOTICE:  📊 Summary: 1 error(s), 0 warning(s), 0 info
-NOTICE:  🔴 Critical issues found - please review and fix errors
- check 
--------
- t
-(1 row)
-
-SELECT count(*) AS violation_count from pglinter.get_violations() WHERE rule_code = 'S002';
+SELECT count(*) AS violation_count
+FROM pglinter.get_violations()
+WHERE rule_code = 'S002';
  violation_count 
 -----------------
                3
 (1 row)
+
+SELECT
+    (pg_identify_object(classid, objid, objsubid)).type AS object_type,
+    (pg_identify_object(classid, objid, objsubid)).schema AS object_schema,
+    (pg_identify_object(classid, objid, objsubid)).name AS object_name,
+    (pg_identify_object(classid, objid, objsubid)).identity AS object_identity
+FROM pglinter.get_violations()
+WHERE rule_code = 'S002';
+ object_type | object_schema |   object_name   | object_identity 
+-------------+---------------+-----------------+-----------------
+ schema      |               | prod_sales      | prod_sales
+ schema      |               | dev_analytics   | dev_analytics
+ schema      |               | reports_staging | reports_staging
+(3 rows)
 
 DROP SCHEMA prod_sales CASCADE;
 NOTICE:  drop cascades to table prod_sales.customers

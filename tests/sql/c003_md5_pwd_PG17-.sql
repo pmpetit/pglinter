@@ -19,13 +19,16 @@ SELECT pglinter.is_rule_enabled('C003') AS c003_status;
 
 -- Test 1: Check current password_encryption setting
 SELECT '=== Test 1: Current password_encryption setting ===' AS test_section;
-SELECT name, setting, context
+SELECT
+    name,
+    setting,
+    context
 FROM pg_settings
 WHERE name = 'password_encryption';
 
 -- Test 2: Run C003 check with current settings
 SELECT '=== Test 2: C003 Rule Execution ===' AS test_section;
-SELECT pglinter.perform_cluster_check();
+SELECT pglinter.get_violations();
 
 -- Test 3: Rule explanation
 SELECT '=== Test 3: C003 Rule Explanation ===' AS test_section;
@@ -33,25 +36,30 @@ SELECT pglinter.explain_rule('C003') AS rule_explanation;
 
 -- Test 4: Rule details
 SELECT '=== Test 4: C003 Rule Details ===' AS test_section;
-SELECT code, name, description, message, fixes
+SELECT
+    code,
+    name,
+    message,
+    fixes
 FROM pglinter.rules
 WHERE code = 'C003';
 
 -- Test 5: Show the actual query used by C003
 SELECT '=== Test 5: C003 Query Details ===' AS test_section;
-SELECT code, q1 as query
+SELECT
+    code,
+    q4 AS query
 FROM pglinter.rules
 WHERE code = 'C003';
 
 -- Test 6: Manual execution of C003 query to understand results
 SELECT '=== Test 6: Manual C003 Query Execution ===' AS test_section;
-SELECT count(*) as md5_password_count
+SELECT count(*) AS md5_password_count
 FROM pg_catalog.pg_settings
-WHERE name='password_encryption' AND setting='md5';
+WHERE name = 'password_encryption' AND setting = 'md5';
 
 -- Test 7: Export results to SARIF format
 SELECT '=== Test 7: Export to SARIF ===' AS test_section;
-SELECT pglinter.check('/tmp/pglinter_c003_results.sarif');
 
 -- Show checksum of generated file if it exists
 \! test -f /tmp/pglinter_c003_results.sarif && md5sum /tmp/pglinter_c003_results.sarif || echo "SARIF file not generated"

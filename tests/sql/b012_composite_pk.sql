@@ -19,9 +19,18 @@ CREATE TABLE test_composite_pk (
 );
 
 -- Run pglinter check
-SELECT pglinter.check();
 
-SELECT count(*) AS violation_count from pglinter.get_violations() WHERE rule_code = 'B012';
+SELECT count(*) AS violation_count
+FROM pglinter.get_violations()
+WHERE rule_code = 'B012';
+
+SELECT
+    (pg_identify_object(classid, objid, objsubid)).type AS object_type,
+    (pg_identify_object(classid, objid, objsubid)).schema AS object_schema,
+    (pg_identify_object(classid, objid, objsubid)).name AS object_name,
+    (pg_identify_object(classid, objid, objsubid)).identity AS object_identity
+FROM pglinter.get_violations()
+WHERE rule_code = 'B012';
 
 DROP TABLE test_composite_pk CASCADE;
 

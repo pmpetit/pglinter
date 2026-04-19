@@ -24,7 +24,9 @@ LIB=pglinter.$(LIB_SUFFIX)
 PGDATA_DIR=~/.pgrx/data-$(PG_MAJOR_VERSION)
 
 # Be sure to use the PGRX version (PGVER) of the postgres binaries
+ifneq ($(strip $(PG_BINDIR)),)
 PATH:=$(PG_BINDIR):${PATH}
+endif
 
 # This is where the package is placed - updated for pgrx 0.16.0 structure
 TARGET_SHAREDIR?=$(TARGET_DIR)usr/share/postgresql/$(PG_MAJOR_VERSION)
@@ -65,12 +67,9 @@ REGRESS_TESTS+= s003_public_schema
 REGRESS_TESTS+= s003_unsecured_public_schema
 # REGRESS_TESTS+= s004_owner_schema_is_internal_role
 REGRESS_TESTS+= s005_several_table_owner_in_schema
-REGRESS_TESTS+= demo_rule_levels
 REGRESS_TESTS+= import_rules_from_file
 REGRESS_TESTS+= import_rules_from_yaml
 #REGRESS_TESTS+= integration_test
-REGRESS_TESTS+= quick_demo_levels
-#REGRESS_TESTS+= rule_management
 REGRESS_TESTS+= schema_rules
 
 # REGRESS_TESTS+= b001
@@ -332,7 +331,7 @@ docker_image: docker_setup
 # Build AMD64 pgrx image separately
 pgrx_image_amd64_only: docker/pgrx/Dockerfile
 	@echo "Building AMD64 pgrx image..."
-	docker buildx build \
+	sudo docker buildx build \
 			--platform linux/amd64 \
 			--tag $(PGRX_IMAGE)-amd64 \
 			--file $^ \
@@ -345,7 +344,7 @@ pgrx_image_amd64_only: docker/pgrx/Dockerfile
 # Build ARM64 pgrx image separately
 pgrx_image_arm64_only: docker/pgrx/Dockerfile
 	@echo "Building ARM64 pgrx image..."
-	docker buildx build \
+	sudo docker buildx build \
 			--platform linux/arm64 \
 			--tag $(PGRX_IMAGE)-arm64 \
 			--file $^ \
@@ -358,15 +357,15 @@ pgrx_image_arm64_only: docker/pgrx/Dockerfile
 # Build both architectures and create multi-arch manifest
 pgrx_image: pgrx_image_amd64_only pgrx_image_arm64_only
 	@echo "Creating multi-architecture manifest..."
-	docker tag $(PGRX_IMAGE)-amd64 $(PGRX_IMAGE):latest-amd64
-	docker tag $(PGRX_IMAGE)-arm64 $(PGRX_IMAGE):latest-arm64
-	docker push $(PGRX_IMAGE):latest-amd64
-	docker push $(PGRX_IMAGE):latest-arm64
-	docker manifest create $(PGRX_IMAGE):latest \
+	sudo docker tag $(PGRX_IMAGE)-amd64 $(PGRX_IMAGE):latest-amd64
+	sudo docker tag $(PGRX_IMAGE)-arm64 $(PGRX_IMAGE):latest-arm64
+	sudo docker push $(PGRX_IMAGE):latest-amd64
+	sudo docker push $(PGRX_IMAGE):latest-arm64
+	sudo docker manifest create $(PGRX_IMAGE):latest \
 		$(PGRX_IMAGE):latest-amd64 \
 		$(PGRX_IMAGE):latest-arm64
-	docker manifest push $(PGRX_IMAGE):latest
-	docker tag $(PGRX_IMAGE):latest $(PGRX_IMAGE)
+	sudo docker manifest push $(PGRX_IMAGE):latest
+	sudo docker tag $(PGRX_IMAGE):latest $(PGRX_IMAGE)
 	@echo "Multi-architecture pgrx image created: $(PGRX_IMAGE)"
 
 docker_push: #: push the docker image to the registry
@@ -374,7 +373,7 @@ docker_push: #: push the docker image to the registry
 
 pgrx_push: pgrx_image
 	@echo "Pushing multi-architecture pgrx image..."
-	docker push $(PGRX_IMAGE)
+	sudo docker push $(PGRX_IMAGE)
 
 # Push individual architecture images
 pgrx_push_amd64:
@@ -392,10 +391,10 @@ pgrx_bash:
 # Clean up intermediate architecture-specific images
 pgrx_clean:
 	@echo "Cleaning up intermediate pgrx images..."
-	docker rmi $(PGRX_IMAGE)-amd64 2>/dev/null || true
-	docker rmi $(PGRX_IMAGE)-arm64 2>/dev/null || true
-	docker rmi $(PGRX_IMAGE):latest-amd64 2>/dev/null || true
-	docker rmi $(PGRX_IMAGE):latest-arm64 2>/dev/null || true
+	sudo docker rmi $(PGRX_IMAGE)-amd64 2>/dev/null || true
+	sudo docker rmi $(PGRX_IMAGE)-arm64 2>/dev/null || true
+	sudo docker rmi $(PGRX_IMAGE):latest-amd64 2>/dev/null || true
+	sudo docker rmi $(PGRX_IMAGE):latest-arm64 2>/dev/null || true
 
 ##
 ## O C I   I M A G E S

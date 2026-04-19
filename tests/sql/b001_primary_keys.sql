@@ -104,17 +104,23 @@ CREATE TABLE settings_with_pk (
 );
 
 -- Insert some test data to make tables more realistic
-INSERT INTO orders_no_pk (order_id, customer_id, product_id, quantity, total_amount, status) VALUES
+INSERT INTO orders_no_pk (
+    order_id, customer_id, product_id, quantity, total_amount, status
+) VALUES
 (1001, 1, 101, 2, 59.98, 'completed'),
 (1002, 2, 102, 1, 29.99, 'pending'),
 (1003, 1, 103, 3, 89.97, 'shipped');
 
-INSERT INTO customers_no_pk (customer_id, first_name, last_name, email, phone) VALUES
+INSERT INTO customers_no_pk (
+    customer_id, first_name, last_name, email, phone
+) VALUES
 (1, 'John', 'Doe', 'john.doe@example.com', '555-0101'),
 (2, 'Jane', 'Smith', 'jane.smith@example.com', '555-0102'),
 (3, 'Bob', 'Johnson', 'bob.johnson@example.com', '555-0103');
 
-INSERT INTO products_no_pk (product_id, product_name, description, category_id, price, stock_quantity) VALUES
+INSERT INTO products_no_pk (
+    product_id, product_name, description, category_id, price, stock_quantity
+) VALUES
 (101, 'Laptop Computer', 'High-performance laptop', 1, 899.99, 50),
 (102, 'Wireless Mouse', 'Ergonomic wireless mouse', 2, 24.99, 100),
 (103, 'Keyboard', 'Mechanical keyboard', 2, 79.99, 75);
@@ -143,7 +149,8 @@ ANALYZE settings_with_pk;
 
 -- Test B001 rule
 
-SELECT 'Testing B001 rule - Database-wide primary key percentage analysis...' AS test_info;
+SELECT
+    'Testing B001 rule - Database-wide primary key percentage analysis...' AS test_info;
 
 -- First, disable all rules to isolate B001 testing
 SELECT pglinter.disable_all_rules() AS all_rules_disabled;
@@ -156,7 +163,6 @@ SELECT pglinter.is_rule_enabled('B001') AS b001_status;
 
 -- Run base check to detect database-wide primary key percentage issues
 SELECT 'Running base check to detect B001 violations...' AS status;
-SELECT pglinter.check();
 
 -- Test rule management for B001
 SELECT 'Testing B001 rule management...' AS test_section;
@@ -166,8 +172,8 @@ SELECT pglinter.disable_rule('B001') AS b001_disabled;
 SELECT pglinter.is_rule_enabled('B001') AS b001_status_after_disable;
 
 -- Run base check again (should skip B001)
-SELECT 'Running base check with B001 disabled (should find no B001 violations)...' AS status;
-SELECT pglinter.check();
+SELECT
+    'Running base check with B001 disabled (should find no B001 violations)...' AS status;
 
 -- Re-enable B001
 SELECT pglinter.enable_rule('B001') AS b001_reenabled;
@@ -175,29 +181,43 @@ SELECT pglinter.is_rule_enabled('B001') AS b001_status_after_enable;
 
 -- Run base check again (should detect B001 violations)
 SELECT 'Running base check with B001 re-enabled...' AS status;
-SELECT pglinter.check();
-SELECT count(*) AS violation_count from pglinter.get_violations() WHERE rule_code = 'B001';
+SELECT COUNT(*) AS violation_count
+FROM pglinter.get_violations()
+WHERE rule_code = 'B001';
 
 -- Now let's fix some of the issues by adding primary keys to reduce the percentage
-SELECT 'Adding primary keys to some tables to improve the percentage...' AS improvement_info;
+SELECT
+    'Adding primary keys to some tables to improve the percentage...' AS improvement_info;
 
 -- Add primary keys to reduce the percentage below the 20% threshold
 ALTER TABLE orders_no_pk ADD CONSTRAINT pk_orders PRIMARY KEY (order_id);
-ALTER TABLE customers_no_pk ADD CONSTRAINT pk_customers PRIMARY KEY (customer_id);
+ALTER TABLE customers_no_pk ADD CONSTRAINT pk_customers PRIMARY KEY (
+    customer_id
+);
 ALTER TABLE products_no_pk ADD CONSTRAINT pk_products PRIMARY KEY (product_id);
 ALTER TABLE reviews_no_pk ADD CONSTRAINT pk_reviews PRIMARY KEY (review_id);
-ALTER TABLE inventory_no_pk ADD CONSTRAINT pk_inventory PRIMARY KEY (inventory_id);
+ALTER TABLE inventory_no_pk ADD CONSTRAINT pk_inventory PRIMARY KEY (
+    inventory_id
+);
 
 -- Keep 2 tables without primary keys to maintain some violations but below threshold
 -- shipments_no_pk and payments_no_pk will remain without primary keys
 
 -- Run B001 check again (should show reduced violations or no violations)
-SELECT 'Running B001 check after adding primary keys (should show improved percentage):' AS test_info;
-SELECT pglinter.check();
-SELECT pglinter.check('/tmp/pglinter_b001_results.sarif');
-\! md5sum /tmp/pglinter_b001_results.sarif
+SELECT
+    'Running B001 check after adding primary keys (should show improved percentage):' AS test_info;
 
-SELECT count(*) AS violation_count from pglinter.get_violations() WHERE rule_code = 'B001';
+SELECT COUNT(*) AS violation_count
+FROM pglinter.get_violations()
+WHERE rule_code = 'B001';
+
+SELECT
+    (PG_IDENTIFY_OBJECT(classid, objid, objsubid)).type AS object_type,
+    (PG_IDENTIFY_OBJECT(classid, objid, objsubid)).schema AS object_schema,
+    (PG_IDENTIFY_OBJECT(classid, objid, objsubid)).name AS object_name,
+    (PG_IDENTIFY_OBJECT(classid, objid, objsubid)).identity AS object_identity
+FROM pglinter.get_violations()
+WHERE rule_code = 'B001';
 
 DROP TABLE orders_no_pk CASCADE;
 DROP TABLE customers_no_pk CASCADE;

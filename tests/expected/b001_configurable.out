@@ -1,4 +1,4 @@
--- Quick test to verify B001 rule uses configurable thresholds
+-- Quick test to verify B001 rule detects tables without primary key
 DROP EXTENSION IF EXISTS pglinter CASCADE;
 NOTICE:  extension "pglinter" does not exist, skipping
 CREATE EXTENSION pglinter;
@@ -29,74 +29,25 @@ NOTICE:  ✅ Rule B001 has been enabled
  t
 (1 row)
 
-SELECT count(*) AS violation_count from pglinter.get_violations() WHERE rule_code = 'B001';
+-- B001 should detect the table without primary key
+SELECT count(*) AS violation_count
+FROM pglinter.get_violations()
+WHERE rule_code = 'B001';
  violation_count 
 -----------------
                1
 (1 row)
 
--- Test B001 rule - should show it uses the configured thresholds
-SELECT pglinter.check();
-NOTICE:  🔍 pglinter found 1 issue(s):
-NOTICE:  ==================================================
-NOTICE:  ⚠️  [B001] WARNING: 1/2 table(s) without primary key exceed the warning threshold: 50%. Object list:
-public.test_no_pk
-
-NOTICE:  ==================================================
-NOTICE:  📊 Summary: 0 error(s), 1 warning(s), 0 info
-NOTICE:  🟡 Some warnings found - consider reviewing for optimization
- check 
--------
- t
-(1 row)
-
-SELECT pglinter.check('/tmp/pglinter_b001_results.sarif');
- check 
--------
- t
-(1 row)
-
-\! md5sum /tmp/pglinter_b001_results.sarif
-a47a470d966e0d6f54fe7c27201a1953  /tmp/pglinter_b001_results.sarif
--- Update B001 thresholds to very large values (60%, 80%) not to trigger on any table without PK
-SELECT pglinter.update_rule_levels('B001', 60, 80);
-NOTICE:  ✅ Updated rule B001 levels: warning=60, error=80
- update_rule_levels 
---------------------
- t
-(1 row)
-
--- Check updated thresholds
 SELECT
-    warning_level,
-    error_level
-FROM pglinter.rules
-WHERE code = 'B001';
- warning_level | error_level 
----------------+-------------
-            60 |          80
-(1 row)
-
--- Test B001 rule again - should now trigger with new thresholds
-SELECT pglinter.check();
-NOTICE:  ✅ No issues found - database schema looks good!
- check 
--------
- t
-(1 row)
-
--- Update B001 thresholds to very low values (1%, 2%) not to trigger on any table without PK
-SELECT pglinter.update_rule_levels('B001', 60, 80);
-NOTICE:  ✅ Updated rule B001 levels: warning=60, error=80
- update_rule_levels 
---------------------
- t
-(1 row)
-
-SELECT count(*) AS violation_count from pglinter.get_violations() WHERE rule_code = 'B001';
- violation_count 
------------------
-               1
+    (pg_identify_object(classid, objid, objsubid)).type AS object_type,
+    (pg_identify_object(classid, objid, objsubid)).schema AS object_schema,
+    (pg_identify_object(classid, objid, objsubid)).name AS object_name,
+    (pg_identify_object(classid, objid, objsubid)).identity AS object_identity
+FROM pglinter.get_violations()
+WHERE rule_code = 'B001';
+ object_type | object_schema | object_name |  object_identity  
+-------------+---------------+-------------+-------------------
+ table       | public        | test_no_pk  | public.test_no_pk
 (1 row)
 
 DROP TABLE test_no_pk CASCADE;

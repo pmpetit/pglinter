@@ -16,19 +16,14 @@ theme:
 
 nav:
   - 'Home': index.md
-  - 'Configuration': configure.md
-  - 'Security': SECURITY.md
+  # - 'Configuration': configure.md
+  # - 'Security': SECURITY.md
   - Install:
       - 'Installation': install.md
   - How-To Guides:
     - 'Overview': how-to/README.md
-  - Functions Reference:
-    - 'Functions': functions/README.md
-    - 'Get Violations': functions/get_violations.md
   - Rules Reference:
     - 'Rules': rules/README.md
-  - Tutorial:
-    - 'Create rules': tutorial/how_to_create_rules.md
   - Examples:
     - 'Examples': examples/README.md
 

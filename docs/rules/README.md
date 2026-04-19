@@ -776,33 +776,33 @@ SELECT pglinter.is_rule_enabled('B001');
 
 ```sql
 -- Check current rule settings
-SELECT code, enable, warning_level, error_level, scope
+SELECT code, enable, scope
 FROM pglinter.rules
 WHERE code = 'B001';
 
 -- Update rule thresholds
-SELECT pglinter.update_rule_levels('B001', 30, 70);
 
 -- Get rule threshold levels
-SELECT pglinter.get_rule_levels('B001');
 
--- Show rule queries (for debugging)
+-- Show q4 violation-location query used by a rule (for debugging)
 SELECT pglinter.show_rule_queries('B001');
 ```
 
 ### Rule Execution
 
 ```sql
--- Run all enabled rules
-SELECT pglinter.check();
+-- Get all violations for enabled rules
+SELECT * FROM pglinter.get_violations();
 
--- Run a specific rule only
-SELECT pglinter.check_rule('B001');
-SELECT pglinter.check_rule('C002');
+-- Filter violations for a specific rule
+SELECT * FROM pglinter.get_violations() WHERE rule_code = 'B001';
+SELECT * FROM pglinter.get_violations() WHERE rule_code = 'C002';
 
--- Generate SARIF output
-SELECT pglinter.check('/tmp/results.sarif');
-SELECT pglinter.check_rule('B001', '/tmp/b001_results.sarif');
+-- Count violations per rule
+SELECT rule_code, count(*) AS violation_count
+FROM pglinter.get_violations()
+GROUP BY rule_code
+ORDER BY rule_code;
 ```
 
 ---
@@ -828,11 +828,8 @@ rules:
     name: "HowManyTableWithoutPrimaryKey"
     code: "B001"
     enable: true
-    warning_level: 20
-    error_level: 80
     scope: "BASE"
-    description: "Count number of tables without primary key"
-    message: "{0}/{1} table(s) without primary key exceed the {2} threshold: {3}%."
+    message: "table without primary."
     fixes:
       - "create a primary key or change warning/error threshold"
 ');
@@ -890,19 +887,18 @@ SELECT pglinter.import_rules_from_file('/path/to/rules.yaml');
 **CI/CD Integration**:
 
 ```bash
-# Run all checks as part of deployment pipeline
-psql -c "SELECT pglinter.check('/tmp/results.sarif')"
+# Get all violations as part of deployment pipeline
+psql -c "SELECT * FROM pglinter.get_violations()"
 
-# Run specific critical rules only
-psql -c "SELECT pglinter.check_rule('B001', '/tmp/primary_keys.sarif')"
-psql -c "SELECT pglinter.check_rule('C002', '/tmp/security.sarif')"
+# Check for violations from specific critical rules
+psql -c "SELECT * FROM pglinter.get_violations() WHERE rule_code IN ('B001', 'C002')"
 ```
 
 **Regular Monitoring**:
 
 ```sql
--- Schedule weekly reports
-SELECT pglinter.check();
+-- Get current violations for all enabled rules
+SELECT * FROM pglinter.get_violations();
 ```
 
 **Custom Rule Sets**:
@@ -916,24 +912,6 @@ SELECT pglinter.disable_rule('B005');
 
 ---
 
-## SARIF Output Integration
-
-PG Linter supports SARIF (Static Analysis Results Interchange Format) output for integration with modern development tools:
-
-```sql
--- Generate SARIF report
-SELECT pglinter.check('/tmp/analysis.sarif');
-```
-
-SARIF files can be consumed by:
-
-- GitHub Actions (Code Scanning)
-- GitLab CI/CD
-- Azure DevOps
-- Various IDEs and security tools
-
----
-
 ## Troubleshooting
 
 ### Common Issues
@@ -942,7 +920,7 @@ SARIF files can be consumed by:
 
 1. Check if rule is enabled: `SELECT enable FROM pglinter.rules WHERE code = 'B001';`
 2. Verify thresholds are appropriate for your data
-3. Check if rule queries are returning expected results: `SELECT pglinter.show_rule_queries('B001');`
+3. Inspect the q4 violation-location query for the rule: `SELECT pglinter.show_rule_queries('B001');`
 
 **Performance impact**:
 
@@ -953,9 +931,8 @@ SARIF files can be consumed by:
 
 **False positives**:
 
-1. Adjust thresholds for environment-specific needs: `SELECT pglinter.update_rule_levels('B001', 30, 70);`
-2. Disable rules that don't apply to your use case
-3. Document exceptions and reasoning
+1. Disable rules that don't apply to your use case
+2. Document exceptions and reasoning
 
 **T010 rule disabled**:
 
@@ -965,7 +942,7 @@ SARIF files can be consumed by:
 ### Getting Help
 
 - Review rule descriptions and examples in this documentation
-- Check the source queries: `SELECT q1, q2 FROM pglinter.rules WHERE code = 'B001';`
+- Check the violation locations for a rule: `SELECT pglinter.show_rule_queries('B001');`
 - Use `pglinter.explain_rule('B001')` for detailed rule information
 - Report issues and contribute improvements on GitHub
 

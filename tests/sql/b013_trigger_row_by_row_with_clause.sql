@@ -10,7 +10,7 @@ CREATE SCHEMA trigger_test;
 -- =============================================================================
 
 -- Tables 1-5: Each will have its own unique trigger function
-CREATE TABLE pos_tnd_ssn_hst
+CREATE TABLE IF NOT EXISTS pos_tnd_ssn_hst
 (
     id_tnd_ssn_hst integer NOT NULL,
     id_ssn varchar(32) NOT NULL,
@@ -32,7 +32,7 @@ CREATE TABLE pos_tnd_ssn_hst
 -- Create unique trigger functions for tables 1-5
 -- =============================================================================
 
-CREATE FUNCTION f_pos_tnd_ssn_hst() RETURNS trigger
+CREATE OR REPLACE FUNCTION f_pos_tnd_ssn_hst() RETURNS trigger
 LANGUAGE plpgsql
 AS
 $$
@@ -52,7 +52,7 @@ END;
 $$;
 
 
-CREATE TRIGGER t_pos_tnd_ssn_hst
+CREATE OR REPLACE TRIGGER t_pos_tnd_ssn_hst
 BEFORE INSERT OR UPDATE
 ON pos_tnd_ssn_hst
 FOR EACH ROW
@@ -63,16 +63,21 @@ EXECUTE PROCEDURE f_pos_tnd_ssn_hst();
 SELECT 'Testing B013 in isolation...' AS test_step;
 SELECT pglinter.disable_all_rules() AS all_disabled;
 SELECT pglinter.enable_rule('B013') AS b013_only_enabled;
-SELECT pglinter.check(); -- Should only run B013
 
 SELECT count(*) AS violation_count
 FROM pglinter.get_violations()
 WHERE rule_code = 'B013';
 
+SELECT
+    (pg_identify_object(classid, objid, objsubid)).type AS object_type,
+    (pg_identify_object(classid, objid, objsubid)).schema AS object_schema,
+    (pg_identify_object(classid, objid, objsubid)).name AS object_name,
+    (pg_identify_object(classid, objid, objsubid)).identity AS object_identity
+FROM pglinter.get_violations()
+WHERE rule_code = 'B013';
+
 -- Test with output
-SELECT pglinter.check('/tmp/pglinter_B013_results.sarif');
 -- Test if file exists and show checksum
-\! md5sum /tmp/pglinter_B013_results.sarif
 
 -- Cleanup
 \echo 'Cleaning up test schema...'

@@ -29,16 +29,14 @@ CREATE TABLE business_logic.rules (
 );
 
 
-
 -- Enable only S002
 SELECT pglinter.disable_all_rules();
 SELECT pglinter.enable_rule('S002');
 
 -- Test the schema rules
-SELECT 'Testing schema rules S002...' as test_info;
+SELECT 'Testing schema rules S002...' AS test_info;
 
 -- Run schema check to detect environment-named schemas and default privilege issues
-SELECT pglinter.check();
 
 -- Test individual schema rules
 SELECT pglinter.explain_rule('S002');
@@ -48,13 +46,21 @@ SELECT pglinter.is_rule_enabled('S002') AS s002_enabled;
 
 -- Test disabling S002 (environment prefixes)
 SELECT pglinter.disable_rule('S002') AS s002_disabled;
-SELECT pglinter.check(); -- Should skip S002
 
 -- Re-enable S002
 SELECT pglinter.enable_rule('S002') AS s002_reenabled;
-SELECT pglinter.check(); -- Should include S002 again
 
-SELECT count(*) AS violation_count from pglinter.get_violations() WHERE rule_code = 'S002';
+SELECT count(*) AS violation_count
+FROM pglinter.get_violations()
+WHERE rule_code = 'S002';
+
+SELECT
+    (pg_identify_object(classid, objid, objsubid)).type AS object_type,
+    (pg_identify_object(classid, objid, objsubid)).schema AS object_schema,
+    (pg_identify_object(classid, objid, objsubid)).name AS object_name,
+    (pg_identify_object(classid, objid, objsubid)).identity AS object_identity
+FROM pglinter.get_violations()
+WHERE rule_code = 'S002';
 
 DROP SCHEMA prod_sales CASCADE;
 DROP SCHEMA dev_analytics CASCADE;

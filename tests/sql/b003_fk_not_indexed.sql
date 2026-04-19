@@ -96,17 +96,23 @@ INSERT INTO products (name, price, category) VALUES
 ('Programming Book', 49.99, 'Books'),
 ('T-Shirt', 19.99, 'Clothing');
 
-INSERT INTO orders_with_index (customer_id, product_id, quantity, total_amount, status) VALUES
+INSERT INTO orders_with_index (
+    customer_id, product_id, quantity, total_amount, status
+) VALUES
 (1, 1, 1, 899.99, 'completed'),
 (2, 2, 2, 99.98, 'pending'),
 (3, 3, 1, 19.99, 'shipped');
 
-INSERT INTO reviews_no_index (customer_id, product_id, rating, review_text) VALUES
+INSERT INTO reviews_no_index (
+    customer_id, product_id, rating, review_text
+) VALUES
 (1, 1, 5, 'Excellent laptop, highly recommended!'),
 (2, 2, 4, 'Good programming book'),
 (3, 3, 3, 'Average t-shirt quality');
 
-INSERT INTO inventory_no_index (product_id, category_id, quantity_on_hand, warehouse_location) VALUES
+INSERT INTO inventory_no_index (
+    product_id, category_id, quantity_on_hand, warehouse_location
+) VALUES
 (1, 1, 50, 'Warehouse A'),
 (2, 2, 100, 'Warehouse B'),
 (3, 3, 200, 'Warehouse C');
@@ -119,7 +125,8 @@ ANALYZE orders_with_index;
 ANALYZE reviews_no_index;
 ANALYZE inventory_no_index;
 
-SELECT 'Testing B003 rule - Foreign keys without indexes detection...' AS test_info;
+SELECT
+    'Testing B003 rule - Foreign keys without indexes detection...' AS test_info;
 
 -- First, disable all rules to isolate B003 testing
 SELECT pglinter.disable_all_rules() AS all_rules_disabled;
@@ -133,22 +140,30 @@ SELECT pglinter.is_rule_enabled('B003') AS b003_status;
 -- Run base check to detect B003 violations
 -- Expected result: Should detect foreign keys without indexes in reviews_no_index and inventory_no_index tables
 SELECT 'Running base check to detect B003 violations...' AS status;
-SELECT pglinter.check();
 
 -- Test with file output
-SELECT pglinter.check('/tmp/pglinter_b003_results.sarif');
 
 -- Test if file exists and show checksum
-\! md5sum /tmp/pglinter_b003_results.sarif
 
-SELECT count(*) AS violation_count from pglinter.get_violations() WHERE rule_code = 'B003';
+SELECT COUNT(*) AS violation_count
+FROM pglinter.get_violations()
+WHERE rule_code = 'B003';
+
+SELECT
+    (PG_IDENTIFY_OBJECT(classid, objid, objsubid)).type AS object_type,
+    (PG_IDENTIFY_OBJECT(classid, objid, objsubid)).schema AS object_schema,
+    (PG_IDENTIFY_OBJECT(classid, objid, objsubid)).name AS object_name,
+    (PG_IDENTIFY_OBJECT(classid, objid, objsubid)).identity AS object_identity
+FROM pglinter.get_violations()
+WHERE rule_code = 'B003';
 
 -- Test rule management for B003
 SELECT 'Testing B003 rule management...' AS test_section;
 SELECT pglinter.explain_rule('B003');
 
 -- Now demonstrate fixing the issue by adding indexes
-SELECT 'Adding indexes to foreign keys to resolve B003 violations...' AS improvement_info;
+SELECT
+    'Adding indexes to foreign keys to resolve B003 violations...' AS improvement_info;
 
 -- Add indexes to fix the foreign key issues
 CREATE INDEX idx_reviews_customer_id ON reviews_no_index (customer_id);
@@ -157,26 +172,24 @@ CREATE INDEX idx_inventory_product_id ON inventory_no_index (product_id);
 CREATE INDEX idx_inventory_category_id ON inventory_no_index (category_id);
 
 -- Run B003 check again (should show no violations or reduced violations)
-SELECT 'Running B003 check after adding foreign key indexes (should show no violations):' AS test_info;
-SELECT pglinter.check();
+SELECT
+    'Running B003 check after adding foreign key indexes (should show no violations):' AS test_info;
 
--- Update B003 thresholds to produce message
-SELECT pglinter.update_rule_levels('B003', 60, 90);
 
-SELECT count(*) AS violation_count from pglinter.get_violations() WHERE rule_code = 'B003';
+SELECT COUNT(*) AS violation_count
+FROM pglinter.get_violations()
+WHERE rule_code = 'B003';
 
 -- Temporarily remove one index to show the difference
 DROP INDEX idx_reviews_customer_id;
 DROP INDEX idx_reviews_product_id;
 DROP INDEX idx_inventory_product_id;
 
-SELECT 'B003 (base check) - Shows percentage-based foreign key index analysis:' AS b003_demo;
-SELECT pglinter.check();
+SELECT
+    'B003 (base check) - Shows percentage-based foreign key index analysis:' AS b003_demo;
 
 -- Test with file output
-SELECT pglinter.check('/tmp/pglinter_b003_results.sarif');
 -- Test if file exists and show checksum
-\! md5sum /tmp/pglinter_b003_results.sarif
 
 DROP TABLE orders_with_index CASCADE;
 DROP TABLE reviews_no_index CASCADE;

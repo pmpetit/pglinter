@@ -24,19 +24,13 @@ CREATE EXTENSION pglinter;
 Run all enabled checks:
 
 ```sql
-SELECT pglinter.check();
+SELECT * FROM pglinter.get_violations();
 ```
 
-Run a specific rule:
+Filter violations for a specific rule:
 
 ```sql
-SELECT pglinter.check_rule('B001');
-```
-
-Export results to SARIF format:
-
-```sql
-SELECT pglinter.check('/tmp/pglinter_results.sarif');
+SELECT * FROM pglinter.get_violations() WHERE rule_code = 'B001';
 ```
 
 ## Base Rules (B-Series)
@@ -55,7 +49,13 @@ CREATE TABLE my_table_without_pk (
 );
 
 -- Check for tables without primary keys
-SELECT pglinter.check_rule('B001');
+SELECT
+  rule_code,
+  (pg_identify_object(classid, objid, objsubid)).type,
+  (pg_identify_object(classid, objid, objsubid)).schema,
+  (pg_identify_object(classid, objid, objsubid)).name,
+  (pg_identify_object(classid, objid, objsubid)).identity
+  from pglinter.get_violations() WHERE rule_code = 'B001';
 
 -- Get detailed explanation
 SELECT pglinter.explain_rule('B001');
@@ -95,7 +95,13 @@ CREATE TABLE orders_table_with_constraint (
 CREATE INDEX my_idx_customer ON orders_table_with_constraint (customer_id);
 
 -- Check for redundant indexes
-SELECT pglinter.check_rule('B002');
+SELECT
+  rule_code,
+  (pg_identify_object(classid, objid, objsubid)).type,
+  (pg_identify_object(classid, objid, objsubid)).schema,
+  (pg_identify_object(classid, objid, objsubid)).name,
+  (pg_identify_object(classid, objid, objsubid)).identity
+  FROM pglinter.get_violations() WHERE rule_code = 'B002';
 ```
 
 **Fix**: Drop the redundant indexes:
@@ -125,7 +131,13 @@ CREATE TABLE orders (
 -- Note: customer_id doesn't have an index, which can cause performance issues
 
 -- Check for unindexed foreign keys
-SELECT pglinter.check_rule('B003');
+SELECT
+  rule_code,
+  (pg_identify_object(classid, objid, objsubid)).type,
+  (pg_identify_object(classid, objid, objsubid)).schema,
+  (pg_identify_object(classid, objid, objsubid)).name,
+  (pg_identify_object(classid, objid, objsubid)).identity
+  FROM pglinter.get_violations() WHERE rule_code = 'B003';
 ```
 
 **Fix**: Add indexes to foreign key columns:
@@ -150,7 +162,13 @@ CREATE INDEX idx_unused_status ON test_unused_index(status);
 -- This index might be unused if no queries actually use it
 
 -- Check for unused indexes
-SELECT pglinter.check_rule('B004');
+SELECT
+  rule_code,
+  (pg_identify_object(classid, objid, objsubid)).type,
+  (pg_identify_object(classid, objid, objsubid)).schema,
+  (pg_identify_object(classid, objid, objsubid)).name,
+  (pg_identify_object(classid, objid, objsubid)).identity
+  FROM pglinter.get_violations() WHERE rule_code = 'B004';
 ```
 
 ### B005: Uppercase Table/Column Names
@@ -165,7 +183,13 @@ CREATE TABLE "UPPERCASE_TABLE" (
 );
 
 -- Check for uppercase identifiers
-SELECT pglinter.check_rule('B005');
+SELECT
+  rule_code,
+  (pg_identify_object(classid, objid, objsubid)).type,
+  (pg_identify_object(classid, objid, objsubid)).schema,
+  (pg_identify_object(classid, objid, objsubid)).name,
+  (pg_identify_object(classid, objid, objsubid)).identity
+  FROM pglinter.get_violations() WHERE rule_code = 'B005';
 ```
 
 **Fix**: Use lowercase identifiers:
@@ -190,7 +214,13 @@ CREATE SCHEMA s001_schema AUTHORIZATION s001_owner;
 -- No default privileges granted
 
 -- Check schema security
-SELECT pglinter.check_rule('S001');
+SELECT
+  rule_code,
+  (pg_identify_object(classid, objid, objsubid)).type,
+  (pg_identify_object(classid, objid, objsubid)).schema,
+  (pg_identify_object(classid, objid, objsubid)).name,
+  (pg_identify_object(classid, objid, objsubid)).identity
+  FROM pglinter.get_violations() WHERE rule_code = 'S001';
 
 -- Cleanup
 DROP SCHEMA s001_schema CASCADE;
@@ -208,7 +238,13 @@ CREATE SCHEMA test_schema;
 CREATE SCHEMA prod_data;
 
 -- Check schema naming conventions
-SELECT pglinter.check_rule('S002');
+SELECT
+  rule_code,
+  (pg_identify_object(classid, objid, objsubid)).type,
+  (pg_identify_object(classid, objid, objsubid)).schema,
+  (pg_identify_object(classid, objid, objsubid)).name,
+  (pg_identify_object(classid, objid, objsubid)).identity
+  FROM pglinter.get_violations() WHERE rule_code = 'S002';
 ```
 
 ### S003: Unsecured Public Schema
@@ -217,7 +253,13 @@ SELECT pglinter.check_rule('S002');
 
 ```sql
 -- Check public schema security
-SELECT pglinter.check_rule('S003');
+SELECT
+  rule_code,
+  (pg_identify_object(classid, objid, objsubid)).type,
+  (pg_identify_object(classid, objid, objsubid)).schema,
+  (pg_identify_object(classid, objid, objsubid)).name,
+  (pg_identify_object(classid, objid, objsubid)).identity
+  FROM pglinter.get_violations() WHERE rule_code = 'S003';
 
 -- View current public schema permissions
 SELECT * FROM information_schema.usage_privileges WHERE object_name = 'public';
@@ -257,22 +299,6 @@ SELECT pglinter.disable_all_rules();
 SELECT pglinter.enable_all_rules();
 ```
 
-### Rule Level Management
-
-```sql
--- View current rule levels
-SELECT pglinter.get_rule_levels('B001');
-
--- Update warning and error thresholds
-SELECT pglinter.update_rule_levels('B001', 5, 20); -- warning_level=5, error_level=20
-
--- Update only warning level
-SELECT pglinter.update_rule_levels('B001', 10, NULL);
-
--- Update only error level
-SELECT pglinter.update_rule_levels('B001', NULL, 25);
-```
-
 ### Rule Configuration Import/Export
 
 ```sql
@@ -291,8 +317,6 @@ metadata:
 rules:
   - code: "B001"
     enabled: true
-    warning_level: 10
-    error_level: 50
 ');
 
 -- Import from file
@@ -333,44 +357,40 @@ CREATE TABLE orders (
 );
 
 -- Run comprehensive check
-SELECT pglinter.check();
+SELECT
+  rule_code,
+  (pg_identify_object(classid, objid, objsubid)).type,
+  (pg_identify_object(classid, objid, objsubid)).schema,
+  (pg_identify_object(classid, objid, objsubid)).name,
+  (pg_identify_object(classid, objid, objsubid)).identity
+  FROM pglinter.get_violations();
 
--- Run specific rule categories
-SELECT pglinter.check_rule('B001'); -- Tables without PKs
-SELECT pglinter.check_rule('B002'); -- Redundant indexes
-SELECT pglinter.check_rule('B003'); -- Unindexed foreign keys
-```
 
 ## Output Options
 
-### Console Output
+### Violations Table
 
 ```sql
--- Basic check with console output
-SELECT pglinter.check();
+-- Get all violations
+SELECT * FROM pglinter.get_violations();
 
--- Check specific rule with explanation
-SELECT pglinter.explain_rule('B001');
+-- Count violations per rule
+SELECT rule_code, count(*) AS violation_count
+FROM pglinter.get_violations()
+GROUP BY rule_code
+ORDER BY rule_code;
+
+-- Check for violations with explanation
+SELECT v.rule_code, v.message
+FROM pglinter.get_violations() v;
 ```
 
-### SARIF File Output
+### Rule Details
 
 ```sql
--- Generate SARIF report file
-SELECT pglinter.check('/tmp/pglinter_full_report.sarif');
-
--- Generate SARIF for specific rule
-SELECT pglinter.check_rule('B001', '/tmp/pglinter_b001_report.sarif');
-```
-
-### Advanced Rule Queries
-
-```sql
--- Show SQL queries used by a rule
+-- Show q4 violation-location query used by a rule (for debugging)
 SELECT pglinter.show_rule_queries('B001');
 
--- Get detailed rule levels
-SELECT pglinter.get_rule_levels('B001');
 ```
 
 ## Best Practices
@@ -385,11 +405,12 @@ SELECT pglinter.get_rule_levels('B001');
 
 ```bash
 # In your CI/CD pipeline
-psql -d your_database -c "SELECT pglinter.check('/tmp/pglinter_results.sarif');"
+VIOLATIONS=$(psql -d your_database -t -c "SELECT count(*) FROM pglinter.get_violations();")
 
-# Check if any issues were found
-if [ -s /tmp/pglinter_results.sarif ]; then
-    echo "Database issues found - check SARIF report"
+# Check if any violations were found
+if [ "$VIOLATIONS" -gt 0 ]; then
+    echo "Database violations found:"
+    psql -d your_database -c "SELECT * FROM pglinter.get_violations();"
     exit 1
 fi
 ```

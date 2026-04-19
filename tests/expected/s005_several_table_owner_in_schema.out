@@ -25,31 +25,31 @@ NOTICE:  🔴 Disabled 21 rule(s)
            21
 (1 row)
 
-SELECT pglinter.enable_rule('S005') AS S005_only_enabled;
+SELECT pglinter.enable_rule('S005') AS s005_only_enabled;
 NOTICE:  ✅ Rule S005 has been enabled
  s005_only_enabled 
 -------------------
  t
 (1 row)
 
-SELECT pglinter.check(); -- Should only run S005
-NOTICE:  🔍 pglinter found 1 issue(s):
-NOTICE:  ==================================================
-NOTICE:  ⚠️  [S005] WARNING: 1/2 in the same schema, tables have different owners. They should be the same. Exceed the warning threshold: 50%. Object list:
-Owner of schema s005_schema is s005_owner1 but owner of table s005_schema.table2 is s005_owner2
-
-NOTICE:  ==================================================
-NOTICE:  📊 Summary: 0 error(s), 1 warning(s), 0 info
-NOTICE:  🟡 Some warnings found - consider reviewing for optimization
- check 
--------
- t
-(1 row)
-
-SELECT count(*) AS violation_count from pglinter.get_violations() WHERE rule_code = 'S005';
+SELECT count(*) AS violation_count
+FROM pglinter.get_violations()
+WHERE rule_code = 'S005';
  violation_count 
 -----------------
                1
+(1 row)
+
+SELECT
+    (pg_identify_object(classid, objid, objsubid)).type AS object_type,
+    (pg_identify_object(classid, objid, objsubid)).schema AS object_schema,
+    (pg_identify_object(classid, objid, objsubid)).name AS object_name,
+    (pg_identify_object(classid, objid, objsubid)).identity AS object_identity
+FROM pglinter.get_violations()
+WHERE rule_code = 'S005';
+ object_type | object_schema | object_name |  object_identity   
+-------------+---------------+-------------+--------------------
+ table       | s005_schema   | table2      | s005_schema.table2
 (1 row)
 
 -- Cleanup

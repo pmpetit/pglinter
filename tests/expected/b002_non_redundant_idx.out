@@ -41,29 +41,16 @@ NOTICE:  ✅ Rule B002 has been enabled
 (1 row)
 
 -- Test with file output
-SELECT pglinter.check('/tmp/pglinter_b002_results.sarif');
- check 
--------
- t
-(1 row)
-
 -- Test if file exists and show checksum
-\! md5sum /tmp/pglinter_b002_results.sarif
-7cd6073b52ee9a1173c05c016e2458f4  /tmp/pglinter_b002_results.sarif
-SELECT count(*) AS violation_count from pglinter.get_violations() WHERE rule_code = 'B002';
+SELECT COUNT(*) AS violation_count
+FROM pglinter.get_violations()
+WHERE rule_code = 'B002';
  violation_count 
 -----------------
                0
 (1 row)
 
 -- Test with no output file (should output to prompt)
-SELECT pglinter.check();
-NOTICE:  ✅ No issues found - database schema looks good!
- check 
--------
- t
-(1 row)
-
 -- Test rule management for B002
 SELECT pglinter.explain_rule('B002');
 NOTICE:  📖 Rule Explanation for B002
@@ -72,14 +59,11 @@ NOTICE:  📖 Rule Explanation for B002
 🎯 Rule Name: HowManyRedudantIndex
 📋 Scope: BASE
 
-📝 Description:
-Count number of redundant index vs nb index.
-
-⚠️  Message Template:
-{0}/{1} redundant(s) index exceed the {2} threshold: {3}%. Object list:\n{4}
+📝 Message:
+redundant index
 
 🔧 How to Fix:
-   1. remove duplicated index or check if a constraint does not create a redundant index, or change warning/error threshold
+   1. remove duplicated index or check if a constraint does not create a redundant index
 ============================================================
  explain_rule 
 --------------
@@ -101,18 +85,24 @@ NOTICE:  🔴 Rule B002 has been disabled
  t
 (1 row)
 
-SELECT pglinter.check();
-NOTICE:  ✅ No issues found - database schema looks good!
- check 
--------
- t
-(1 row)
-
-SELECT count(*) AS violation_count from pglinter.get_violations() WHERE rule_code = 'B002';
+SELECT COUNT(*) AS violation_count
+FROM pglinter.get_violations()
+WHERE rule_code = 'B002';
  violation_count 
 -----------------
                0
 (1 row)
+
+SELECT
+    (PG_IDENTIFY_OBJECT(classid, objid, objsubid)).type AS object_type,
+    (PG_IDENTIFY_OBJECT(classid, objid, objsubid)).schema AS object_schema,
+    (PG_IDENTIFY_OBJECT(classid, objid, objsubid)).name AS object_name,
+    (PG_IDENTIFY_OBJECT(classid, objid, objsubid)).identity AS object_identity
+FROM pglinter.get_violations()
+WHERE rule_code = 'B002';
+ object_type | object_schema | object_name | object_identity 
+-------------+---------------+-------------+-----------------
+(0 rows)
 
 DROP TABLE orders_table CASCADE;
 DROP TABLE orders_table_with_constraint CASCADE;

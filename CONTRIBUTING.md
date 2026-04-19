@@ -234,8 +234,8 @@ Here's how to create a test named `new_test`:
    CREATE TABLE test_table (id INT, name TEXT);
    CREATE EXTENSION IF NOT EXISTS pglinter;
 
-   -- Test with prompt output
-   SELECT pglinter.check();
+   -- Test with violations output
+   SELECT * FROM pglinter.get_violations();
 
    ROLLBACK;
    ```
@@ -264,23 +264,22 @@ Here's how to create a test named `new_test`:
 
 [PGXS]: https://www.postgresql.org/docs/current/extend-pgxs.html
 
-Testing different output modes
+Testing output modes
 -------------------------------------------------------------------------------
 
-pglinter supports two output modes:
+### Violations Output
 
-### File Output (SARIF format)
-
-```sql
-SELECT pglinter.check('/tmp/results.sarif');
-```
-
-### Prompt Output (formatted notices)
+pglinter returns violations as a table via `get_violations()`:
 
 ```sql
--- Using NULL or no parameter
-SELECT pglinter.check();
+-- Get all violations for enabled rules
+SELECT * FROM pglinter.get_violations();
 
+-- Filter by specific rule
+SELECT * FROM pglinter.get_violations() WHERE rule_code = 'B001';
+
+-- Count violations per rule
+SELECT rule_code, count(*) FROM pglinter.get_violations() GROUP BY rule_code;
 ```
 
 ### Testing with the Makefile

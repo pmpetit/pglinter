@@ -4,21 +4,14 @@
 use pgrx::prelude::*;
 
 /// Generic setup function for creating a test rule
-pub fn setup_test_rule(
-    code: &str,
-    id: i32,
-    name: &str,
-    enabled: bool,
-    warning_level: i32,
-    error_level: i32,
-) {
+pub fn setup_test_rule(code: &str, id: i32, name: &str, enabled: bool) {
     let _ = Spi::run(&format!(
         "DELETE FROM pglinter.rules WHERE code = '{}'",
         code
     ));
     let _ = Spi::run(&format!(
-        "INSERT INTO pglinter.rules (id, code, name, enable, warning_level, error_level) VALUES ({}, '{}', '{}', {}, {}, {})",
-        id, code, name, enabled, warning_level, error_level
+        "INSERT INTO pglinter.rules (id, code, name, enable) VALUES ({}, '{}', '{}', {})",
+        id, code, name, enabled
     ));
 }
 
@@ -28,29 +21,6 @@ pub fn cleanup_test_rule(code: &str) {
         "DELETE FROM pglinter.rules WHERE code = '{}'",
         code
     ));
-}
-
-/// Create test tables for rule testing
-pub fn setup_test_tables() {
-    // Table without primary key (for B001 testing)
-    let _ = Spi::run("DROP TABLE IF EXISTS test_table_no_pk CASCADE");
-    let _ = Spi::run("CREATE TABLE test_table_no_pk (id INTEGER, name TEXT)");
-    let _ = Spi::run("INSERT INTO test_table_no_pk VALUES (1, 'test')");
-
-    // Table with primary key
-    let _ = Spi::run("DROP TABLE IF EXISTS test_table_with_pk CASCADE");
-    let _ = Spi::run("CREATE TABLE test_table_with_pk (id INTEGER PRIMARY KEY, name TEXT)");
-    let _ = Spi::run("INSERT INTO test_table_with_pk VALUES (1, 'test')");
-
-    // Update statistics
-    let _ = Spi::run("ANALYZE test_table_no_pk");
-    let _ = Spi::run("ANALYZE test_table_with_pk");
-}
-
-/// Cleanup test tables
-pub fn cleanup_test_tables() {
-    let _ = Spi::run("DROP TABLE IF EXISTS test_table_no_pk CASCADE");
-    let _ = Spi::run("DROP TABLE IF EXISTS test_table_with_pk CASCADE");
 }
 
 /// Get rule boolean property from database
@@ -74,26 +44,18 @@ rules:
     name: "Test Import Rule 1"
     code: "TEST_IMPORT_1"
     enable: true
-    warning_level: 30
-    error_level: 70
     scope: "TEST"
     description: "First test rule for import testing"
     message: "Test message for rule 1"
     fixes: ["Fix 1", "Fix 2"]
-    q1: "SELECT 1 as test_query"
-    q2: "SELECT 2 as test_q2"
   - id: 9999
     name: "Test Import Rule 2"
     code: "TEST_IMPORT_2"
     enable: false
-    warning_level: 40
-    error_level: 80
     scope: "TEST"
     description: "Second test rule for import testing"
     message: "Test message for rule 2"
     fixes: ["Fix A", "Fix B", "Fix C"]
-    q1: null
-    q2: "SELECT 3 as another_test_query"
 "#
 }
 
@@ -120,14 +82,10 @@ rules:
     name: "Invalid Rule Test"
     code: "INVALID_TEST"
     enable: true
-    warning_level: -10
-    error_level: 200
     scope: "INVALID"
     description: "Test rule with potentially invalid data"
     message: "Test message"
     fixes: []
-    q1: "SELECT 'invalid sql syntax FROM"
-    q2: null
 "#
 }
 
@@ -154,13 +112,9 @@ rules:
     name: "Special Characters Test: <>&\"'`"
     code: "SPECIAL_TEST"
     enable: true
-    warning_level: 50
-    error_level: 90
     scope: "SPECIAL"
     description: "Test rule with special characters: àáâãäå çñü €£¥"
     message: "Message with quotes: \"double\" and 'single' and `backticks`"
     fixes: ["Fix with <angle brackets>", "Fix with & ampersand"]
-    q1: "SELECT 'string with '' embedded quotes' as test"
-    q2: "SELECT 'another test' WHERE column = 'value with \"quotes\"'"
 "#
 }
