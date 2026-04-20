@@ -5,7 +5,7 @@ description: "Builds rpm/deb package and upload."
 
 inputs:
   pgver:
-    description: "The PostgreSQL major version with the \"pg\" prefix (e.g. `pg13`,
+    description: "The PostgreSQL major version with the \"pg\" prefix (e.g. `pg14`,
       `pg16`, etc.)"
     required: true
   tag:
@@ -106,14 +106,12 @@ runs:
       if: ${{ inputs.pkgtype == 'rpm' }}
       uses: actions/upload-artifact@v4
       with:
-        name: postgresql_pglinter_${{ env.PG_VERSION }}-${{
-          env.PGLINTER_MINOR_VERSION}}-1.${{ env.RPM_ARCH }}.rpm
+        name: postgresql_pglinter_${{ env.PG_VERSION }}-${{env.PGLINTER_MINOR_VERSION}}-1.${{ env.RPM_ARCH }}.rpm
         path: target/${{ env.PACKAGE_PROFILE }}/pglinter-${{ inputs.pgver }}/*.rpm
 
     - name: "DEB package for ${{ inputs.pgver }} (${{ inputs.arch }})"
       if: ${{ inputs.pkgtype == 'deb' }}
       uses: actions/upload-artifact@v4
       with:
-        name: postgresql_pglinter_${{ env.PG_VERSION }}-${{
-          env.PGLINTER_MINOR_VERSION}}_${{ env.DEB_ARCH }}.deb
+        name: postgresql_pglinter_${{ env.PG_VERSION }}-${{env.PGLINTER_MINOR_VERSION}}_${{ env.DEB_ARCH }}.deb
         path: target/${{ env.PACKAGE_PROFILE }}/pglinter-${{ inputs.pgver }}/*.deb
