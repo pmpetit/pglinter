@@ -1,0 +1,133 @@
+# .github/actions/reusable-package-action-native/action.yml
+name: "Build package and upload (native runner)"
+
+description: "Builds rpm/deb package natively on the runner (no container) and uploads it."
+
+inputs:
+  pgver:
+    description: "The PostgreSQL major version with the \"pg\" prefix (e.g. `pg14`, `pg16`, etc.)"
+    required: true
+  tag:
+    description: "The tag version"
+    required: true
+  arch:
+    description: "Target architecture (arm64)"
+    required: false
+    default: arm64
+  pkgtype:
+    description: "Package type to build (rpm or deb)"
+    required: true
+    default: deb
+
+runs:
+  using: "composite"
+  steps:
+    - name: Install system dependencies
+      shell: bash
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y \
+          build-essential clang libclang-dev \
+          libssl-dev libreadline-dev zlib1g-dev libicu-dev \
+          pkg-config curl wget git gettext-base bison
+
+    - name: Install nfpm
+      shell: bash
+      run: |
+        echo 'deb [trusted=yes] https://repo.goreleaser.com/apt/ /' | sudo tee /etc/apt/sources.list.d/goreleaser.list
+        sudo apt-get update
+        sudo apt-get install -y nfpm
+
+    - name: Install PostgreSQL dev headers
+      shell: bash
+      run: |
+        PG_MAJOR=$(echo '${{ inputs.pgver }}' | sed 's/^pg//')
+        sudo install -d /usr/share/postgresql-common/pgdg
+        sudo curl -o /usr/share/postgresql-common/pgdg/apt.postgresql.org.asc --fail \
+          https://www.postgresql.org/media/keys/ACCC4CF8.asc
+        sudo sh -c "echo \"deb [signed-by=/usr/share/postgresql-common/pgdg/apt.postgresql.org.asc] \
+          https://apt.postgresql.org/pub/repos/apt \$(lsb_release -cs)-pgdg main\" \
+          > /etc/apt/sources.list.d/pgdg.list"
+        sudo apt-get update
+        sudo apt-get install -y postgresql-server-dev-${PG_MAJOR}
+
+    - name: Install Rust
+      shell: bash
+      run: |
+        curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+        echo "$HOME/.cargo/bin" >> $GITHUB_PATH
+
+    - name: Install cargo-pgrx
+      shell: bash
+      run: |
+        source $HOME/.cargo/env
+        PGRX_VERSION=$(sed -nE 's/^pgrx = "([^"]+)"/\1/p' "$GITHUB_WORKSPACE/Cargo.toml" | head -n1)
+        if [ -z "$PGRX_VERSION" ]; then
+          echo "Could not determine pgrx version from Cargo.toml"
+          exit 1
+        fi
+        cargo install --locked --version "$PGRX_VERSION" cargo-pgrx
+
+    - name: Initialize pgrx with system PostgreSQL
+      shell: bash
+      run: |
+        source $HOME/.cargo/env
+        PG_MAJOR=$(echo '${{ inputs.pgver }}' | sed 's/^pg//')
+        cargo pgrx init --pg${PG_MAJOR} /usr/lib/postgresql/${PG_MAJOR}/bin/pg_config
+
+    - name: Set environment variables
+      shell: bash
+      run: |
+        VERSION=${{ inputs.tag }}
+        echo "PGLINTER_MINOR_VERSION=$VERSION" >> $GITHUB_ENV
+
+        case "${{ inputs.arch }}" in
+          arm64)
+            echo "RPM_ARCH=aarch64" >> $GITHUB_ENV
+            echo "DEB_ARCH=arm64" >> $GITHUB_ENV
+            echo "PACKAGE_PROFILE=release-lto-off" >> $GITHUB_ENV
+            echo "PGRX_PACKAGE_FLAGS=--profile release-lto-off" >> $GITHUB_ENV
+            ;;
+          amd64)
+            echo "RPM_ARCH=x86_64" >> $GITHUB_ENV
+            echo "DEB_ARCH=amd64" >> $GITHUB_ENV
+            echo "PACKAGE_PROFILE=release" >> $GITHUB_ENV
+            echo "PGRX_PACKAGE_FLAGS=" >> $GITHUB_ENV
+            ;;
+          *)
+            echo "RPM_ARCH=${{ inputs.arch }}" >> $GITHUB_ENV
+            echo "DEB_ARCH=${{ inputs.arch }}" >> $GITHUB_ENV
+            echo "PACKAGE_PROFILE=release" >> $GITHUB_ENV
+            echo "PGRX_PACKAGE_FLAGS=" >> $GITHUB_ENV
+            ;;
+        esac
+        echo "PG_VERSION=$(echo '${{ inputs.pgver }}' | sed 's/^pg//')" >> $GITHUB_ENV
+
+    - name: Build selected package
+      shell: bash
+      run: |
+        source $HOME/.cargo/env
+        if [ "${{ inputs.pkgtype }}" = "deb" ]; then
+          PGVER=${{ inputs.pgver }} TARGET=$PACKAGE_PROFILE PGRX_PACKAGE_FLAGS="$PGRX_PACKAGE_FLAGS" \
+            PACKAGE_ARCH=$DEB_ARCH make deb
+        elif [ "${{ inputs.pkgtype }}" = "rpm" ]; then
+          PGVER=${{ inputs.pgver }} TARGET=$PACKAGE_PROFILE PGRX_PACKAGE_FLAGS="$PGRX_PACKAGE_FLAGS" \
+            PACKAGE_ARCH=$RPM_ARCH make rpm
+        else
+          echo "Unknown package type: ${{ inputs.pkgtype }}"
+          exit 1
+        fi
+
+    - name: "RPM package for ${{ inputs.pgver }} (${{ inputs.arch }})"
+      if: ${{ inputs.pkgtype == 'rpm' }}
+      uses: actions/upload-artifact@v4
+      with:
+        name: postgresql_pglinter_${{ env.PG_VERSION }}-${{ env.PGLINTER_MINOR_VERSION }}-1.${{ env.RPM_ARCH }}.rpm
+        path: target/${{ env.PACKAGE_PROFILE }}/pglinter-${{ inputs.pgver }}/*.rpm
+
+    - name: "DEB package for ${{ inputs.pgver }} (${{ inputs.arch }})"
+      if: ${{ inputs.pkgtype == 'deb' }}
+      uses: actions/upload-artifact@v4
+      with:
+        name: postgresql_pglinter_${{ env.PG_VERSION }}-${{ env.PGLINTER_MINOR_VERSION }}_${{ env.DEB_ARCH }}.deb
+        path: target/${{ env.PACKAGE_PROFILE }}/pglinter-${{ inputs.pgver }}/*.deb
