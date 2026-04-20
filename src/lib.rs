@@ -113,16 +113,16 @@ mod pglinter {
         }
     }
 
-    // #[pg_extern(security_definer)]
-    // fn export_rules_to_yaml() -> Option<String> {
-    //     match manage_rules::export_rules_to_yaml() {
-    //         Ok(result) => Some(result.to_string()),
-    //         Err(e) => {
-    //             pgrx::warning!("Failed to export: {}", e);
-    //             None
-    //         }
-    //     }
-    // }
+    #[pg_extern(security_definer)]
+    fn export_rules_to_yaml() -> Option<String> {
+        match manage_rules::export_rules_to_yaml() {
+            Ok(result) => Some(result.to_string()),
+            Err(e) => {
+                pgrx::warning!("Failed to export: {}", e);
+                None
+            }
+        }
+    }
 
     #[pg_extern(security_definer)]
     fn export_rulemessages_to_yaml() -> Option<String> {
@@ -135,38 +135,38 @@ mod pglinter {
         }
     }
 
-    // #[pg_extern(security_definer)]
-    // fn export_rules_to_file(file_path: &str) -> Option<String> {
-    //     match manage_rules::export_rules_to_file(file_path) {
-    //         Ok(result) => Some(result.to_string()),
-    //         Err(e) => {
-    //             pgrx::warning!("Failed to export: {}", e);
-    //             None
-    //         }
-    //     }
-    // }
+    #[pg_extern(security_definer)]
+    fn export_rules_to_file(file_path: &str) -> Option<String> {
+        match manage_rules::export_rules_to_file(file_path) {
+            Ok(result) => Some(result.to_string()),
+            Err(e) => {
+                pgrx::warning!("Failed to export: {}", e);
+                None
+            }
+        }
+    }
 
-    // #[pg_extern(security_definer)]
-    // fn import_rules_from_yaml(yaml_content: &str) -> Option<String> {
-    //     match manage_rules::import_rules_from_yaml(yaml_content) {
-    //         Ok(result) => Some(result.to_string()),
-    //         Err(e) => {
-    //             pgrx::warning!("Failed to import: {}", e);
-    //             Some(e.to_string())
-    //         }
-    //     }
-    // }
+    #[pg_extern(security_definer)]
+    fn import_rules_from_yaml(yaml_content: &str) -> Option<String> {
+        match manage_rules::import_rules_from_yaml(yaml_content) {
+            Ok(result) => Some(result.to_string()),
+            Err(e) => {
+                pgrx::warning!("Failed to import: {}", e);
+                Some(e.to_string())
+            }
+        }
+    }
 
-    // #[pg_extern(security_definer)]
-    // fn import_rules_from_file(file_path: &str) -> Option<String> {
-    //     match manage_rules::import_rules_from_file(file_path) {
-    //         Ok(result) => Some(result.to_string()),
-    //         Err(e) => {
-    //             pgrx::warning!("Failed to import: {}", e);
-    //             Some(e.to_string())
-    //         }
-    //     }
-    // }
+    #[pg_extern(security_definer)]
+    fn import_rules_from_file(file_path: &str) -> Option<String> {
+        match manage_rules::import_rules_from_file(file_path) {
+            Ok(result) => Some(result.to_string()),
+            Err(e) => {
+                pgrx::warning!("Failed to import: {}", e);
+                Some(e.to_string())
+            }
+        }
+    }
 
     #[pg_extern(security_definer)]
     fn import_rule_messages_from_yaml(yaml_content: &str) -> Option<String> {
@@ -732,315 +732,315 @@ mod tests {
         assert!(!result_not_found.unwrap()); // Should return false
     }
 
-    // #[pg_test]
-    // fn test_import_rules_from_file() {
-    //     // Test 1: Test with non-existent file
-    //     let result_not_found =
-    //         manage_rules::import_rules_from_file("/nonexistent/path/to/file.yaml");
-    //     assert!(result_not_found.is_err());
-    //     assert!(result_not_found.unwrap_err().contains("File read error"));
+    #[pg_test]
+    fn test_import_rules_from_file() {
+        // Test 1: Test with non-existent file
+        let result_not_found =
+            manage_rules::import_rules_from_file("/nonexistent/path/to/file.yaml");
+        assert!(result_not_found.is_err());
+        assert!(result_not_found.unwrap_err().contains("File read error"));
 
-    //     // Test 2: Create a temporary YAML file with test rules
-    //     let temp_yaml_content = fixtures::get_valid_yaml_content();
+        // Test 2: Create a temporary YAML file with test rules
+        let temp_yaml_content = fixtures::get_valid_yaml_content();
 
-    //     // Write test YAML to a temporary file
-    //     let temp_file_path = "/tmp/pglinter_test_rules.yaml";
-    //     std::fs::write(temp_file_path, temp_yaml_content).expect("Failed to write test file");
+        // Write test YAML to a temporary file
+        let temp_file_path = "/tmp/pglinter_test_rules.yaml";
+        std::fs::write(temp_file_path, temp_yaml_content).expect("Failed to write test file");
 
-    //     // Clean up any existing test rules
-    //     fixtures::cleanup_test_rule("TEST_IMPORT_1");
-    //     fixtures::cleanup_test_rule("TEST_IMPORT_2");
+        // Clean up any existing test rules
+        fixtures::cleanup_test_rule("TEST_IMPORT_1");
+        fixtures::cleanup_test_rule("TEST_IMPORT_2");
 
-    //     // Test 3: Import from valid YAML file
-    //     let result_success = manage_rules::import_rules_from_file(temp_file_path);
-    //     assert!(result_success.is_ok());
-    //     let success_msg = result_success.unwrap();
-    //     assert!(success_msg.contains("Import completed"));
-    //     assert!(success_msg.contains("new rules"));
+        // Test 3: Import from valid YAML file
+        let result_success = manage_rules::import_rules_from_file(temp_file_path);
+        assert!(result_success.is_ok());
+        let success_msg = result_success.unwrap();
+        assert!(success_msg.contains("Import completed"));
+        assert!(success_msg.contains("new rules"));
 
-    //     // Test 4: Verify the imported rules exist in the database
-    //     let rule1_exists = Spi::get_one::<bool>(
-    //         "SELECT EXISTS(SELECT 1 FROM pglinter.rules WHERE code = 'TEST_IMPORT_1')",
-    //     )
-    //     .unwrap();
-    //     assert!(rule1_exists.unwrap());
+        // Test 4: Verify the imported rules exist in the database
+        let rule1_exists = Spi::get_one::<bool>(
+            "SELECT EXISTS(SELECT 1 FROM pglinter.rules WHERE code = 'TEST_IMPORT_1')",
+        )
+        .unwrap();
+        assert!(rule1_exists.unwrap());
 
-    //     let rule2_exists = Spi::get_one::<bool>(
-    //         "SELECT EXISTS(SELECT 1 FROM pglinter.rules WHERE code = 'TEST_IMPORT_2')",
-    //     )
-    //     .unwrap();
-    //     assert!(rule2_exists.unwrap());
+        let rule2_exists = Spi::get_one::<bool>(
+            "SELECT EXISTS(SELECT 1 FROM pglinter.rules WHERE code = 'TEST_IMPORT_2')",
+        )
+        .unwrap();
+        assert!(rule2_exists.unwrap());
 
-    //     // Test 5: Verify rule1 properties
-    //     let rule1_name =
-    //         Spi::get_one::<String>("SELECT name FROM pglinter.rules WHERE code = 'TEST_IMPORT_1'")
-    //             .unwrap();
-    //     assert_eq!(rule1_name.unwrap(), "Test Import Rule 1");
+        // Test 5: Verify rule1 properties
+        let rule1_name =
+            Spi::get_one::<String>("SELECT name FROM pglinter.rules WHERE code = 'TEST_IMPORT_1'")
+                .unwrap();
+        assert_eq!(rule1_name.unwrap(), "Test Import Rule 1");
 
-    //     let rule1_enabled =
-    //         Spi::get_one::<bool>("SELECT enable FROM pglinter.rules WHERE code = 'TEST_IMPORT_1'")
-    //             .unwrap();
-    //     assert!(rule1_enabled.unwrap());
+        let rule1_enabled =
+            Spi::get_one::<bool>("SELECT enable FROM pglinter.rules WHERE code = 'TEST_IMPORT_1'")
+                .unwrap();
+        assert!(rule1_enabled.unwrap());
 
-    //     // Test 6: Verify rule2 properties
-    //     let rule2_enabled =
-    //         Spi::get_one::<bool>("SELECT enable FROM pglinter.rules WHERE code = 'TEST_IMPORT_2'")
-    //             .unwrap();
-    //     assert!(!rule2_enabled.unwrap()); // Should be false
+        // Test 6: Verify rule2 properties
+        let rule2_enabled =
+            Spi::get_one::<bool>("SELECT enable FROM pglinter.rules WHERE code = 'TEST_IMPORT_2'")
+                .unwrap();
+        assert!(!rule2_enabled.unwrap()); // Should be false
 
-    //     // Test 7: Test updating existing rules (import again)
-    //     let result_update = manage_rules::import_rules_from_file(temp_file_path);
-    //     assert!(result_update.is_ok());
-    //     let update_msg = result_update.unwrap();
-    //     assert!(update_msg.contains("updated rules"));
+        // Test 7: Test updating existing rules (import again)
+        let result_update = manage_rules::import_rules_from_file(temp_file_path);
+        assert!(result_update.is_ok());
+        let update_msg = result_update.unwrap();
+        assert!(update_msg.contains("updated rules"));
 
-    //     // Test 8: Test with invalid YAML content
-    //     let invalid_yaml_content = fixtures::get_invalid_yaml_content();
+        // Test 8: Test with invalid YAML content
+        let invalid_yaml_content = fixtures::get_invalid_yaml_content();
 
-    //     let invalid_file_path = "/tmp/pglinter_invalid_test.yaml";
-    //     std::fs::write(invalid_file_path, invalid_yaml_content)
-    //         .expect("Failed to write invalid test file");
+        let invalid_file_path = "/tmp/pglinter_invalid_test.yaml";
+        std::fs::write(invalid_file_path, invalid_yaml_content)
+            .expect("Failed to write invalid test file");
 
-    //     let result_invalid = manage_rules::import_rules_from_file(invalid_file_path);
-    //     assert!(result_invalid.is_err());
-    //     assert!(result_invalid.unwrap_err().contains("YAML parsing error"));
+        let result_invalid = manage_rules::import_rules_from_file(invalid_file_path);
+        assert!(result_invalid.is_err());
+        assert!(result_invalid.unwrap_err().contains("YAML parsing error"));
 
-    //     // Test 9: Test with empty file
-    //     let empty_file_path = "/tmp/pglinter_empty_test.yaml";
-    //     std::fs::write(empty_file_path, "").expect("Failed to write empty test file");
+        // Test 9: Test with empty file
+        let empty_file_path = "/tmp/pglinter_empty_test.yaml";
+        std::fs::write(empty_file_path, "").expect("Failed to write empty test file");
 
-    //     let result_empty = manage_rules::import_rules_from_file(empty_file_path);
-    //     assert!(result_empty.is_err());
-    //     assert!(result_empty.unwrap_err().contains("YAML parsing error"));
+        let result_empty = manage_rules::import_rules_from_file(empty_file_path);
+        assert!(result_empty.is_err());
+        assert!(result_empty.unwrap_err().contains("YAML parsing error"));
 
-    //     // Test 10: Test with file that exists but has wrong permissions (if supported on system)
-    //     let protected_file_path = "/tmp/pglinter_protected_test.yaml";
-    //     std::fs::write(protected_file_path, temp_yaml_content)
-    //         .expect("Failed to write protected test file");
+        // Test 10: Test with file that exists but has wrong permissions (if supported on system)
+        let protected_file_path = "/tmp/pglinter_protected_test.yaml";
+        std::fs::write(protected_file_path, temp_yaml_content)
+            .expect("Failed to write protected test file");
 
-    //     // Try to make file unreadable (this might not work on all systems)
-    //     #[cfg(unix)]
-    //     {
-    //         use std::os::unix::fs::PermissionsExt;
-    //         let mut perms = std::fs::metadata(protected_file_path)
-    //             .unwrap()
-    //             .permissions();
-    //         perms.set_mode(0o000); // No permissions
-    //         let _ = std::fs::set_permissions(protected_file_path, perms);
+        // Try to make file unreadable (this might not work on all systems)
+        #[cfg(unix)]
+        {
+            use std::os::unix::fs::PermissionsExt;
+            let mut perms = std::fs::metadata(protected_file_path)
+                .unwrap()
+                .permissions();
+            perms.set_mode(0o000); // No permissions
+            let _ = std::fs::set_permissions(protected_file_path, perms);
 
-    //         // This should fail with permission denied (though behavior may vary)
-    //         let result_protected = manage_rules::import_rules_from_file(protected_file_path);
-    //         // We expect either success (if permissions aren't enforced) or a file read error
-    //         if result_protected.is_err() {
-    //             assert!(result_protected.unwrap_err().contains("File read error"));
-    //         }
-    //     }
+            // This should fail with permission denied (though behavior may vary)
+            let result_protected = manage_rules::import_rules_from_file(protected_file_path);
+            // We expect either success (if permissions aren't enforced) or a file read error
+            if result_protected.is_err() {
+                assert!(result_protected.unwrap_err().contains("File read error"));
+            }
+        }
 
-    //     // Clean up test files and database records
-    //     let _ = std::fs::remove_file(temp_file_path);
-    //     let _ = std::fs::remove_file(invalid_file_path);
-    //     let _ = std::fs::remove_file(empty_file_path);
-    //     #[cfg(unix)]
-    //     {
-    //         // Restore permissions before removing
-    //         use std::os::unix::fs::PermissionsExt;
-    //         if let Ok(metadata) = std::fs::metadata(protected_file_path) {
-    //             let mut perms = metadata.permissions();
-    //             perms.set_mode(0o644);
-    //             let _ = std::fs::set_permissions(protected_file_path, perms);
-    //         }
-    //         let _ = std::fs::remove_file(protected_file_path);
-    //     }
+        // Clean up test files and database records
+        let _ = std::fs::remove_file(temp_file_path);
+        let _ = std::fs::remove_file(invalid_file_path);
+        let _ = std::fs::remove_file(empty_file_path);
+        #[cfg(unix)]
+        {
+            // Restore permissions before removing
+            use std::os::unix::fs::PermissionsExt;
+            if let Ok(metadata) = std::fs::metadata(protected_file_path) {
+                let mut perms = metadata.permissions();
+                perms.set_mode(0o644);
+                let _ = std::fs::set_permissions(protected_file_path, perms);
+            }
+            let _ = std::fs::remove_file(protected_file_path);
+        }
 
-    //     fixtures::cleanup_test_rule("TEST_IMPORT_1");
-    //     fixtures::cleanup_test_rule("TEST_IMPORT_2");
-    // }
+        fixtures::cleanup_test_rule("TEST_IMPORT_1");
+        fixtures::cleanup_test_rule("TEST_IMPORT_2");
+    }
 
-    // #[pg_test]
-    // fn test_import_rules() {
-    //     // Test 1: Test with valid YAML content
-    //     let valid_yaml_content = fixtures::get_valid_yaml_content();
+    #[pg_test]
+    fn test_import_rules() {
+        // Test 1: Test with valid YAML content
+        let valid_yaml_content = fixtures::get_valid_yaml_content();
 
-    //     // Clean up any existing test rules
-    //     fixtures::cleanup_test_rule("TEST_IMPORT_1");
-    //     fixtures::cleanup_test_rule("TEST_IMPORT_2");
+        // Clean up any existing test rules
+        fixtures::cleanup_test_rule("TEST_IMPORT_1");
+        fixtures::cleanup_test_rule("TEST_IMPORT_2");
 
-    //     // Test 2: Import from valid YAML content
-    //     let result_success = manage_rules::import_rules_from_yaml(valid_yaml_content);
-    //     assert!(result_success.is_ok());
-    //     let success_msg = result_success.unwrap();
-    //     assert!(success_msg.contains("Import completed"));
-    //     print!("{}", success_msg);
-    //     assert!(success_msg.contains("2 new rules"));
+        // Test 2: Import from valid YAML content
+        let result_success = manage_rules::import_rules_from_yaml(valid_yaml_content);
+        assert!(result_success.is_ok());
+        let success_msg = result_success.unwrap();
+        assert!(success_msg.contains("Import completed"));
+        print!("{}", success_msg);
+        assert!(success_msg.contains("2 new rules"));
 
-    //     let yaml_test_3_exists = Spi::get_one::<bool>(
-    //         "SELECT EXISTS(SELECT 1 FROM pglinter.rules WHERE code = 'TEST_IMPORT_1')",
-    //     )
-    //     .unwrap();
-    //     assert!(yaml_test_3_exists.unwrap());
+        let yaml_test_3_exists = Spi::get_one::<bool>(
+            "SELECT EXISTS(SELECT 1 FROM pglinter.rules WHERE code = 'TEST_IMPORT_1')",
+        )
+        .unwrap();
+        assert!(yaml_test_3_exists.unwrap());
 
-    //     // Test 4: Verify specific rule properties for TEST_IMPORT_1
-    //     let rule1_name =
-    //         Spi::get_one::<String>("SELECT name FROM pglinter.rules WHERE code = 'TEST_IMPORT_1'")
-    //             .unwrap();
-    //     assert_eq!(rule1_name.unwrap(), "Test Import Rule 1");
+        // Test 4: Verify specific rule properties for TEST_IMPORT_1
+        let rule1_name =
+            Spi::get_one::<String>("SELECT name FROM pglinter.rules WHERE code = 'TEST_IMPORT_1'")
+                .unwrap();
+        assert_eq!(rule1_name.unwrap(), "Test Import Rule 1");
 
-    //     let rule1_enabled =
-    //         Spi::get_one::<bool>("SELECT enable FROM pglinter.rules WHERE code = 'TEST_IMPORT_1'")
-    //             .unwrap();
-    //     assert!(rule1_enabled.unwrap());
+        let rule1_enabled =
+            Spi::get_one::<bool>("SELECT enable FROM pglinter.rules WHERE code = 'TEST_IMPORT_1'")
+                .unwrap();
+        assert!(rule1_enabled.unwrap());
 
-    //     // Test 5: Verify TEST_IMPORT_2 properties (disabled)
-    //     let rule2_enabled =
-    //         Spi::get_one::<bool>("SELECT enable FROM pglinter.rules WHERE code = 'TEST_IMPORT_2'")
-    //             .unwrap();
-    //     assert!(!rule2_enabled.unwrap());
+        // Test 5: Verify TEST_IMPORT_2 properties (disabled)
+        let rule2_enabled =
+            Spi::get_one::<bool>("SELECT enable FROM pglinter.rules WHERE code = 'TEST_IMPORT_2'")
+                .unwrap();
+        assert!(!rule2_enabled.unwrap());
 
-    //     // Test 7: Re-import same YAML to test updates
-    //     let result_update = manage_rules::import_rules_from_yaml(valid_yaml_content);
-    //     assert!(result_update.is_ok());
-    //     let update_msg = result_update.unwrap();
-    //     assert!(update_msg.contains("2 updated rules"));
-    //     assert!(update_msg.contains("0 new rules"));
+        // Test 7: Re-import same YAML to test updates
+        let result_update = manage_rules::import_rules_from_yaml(valid_yaml_content);
+        assert!(result_update.is_ok());
+        let update_msg = result_update.unwrap();
+        assert!(update_msg.contains("2 updated rules"));
+        assert!(update_msg.contains("0 new rules"));
 
-    //     // Test 8: Test with invalid YAML structure
-    //     let invalid_yaml_content = fixtures::get_invalid_yaml_content();
-    //     let result_invalid = manage_rules::import_rules_from_yaml(invalid_yaml_content);
-    //     assert!(result_invalid.is_err());
-    //     assert!(result_invalid.unwrap_err().contains("YAML parsing error"));
+        // Test 8: Test with invalid YAML structure
+        let invalid_yaml_content = fixtures::get_invalid_yaml_content();
+        let result_invalid = manage_rules::import_rules_from_yaml(invalid_yaml_content);
+        assert!(result_invalid.is_err());
+        assert!(result_invalid.unwrap_err().contains("YAML parsing error"));
 
-    //     // Test 9: Test with valid YAML but invalid rule data
-    //     let invalid_rule_yaml = fixtures::get_invalid_rule_yaml_content();
+        // Test 9: Test with valid YAML but invalid rule data
+        let invalid_rule_yaml = fixtures::get_invalid_rule_yaml_content();
 
-    //     let result_invalid_rule = manage_rules::import_rules_from_yaml(invalid_rule_yaml);
-    //     // This should succeed from YAML parsing perspective, even if SQL is invalid
-    //     assert!(result_invalid_rule.is_ok());
+        let result_invalid_rule = manage_rules::import_rules_from_yaml(invalid_rule_yaml);
+        // This should succeed from YAML parsing perspective, even if SQL is invalid
+        assert!(result_invalid_rule.is_ok());
 
-    //     // Test 10: Test with empty YAML content
-    //     let empty_yaml = "";
-    //     let result_empty = manage_rules::import_rules_from_yaml(empty_yaml);
-    //     assert!(result_empty.is_err());
-    //     assert!(result_empty.unwrap_err().contains("YAML parsing error"));
+        // Test 10: Test with empty YAML content
+        let empty_yaml = "";
+        let result_empty = manage_rules::import_rules_from_yaml(empty_yaml);
+        assert!(result_empty.is_err());
+        assert!(result_empty.unwrap_err().contains("YAML parsing error"));
 
-    //     // Test 11: Test with minimal valid YAML
-    //     let minimal_yaml = fixtures::get_minimal_yaml_content();
+        // Test 11: Test with minimal valid YAML
+        let minimal_yaml = fixtures::get_minimal_yaml_content();
 
-    //     let result_minimal = manage_rules::import_rules_from_yaml(minimal_yaml);
-    //     assert!(result_minimal.is_ok());
-    //     let minimal_msg = result_minimal.unwrap();
-    //     assert!(minimal_msg.contains("0 new rules, 0 updated rules"));
+        let result_minimal = manage_rules::import_rules_from_yaml(minimal_yaml);
+        assert!(result_minimal.is_ok());
+        let minimal_msg = result_minimal.unwrap();
+        assert!(minimal_msg.contains("0 new rules, 0 updated rules"));
 
-    //     // Test 12: Test with rule containing special characters in strings
-    //     let special_chars_yaml = fixtures::get_special_chars_yaml_content();
+        // Test 12: Test with rule containing special characters in strings
+        let special_chars_yaml = fixtures::get_special_chars_yaml_content();
 
-    //     let result_special = manage_rules::import_rules_from_yaml(special_chars_yaml);
-    //     assert!(result_special.is_ok());
+        let result_special = manage_rules::import_rules_from_yaml(special_chars_yaml);
+        assert!(result_special.is_ok());
 
-    //     // Verify the special characters are preserved
-    //     let special_name =
-    //         Spi::get_one::<String>("SELECT name FROM pglinter.rules WHERE code = 'SPECIAL_TEST'")
-    //             .unwrap();
-    //     assert!(special_name.unwrap().contains("<>&\"'`"));
+        // Verify the special characters are preserved
+        let special_name =
+            Spi::get_one::<String>("SELECT name FROM pglinter.rules WHERE code = 'SPECIAL_TEST'")
+                .unwrap();
+        assert!(special_name.unwrap().contains("<>&\"'`"));
 
-    //     // Clean up all test rules
-    //     fixtures::cleanup_test_rule("TEST_IMPORT_1");
-    //     fixtures::cleanup_test_rule("TEST_IMPORT_2");
-    //     fixtures::cleanup_test_rule("INVALID_TEST");
-    //     fixtures::cleanup_test_rule("SPECIAL_TEST");
-    // }
+        // Clean up all test rules
+        fixtures::cleanup_test_rule("TEST_IMPORT_1");
+        fixtures::cleanup_test_rule("TEST_IMPORT_2");
+        fixtures::cleanup_test_rule("INVALID_TEST");
+        fixtures::cleanup_test_rule("SPECIAL_TEST");
+    }
 
-    // #[pg_test]
-    // fn test_export_rules_to_yaml() {
-    //     // Setup test rules with different configurations
-    //     fixtures::setup_test_rule("EXPORT_TEST_1", 9993, "Export Test Rule 1", true);
-    //     fixtures::setup_test_rule("EXPORT_TEST_2", 9992, "Export Test Rule 2", false);
+    #[pg_test]
+    fn test_export_rules_to_yaml() {
+        // Setup test rules with different configurations
+        fixtures::setup_test_rule("EXPORT_TEST_1", 9993, "Export Test Rule 1", true);
+        fixtures::setup_test_rule("EXPORT_TEST_2", 9992, "Export Test Rule 2", false);
 
-    //     // Test export_rules_to_yaml function
-    //     let result = manage_rules::export_rules_to_yaml();
-    //     assert!(result.is_ok());
-    //     let yaml_output = result.unwrap();
+        // Test export_rules_to_yaml function
+        let result = manage_rules::export_rules_to_yaml();
+        assert!(result.is_ok());
+        let yaml_output = result.unwrap();
 
-    //     // Verify YAML output contains our test rules
-    //     assert!(yaml_output.contains("EXPORT_TEST_1"));
-    //     assert!(yaml_output.contains("EXPORT_TEST_2"));
-    //     assert!(yaml_output.contains("Export Test Rule 1"));
-    //     assert!(yaml_output.contains("Export Test Rule 2"));
-    //     assert!(yaml_output.contains("metadata:"));
-    //     assert!(yaml_output.contains("export_timestamp:"));
-    //     assert!(yaml_output.contains("total_rules:"));
-    //     assert!(yaml_output.contains("format_version:"));
-    //     assert!(yaml_output.contains("rules:"));
+        // Verify YAML output contains our test rules
+        assert!(yaml_output.contains("EXPORT_TEST_1"));
+        assert!(yaml_output.contains("EXPORT_TEST_2"));
+        assert!(yaml_output.contains("Export Test Rule 1"));
+        assert!(yaml_output.contains("Export Test Rule 2"));
+        assert!(yaml_output.contains("metadata:"));
+        assert!(yaml_output.contains("export_timestamp:"));
+        assert!(yaml_output.contains("total_rules:"));
+        assert!(yaml_output.contains("format_version:"));
+        assert!(yaml_output.contains("rules:"));
 
-    //     // Test via SQL interface
-    //     let sql_result = Spi::get_one::<String>("SELECT pglinter.export_rules_to_yaml()").unwrap();
-    //     assert!(sql_result.is_some());
-    //     let sql_yaml = sql_result.unwrap();
-    //     assert!(sql_yaml.contains("EXPORT_TEST_1"));
-    //     assert!(sql_yaml.contains("EXPORT_TEST_2"));
+        // Test via SQL interface
+        let sql_result = Spi::get_one::<String>("SELECT pglinter.export_rules_to_yaml()").unwrap();
+        assert!(sql_result.is_some());
+        let sql_yaml = sql_result.unwrap();
+        assert!(sql_yaml.contains("EXPORT_TEST_1"));
+        assert!(sql_yaml.contains("EXPORT_TEST_2"));
 
-    //     // Cleanup
-    //     fixtures::cleanup_test_rule("EXPORT_TEST_1");
-    //     fixtures::cleanup_test_rule("EXPORT_TEST_2");
-    // }
+        // Cleanup
+        fixtures::cleanup_test_rule("EXPORT_TEST_1");
+        fixtures::cleanup_test_rule("EXPORT_TEST_2");
+    }
 
-    // #[pg_test]
-    // fn test_export_rules_to_file() {
-    //     // Setup test rules
-    //     fixtures::setup_test_rule("FILE_EXPORT_1", 9991, "File Export Test Rule", true);
+    #[pg_test]
+    fn test_export_rules_to_file() {
+        // Setup test rules
+        fixtures::setup_test_rule("FILE_EXPORT_1", 9991, "File Export Test Rule", true);
 
-    //     // Test 1: Export to valid file path
-    //     let export_file_path = "/tmp/pglinter_export_test.yaml";
-    //     let result = manage_rules::export_rules_to_file(export_file_path);
-    //     assert!(result.is_ok());
-    //     let success_msg = result.unwrap();
-    //     assert!(success_msg.contains("Rules exported successfully"));
-    //     assert!(success_msg.contains(export_file_path));
+        // Test 1: Export to valid file path
+        let export_file_path = "/tmp/pglinter_export_test.yaml";
+        let result = manage_rules::export_rules_to_file(export_file_path);
+        assert!(result.is_ok());
+        let success_msg = result.unwrap();
+        assert!(success_msg.contains("Rules exported successfully"));
+        assert!(success_msg.contains(export_file_path));
 
-    //     // Verify file was created and contains expected content
-    //     let file_content =
-    //         std::fs::read_to_string(export_file_path).expect("Failed to read exported file");
-    //     assert!(file_content.contains("FILE_EXPORT_1"));
-    //     assert!(file_content.contains("File Export Test Rule"));
-    //     assert!(file_content.contains("metadata:"));
-    //     assert!(file_content.contains("rules:"));
+        // Verify file was created and contains expected content
+        let file_content =
+            std::fs::read_to_string(export_file_path).expect("Failed to read exported file");
+        assert!(file_content.contains("FILE_EXPORT_1"));
+        assert!(file_content.contains("File Export Test Rule"));
+        assert!(file_content.contains("metadata:"));
+        assert!(file_content.contains("rules:"));
 
-    //     // Test 2: Test SQL interface
-    //     let temp_file_path_2 = "/tmp/pglinter_sql_export_test.yaml";
-    //     let sql_result = Spi::get_one::<String>(&format!(
-    //         "SELECT pglinter.export_rules_to_file('{}')",
-    //         temp_file_path_2
-    //     ))
-    //     .unwrap();
-    //     assert!(sql_result.is_some());
-    //     let sql_success_msg = sql_result.unwrap();
-    //     assert!(sql_success_msg.contains("Rules exported successfully"));
+        // Test 2: Test SQL interface
+        let temp_file_path_2 = "/tmp/pglinter_sql_export_test.yaml";
+        let sql_result = Spi::get_one::<String>(&format!(
+            "SELECT pglinter.export_rules_to_file('{}')",
+            temp_file_path_2
+        ))
+        .unwrap();
+        assert!(sql_result.is_some());
+        let sql_success_msg = sql_result.unwrap();
+        assert!(sql_success_msg.contains("Rules exported successfully"));
 
-    //     // Verify SQL export file
-    //     let sql_file_content =
-    //         std::fs::read_to_string(temp_file_path_2).expect("Failed to read SQL exported file");
-    //     assert!(sql_file_content.contains("FILE_EXPORT_1"));
+        // Verify SQL export file
+        let sql_file_content =
+            std::fs::read_to_string(temp_file_path_2).expect("Failed to read SQL exported file");
+        assert!(sql_file_content.contains("FILE_EXPORT_1"));
 
-    //     // Test 3: Test with invalid/protected file path (only test if we can create the directory structure)
-    //     let invalid_path = "/tmp/nonexistent_dir/test.yaml";
-    //     let result_invalid = manage_rules::export_rules_to_file(invalid_path);
-    //     assert!(result_invalid.is_err());
-    //     assert!(result_invalid.unwrap_err().contains("File write error"));
+        // Test 3: Test with invalid/protected file path (only test if we can create the directory structure)
+        let invalid_path = "/tmp/nonexistent_dir/test.yaml";
+        let result_invalid = manage_rules::export_rules_to_file(invalid_path);
+        assert!(result_invalid.is_err());
+        assert!(result_invalid.unwrap_err().contains("File write error"));
 
-    //     // Test 4: Test with empty filename
-    //     let result_empty = manage_rules::export_rules_to_file("");
-    //     assert!(result_empty.is_err());
-    //     assert!(result_empty.unwrap_err().contains("File write error"));
+        // Test 4: Test with empty filename
+        let result_empty = manage_rules::export_rules_to_file("");
+        assert!(result_empty.is_err());
+        assert!(result_empty.unwrap_err().contains("File write error"));
 
-    //     // Test 5: Test with directory path (should fail)
-    //     let result_dir = manage_rules::export_rules_to_file("/tmp");
-    //     assert!(result_dir.is_err());
-    //     assert!(result_dir.unwrap_err().contains("File write error"));
+        // Test 5: Test with directory path (should fail)
+        let result_dir = manage_rules::export_rules_to_file("/tmp");
+        assert!(result_dir.is_err());
+        assert!(result_dir.unwrap_err().contains("File write error"));
 
-    //     // Cleanup files and test rules
-    //     let _ = std::fs::remove_file(export_file_path);
-    //     let _ = std::fs::remove_file(temp_file_path_2);
-    //     fixtures::cleanup_test_rule("FILE_EXPORT_1");
-    // }
+        // Cleanup files and test rules
+        let _ = std::fs::remove_file(export_file_path);
+        let _ = std::fs::remove_file(temp_file_path_2);
+        fixtures::cleanup_test_rule("FILE_EXPORT_1");
+    }
 
     #[pg_test]
     fn test_list_rules_error_handling() {
