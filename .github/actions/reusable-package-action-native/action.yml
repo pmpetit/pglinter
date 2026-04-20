@@ -49,7 +49,7 @@ runs:
           https://apt.postgresql.org/pub/repos/apt \$(lsb_release -cs)-pgdg main\" \
           > /etc/apt/sources.list.d/pgdg.list"
         sudo apt-get update
-        sudo apt-get install -y postgresql-server-dev-${PG_MAJOR}
+        sudo apt-get install -y postgresql-server-dev-${PG_MAJOR} postgresql-${PG_MAJOR}
 
     - name: Install Rust
       shell: bash
@@ -61,7 +61,7 @@ runs:
       shell: bash
       run: |
         source $HOME/.cargo/env
-        PGRX_VERSION=$(sed -nE 's/^pgrx = "([^"]+)"/\1/p' "$GITHUB_WORKSPACE/Cargo.toml" | head -n1)
+        PGRX_VERSION=$(sed -nE 's/^pgrx = \"([^\"]+)\"/\1/p' "$GITHUB_WORKSPACE/Cargo.toml" | head -n1)
         if [ -z "$PGRX_VERSION" ]; then
           echo "Could not determine pgrx version from Cargo.toml"
           exit 1
