@@ -49,8 +49,8 @@ runs:
           arm64)
             echo "RPM_ARCH=aarch64" >> $GITHUB_ENV
             echo "DEB_ARCH=arm64" >> $GITHUB_ENV
-            echo "PACKAGE_PROFILE=debug" >> $GITHUB_ENV
-            echo "PGRX_PACKAGE_FLAGS=--debug" >> $GITHUB_ENV
+            echo "PACKAGE_PROFILE=release-lto-off" >> $GITHUB_ENV
+            echo "PGRX_PACKAGE_FLAGS=--profile release-lto-off" >> $GITHUB_ENV
             ;;
           *)
             echo "RPM_ARCH=${{ inputs.arch }}" >> $GITHUB_ENV
@@ -106,12 +106,14 @@ runs:
       if: ${{ inputs.pkgtype == 'rpm' }}
       uses: actions/upload-artifact@v4
       with:
-        name: postgresql_pglinter_${{ env.PG_VERSION }}-${{env.PGLINTER_MINOR_VERSION}}-1.${{ env.RPM_ARCH }}.rpm
+        name: postgresql_pglinter_${{ env.PG_VERSION
+          }}-${{env.PGLINTER_MINOR_VERSION}}-1.${{ env.RPM_ARCH }}.rpm
         path: target/${{ env.PACKAGE_PROFILE }}/pglinter-${{ inputs.pgver }}/*.rpm
 
     - name: "DEB package for ${{ inputs.pgver }} (${{ inputs.arch }})"
       if: ${{ inputs.pkgtype == 'deb' }}
       uses: actions/upload-artifact@v4
       with:
-        name: postgresql_pglinter_${{ env.PG_VERSION }}-${{env.PGLINTER_MINOR_VERSION}}_${{ env.DEB_ARCH }}.deb
+        name: postgresql_pglinter_${{ env.PG_VERSION
+          }}-${{env.PGLINTER_MINOR_VERSION}}_${{ env.DEB_ARCH }}.deb
         path: target/${{ env.PACKAGE_PROFILE }}/pglinter-${{ inputs.pgver }}/*.deb
