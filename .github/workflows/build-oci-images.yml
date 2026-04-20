@@ -8,14 +8,10 @@ on:
         required: false
         default: "pg18,pg17,pg16,pg15,pg14"
         type: string
-  push:
-    tags:
-      - "[0-9]+.[0-9]+.[0-9]+"
-    paths-ignore:
-      - "docs/**"
-      - "*.md"
-      - "README.md"
-      - "mkdocs.yml"
+  workflow_run:
+    workflows: ["Package and deploy pglinter."]
+    types:
+      - completed
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
@@ -23,6 +19,7 @@ env:
 jobs:
   setup-matrix:
     runs-on: ubuntu-latest
+    if: github.event.workflow_run.conclusion == 'success' || github.event_name == 'workflow_dispatch'
     outputs:
       pgversions: ${{ steps.matrix.outputs.pgversions }}
       runs_on: ${{ steps.matrix.outputs.runs_on }}
@@ -91,7 +88,7 @@ jobs:
 
   oci-image-build:
     needs: [setup-matrix, oci-image-test]
-    if: (github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')) || github.event_name == 'workflow_dispatch'
+    if: github.event_name == 'workflow_run' || github.event_name == 'workflow_dispatch'
     strategy:
       matrix:
         include: ${{ fromJSON(needs.setup-matrix.outputs.matrix_include) }}
