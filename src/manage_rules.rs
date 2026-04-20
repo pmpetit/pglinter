@@ -1,7 +1,7 @@
 use pgrx::prelude::*;
-use serde::{Deserialize, Serialize};
+// use serde::{Deserialize, Serialize};
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Debug, Clone)]
 pub struct Rule {
     pub id: i32,
     pub name: String,
@@ -13,14 +13,14 @@ pub struct Rule {
     pub q4: Option<String>,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Debug)]
 pub struct ExportMetadata {
     pub export_timestamp: String,
     pub total_rules: usize,
     pub format_version: String,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Debug)]
 pub struct RulesExport {
     pub metadata: ExportMetadata,
     pub rules: Vec<Rule>,
@@ -322,57 +322,57 @@ pub fn show_rule_queries(rule_code: &str) -> Result<bool, String> {
     }
 }
 
-/// Export all rules to YAML format
-pub fn export_rules_to_yaml() -> Result<String, String> {
-    let query = "
-        SELECT id, name, code, enable,
-               scope, message, fixes, q4
-        FROM pglinter.rules
-        ORDER BY code";
+// /// Export all rules to YAML format
+// pub fn export_rules_to_yaml() -> Result<String, String> {
+//     let query = "
+//         SELECT id, name, code, enable,
+//                scope, message, fixes, q4
+//         FROM pglinter.rules
+//         ORDER BY code";
 
-    let result: Result<Vec<Rule>, spi::SpiError> = Spi::connect(|client| {
-        let rows = client.select(query, None, &[])?;
-        let mut rules = Vec::new();
+//     let result: Result<Vec<Rule>, spi::SpiError> = Spi::connect(|client| {
+//         let rows = client.select(query, None, &[])?;
+//         let mut rules = Vec::new();
 
-        for row in rows {
-            let fixes_array: Vec<Option<String>> = row.get(7)?.unwrap_or_default();
-            let fixes: Vec<String> = fixes_array.into_iter().flatten().collect();
+//         for row in rows {
+//             let fixes_array: Vec<Option<String>> = row.get(7)?.unwrap_or_default();
+//             let fixes: Vec<String> = fixes_array.into_iter().flatten().collect();
 
-            let rule = Rule {
-                id: row.get(1)?.unwrap_or(0),
-                name: row.get(2)?.unwrap_or_default(),
-                code: row.get(3)?.unwrap_or_default(),
-                enable: row.get(4)?.unwrap_or(true),
-                scope: row.get(5)?.unwrap_or_default(),
-                message: row.get(6)?.unwrap_or_default(),
-                fixes,
-                q4: row.get(8)?,
-            };
-            rules.push(rule);
-        }
+//             let rule = Rule {
+//                 id: row.get(1)?.unwrap_or(0),
+//                 name: row.get(2)?.unwrap_or_default(),
+//                 code: row.get(3)?.unwrap_or_default(),
+//                 enable: row.get(4)?.unwrap_or(true),
+//                 scope: row.get(5)?.unwrap_or_default(),
+//                 message: row.get(6)?.unwrap_or_default(),
+//                 fixes,
+//                 q4: row.get(8)?,
+//             };
+//             rules.push(rule);
+//         }
 
-        Ok(rules)
-    });
+//         Ok(rules)
+//     });
 
-    match result {
-        Ok(rules) => {
-            let export_data = RulesExport {
-                metadata: ExportMetadata {
-                    export_timestamp: chrono::Utc::now().to_rfc3339(),
-                    total_rules: rules.len(),
-                    format_version: "1.0".to_string(),
-                },
-                rules,
-            };
+//     match result {
+//         Ok(rules) => {
+//             let export_data = RulesExport {
+//                 metadata: ExportMetadata {
+//                     export_timestamp: chrono::Utc::now().to_rfc3339(),
+//                     total_rules: rules.len(),
+//                     format_version: "1.0".to_string(),
+//                 },
+//                 rules,
+//             };
 
-            match serde_yaml::to_string(&export_data) {
-                Ok(yaml) => Ok(yaml),
-                Err(e) => Err(format!("YAML serialization error: {}", e)),
-            }
-        }
-        Err(e) => Err(format!("Database error: {}", e)),
-    }
-}
+//             match serde_yaml::to_string(&export_data) {
+//                 Ok(yaml) => Ok(yaml),
+//                 Err(e) => Err(format!("YAML serialization error: {}", e)),
+//             }
+//         }
+//         Err(e) => Err(format!("Database error: {}", e)),
+//     }
+// }
 
 /// Export all rule messages to YAML format
 pub fn export_rule_messages_to_yaml() -> Result<String, String> {
@@ -409,117 +409,117 @@ pub fn export_rule_messages_to_yaml() -> Result<String, String> {
 }
 
 /// Export rules to YAML file
-pub fn export_rules_to_file(file_path: &str) -> Result<String, String> {
-    let yaml_content = export_rules_to_yaml()?;
+// pub fn export_rules_to_file(file_path: &str) -> Result<String, String> {
+//     let yaml_content = export_rules_to_yaml()?;
 
-    match std::fs::write(file_path, &yaml_content) {
-        Ok(_) => Ok(format!("✅ Rules exported successfully to: {}", file_path)),
-        Err(e) => Err(format!("File write error: {}", e)),
-    }
-}
+//     match std::fs::write(file_path, &yaml_content) {
+//         Ok(_) => Ok(format!("✅ Rules exported successfully to: {}", file_path)),
+//         Err(e) => Err(format!("File write error: {}", e)),
+//     }
+// }
 
-/// Import rules from YAML format
-pub fn import_rules_from_yaml(yaml_content: &str) -> Result<String, String> {
-    let import_data: RulesExport = match serde_yaml::from_str(yaml_content) {
-        Ok(data) => data,
-        Err(e) => return Err(format!("YAML parsing error: {}", e)),
-    };
+// /// Import rules from YAML format
+// pub fn import_rules_from_yaml(yaml_content: &str) -> Result<String, String> {
+//     let import_data: RulesExport = match serde_yaml::from_str(yaml_content) {
+//         Ok(data) => data,
+//         Err(e) => return Err(format!("YAML parsing error: {}", e)),
+//     };
 
-    pgrx::notice!(
-        "📥 Importing {} rules from YAML (format v{})",
-        import_data.metadata.total_rules,
-        import_data.metadata.format_version
-    );
+//     pgrx::notice!(
+//         "📥 Importing {} rules from YAML (format v{})",
+//         import_data.metadata.total_rules,
+//         import_data.metadata.format_version
+//     );
 
-    let mut imported_count = 0;
-    let mut updated_count = 0;
-    let mut errors = Vec::new();
+//     let mut imported_count = 0;
+//     let mut updated_count = 0;
+//     let mut errors = Vec::new();
 
-    for rule in import_data.rules {
-        let fixes_array: Vec<Option<String>> = rule.fixes.into_iter().map(Some).collect();
-        let rule_code_for_error = rule.code.clone();
+//     for rule in import_data.rules {
+//         let fixes_array: Vec<Option<String>> = rule.fixes.into_iter().map(Some).collect();
+//         let rule_code_for_error = rule.code.clone();
 
-        let upsert_query = "
-            INSERT INTO pglinter.rules (id, name, code, enable,
-                                       scope, message, fixes, q4)
-            VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-            ON CONFLICT (id)
-            DO UPDATE SET
-                name = EXCLUDED.name,
-                code = EXCLUDED.code,
-                enable = EXCLUDED.enable,
-                scope = EXCLUDED.scope,
-                message = EXCLUDED.message,
-                fixes = EXCLUDED.fixes,
-                q4 = EXCLUDED.q4
-            RETURNING (xmax = 0) as is_new";
+//         let upsert_query = "
+//             INSERT INTO pglinter.rules (id, name, code, enable,
+//                                        scope, message, fixes, q4)
+//             VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+//             ON CONFLICT (id)
+//             DO UPDATE SET
+//                 name = EXCLUDED.name,
+//                 code = EXCLUDED.code,
+//                 enable = EXCLUDED.enable,
+//                 scope = EXCLUDED.scope,
+//                 message = EXCLUDED.message,
+//                 fixes = EXCLUDED.fixes,
+//                 q4 = EXCLUDED.q4
+//             RETURNING (xmax = 0) as is_new";
 
-        let result: Result<bool, spi::SpiError> = Spi::connect_mut(|client| {
-            let mut rows = client.update(
-                upsert_query,
-                None,
-                &[
-                    rule.id.into(),
-                    rule.name.into(),
-                    rule.code.into(),
-                    rule.enable.into(),
-                    rule.scope.into(),
-                    rule.message.into(),
-                    fixes_array.into(),
-                    rule.q4.into(),
-                ],
-            )?;
+//         let result: Result<bool, spi::SpiError> = Spi::connect_mut(|client| {
+//             let mut rows = client.update(
+//                 upsert_query,
+//                 None,
+//                 &[
+//                     rule.id.into(),
+//                     rule.name.into(),
+//                     rule.code.into(),
+//                     rule.enable.into(),
+//                     rule.scope.into(),
+//                     rule.message.into(),
+//                     fixes_array.into(),
+//                     rule.q4.into(),
+//                 ],
+//             )?;
 
-            if let Some(row) = rows.next() {
-                let is_new: bool = row.get(1)?.unwrap_or(false);
-                Ok(is_new)
-            } else {
-                Ok(false)
-            }
-        });
+//             if let Some(row) = rows.next() {
+//                 let is_new: bool = row.get(1)?.unwrap_or(false);
+//                 Ok(is_new)
+//             } else {
+//                 Ok(false)
+//             }
+//         });
 
-        match result {
-            Ok(is_new) => {
-                if is_new {
-                    imported_count += 1;
-                } else {
-                    updated_count += 1;
-                }
-            }
-            Err(e) => {
-                errors.push(format!("Rule {}: {}", rule_code_for_error, e));
-            }
-        }
-    }
+//         match result {
+//             Ok(is_new) => {
+//                 if is_new {
+//                     imported_count += 1;
+//                 } else {
+//                     updated_count += 1;
+//                 }
+//             }
+//             Err(e) => {
+//                 errors.push(format!("Rule {}: {}", rule_code_for_error, e));
+//             }
+//         }
+//     }
 
-    let mut result_msg = format!(
-        "✅ Import completed: {} new rules, {} updated rules",
-        imported_count, updated_count
-    );
+//     let mut result_msg = format!(
+//         "✅ Import completed: {} new rules, {} updated rules",
+//         imported_count, updated_count
+//     );
 
-    if !errors.is_empty() {
-        result_msg.push_str(&format!("\n⚠️  {} errors encountered:", errors.len()));
-        for error in errors.iter().take(5) {
-            result_msg.push_str(&format!("\n  - {}", error));
-        }
-        if errors.len() > 5 {
-            result_msg.push_str(&format!("\n  ... and {} more errors", errors.len() - 5));
-        }
-    }
+//     if !errors.is_empty() {
+//         result_msg.push_str(&format!("\n⚠️  {} errors encountered:", errors.len()));
+//         for error in errors.iter().take(5) {
+//             result_msg.push_str(&format!("\n  - {}", error));
+//         }
+//         if errors.len() > 5 {
+//             result_msg.push_str(&format!("\n  ... and {} more errors", errors.len() - 5));
+//         }
+//     }
 
-    Ok(result_msg)
-}
+//     Ok(result_msg)
+// }
 
-/// Import rules from YAML file
-pub fn import_rules_from_file(file_path: &str) -> Result<String, String> {
-    let yaml_content = match std::fs::read_to_string(file_path) {
-        Ok(content) => content,
-        Err(e) => return Err(format!("File read error: {}", e)),
-    };
+// /// Import rules from YAML file
+// pub fn import_rules_from_file(file_path: &str) -> Result<String, String> {
+//     let yaml_content = match std::fs::read_to_string(file_path) {
+//         Ok(content) => content,
+//         Err(e) => return Err(format!("File read error: {}", e)),
+//     };
 
-    pgrx::notice!("📂 Reading rules from: {}", file_path);
-    import_rules_from_yaml(&yaml_content)
-}
+//     pgrx::notice!("📂 Reading rules from: {}", file_path);
+//     import_rules_from_yaml(&yaml_content)
+// }
 
 /// Import rule messages from YAML format and replace all entries in pglinter.rule_messages
 pub fn import_rule_messages_from_yaml(yaml_content: &str) -> Result<String, String> {
