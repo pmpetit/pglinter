@@ -25,7 +25,7 @@ on:
         required: true
         type: string
       pgversions:
-        description: "PostgreSQL versions to build (comma-separated: pg13,pg14,pg15,pg16,pg17,pg18)"
+        description: "PostgreSQL versions to build (comma-separated: pg14,pg15,pg16,pg17,pg18)"
         required: false
         default: "pg17"
         type: string
@@ -49,6 +49,8 @@ jobs:
       arch: ${{ steps.matrix.outputs.arch }}
       pkgtype: ${{ steps.matrix.outputs.pkgtype }}
       matrix_include: ${{ steps.matrix.outputs.matrix_include }}
+      matrix_include_amd64: ${{ steps.matrix.outputs.matrix_include_amd64 }}
+      matrix_include_arm64: ${{ steps.matrix.outputs.matrix_include_arm64 }}
       version: ${{ steps.matrix.outputs.version }}
     steps:
       - name: Generate matrix
@@ -62,32 +64,43 @@ jobs:
             echo "Using default pgversions: $PGVERSIONS"
           fi
 
-
-          # Create JSON array of objects for matrix.include
+          # Create JSON arrays of objects for matrix.include (all, amd64-only, arm64-only)
           MATRIX_JSON="["
+          MATRIX_AMD64_JSON="["
+          MATRIX_ARM64_JSON="["
           for PG in $(echo $PGVERSIONS | tr ',' ' '); do
             VERSION=${PG#pg}
             MATRIX_JSON+="{\"pgver\": \"$PG\", \"VERSION\": \"$VERSION\", \"arch\": \"amd64\", \"runs_on\": \"ubuntu-latest\", \"pkgtype\": \"deb\"},"
             MATRIX_JSON+="{\"pgver\": \"$PG\", \"VERSION\": \"$VERSION\", \"arch\": \"amd64\", \"runs_on\": \"ubuntu-latest\", \"pkgtype\": \"rpm\"},"
             MATRIX_JSON+="{\"pgver\": \"$PG\", \"VERSION\": \"$VERSION\", \"arch\": \"arm64\", \"runs_on\": \"ubuntu-24.04-arm\", \"pkgtype\": \"deb\"},"
             MATRIX_JSON+="{\"pgver\": \"$PG\", \"VERSION\": \"$VERSION\", \"arch\": \"arm64\", \"runs_on\": \"ubuntu-24.04-arm\", \"pkgtype\": \"rpm\"},"
+            MATRIX_AMD64_JSON+="{\"pgver\": \"$PG\", \"VERSION\": \"$VERSION\", \"arch\": \"amd64\", \"runs_on\": \"ubuntu-latest\", \"pkgtype\": \"deb\"},"
+            MATRIX_AMD64_JSON+="{\"pgver\": \"$PG\", \"VERSION\": \"$VERSION\", \"arch\": \"amd64\", \"runs_on\": \"ubuntu-latest\", \"pkgtype\": \"rpm\"},"
+            MATRIX_ARM64_JSON+="{\"pgver\": \"$PG\", \"VERSION\": \"$VERSION\", \"arch\": \"arm64\", \"runs_on\": \"ubuntu-24.04-arm\", \"pkgtype\": \"deb\"},"
+            MATRIX_ARM64_JSON+="{\"pgver\": \"$PG\", \"VERSION\": \"$VERSION\", \"arch\": \"arm64\", \"runs_on\": \"ubuntu-24.04-arm\", \"pkgtype\": \"rpm\"},"
           done
-          # Remove trailing comma and close array
+          # Remove trailing commas and close arrays
           MATRIX_JSON=${MATRIX_JSON%,}
           MATRIX_JSON+="]"
+          MATRIX_AMD64_JSON=${MATRIX_AMD64_JSON%,}
+          MATRIX_AMD64_JSON+="]"
+          MATRIX_ARM64_JSON=${MATRIX_ARM64_JSON%,}
+          MATRIX_ARM64_JSON+="]"
 
           echo "matrix_include=$MATRIX_JSON" >> $GITHUB_OUTPUT
+          echo "matrix_include_amd64=$MATRIX_AMD64_JSON" >> $GITHUB_OUTPUT
+          echo "matrix_include_arm64=$MATRIX_ARM64_JSON" >> $GITHUB_OUTPUT
 
-  build-package:
+  build-package-amd64:
     needs: setup-matrix
     strategy:
       matrix:
-        include: ${{ fromJSON(needs.setup-matrix.outputs.matrix_include) }}
+        include: ${{ fromJSON(needs.setup-matrix.outputs.matrix_include_amd64) }}
       fail-fast: false
-    name: "${{ matrix.pgver }}-${{ matrix.arch }}-${{ matrix.pkgtype }}-package-build"
-    runs-on: ${{ matrix.runs_on }}
+    name: "${{ matrix.pgver }}-${{ matrix.arch }}-${{ matrix.pkgtype}}-package-build"
+    runs-on: ubuntu-latest
     container:
-      image: ghcr.io/pmpetit/postgresql_pglinter:pgrx-${{ matrix.arch }}
+      image: ghcr.io/pmpetit/postgresql_pglinter:latest-amd64
       options: --user root
       credentials:
         username: ${{ github.actor }}
@@ -102,19 +115,34 @@ jobs:
           tag: ${{ github.event_name == 'workflow_dispatch' && inputs.version || github.ref_name }}
           arch: ${{ matrix.arch }}
           pkgtype: ${{ matrix.pkgtype }}
-      # - name: Extract major version
-      #   id: extract_pgver
-      #   run: echo "pg_version=$(echo '${{ matrix.pgver }}' | sed 's/^pg//')" >> $GITHUB_OUTPUT
-      # - name: Upload package artifact
-      #   uses: actions/upload-artifact@v4
-      #   with:
-      #     name: ${{ matrix.pkgtype == 'deb' && format('postgresql_pglinter_{0}-{1}_{2}.deb', steps.extract_pgver.outputs.pg_version, github.event_name == 'workflow_dispatch' && inputs.version || github.ref_name, matrix.arch) || format('postgresql_pglinter_{0}-{1}-1.{2}.rpm', steps.extract_pgver.outputs.pg_version, github.event_name == 'workflow_dispatch' && inputs.version || github.ref_name, matrix.arch == 'amd64' && 'x86_64' || 'aarch64') }}
-      #     path: ./artifacts
+
+  build-package-arm64:
+    needs: setup-matrix
+    strategy:
+      matrix:
+        include: ${{ fromJSON(needs.setup-matrix.outputs.matrix_include_arm64) }}
+      fail-fast: false
+    name: "${{ matrix.pgver }}-${{ matrix.arch }}-${{ matrix.pkgtype}}-package-build"
+    runs-on: ubuntu-24.04-arm
+    permissions:
+      contents: read
+      packages: read
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: create package
+        uses: ./.github/actions/reusable-package-action-native
+        with:
+          pgver: ${{ matrix.pgver }}
+          tag: ${{ github.event_name == 'workflow_dispatch' && inputs.version || github.ref_name }}
+          arch: ${{ matrix.arch }}
+          pkgtype: ${{ matrix.pkgtype }}
 
   test-package:
     needs:
       - setup-matrix
-      - build-package
+      - build-package-amd64
+      - build-package-arm64
     strategy:
       matrix:
         include: ${{ fromJSON(needs.setup-matrix.outputs.matrix_include) }}

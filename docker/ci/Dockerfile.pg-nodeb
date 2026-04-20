@@ -1,7 +1,7 @@
 FROM rockylinux/rockylinux:10-ubi
 
 # Build arguments
-ARG PG_MAJOR_VERSION=13
+ARG PG_MAJOR_VERSION=14
 ARG PACKAGE_PATH
 ARG PACKAGE_NAME
 ARG ARCH

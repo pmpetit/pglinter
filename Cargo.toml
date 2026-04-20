@@ -4,15 +4,15 @@ version = "2.0.0"
 edition = "2021"
 
 [lib]
-crate-type = ["cdylib", "lib"]
+crate-type = ["cdylib"]
 
 [features]
 default = ["pg14"]
-pg14 = ["pgrx/pg14", "pgrx-tests/pg14" ]
-pg15 = ["pgrx/pg15", "pgrx-tests/pg15" ]
-pg16 = ["pgrx/pg16", "pgrx-tests/pg16" ]
-pg17 = ["pgrx/pg17", "pgrx-tests/pg17" ]
-pg18 = ["pgrx/pg18", "pgrx-tests/pg18" ]
+pg14 = ["pgrx/pg14", "pgrx-tests/pg14"]
+pg15 = ["pgrx/pg15", "pgrx-tests/pg15"]
+pg16 = ["pgrx/pg16", "pgrx-tests/pg16"]
+pg17 = ["pgrx/pg17", "pgrx-tests/pg17"]
+pg18 = ["pgrx/pg18", "pgrx-tests/pg18"]
 pg_test = []
 
 [dependencies]
@@ -33,3 +33,9 @@ panic = "unwind"
 opt-level = 3
 lto = "fat"
 codegen-units = 1
+
+# Used for ARM64 builds where fat LTO causes OOM on CI runners
+[profile.release-lto-off]
+inherits = "release"
+lto = false
+codegen-units = 16

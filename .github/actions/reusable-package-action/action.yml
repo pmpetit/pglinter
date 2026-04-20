@@ -5,7 +5,7 @@ description: "Builds rpm/deb package and upload."
 
 inputs:
   pgver:
-    description: "The PostgreSQL major version with the \"pg\" prefix (e.g. `pg13`,
+    description: "The PostgreSQL major version with the \"pg\" prefix (e.g. `pg14`,
       `pg16`, etc.)"
     required: true
   tag:
@@ -43,14 +43,20 @@ runs:
           amd64)
             echo "RPM_ARCH=x86_64" >> $GITHUB_ENV
             echo "DEB_ARCH=amd64" >> $GITHUB_ENV
+            echo "PACKAGE_PROFILE=release" >> $GITHUB_ENV
+            echo "PGRX_PACKAGE_FLAGS=" >> $GITHUB_ENV
             ;;
           arm64)
             echo "RPM_ARCH=aarch64" >> $GITHUB_ENV
             echo "DEB_ARCH=arm64" >> $GITHUB_ENV
+            echo "PACKAGE_PROFILE=release-lto-off" >> $GITHUB_ENV
+            echo "PGRX_PACKAGE_FLAGS=--profile release-lto-off" >> $GITHUB_ENV
             ;;
           *)
             echo "RPM_ARCH=${{ inputs.arch }}" >> $GITHUB_ENV
             echo "DEB_ARCH=${{ inputs.arch }}" >> $GITHUB_ENV
+            echo "PACKAGE_PROFILE=release" >> $GITHUB_ENV
+            echo "PGRX_PACKAGE_FLAGS=" >> $GITHUB_ENV
             ;;
         esac
         echo "PG_VERSION=$(echo '${{ inputs.pgver }}' | sed 's/^pg//')" >> $GITHUB_ENV
@@ -81,10 +87,15 @@ runs:
     - name: Build selected package
       run: |
         export PACKAGE_ARCH=${{ inputs.arch }}
+        export BUILD_ENV="PGVER=${{ inputs.pgver }} TARGET=${{ env.PACKAGE_PROFILE }} PGRX_PACKAGE_FLAGS='${{ env.PGRX_PACKAGE_FLAGS }}'"
+        if [ "${{ inputs.arch }}" = "arm64" ]; then
+          echo "Using arm64 packaging workaround: TARGET=${{ env.PACKAGE_PROFILE }} PGRX_PACKAGE_FLAGS=${{ env.PGRX_PACKAGE_FLAGS }}"
+        fi
+
         if [ "${{ inputs.pkgtype }}" = "deb" ]; then
-          su - postgres -c "cd $GITHUB_WORKSPACE && PGVER=${{ inputs.pgver }} PACKAGE_ARCH=${{ env.DEB_ARCH }} make deb"
+          su - postgres -c "cd $GITHUB_WORKSPACE && $BUILD_ENV PACKAGE_ARCH=${{ env.DEB_ARCH }} make deb"
         elif [ "${{ inputs.pkgtype }}" = "rpm" ]; then
-          su - postgres -c "cd $GITHUB_WORKSPACE && PGVER=${{ inputs.pgver }} PACKAGE_ARCH=${{ env.RPM_ARCH }} make rpm"
+          su - postgres -c "cd $GITHUB_WORKSPACE && $BUILD_ENV PACKAGE_ARCH=${{ env.RPM_ARCH }} make rpm"
         else
           echo "Unknown package type: ${{ inputs.pkgtype }}"
           exit 1
@@ -95,13 +106,14 @@ runs:
       if: ${{ inputs.pkgtype == 'rpm' }}
       uses: actions/upload-artifact@v4
       with:
-        name: postgresql_pglinter_${{ env.PG_VERSION }}-${{ env.PGLINTER_MINOR_VERSION
-          }}-1.${{ env.RPM_ARCH }}.rpm
-        path: target/release/pglinter-${{ inputs.pgver }}/*.rpm
+        name: postgresql_pglinter_${{ env.PG_VERSION
+          }}-${{env.PGLINTER_MINOR_VERSION}}-1.${{ env.RPM_ARCH }}.rpm
+        path: target/${{ env.PACKAGE_PROFILE }}/pglinter-${{ inputs.pgver }}/*.rpm
 
     - name: "DEB package for ${{ inputs.pgver }} (${{ inputs.arch }})"
       if: ${{ inputs.pkgtype == 'deb' }}
       uses: actions/upload-artifact@v4
       with:
-        name: postgresql_pglinter_${{ env.PG_VERSION }}-${{ env.PGLINTER_MINOR_VERSION}}_${{ env.DEB_ARCH }}.deb
-        path: target/release/pglinter-${{ inputs.pgver }}/*.deb
+        name: postgresql_pglinter_${{ env.PG_VERSION
+          }}-${{env.PGLINTER_MINOR_VERSION}}_${{ env.DEB_ARCH }}.deb
+        path: target/${{ env.PACKAGE_PROFILE }}/pglinter-${{ inputs.pgver }}/*.deb
