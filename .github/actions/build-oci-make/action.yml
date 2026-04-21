@@ -23,7 +23,7 @@ runs:
     #     username: pmpetit
     #     password: ${{ inputs.github_token }}
     - name: Log in to GitHub Container Registry
-      run: echo "${{ inputs.github_token }}" | docker login ghcr.io -u ${{
+      run: echo "${{ inputs.github-token }}" | docker login ghcr.io -u ${{
         github.actor }} --password-stdin
       shell: bash
     - name: Build OCI image
@@ -31,7 +31,7 @@ runs:
         export DISTRO="${{ inputs.distro || 'bookworm' }}"
         export OCIPGVERSION="${{ inputs.ocipgversion }}"
         export PG_VERSION_OCI="${OCIPGVERSION#pg}"
-        export GITHUB_TOKEN="${{ inputs.github_token }}"
+        export GITHUB_TOKEN="${{ inputs.github-token }}"
         if [ -n "${{ inputs.oci-tag }}" ]; then
           export OCI_TAG="${{ inputs.oci-tag }}"
         fi
