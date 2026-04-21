@@ -106,14 +106,12 @@ runs:
       if: ${{ inputs.pkgtype == 'rpm' }}
       uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
       with:
-        name: postgresql_pglinter_${{ env.PG_VERSION
-          }}-${{env.PGLINTER_MINOR_VERSION}}-1.${{ env.RPM_ARCH }}.rpm
+        name: postgresql_pglinter_${{env.PG_VERSION}}-${{env.PGLINTER_MINOR_VERSION}}-1.${{ env.RPM_ARCH}}.rpm
         path: target/${{ env.PACKAGE_PROFILE }}/pglinter-${{ inputs.pgver }}/*.rpm
 
     - name: "DEB package for ${{ inputs.pgver }} (${{ inputs.arch }})"
       if: ${{ inputs.pkgtype == 'deb' }}
       uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
       with:
-        name: postgresql_pglinter_${{ env.PG_VERSION
-          }}-${{env.PGLINTER_MINOR_VERSION}}_${{ env.DEB_ARCH }}.deb
+        name: postgresql_pglinter_${{env.PG_VERSION}}-${{env.PGLINTER_MINOR_VERSION}}_${{ env.DEB_ARCH}}.deb
         path: target/${{ env.PACKAGE_PROFILE }}/pglinter-${{ inputs.pgver }}/*.deb
