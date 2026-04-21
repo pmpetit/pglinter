@@ -75,7 +75,8 @@ runs:
           set -euo pipefail
           installed_version=\$(cargo pgrx --version 2>/dev/null | grep -Eo \"[0-9]+\\.[0-9]+\\.[0-9]+\" | head -n1 || true)
           if [ \"\$installed_version\" != \"\$PGRX_VERSION\" ]; then
-            cargo install --locked --version \"\$PGRX_VERSION\" cargo-pgrx
+            #cargo install --locked --version \"\$PGRX_VERSION\" cargo-pgrx
+            cargo install cargo-pgrx --git http://github.com/pgcentralfoundation/pgrx --branch keep_pgrxsc
           fi
           if [ ! -f \"\$HOME/.pgrx/config.toml\" ]; then
             cargo pgrx init
