@@ -212,13 +212,7 @@ mod pglinter {
         }
     }
 
-    #[pg_extern(sql = "
-        CREATE FUNCTION pglinter.get_violations()
-        RETURNS TABLE(rule_code TEXT, classid OID, objid OID, objsubid INTEGER, message TEXT)
-        AS 'MODULE_PATHNAME', 'get_violations_wrapper'
-        LANGUAGE C
-        SECURITY DEFINER;
-    ")]
+    #[pg_extern(security_definer)]
     fn get_violations() -> TableIterator<
         'static,
         (
