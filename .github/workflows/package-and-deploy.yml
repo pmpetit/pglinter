@@ -129,22 +129,47 @@ jobs:
         include: ${{ fromJSON(needs.setup-matrix.outputs.matrix_include_arm64) }}
       fail-fast: false
     name: "${{ matrix.pgver }}-${{ matrix.arch }}-${{ matrix.pkgtype}}-package-build"
-    runs-on: ubuntu-24.04-arm
-    permissions:
-      contents: read
-      packages: read
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/pmpetit/postgresql_pglinter:latest-arm64
+      options: --user root
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.GH_TOKEN }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
       - name: create package
         uses: ./.github/actions/reusable-package-action
-        # uses: ./.github/actions/reusable-package-action-native
         with:
           pgver: ${{ matrix.pgver }}
           tag: ${{ github.event_name == 'workflow_dispatch' && inputs.version || github.ref_name }}
           arch: ${{ matrix.arch }}
           pkgtype: ${{ matrix.pkgtype }}
+
+  # build-package-arm64:
+  #   needs: setup-matrix
+  #   strategy:
+  #     matrix:
+  #       include: ${{ fromJSON(needs.setup-matrix.outputs.matrix_include_arm64) }}
+  #     fail-fast: false
+  #   name: "${{ matrix.pgver }}-${{ matrix.arch }}-${{ matrix.pkgtype}}-package-build"
+  #   runs-on: ubuntu-24.04-arm
+  #   permissions:
+  #     contents: read
+  #     packages: read
+  #   steps:
+  #     - name: Checkout repository
+  #       uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+  #     - name: create package
+  #       uses: ./.github/actions/reusable-package-action-native
+  #       with:
+  #         pgver: ${{ matrix.pgver }}
+  #         tag: ${{ github.event_name == 'workflow_dispatch' && inputs.version || github.ref_name }}
+  #         arch: ${{ matrix.arch }}
+  #         pkgtype: ${{ matrix.pkgtype }}
 
   test-package:
     needs:
