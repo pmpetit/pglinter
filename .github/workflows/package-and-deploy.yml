@@ -133,7 +133,8 @@ jobs:
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
       - name: create package
-        uses: ./.github/actions/reusable-package-action-native
+        uses: ./.github/actions/reusable-package-action
+        # uses: ./.github/actions/reusable-package-action-native
         with:
           pgver: ${{ matrix.pgver }}
           tag: ${{ github.event_name == 'workflow_dispatch' && inputs.version || github.ref_name }}
