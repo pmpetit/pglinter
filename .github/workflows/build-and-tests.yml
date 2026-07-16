@@ -52,4 +52,4 @@ jobs:
         uses: ./.github/actions/reusable-build-action
         with:
           pgver: ${{ matrix.pgver }}
-          always: ${{ matrix.pgver == 'pg13' && 'yes' || '' }}
+          always: ${{ matrix.pgver == 'pg13' && 'yes' || 'no' }}
