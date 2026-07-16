@@ -23,7 +23,7 @@ serde_yaml = "0.9"
 chrono = { version = "0.4", features = ["serde"] }
 
 [dev-dependencies]
-pgrx-tests = "0.18.0"
+pgrx-tests = "=0.18.0"
 
 [profile.dev]
 panic = "unwind"
