@@ -10,8 +10,8 @@ Build-Depends: debhelper-compat (= 13),
  pkgconf,
  postgresql-server-dev-all
 Standards-Version: 4.7.0
-Homepage: <https://github.com/pmpetit/pglinter>
-Vcs-Git: <https://github.com/pmpetit/pglinter.git>
+Homepage: https://github.com/pmpetit/pglinter
+Vcs-Git: https://github.com/pmpetit/pglinter.git
 Rules-Requires-Root: no
 
 Package: postgresql-14-pglinter
