@@ -19,7 +19,7 @@ on:
       pglinter_version:
         description: "pglinter version to test"
         required: false
-        default: "0.0.19"
+        default: "2.0.0"
         type: string
 
 env:

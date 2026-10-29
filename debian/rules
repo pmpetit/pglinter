@@ -1,0 +1,27 @@
+#!/usr/bin/make -f
+
+PG_VERSIONS := 14 15 16 17 18
+
+# Build offline against the vendored crates shipped in the source tarball
+export CARGO_NET_OFFLINE := true
+export CARGO_SOURCE_CRATES_IO_REPLACE_WITH := vendored-sources
+export CARGO_SOURCE_VENDORED_SOURCES_DIRECTORY := $(CURDIR)/vendor
+
+%:
+	dh $@
+
+override_dh_auto_build:
+	for v in $(PG_VERSIONS); do \
+		cargo pgrx package \
+			--pg-config /usr/lib/postgresql/$$v/bin/pg_config \
+			--no-default-features --features pg$$v || exit 1; \
+	done
+
+override_dh_auto_install:
+	for v in $(PG_VERSIONS); do \
+		install -d debian/postgresql-$$v-pglinter && \
+		cp -a target/release/pglinter-pg$$v/usr debian/postgresql-$$v-pglinter/ || exit 1; \
+	done
+
+override_dh_auto_test:
+	# Regression tests need a running PostgreSQL cluster; run them outside the package build.

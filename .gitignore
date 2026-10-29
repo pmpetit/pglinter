@@ -3,8 +3,8 @@
 /target
 *.iml
 **/*.rs.bk
-Cargo.lock
 .vscode
+/vendor
 
 # MkDocs
 /site/

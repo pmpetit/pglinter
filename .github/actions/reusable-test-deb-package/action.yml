@@ -10,7 +10,7 @@ inputs:
   pglinter_version:
     description: 'pglinter version'
     required: true
-    default: '0.0.19'
+    default: '2.0.0'
   registry:
     description: 'Docker registry (optional)'
     required: false

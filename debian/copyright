@@ -1,0 +1,18 @@
+Format: <https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/>
+Upstream-Name: pglinter
+Upstream-Contact: Pierre-Marie Petit <pmpetit@users.noreply.github.com>
+Source: <https://github.com/pmpetit/pglinter>
+
+Files: *
+Copyright: Pierre-Marie Petit and the pglinter contributors (see AUTHORS.md)
+License: Apache-2.0
+
+Files: vendor/*
+Copyright: see the copyright notices in each vendored crate
+License: UNREVIEWED
+ The vendored crates are not yet audited for license and copyright
+ information. This must be completed before upload.
+
+License: Apache-2.0
+ On Debian systems, the complete text of the Apache License, Version 2.0
+ can be found in /usr/share/common-licenses/Apache-2.0.

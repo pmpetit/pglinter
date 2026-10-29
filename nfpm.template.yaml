@@ -10,7 +10,7 @@ description: |
   pglinter analyzes database for best practice in PostgreSQL ${PG_MAJOR_VERSION}
 vendor: "pmpetit"
 homepage: "https://github.com/pmpetit/pglinter"
-license: "PostgreSQL"
+license: "Apache-2.0"
 depends:
   - postgresql-${PG_MAJOR_VERSION}
 contents:
