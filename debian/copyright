@@ -1,0 +1,346 @@
+Format: https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
+Upstream-Name: pglinter
+Upstream-Contact: Pierre-Marie Petit <pmpetit@users.noreply.github.com>
+Source: https://github.com/pmpetit/pglinter
+
+Files: *
+Copyright: Pierre-Marie Petit and the pglinter contributors (see AUTHORS.md)
+License: Apache-2.0
+
+Files: vendor/*
+Copyright: the respective crate authors, see vendor/<crate>/Cargo.toml
+License: MIT or Apache-2.0
+
+Files: vendor/bitvec/*
+ vendor/bytes/*
+ vendor/cargo_metadata/*
+ vendor/convert_case/*
+ vendor/funty/*
+ vendor/libredox/*
+ vendor/mio/*
+ vendor/nom/*
+ vendor/owo-colors/*
+ vendor/pathsearch/*
+ vendor/pgrx/*
+ vendor/pgrx-bindgen/*
+ vendor/pgrx-macros/*
+ vendor/pgrx-pg-config/*
+ vendor/pgrx-pg-sys/*
+ vendor/pgrx-sql-entity-graph/*
+ vendor/pgrx-tests/*
+ vendor/phf/*
+ vendor/phf_shared/*
+ vendor/radium/*
+ vendor/redox_syscall/*
+ vendor/seahash/*
+ vendor/slab/*
+ vendor/synstructure/*
+ vendor/sysinfo/*
+ vendor/tap/*
+ vendor/tokio/*
+ vendor/tokio-util/*
+ vendor/unescape/*
+ vendor/unsafe-libyaml/*
+ vendor/winnow/*
+ vendor/winnow-0.7.15/*
+ vendor/wyz/*
+ vendor/zmij/*
+Copyright: the respective crate authors, see vendor/<crate>/Cargo.toml
+License: MIT
+
+Files: vendor/clang-sys/*
+ vendor/supports-color/*
+Copyright: the respective crate authors, see vendor/<crate>/Cargo.toml
+License: Apache-2.0
+
+Files: vendor/ryu/*
+Copyright: David Tolnay
+License: Apache-2.0 or BSL-1.0
+
+Files: vendor/wasite/*
+ vendor/whoami/*
+Copyright: the respective crate authors, see vendor/<crate>/Cargo.toml
+License: Apache-2.0 or BSL-1.0 or MIT
+
+Files: vendor/encoding_rs/*
+Copyright: Mozilla Foundation and the encoding_rs authors
+License: (Apache-2.0 or MIT) and BSD-3-Clause
+
+Files: vendor/linux-raw-sys/*
+ vendor/rustix/*
+ vendor/wasi/*
+ vendor/wasi-0.11.1+wasi-snapshot-preview1/*
+ vendor/wasip2/*
+ vendor/wit-bindgen/*
+Copyright: the respective crate authors, see vendor/<crate>/Cargo.toml
+License: Apache-2.0-with-LLVM-exception or Apache-2.0 or MIT
+
+Files: vendor/zerocopy/*
+ vendor/zerocopy-derive/*
+Copyright: The Fuchsia Authors
+License: BSD-2-Clause or Apache-2.0 or MIT
+
+Files: vendor/bindgen/*
+Copyright: Jyun-Yan You and the bindgen authors
+License: BSD-3-Clause
+
+Files: vendor/is_ci/*
+ vendor/libloading/*
+Copyright: the respective crate authors, see vendor/<crate>/Cargo.toml
+License: ISC
+
+Files: vendor/unicode-ident/*
+ vendor/unicode-normalization/*
+Copyright: the respective crate authors, see vendor/<crate>/Cargo.toml
+License: (MIT or Apache-2.0) and Unicode-3.0
+
+Files: vendor/r-efi/*
+ vendor/r-efi-5.3.0/*
+Copyright: the r-efi authors
+License: MIT or Apache-2.0 or LGPL-2.1+
+
+Files: vendor/icu_collections/*
+ vendor/icu_locale_core/*
+ vendor/icu_normalizer/*
+ vendor/icu_normalizer_data/*
+ vendor/icu_properties/*
+ vendor/icu_properties_data/*
+ vendor/icu_provider/*
+ vendor/litemap/*
+ vendor/potential_utf/*
+ vendor/tinystr/*
+ vendor/writeable/*
+ vendor/yoke/*
+ vendor/yoke-derive/*
+ vendor/zerofrom/*
+ vendor/zerofrom-derive/*
+ vendor/zerotrie/*
+ vendor/zerovec/*
+ vendor/zerovec-derive/*
+Copyright: Unicode, Inc. and the ICU4X project contributors
+License: Unicode-3.0
+
+Files: vendor/aho-corasick/*
+ vendor/byteorder/*
+ vendor/memchr/*
+ vendor/same-file/*
+ vendor/walkdir/*
+ vendor/winapi-util/*
+Copyright: Andrew Gallant
+License: Unlicense or MIT
+
+Files: vendor/foldhash/*
+Copyright: Orson Peters
+License: Zlib
+
+Files: vendor/objc2-core-foundation/*
+ vendor/objc2-system-configuration/*
+ vendor/tinyvec/*
+Copyright: the respective crate authors, see vendor/<crate>/Cargo.toml
+License: Zlib or Apache-2.0 or MIT
+
+License: Apache-2.0
+ On Debian systems, the complete text of the Apache License, Version 2.0
+ can be found in /usr/share/common-licenses/Apache-2.0.
+
+License: Apache-2.0-with-LLVM-exception
+ Licensed under the Apache License, Version 2.0, with the LLVM exception
+ below. On Debian systems, the complete text of the Apache License,
+ Version 2.0 can be found in /usr/share/common-licenses/Apache-2.0.
+ .
+ ---- LLVM Exceptions to the Apache 2.0 License ----
+ .
+ As an exception, if, as a result of your compiling your source code,
+ portions of this Software are embedded into an Object form of such source
+ code, you may redistribute such embedded portions in such Object form
+ without complying with the conditions of Sections 4(a), 4(b) and 4(d) of
+ the License.
+ .
+ In addition, if you combine or link compiled forms of this Software with
+ software that is licensed under the GPLv2 ("Combined Software") and if a
+ court of competent jurisdiction determines that the patent provision
+ (Section 3), the indemnity provision (Section 9) or other Section of the
+ License conflicts with the conditions of the GPLv2, you may retroactively
+ and prospectively choose to deem waived or otherwise exclude such
+ Section(s) of the License, but only in their entirety and only with
+ respect to the Combined Software.
+
+License: LGPL-2.1+
+ This library is free software; you can redistribute it and/or modify it
+ under the terms of the GNU Lesser General Public License as published by
+ the Free Software Foundation; either version 2.1 of the License, or (at
+ your option) any later version.
+ .
+ On Debian systems, the complete text of the GNU Lesser General Public
+ License version 2.1 can be found in /usr/share/common-licenses/LGPL-2.1.
+
+License: MIT
+ Permission is hereby granted, free of charge, to any person obtaining a
+ copy of this software and associated documentation files (the
+ "Software"), to deal in the Software without restriction, including
+ without limitation the rights to use, copy, modify, merge, publish,
+ distribute, sublicense, and/or sell copies of the Software, and to permit
+ persons to whom the Software is furnished to do so, subject to the
+ following conditions:
+ .
+ The above copyright notice and this permission notice shall be included
+ in all copies or substantial portions of the Software.
+ .
+ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
+ OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+ MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN
+ NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+ DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
+ OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE
+ USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+License: BSL-1.0
+ Permission is hereby granted, free of charge, to any person or
+ organization obtaining a copy of the software and accompanying
+ documentation covered by this license (the "Software") to use, reproduce,
+ display, distribute, execute, and transmit the Software, and to prepare
+ derivative works of the Software, and to permit third-parties to whom the
+ Software is furnished to do so, all subject to the following:
+ .
+ The copyright notices in the Software and this entire statement,
+ including the above license grant, this restriction and the following
+ disclaimer, must be included in all copies of the Software, in whole or
+ in part, and all derivative works of the Software, unless such copies or
+ derivative works are solely in the form of machine-executable object code
+ generated by a source language processor.
+ .
+ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
+ OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+ MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, TITLE AND
+ NON-INFRINGEMENT. IN NO EVENT SHALL THE COPYRIGHT HOLDERS OR ANYONE
+ DISTRIBUTING THE SOFTWARE BE LIABLE FOR ANY DAMAGES OR OTHER LIABILITY,
+ WHETHER IN CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+License: BSD-2-Clause
+ Redistribution and use in source and binary forms, with or without
+ modification, are permitted provided that the following conditions are
+ met:
+ .
+ 1. Redistributions of source code must retain the above copyright notice,
+    this list of conditions and the following disclaimer.
+ 2. Redistributions in binary form must reproduce the above copyright
+    notice, this list of conditions and the following disclaimer in the
+    documentation and/or other materials provided with the distribution.
+ .
+ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS
+ IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO,
+ THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+ PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR
+ CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
+ EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+ PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
+ PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+ LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+ NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+License: BSD-3-Clause
+ Redistribution and use in source and binary forms, with or without
+ modification, are permitted provided that the following conditions are
+ met:
+ .
+ 1. Redistributions of source code must retain the above copyright notice,
+    this list of conditions and the following disclaimer.
+ 2. Redistributions in binary form must reproduce the above copyright
+    notice, this list of conditions and the following disclaimer in the
+    documentation and/or other materials provided with the distribution.
+ 3. Neither the name of the copyright holder nor the names of its
+    contributors may be used to endorse or promote products derived from
+    this software without specific prior written permission.
+ .
+ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS
+ IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO,
+ THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+ PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR
+ CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
+ EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+ PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
+ PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+ LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+ NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+License: ISC
+ Permission to use, copy, modify, and/or distribute this software for any
+ purpose with or without fee is hereby granted, provided that the above
+ copyright notice and this permission notice appear in all copies.
+ .
+ THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
+ WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
+ MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
+ ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+ WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
+ ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF OR
+ IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+
+License: Unicode-3.0
+ Permission is hereby granted, free of charge, to any person obtaining a
+ copy of data files and any associated documentation (the "Data Files") or
+ software and any associated documentation (the "Software") to deal in the
+ Data Files or Software without restriction, including without limitation
+ the rights to use, copy, modify, merge, publish, distribute, and/or sell
+ copies of the Data Files or Software, and to permit persons to whom the
+ Data Files or Software are furnished to do so, provided that either (a)
+ this copyright and permission notice appear with all copies of the Data
+ Files or Software, or (b) this copyright and permission notice appear in
+ associated Documentation.
+ .
+ THE DATA FILES AND SOFTWARE ARE PROVIDED "AS IS", WITHOUT WARRANTY OF ANY
+ KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+ MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT OF
+ THIRD PARTY RIGHTS. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR HOLDERS
+ INCLUDED IN THIS NOTICE BE LIABLE FOR ANY CLAIM, OR ANY SPECIAL INDIRECT
+ OR CONSEQUENTIAL DAMAGES, OR ANY DAMAGES WHATSOEVER RESULTING FROM LOSS OF
+ USE, DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR
+ OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
+ PERFORMANCE OF THE DATA FILES OR SOFTWARE.
+ .
+ Except as contained in this notice, the name of a copyright holder shall
+ not be used in advertising or otherwise to promote the sale, use or other
+ dealings in these Data Files or Software without prior written
+ authorization of the copyright holder.
+
+License: Unlicense
+ This is free and unencumbered software released into the public domain.
+ .
+ Anyone is free to copy, modify, publish, use, compile, sell, or distribute
+ this software, either in source code form or as a compiled binary, for any
+ purpose, commercial or non-commercial, and by any means.
+ .
+ In jurisdictions that recognize copyright laws, the author or authors of
+ this software dedicate any and all copyright interest in the software to
+ the public domain. We make this dedication for the benefit of the public
+ at large and to the detriment of our heirs and successors. We intend this
+ dedication to be an overt act of relinquishment in perpetuity of all
+ present and future rights to this software under copyright law.
+ .
+ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
+ OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+ MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN
+ NO EVENT SHALL THE AUTHORS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+ FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+ DEALINGS IN THE SOFTWARE.
+
+License: Zlib
+ This software is provided 'as-is', without any express or implied
+ warranty. In no event will the authors be held liable for any damages
+ arising from the use of this software.
+ .
+ Permission is granted to anyone to use this software for any purpose,
+ including commercial applications, and to alter it and redistribute it
+ freely, subject to the following restrictions:
+ .
+ 1. The origin of this software must not be misrepresented; you must not
+    claim that you wrote the original software. If you use this software
+    in a product, an acknowledgment in the product documentation would be
+    appreciated but is not required.
+ 2. Altered source versions must be plainly marked as such, and must not
+    be misrepresented as being the original software.
+ 3. This notice may not be removed or altered from any source distribution.

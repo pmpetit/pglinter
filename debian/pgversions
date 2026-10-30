@@ -1,0 +1,6 @@
+# pgrx 0.18 only provides features pg14..pg18; extend when pgrx adds newer versions
+14
+15
+16
+17
+18

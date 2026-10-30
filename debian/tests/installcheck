@@ -1,0 +1,13 @@
+#!/bin/sh
+# Smoke test: create the extension and run it on each installed PostgreSQL version.
+set -eu
+
+for v in $(pg_buildext installed-versions); do
+	echo "### PostgreSQL $v"
+	pg_virtualenv -v "$v" psql -v ON_ERROR_STOP=1 -X <<'EOF'
+CREATE EXTENSION pglinter;
+SELECT extversion FROM pg_extension WHERE extname = 'pglinter';
+SELECT pglinter.list_rules();
+SELECT count(*) FROM pglinter.get_violations();
+EOF
+done

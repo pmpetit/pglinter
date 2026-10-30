@@ -1,4 +1,4 @@
-# pglinter - PostgreSQL Extension.
+# pglinter - PostgreSQL Extension
 
 This is a conversion of the original Python [dblinter](https://github.com/decathlon/dblinter) to a PostgreSQL extension written in Rust using pgrx.
 
@@ -237,6 +237,7 @@ SELECT pglinter.import_rules_from_yaml('yaml...');   -- Import rules from YAML
 ## Implemented Rules
 
 ### Base Rules (B-series)
+
 - **B001**: Tables without primary keys
 - **B002**: Redundant indexes
 - **B003**: Tables without indexes on foreign keys
@@ -303,12 +304,14 @@ Results are generated in SARIF 2.1.0 format:
 This Rust implementation maintains compatibility with the original Python pglinter while offering:
 
 ### Advantages
+
 - **Performance**: 10-100x faster execution
 - **Memory Safety**: Rust's memory management
 - **Integration**: No external dependencies or connections needed
 - **Deployment**: Single extension installation
 
 ### Migration Path
+
 1. **Rule Logic**: Direct translation of Python rule logic to Rust
 2. **Configuration**: Database-stored instead of YAML files
 3. **Output Format**: Same SARIF 2.1.0 format
@@ -329,7 +332,7 @@ cargo pgrx package
 
 ## Documentation
 
-Documentation https://pglinter.readthedocs.io/en/latest/
+Documentation <https://pglinter.readthedocs.io/en/latest/>
 
 ## Contributing
 
@@ -342,4 +345,4 @@ Documentation https://pglinter.readthedocs.io/en/latest/
 
 ## License
 
-Same as original pglinter project.
+Apache License 2.0, see [LICENSE](LICENSE).

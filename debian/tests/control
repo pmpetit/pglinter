@@ -1,0 +1,3 @@
+Depends: @, postgresql-common
+Tests: installcheck
+Restrictions: allow-stderr

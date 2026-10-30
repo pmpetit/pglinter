@@ -1,0 +1,24 @@
+Source: pglinter
+Section: database
+Priority: optional
+Maintainer: Pierre-Marie Petit <pmpetit@users.noreply.github.com>
+Build-Depends: debhelper-compat (= 13),
+ cargo,
+ rustc (>= 1.88),
+ libclang-dev,
+ libpq-dev,
+ pkgconf,
+ postgresql-server-dev-all (>= 217~)
+Standards-Version: 4.7.0
+Homepage: https://github.com/pmpetit/pglinter
+Vcs-Git: https://github.com/pmpetit/pglinter.git
+Rules-Requires-Root: no
+
+Package: postgresql-PGVERSION-pglinter
+Architecture: any
+Depends: postgresql-PGVERSION, ${misc:Depends}, ${shlibs:Depends}
+Description: PostgreSQL database linting and analysis extension
+ pglinter analyzes a PostgreSQL database for potential issues, performance
+ problems and best practice violations.
+ .
+ This package contains pglinter for PostgreSQL PGVERSION.
