@@ -1,6 +1,8 @@
 #!/usr/bin/make -f
 
-PG_VERSIONS := 14 15 16 17 18
+include /usr/share/postgresql-common/pgxs_debian_control.mk
+
+PG_VERSIONS = $(shell pg_buildext supported-versions)
 
 # Build offline against the vendored crates shipped in the source tarball
 export CARGO_NET_OFFLINE := true
