@@ -3,7 +3,7 @@ description: 'Builds and tests pglinter PostgreSQL NODEB Docker image'
 
 inputs:
   pg_version:
-    description: 'PostgreSQL major version (13-18)'
+    description: 'PostgreSQL major version (15-19)'
     required: true
     default: '17'
   pglinter_version:
@@ -33,7 +33,7 @@ runs:
     - name: Validate PostgreSQL version
       shell: bash
       run: |
-        if [[ ! "${{ inputs.pg_version }}" =~ ^(13|14|15|16|17|18)$ ]]; then
+        if [[ ! "${{ inputs.pg_version }}" =~ ^(15|16|17|18|19)$ ]]; then
           echo "❌ ERROR: Unsupported PostgreSQL version: ${{ inputs.pg_version }}"
           exit 1
         fi

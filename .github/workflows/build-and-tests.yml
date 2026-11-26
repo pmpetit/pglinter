@@ -31,8 +31,7 @@ jobs:
   build:
     strategy:
       matrix:
-        pgver: [pg14, pg15, pg16, pg17, pg18]
-        #pgver: [pg14]
+        pgver: [pg15, pg16, pg17, pg18, pg19]
       fail-fast: false
     name: "build-and-tests-pglinter-for-${{ matrix.pgver }}"
     runs-on: ubuntu-latest
@@ -52,4 +51,4 @@ jobs:
         uses: ./.github/actions/reusable-build-action
         with:
           pgver: ${{ matrix.pgver }}
-          always: ${{ matrix.pgver == 'pg13' && 'yes' || 'no' }}
+          always: ${{ matrix.pgver == 'pg15' && 'yes' || '' }}

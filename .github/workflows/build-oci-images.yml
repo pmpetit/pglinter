@@ -6,7 +6,7 @@ on:
       pgversions:
         description: "PostgreSQL versions to build (comma-separated: pg18)"
         required: false
-        default: "pg18,pg17,pg16,pg15,pg14"
+        default: "pg19,pg18,pg17,pg16,pg15"
         type: string
   workflow_run:
     workflows: ["Package and deploy pglinter."]
@@ -37,7 +37,7 @@ jobs:
             PGVERSIONS="${{ inputs.pgversions }}"
             echo "Using workflow_dispatch pgversions: $PGVERSIONS"
           else
-            PGVERSIONS="pg18,pg17,pg16,pg15,pg14"
+            PGVERSIONS="pg19,pg18,pg17,pg16,pg15"
             echo "Using default pgversions: $PGVERSIONS"
           fi
 

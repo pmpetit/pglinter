@@ -10,7 +10,7 @@
   "prereqs": {
     "runtime": {
       "requires": {
-        "PostgreSQL": "13.0.0"
+        "PostgreSQL": "15.0.0"
       },
       "recommends": {
         "PostgreSQL": "17.0.0"
@@ -18,12 +18,12 @@
     },
     "build": {
       "requires": {
-        "PostgreSQL": "13.0.0"
+        "PostgreSQL": "15.0.0"
       }
     },
     "test": {
       "requires": {
-        "PostgreSQL": "13.0.0"
+        "PostgreSQL": "15.0.0"
       }
     }
   },

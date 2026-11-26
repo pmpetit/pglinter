@@ -5,7 +5,7 @@ description: "Builds and tests the pglinter extension for a given PostgreSQL ver
 
 inputs:
   pgver:
-    description: "The PostgreSQL major version with the \"pg\" prefix (e.g. `pg13`,
+    description: "The PostgreSQL major version with the \"pg\" prefix (e.g. `pg15`,
       `pg16`, etc.)"
     required: true
   always:
@@ -39,7 +39,7 @@ runs:
           if [ \"\$installed_version\" != \"\$PGRX_VERSION\" ]; then
             cargo install --locked --version \"\$PGRX_VERSION\" cargo-pgrx
           fi
-          if [ ! -f \"\$HOME/.pgrx/config.toml\" ]; then
+          if ! grep -q \"^pg19[[:space:]]*=\" \"\$HOME/.pgrx/config.toml\" 2>/dev/null; then
             cargo pgrx init
           fi
           cargo pgrx --version
@@ -48,19 +48,27 @@ runs:
 
     - name: Lint (only for default PG version)
       if: inputs.always != ''
-      run: su - postgres -c "cd $GITHUB_WORKSPACE && make lint"
+      env:
+        PGVER: ${{ inputs.pgver }}
+      run: su - postgres -c 'cd "$1" && make PGVER="$2" lint' bash "$GITHUB_WORKSPACE" "$PGVER"
       shell: bash
 
     - name: Build the extension package
-      run: su - postgres -c "cd $GITHUB_WORKSPACE && make"
+      env:
+        PGVER: ${{ inputs.pgver }}
+      run: su - postgres -c 'cd "$1" && make PGVER="$2"' bash "$GITHUB_WORKSPACE" "$PGVER"
       shell: bash
 
     - name: Launch postgres instance and run unit tests
-      run: su - postgres -c "cd $GITHUB_WORKSPACE && make test"
+      env:
+        PGVER: ${{ inputs.pgver }}
+      run: su - postgres -c 'cd "$1" && make PGVER="$2" test' bash "$GITHUB_WORKSPACE" "$PGVER"
       shell: bash
 
     - name: Run regressions tests
+      env:
+        PGVER: ${{ inputs.pgver }}
       run: |
-        su - postgres -c "cd $GITHUB_WORKSPACE && make install"
-        su - postgres -c "cd $GITHUB_WORKSPACE && make installcheck"
+        su - postgres -c 'cd "$1" && make PGVER="$2" install' bash "$GITHUB_WORKSPACE" "$PGVER"
+        su - postgres -c 'cd "$1" && make PGVER="$2" installcheck' bash "$GITHUB_WORKSPACE" "$PGVER"
       shell: bash
