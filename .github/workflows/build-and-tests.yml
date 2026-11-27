@@ -21,6 +21,9 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+permissions:
+  contents: read
+
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
@@ -35,17 +38,12 @@ jobs:
       fail-fast: false
     name: "build-and-tests-pglinter-for-${{ matrix.pgver }}"
     runs-on: ubuntu-latest
-    # Use GitHub Container Registry for pmpetit
-    container:
-      image: ghcr.io/pmpetit/postgresql_pglinter:pgrx
-      options: --user root
-      credentials:
-        username: ${{ github.actor }}
-        password: ${{ secrets.GH_TOKEN }}
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          persist-credentials: false
 
       - name: Call reusable build action
         uses: ./.github/actions/reusable-build-action

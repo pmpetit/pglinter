@@ -62,26 +62,32 @@ runs:
         echo "PG_VERSION=$(echo '${{ inputs.pgver }}' | sed 's/^pg//')" >> $GITHUB_ENV
       shell: bash
 
-    - name: Ensure matching cargo-pgrx version
+    - name: Set up pgrx and PostgreSQL
+      env:
+        PGVER: ${{ inputs.pgver }}
       run: |
         set -euo pipefail
-        PGRX_VERSION="$(sed -nE 's/^pgrx = "([^"]+)"/\1/p' "$GITHUB_WORKSPACE/Cargo.toml" | head -n1)"
-        if [ -z "$PGRX_VERSION" ]; then
+        pgrx_version="$(sed -nE 's/^pgrx = "([^"]+)"/\1/p' "$GITHUB_WORKSPACE/Cargo.toml")"
+        if [ -z "$pgrx_version" ]; then
           echo "Could not determine pgrx version from Cargo.toml"
           exit 1
         fi
 
-        su - postgres -c "PGRX_VERSION='$PGRX_VERSION' bash -lc '
-          set -euo pipefail
-          installed_version=\$(cargo pgrx --version 2>/dev/null | grep -Eo \"[0-9]+\\.[0-9]+\\.[0-9]+\" | head -n1 || true)
-          if [ \"\$installed_version\" != \"\$PGRX_VERSION\" ]; then
-            cargo install --locked --version \"\$PGRX_VERSION\" cargo-pgrx
-          fi
-          if [ ! -f \"\$HOME/.pgrx/config.toml\" ]; then
-            cargo pgrx init
-          fi
-          cargo pgrx --version
-        '"
+        sudo -H -u postgres bash -s -- "$pgrx_version" "$PGVER" <<'BASH'
+        set -euo pipefail
+        export PATH="$HOME/.cargo/bin:$PATH"
+        pgrx_version="$1"
+        pgver="$2"
+        rustup toolchain install stable --profile minimal
+        rustup default stable
+        if [ "$(cargo pgrx --version 2>/dev/null)" != "cargo-pgrx $pgrx_version" ]; then
+          cargo install --locked --version "$pgrx_version" cargo-pgrx
+        fi
+        if ! pg_config="$(cargo pgrx info pg-config "$pgver" 2>/dev/null)" || [ ! -x "$pg_config" ]; then
+          cargo pgrx init "--$pgver" download
+        fi
+        cargo pgrx --version
+        BASH
       shell: bash
 
     - name: Build selected package

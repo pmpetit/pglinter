@@ -9,66 +9,60 @@ inputs:
       `pg16`, etc.)"
     required: true
   always:
-    description: "If defined, all jobs are launched in any case."
+    description: "Run lint in addition to the build and tests."
     required: false
 
 runs:
   using: "composite"
   steps:
-    - name: Checkout code
-      uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
-
-    - name: Setup workspace for postgres user
-      run: |
-        chown -R postgres:postgres $GITHUB_WORKSPACE
-        chmod -R 755 $GITHUB_WORKSPACE
+    - name: Install build dependencies
       shell: bash
-
-    - name: Ensure matching cargo-pgrx version
       run: |
-        set -euo pipefail
-        PGRX_VERSION="$(sed -nE 's/^pgrx = "([^"]+)"/\1/p' "$GITHUB_WORKSPACE/Cargo.toml" | head -n1)"
-        if [ -z "$PGRX_VERSION" ]; then
+        sudo apt-get update
+        sudo apt-get install -y bison build-essential clang flex libclang-dev \
+          libicu-dev libreadline-dev libssl-dev pkg-config zlib1g-dev
+
+    - name: Set up Rust
+      shell: bash
+      run: |
+        rustup toolchain install stable --profile minimal --component clippy
+        rustup default stable
+
+    - name: Set up pgrx and PostgreSQL
+      shell: bash
+      env:
+        PGVER: ${{ inputs.pgver }}
+      run: |
+        pgrx_version="$(sed -nE 's/^pgrx = "([^"]+)"/\1/p' Cargo.toml)"
+        if [ -z "$pgrx_version" ]; then
           echo "Could not determine pgrx version from Cargo.toml"
           exit 1
         fi
 
-        su - postgres -c "PGRX_VERSION='$PGRX_VERSION' bash -lc '
-          set -euo pipefail
-          installed_version=\$(cargo pgrx --version 2>/dev/null | grep -Eo \"[0-9]+\\.[0-9]+\\.[0-9]+\" | head -n1 || true)
-          if [ \"\$installed_version\" != \"\$PGRX_VERSION\" ]; then
-            cargo install --locked --version \"\$PGRX_VERSION\" cargo-pgrx
-          fi
-          if ! grep -q \"^pg19[[:space:]]*=\" \"\$HOME/.pgrx/config.toml\" 2>/dev/null; then
-            cargo pgrx init
-          fi
-          cargo pgrx --version
-        '"
-      shell: bash
+        cargo install --locked --version "$pgrx_version" cargo-pgrx
+        cargo pgrx init "--$PGVER" download
 
     - name: Lint (only for default PG version)
       if: inputs.always != ''
-      env:
-        PGVER: ${{ inputs.pgver }}
-      run: su - postgres -c 'cd "$1" && make PGVER="$2" lint' bash "$GITHUB_WORKSPACE" "$PGVER"
+      run: make lint
       shell: bash
 
     - name: Build the extension package
       env:
         PGVER: ${{ inputs.pgver }}
-      run: su - postgres -c 'cd "$1" && make PGVER="$2"' bash "$GITHUB_WORKSPACE" "$PGVER"
+      run: make PGVER="$PGVER"
       shell: bash
 
     - name: Launch postgres instance and run unit tests
       env:
         PGVER: ${{ inputs.pgver }}
-      run: su - postgres -c 'cd "$1" && make PGVER="$2" test' bash "$GITHUB_WORKSPACE" "$PGVER"
+      run: make PGVER="$PGVER" test
       shell: bash
 
-    - name: Run regressions tests
+    - name: Run regression tests
       env:
         PGVER: ${{ inputs.pgver }}
       run: |
-        su - postgres -c 'cd "$1" && make PGVER="$2" install' bash "$GITHUB_WORKSPACE" "$PGVER"
-        su - postgres -c 'cd "$1" && make PGVER="$2" installcheck' bash "$GITHUB_WORKSPACE" "$PGVER"
+        make PGVER="$PGVER" install
+        make PGVER="$PGVER" installcheck
       shell: bash
