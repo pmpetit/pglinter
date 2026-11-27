@@ -217,7 +217,8 @@ SELECT
     (PG_IDENTIFY_OBJECT(classid, objid, objsubid)).name AS object_name,
     (PG_IDENTIFY_OBJECT(classid, objid, objsubid)).identity AS object_identity
 FROM pglinter.get_violations()
-WHERE rule_code = 'B001';
+WHERE rule_code = 'B001'
+ORDER BY object_identity;
 
 DROP TABLE orders_no_pk CASCADE;
 DROP TABLE customers_no_pk CASCADE;

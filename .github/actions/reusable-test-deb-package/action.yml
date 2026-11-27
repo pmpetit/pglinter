@@ -4,7 +4,7 @@ description: 'Builds and tests pglinter PostgreSQL DEB Docker image'
 
 inputs:
   pg_version:
-    description: 'PostgreSQL major version (13-18)'
+    description: 'PostgreSQL major version (15-19)'
     required: true
     default: '17'
   pglinter_version:
@@ -39,10 +39,10 @@ runs:
       shell: bash
       run: |
         echo "pg_version=${{ inputs.pg_version }}"
-        # Following pglinter's PostgreSQL 13-18 support requirements
-        if [[ ! "${{ inputs.pg_version }}" =~ ^(13|14|15|16|17|18)$ ]]; then
+        # Following pglinter's PostgreSQL 15-19 support requirements
+        if [[ ! "${{ inputs.pg_version }}" =~ ^(15|16|17|18|19)$ ]]; then
           echo "❌ ERROR: Unsupported PostgreSQL version: ${{ inputs.pg_version }}"
-          echo "Supported versions: 13, 14, 15, 16, 17, 18"
+          echo "Supported versions: 15, 16, 17, 18, 19"
           exit 1
         fi
         echo "✅ PostgreSQL version ${{ inputs.pg_version }} is supported"

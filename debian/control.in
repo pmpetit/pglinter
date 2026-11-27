@@ -4,7 +4,7 @@ Priority: optional
 Maintainer: Pierre-Marie Petit <pmpetit@users.noreply.github.com>
 Build-Depends: debhelper-compat (= 13),
  cargo,
- rustc (>= 1.88),
+ rustc (>= 1.99.1),
  libclang-dev,
  libpq-dev,
  pkgconf,

@@ -1,5 +1,5 @@
 # Multi-stage Dockerfile for pglinter PostgreSQL extension
-# Supports PostgreSQL 13-18
+# Supports PostgreSQL 15-19
 
 # Build argument for PostgreSQL version
 ARG PG_MAJOR_VERSION=17
@@ -7,13 +7,14 @@ ARG PG_MAJOR_VERSION=17
 ##
 ## First Stage: Rust Build Environment
 ##
-FROM rust:1.89.0-slim as builder
+FROM rust:1.99.1-slim as builder
 
 # Install system dependencies for building
 RUN apt-get update && apt-get install -y \
   build-essential \
   clang \
   libclang-dev \
+  postgresql-common \
   pkg-config \
   git \
   wget \
@@ -32,13 +33,14 @@ COPY pglinter.control ./
 COPY sql/ ./sql/
 
 # Install cargo-pgrx
-RUN cargo install --locked cargo-pgrx --version 0.18.0
+RUN cargo install --locked cargo-pgrx --version 0.20.1
 
 # Build arguments for PostgreSQL version
 ARG PG_MAJOR_VERSION=17
 
 # Install PostgreSQL for the specified version
-RUN apt-get update && apt-get install -y \
+RUN /usr/share/postgresql-common/pgdg/apt.postgresql.org.sh -y \
+  && apt-get update && apt-get install -y \
   postgresql-${PG_MAJOR_VERSION} \
   postgresql-server-dev-${PG_MAJOR_VERSION} \
   postgresql-client-${PG_MAJOR_VERSION} \

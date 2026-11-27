@@ -5,7 +5,7 @@ description: "Builds rpm/deb package natively on the runner (no container) and u
 
 inputs:
   pgver:
-    description: "The PostgreSQL major version with the \"pg\" prefix (e.g. `pg14`, `pg16`, etc.)"
+    description: "The PostgreSQL major version with the \"pg\" prefix (e.g. `pg15`, `pg16`, etc.)"
     required: true
   tag:
     description: "The tag version"

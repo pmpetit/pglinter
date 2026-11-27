@@ -90,7 +90,7 @@ To set up your development environment, follow the [PGRX install instructions]!
 3. **PGRX**: Install the PGRX CLI tool
 
    ```bash
-   cargo install --locked cargo-pgrx
+   cargo install --locked --version 0.20.1 cargo-pgrx
    cargo pgrx init
    ```
 

@@ -3,8 +3,6 @@ CREATE EXTENSION IF NOT EXISTS pglinter;
 \pset pager off
 
 
-CREATE SCHEMA trigger_test;
-
 -- =============================================================================
 -- Create test tables
 -- =============================================================================
@@ -81,7 +79,7 @@ WHERE rule_code = 'B013';
 -- Test if file exists and show checksum
 
 -- Cleanup
-\echo 'Cleaning up test schema...'
-DROP SCHEMA trigger_test CASCADE;
+DROP TABLE pos_tnd_ssn_hst;
+DROP FUNCTION f_pos_tnd_ssn_hst();
 
 DROP EXTENSION pglinter;

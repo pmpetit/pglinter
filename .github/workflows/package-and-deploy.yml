@@ -25,7 +25,7 @@ on:
         required: true
         type: string
       pgversions:
-        description: "PostgreSQL versions to build (comma-separated: pg14,pg15,pg16,pg17,pg18)"
+        description: "PostgreSQL versions to build (comma-separated: pg15,pg16,pg17,pg18,pg19)"
         required: false
         default: "pg17"
         type: string
@@ -60,7 +60,7 @@ jobs:
             PGVERSIONS="${{ inputs.pgversions }}"
             echo "Using workflow_dispatch pgversions: $PGVERSIONS"
           else
-            PGVERSIONS="pg14,pg15,pg16,pg17,pg18"
+            PGVERSIONS="pg15,pg16,pg17,pg18,pg19"
             echo "Using default pgversions: $PGVERSIONS"
           fi
 
