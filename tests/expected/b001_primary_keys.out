@@ -267,11 +267,12 @@ SELECT
     (PG_IDENTIFY_OBJECT(classid, objid, objsubid)).name AS object_name,
     (PG_IDENTIFY_OBJECT(classid, objid, objsubid)).identity AS object_identity
 FROM pglinter.get_violations()
-WHERE rule_code = 'B001';
+WHERE rule_code = 'B001'
+ORDER BY object_identity;
  object_type | object_schema |   object_name   |    object_identity     
 -------------+---------------+-----------------+------------------------
- table       | public        | shipments_no_pk | public.shipments_no_pk
  table       | public        | payments_no_pk  | public.payments_no_pk
+ table       | public        | shipments_no_pk | public.shipments_no_pk
 (2 rows)
 
 DROP TABLE orders_no_pk CASCADE;

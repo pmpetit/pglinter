@@ -3,6 +3,10 @@
 -- versus total schemas in the database
 CREATE EXTENSION pglinter;
 
+-- Give the public schema the CREATE privilege this test checks for.
+BEGIN;
+GRANT CREATE ON SCHEMA public TO PUBLIC;
+
 SELECT
     'S003 Regression Test: Schemas with public CREATE privileges' AS test_header;
 
@@ -92,7 +96,8 @@ SELECT
     (pg_identify_object(classid, objid, objsubid)).name AS object_name,
     (pg_identify_object(classid, objid, objsubid)).identity AS object_identity
 FROM pglinter.get_violations()
-WHERE rule_code = 'S003';
+WHERE rule_code = 'S003'
+ORDER BY object_identity;
 
 -- PART 6: Verification of SQL queries used by S003
 SELECT 'PART 6: Direct verification of S003 SQL queries' AS sql_verification;
@@ -101,16 +106,6 @@ SELECT 'PART 6: Direct verification of S003 SQL queries' AS sql_verification;
 SELECT 'S003 rule explanation:' AS rule_explanation;
 SELECT pglinter.explain_rule('S003');
 
-DROP SCHEMA test_secure_schema CASCADE;
-DROP SCHEMA test_secure_schema_1 CASCADE;
-DROP SCHEMA test_secure_schema_2 CASCADE;
-DROP SCHEMA test_secure_schema_3 CASCADE;
-DROP SCHEMA test_secure_schema_4 CASCADE;
-DROP SCHEMA test_secure_schema_5 CASCADE;
-DROP SCHEMA test_secure_schema_6 CASCADE;
-DROP SCHEMA test_secure_schema_7 CASCADE;
-DROP SCHEMA test_secure_schema_8 CASCADE;
-DROP SCHEMA test_insecure_schema_1 CASCADE;
-DROP SCHEMA test_insecure_schema_2 CASCADE;
+ROLLBACK;
 
 DROP EXTENSION pglinter CASCADE;

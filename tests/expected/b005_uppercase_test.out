@@ -133,32 +133,33 @@ SELECT
     (PG_IDENTIFY_OBJECT(classid, objid, objsubid)).type AS object_type,
     (PG_IDENTIFY_OBJECT(classid, objid, objsubid)).schema AS object_schema,
     (PG_IDENTIFY_OBJECT(classid, objid, objsubid)).name AS object_name,
-    (PG_IDENTIFY_OBJECT(classid, objid, objsubid)).identity AS object_identity
+    (PG_IDENTIFY_OBJECT(classid, objid, objsubid)).identity COLLATE "C" AS object_identity
 FROM pglinter.get_violations()
-WHERE rule_code = 'B005';
+WHERE rule_code = 'B005'
+ORDER BY object_identity, object_type;
  object_type  |  object_schema   |            object_name            |                         object_identity                          
 --------------+------------------+-----------------------------------+------------------------------------------------------------------
- view         | test_b005_schema | "ACTIVE_CUSTOMERS"                | test_b005_schema."ACTIVE_CUSTOMERS"
- index        | test_b005_schema | "IDX_CUSTOMERS_EMAIL"             | test_b005_schema."IDX_CUSTOMERS_EMAIL"
- sequence     | test_b005_schema | "CUSTOMER_ID_SEQ"                 | test_b005_schema."CUSTOMER_ID_SEQ"
- table        | test_b005_schema | "CUSTOMERS_TABLE"                 | test_b005_schema."CUSTOMERS_TABLE"
- index        | test_b005_schema | "EMAIL_UNIQUE_CONSTRAINT"         | test_b005_schema."EMAIL_UNIQUE_CONSTRAINT"
- sequence     | test_b005_schema | "CUSTOMERS_TABLE_customer_id_seq" | test_b005_schema."CUSTOMERS_TABLE_customer_id_seq"
- index        | test_b005_schema | "CUSTOMERS_TABLE_pkey"            | test_b005_schema."CUSTOMERS_TABLE_pkey"
- view column  | test_b005_schema | "ACTIVE_CUSTOMERS"                | test_b005_schema."ACTIVE_CUSTOMERS"."FIRST_NAME"
- index column | test_b005_schema | "IDX_CUSTOMERS_EMAIL"             | test_b005_schema."IDX_CUSTOMERS_EMAIL"."EMAIL_ADDRESS"
- table column | test_b005_schema | "CUSTOMERS_TABLE"                 | test_b005_schema."CUSTOMERS_TABLE"."FIRST_NAME"
- table column | test_b005_schema | "CUSTOMERS_TABLE"                 | test_b005_schema."CUSTOMERS_TABLE"."EMAIL_ADDRESS"
- index column | test_b005_schema | "EMAIL_UNIQUE_CONSTRAINT"         | test_b005_schema."EMAIL_UNIQUE_CONSTRAINT"."EMAIL_ADDRESS"
- index        | test_b005_schema | "IDX_CUSTOMERS_EMAIL"             | test_b005_schema."IDX_CUSTOMERS_EMAIL"
- index        | test_b005_schema | "EMAIL_UNIQUE_CONSTRAINT"         | test_b005_schema."EMAIL_UNIQUE_CONSTRAINT"
- index        | test_b005_schema | "CUSTOMERS_TABLE_pkey"            | test_b005_schema."CUSTOMERS_TABLE_pkey"
- sequence     | test_b005_schema | "CUSTOMER_ID_SEQ"                 | test_b005_schema."CUSTOMER_ID_SEQ"
- sequence     | test_b005_schema | "CUSTOMERS_TABLE_customer_id_seq" | test_b005_schema."CUSTOMERS_TABLE_customer_id_seq"
- view         | test_b005_schema | "ACTIVE_CUSTOMERS"                | test_b005_schema."ACTIVE_CUSTOMERS"
- function     | test_b005_schema |                                   | test_b005_schema."GET_CUSTOMER_COUNT"()
- trigger      |                  |                                   | "UPDATE_TIMESTAMP_TRIGGER" on test_b005_schema."CUSTOMERS_TABLE"
  schema       |                  | "TEST_UPPERCASE_SCHEMA"           | "TEST_UPPERCASE_SCHEMA"
+ trigger      |                  |                                   | "UPDATE_TIMESTAMP_TRIGGER" on test_b005_schema."CUSTOMERS_TABLE"
+ view         | test_b005_schema | "ACTIVE_CUSTOMERS"                | test_b005_schema."ACTIVE_CUSTOMERS"
+ view         | test_b005_schema | "ACTIVE_CUSTOMERS"                | test_b005_schema."ACTIVE_CUSTOMERS"
+ view column  | test_b005_schema | "ACTIVE_CUSTOMERS"                | test_b005_schema."ACTIVE_CUSTOMERS"."FIRST_NAME"
+ table        | test_b005_schema | "CUSTOMERS_TABLE"                 | test_b005_schema."CUSTOMERS_TABLE"
+ table column | test_b005_schema | "CUSTOMERS_TABLE"                 | test_b005_schema."CUSTOMERS_TABLE"."EMAIL_ADDRESS"
+ table column | test_b005_schema | "CUSTOMERS_TABLE"                 | test_b005_schema."CUSTOMERS_TABLE"."FIRST_NAME"
+ sequence     | test_b005_schema | "CUSTOMERS_TABLE_customer_id_seq" | test_b005_schema."CUSTOMERS_TABLE_customer_id_seq"
+ sequence     | test_b005_schema | "CUSTOMERS_TABLE_customer_id_seq" | test_b005_schema."CUSTOMERS_TABLE_customer_id_seq"
+ index        | test_b005_schema | "CUSTOMERS_TABLE_pkey"            | test_b005_schema."CUSTOMERS_TABLE_pkey"
+ index        | test_b005_schema | "CUSTOMERS_TABLE_pkey"            | test_b005_schema."CUSTOMERS_TABLE_pkey"
+ sequence     | test_b005_schema | "CUSTOMER_ID_SEQ"                 | test_b005_schema."CUSTOMER_ID_SEQ"
+ sequence     | test_b005_schema | "CUSTOMER_ID_SEQ"                 | test_b005_schema."CUSTOMER_ID_SEQ"
+ index        | test_b005_schema | "EMAIL_UNIQUE_CONSTRAINT"         | test_b005_schema."EMAIL_UNIQUE_CONSTRAINT"
+ index        | test_b005_schema | "EMAIL_UNIQUE_CONSTRAINT"         | test_b005_schema."EMAIL_UNIQUE_CONSTRAINT"
+ index column | test_b005_schema | "EMAIL_UNIQUE_CONSTRAINT"         | test_b005_schema."EMAIL_UNIQUE_CONSTRAINT"."EMAIL_ADDRESS"
+ function     | test_b005_schema |                                   | test_b005_schema."GET_CUSTOMER_COUNT"()
+ index        | test_b005_schema | "IDX_CUSTOMERS_EMAIL"             | test_b005_schema."IDX_CUSTOMERS_EMAIL"
+ index        | test_b005_schema | "IDX_CUSTOMERS_EMAIL"             | test_b005_schema."IDX_CUSTOMERS_EMAIL"
+ index column | test_b005_schema | "IDX_CUSTOMERS_EMAIL"             | test_b005_schema."IDX_CUSTOMERS_EMAIL"."EMAIL_ADDRESS"
 (21 rows)
 
 -- Test rule management for B005

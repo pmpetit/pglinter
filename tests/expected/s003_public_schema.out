@@ -2,6 +2,9 @@
 -- Tests the percentage-based detection of schemas allowing CREATE for public role
 -- versus total schemas in the database
 CREATE EXTENSION pglinter;
+-- Give the public schema the CREATE privilege this test checks for.
+BEGIN;
+GRANT CREATE ON SCHEMA public TO PUBLIC;
 SELECT
     'S003 Regression Test: Schemas with public CREATE privileges' AS test_header;
                          test_header                         
@@ -119,7 +122,8 @@ SELECT
     (pg_identify_object(classid, objid, objsubid)).name AS object_name,
     (pg_identify_object(classid, objid, objsubid)).identity AS object_identity
 FROM pglinter.get_violations()
-WHERE rule_code = 'S003';
+WHERE rule_code = 'S003'
+ORDER BY object_identity;
  object_type | object_schema |      object_name       |    object_identity     
 -------------+---------------+------------------------+------------------------
  schema      |               | public                 | public
@@ -159,15 +163,5 @@ only authorized users should be allowed to create objects.
  t
 (1 row)
 
-DROP SCHEMA test_secure_schema CASCADE;
-DROP SCHEMA test_secure_schema_1 CASCADE;
-DROP SCHEMA test_secure_schema_2 CASCADE;
-DROP SCHEMA test_secure_schema_3 CASCADE;
-DROP SCHEMA test_secure_schema_4 CASCADE;
-DROP SCHEMA test_secure_schema_5 CASCADE;
-DROP SCHEMA test_secure_schema_6 CASCADE;
-DROP SCHEMA test_secure_schema_7 CASCADE;
-DROP SCHEMA test_secure_schema_8 CASCADE;
-DROP SCHEMA test_insecure_schema_1 CASCADE;
-DROP SCHEMA test_insecure_schema_2 CASCADE;
+ROLLBACK;
 DROP EXTENSION pglinter CASCADE;

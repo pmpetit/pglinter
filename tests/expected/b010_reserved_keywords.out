@@ -270,44 +270,45 @@ SELECT
     (pg_identify_object(classid, objid, objsubid)).type AS object_type,
     (pg_identify_object(classid, objid, objsubid)).schema AS object_schema,
     (pg_identify_object(classid, objid, objsubid)).name AS object_name,
-    (pg_identify_object(classid, objid, objsubid)).identity AS object_identity
+    (pg_identify_object(classid, objid, objsubid)).identity COLLATE "C" AS object_identity
 FROM pglinter.get_violations()
-WHERE rule_code = 'B010';
+WHERE rule_code = 'B010'
+ORDER BY object_identity, object_type;
   object_type   |    object_schema     |        object_name        |                     object_identity                      
 ----------------+----------------------+---------------------------+----------------------------------------------------------
- table          | test_keywords_schema | "SELECT"                  | test_keywords_schema."SELECT"
- table          | test_keywords_schema | "FROM"                    | test_keywords_schema."FROM"
+ trigger        |                      |                           | "ELSE" on test_keywords_schema.products_with_bad_columns
+ function       | test_keywords_schema |                           | test_keywords_schema."AND"(integer,integer)
+ type           | test_keywords_schema | "CASE"                    | test_keywords_schema."CASE"
+ type           | test_keywords_schema | "DISTINCT"                | test_keywords_schema."DISTINCT"
  view           | test_keywords_schema | "DISTINCT"                | test_keywords_schema."DISTINCT"
- sequence       | test_keywords_schema | "NULL"                    | test_keywords_schema."NULL"
  sequence       | test_keywords_schema | "FALSE"                   | test_keywords_schema."FALSE"
- index          | test_keywords_schema | "PRIMARY"                 | test_keywords_schema."PRIMARY"
  index          | test_keywords_schema | "FOREIGN"                 | test_keywords_schema."FOREIGN"
- table          | test_naming_schema   | "WHERE"                   | test_naming_schema."WHERE"
- table          | test_naming_schema   | "ORDER"                   | test_naming_schema."ORDER"
- sequence       | test_naming_schema   | "TRUE"                    | test_naming_schema."TRUE"
- index          | test_naming_schema   | "UNIQUE"                  | test_naming_schema."UNIQUE"
- composite type | test_naming_schema   | "WHEN"                    | test_naming_schema."WHEN"
+ index          | test_keywords_schema | "FOREIGN"                 | test_keywords_schema."FOREIGN"
+ table          | test_keywords_schema | "FROM"                    | test_keywords_schema."FROM"
+ type           | test_keywords_schema | "FROM"                    | test_keywords_schema."FROM"
+ sequence       | test_keywords_schema | "NULL"                    | test_keywords_schema."NULL"
+ index          | test_keywords_schema | "PRIMARY"                 | test_keywords_schema."PRIMARY"
+ index          | test_keywords_schema | "PRIMARY"                 | test_keywords_schema."PRIMARY"
+ table          | test_keywords_schema | "SELECT"                  | test_keywords_schema."SELECT"
+ type           | test_keywords_schema | "SELECT"                  | test_keywords_schema."SELECT"
+ function       | test_keywords_schema |                           | test_keywords_schema."THEN"()
  table column   | test_keywords_schema | products_with_bad_columns | test_keywords_schema.products_with_bad_columns."GROUP"
  table column   | test_keywords_schema | products_with_bad_columns | test_keywords_schema.products_with_bad_columns."HAVING"
  table column   | test_keywords_schema | products_with_bad_columns | test_keywords_schema.products_with_bad_columns."UNION"
+ function       | test_naming_schema   |                           | test_naming_schema."END"()
+ function       | test_naming_schema   |                           | test_naming_schema."OR"(pg_catalog.text,pg_catalog.text)
+ table          | test_naming_schema   | "ORDER"                   | test_naming_schema."ORDER"
+ type           | test_naming_schema   | "ORDER"                   | test_naming_schema."ORDER"
+ sequence       | test_naming_schema   | "TRUE"                    | test_naming_schema."TRUE"
+ index          | test_naming_schema   | "UNIQUE"                  | test_naming_schema."UNIQUE"
+ index          | test_naming_schema   | "UNIQUE"                  | test_naming_schema."UNIQUE"
+ composite type | test_naming_schema   | "WHEN"                    | test_naming_schema."WHEN"
+ type           | test_naming_schema   | "WHEN"                    | test_naming_schema."WHEN"
+ table          | test_naming_schema   | "WHERE"                   | test_naming_schema."WHERE"
+ type           | test_naming_schema   | "WHERE"                   | test_naming_schema."WHERE"
  table column   | test_naming_schema   | users_with_bad_columns    | test_naming_schema.users_with_bad_columns."JOIN"
  table column   | test_naming_schema   | users_with_bad_columns    | test_naming_schema.users_with_bad_columns."LIMIT"
  table column   | test_naming_schema   | users_with_bad_columns    | test_naming_schema.users_with_bad_columns."OFFSET"
- index          | test_keywords_schema | "PRIMARY"                 | test_keywords_schema."PRIMARY"
- index          | test_keywords_schema | "FOREIGN"                 | test_keywords_schema."FOREIGN"
- index          | test_naming_schema   | "UNIQUE"                  | test_naming_schema."UNIQUE"
- function       | test_keywords_schema |                           | test_keywords_schema."AND"(integer,integer)
- function       | test_keywords_schema |                           | test_keywords_schema."THEN"()
- function       | test_naming_schema   |                           | test_naming_schema."OR"(pg_catalog.text,pg_catalog.text)
- function       | test_naming_schema   |                           | test_naming_schema."END"()
- type           | test_keywords_schema | "SELECT"                  | test_keywords_schema."SELECT"
- type           | test_keywords_schema | "FROM"                    | test_keywords_schema."FROM"
- type           | test_keywords_schema | "DISTINCT"                | test_keywords_schema."DISTINCT"
- type           | test_keywords_schema | "CASE"                    | test_keywords_schema."CASE"
- type           | test_naming_schema   | "WHERE"                   | test_naming_schema."WHERE"
- type           | test_naming_schema   | "ORDER"                   | test_naming_schema."ORDER"
- type           | test_naming_schema   | "WHEN"                    | test_naming_schema."WHEN"
- trigger        |                      |                           | "ELSE" on test_keywords_schema.products_with_bad_columns
 (33 rows)
 
 -- ROLLBACK;

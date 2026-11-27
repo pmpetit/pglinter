@@ -58,6 +58,8 @@ $$;
 
 -- Check current password_encryption setting after attempted change
 SELECT '=== Current Password Encryption Setting ===' AS test_section;
+-- Avoid psql version differences in emoji alignment.
+\pset format unaligned
 SELECT
     name,
     setting AS current_value,
@@ -70,6 +72,7 @@ SELECT
     END AS security_status
 FROM pg_settings
 WHERE name = 'password_encryption';
+\pset format aligned
 
 -- First, disable all rules to isolate C003 testing
 SELECT pglinter.disable_all_rules() AS all_rules_disabled;
@@ -85,6 +88,7 @@ SELECT '=== Test 1: C003 Rule Execution with Current Setting ===' AS test_sectio
 
 -- Test 2: Manual execution of C003 query
 SELECT '=== Test 2: Manual C003 Query Execution ===' AS test_section;
+\pset format unaligned
 SELECT
     count(*) AS md5_password_count,
     CASE
@@ -93,6 +97,7 @@ SELECT
     END AS test_result
 FROM pg_catalog.pg_settings
 WHERE name = 'password_encryption' AND setting = 'md5';
+\pset format aligned
 
 -- Test 3: Show what C003 is actually checking
 SELECT '=== Test 3: C003 Query and Logic ===' AS test_section;

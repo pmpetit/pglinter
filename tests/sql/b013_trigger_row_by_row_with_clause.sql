@@ -3,14 +3,12 @@ CREATE EXTENSION IF NOT EXISTS pglinter;
 \pset pager off
 
 
-CREATE SCHEMA trigger_test;
-
 -- =============================================================================
 -- Create test tables
 -- =============================================================================
 
 -- Tables 1-5: Each will have its own unique trigger function
-CREATE TABLE IF NOT EXISTS pos_tnd_ssn_hst
+CREATE TABLE pos_tnd_ssn_hst
 (
     id_tnd_ssn_hst integer NOT NULL,
     id_ssn varchar(32) NOT NULL,
@@ -32,7 +30,7 @@ CREATE TABLE IF NOT EXISTS pos_tnd_ssn_hst
 -- Create unique trigger functions for tables 1-5
 -- =============================================================================
 
-CREATE OR REPLACE FUNCTION f_pos_tnd_ssn_hst() RETURNS trigger
+CREATE FUNCTION f_pos_tnd_ssn_hst() RETURNS trigger
 LANGUAGE plpgsql
 AS
 $$
@@ -52,7 +50,7 @@ END;
 $$;
 
 
-CREATE OR REPLACE TRIGGER t_pos_tnd_ssn_hst
+CREATE TRIGGER t_pos_tnd_ssn_hst
 BEFORE INSERT OR UPDATE
 ON pos_tnd_ssn_hst
 FOR EACH ROW
@@ -80,7 +78,7 @@ WHERE rule_code = 'B013';
 -- Test if file exists and show checksum
 
 -- Cleanup
-\echo 'Cleaning up test schema...'
-DROP SCHEMA trigger_test CASCADE;
+DROP TABLE pos_tnd_ssn_hst;
+DROP FUNCTION f_pos_tnd_ssn_hst();
 
 DROP EXTENSION pglinter;
